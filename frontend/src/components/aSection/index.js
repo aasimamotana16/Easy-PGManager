@@ -10,7 +10,7 @@ const Section = ({ title, children, className = "" }) => {
         </h2>
       )}
       {children}
-    </section>
+     </section>
   );
 };
 
