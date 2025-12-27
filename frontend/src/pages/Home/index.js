@@ -1,10 +1,10 @@
-// src/pages/home/index.js
+// src/pages/Home/index.js
 import React from "react";
-import Navbar from "../../components/navbar";      // ✅ fixed path
-import Footer from "../../components/footer";      // ✅ fixed path
-import HomeBanner from "./homeBanner";
-import HomeSearch from "./homeSearch";
-import HomeFeatures from "./homeFeature";
+import Navbar from "../../components/navbar";
+import Footer from "../../components/footer";
+import HomeBanner from "./homeBanner";   // points to homeBanner/index.js
+import HomeSearch from "./homeSearch";   // points to homeSearch/index.js
+import HomeFeatures from "./homeFeature"; // points to homeFeature/index.js
 
 const HomePage = () => {
   return (

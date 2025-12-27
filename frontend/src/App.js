@@ -7,12 +7,12 @@ import CssBaseline from "@mui/material/CssBaseline";
 import theme from "./theme";
 
 // Public Pages
-import Home from "./pages/home";
+import Home from "./pages/Home";
 import SignUp from "./pages/signup";
-import Login from "./pages/login";
+import Login from "./pages/Login";
 import About from "./pages/about";
-import ForgotPassword from "./pages/login/forgotPassword";
-import ResetPassword from "./pages/login/resetPassword";
+import ForgotPassword from "./pages/Login/forgotPassword";
+import ResetPassword from "./pages/Login/resetPassword";
 import Contact from "./pages/contact";
 import Services from "./pages/services";
 import FAQ from "./pages/faq";
@@ -26,7 +26,6 @@ import CancelSuccess from "./pages/booking/cancelSuccess";
 import RentalAgreement from "./pages/booking/agreement";
 import TermsConditions from "./pages/termsConditions";
 import PrivacyPolicy from "./pages/privacyPolicy";
-
 
 // User Dashboard Pages
 import {
@@ -142,8 +141,6 @@ function App() {
             <Route path="rebook" element={<Rebook />} />
             <Route path="owner-contact" element={<OwnerContact />} />
             <Route path="support" element={<Support />} />
-
-
           </Route>
 
           {/* Catch-all redirect */}

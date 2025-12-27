@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import CButton from "../../components/cButton";
-import CSelect from "../../components/cSelect";
+import CButton from "../../../components/cButton";
+import CSelect from "../../../components/cSelect";
 
 const HomeSearch = () => {
   const [city, setCity] = useState("");
