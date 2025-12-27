@@ -5,6 +5,7 @@ import connectDB from './config/db.js';
 import authRoutes from './routes/authRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import cityRoutes from "./routes/cityRoutes.js";
+import featuresRoutes from "./routes/featuresRoutes.js";
 import { addDefaultCities} from"./controllers/cityController.js";
 dotenv.config();
 connectDB();
@@ -16,6 +17,7 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use("/api/cities", cityRoutes);
+app.use("/api/home", featuresRoutes);
 
 app.get('/', (req, res) => res.send('EasyPG Backend Running'));
 
