@@ -42,19 +42,30 @@ import {
   Support,
 } from "./user/dashboard";
 
-// Protected Route Wrapper for dashboard
+/* ===============================
+   PROTECTED ROUTES (DEV MODE)
+   =============================== */
+
+// Only check if user exists
+// (Booking condition removed for now)
 const ProtectedRoute = ({ children }) => {
   const user = JSON.parse(localStorage.getItem("user"));
-  const hasBooking = user?.pgId;
-  if (!user) return <Navigate to="/login" replace />;
-  if (!hasBooking) return <Navigate to="/book" replace />;
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
   return children;
 };
 
-// Protected Route Wrapper for cancellation
+// For cancellation flow
 const ProtectedBookingRoute = ({ children }) => {
   const user = JSON.parse(localStorage.getItem("user"));
-  if (!user) return <Navigate to="/login" replace />;
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
   return children;
 };
 
@@ -64,7 +75,8 @@ function App() {
       <CssBaseline />
       <Router>
         <Routes>
-          {/* Public Pages */}
+
+          {/* ================= PUBLIC ROUTES ================= */}
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<SignUp />} />
@@ -75,16 +87,16 @@ function App() {
           <Route path="/services" element={<Services />} />
           <Route path="/faq" element={<FAQ />} />
 
-          {/* PG Details Pages */}
+          {/* ================= PG DETAILS ================= */}
           <Route path="/pg/:id" element={<PGOverview />} />
           <Route path="/pg/:id/details" element={<PGFullDetails />} />
 
-          {/* Booking Flow */}
+          {/* ================= BOOKING FLOW ================= */}
           <Route path="/book/:id" element={<BookingPage />} />
           <Route path="/confirm/:id" element={<ConfirmBooking />} />
           <Route path="/agreement/:id" element={<RentalAgreement />} />
 
-          {/* Cancellation Flow (protected) */}
+          {/* ================= CANCELLATION (PROTECTED) ================= */}
           <Route
             path="/cancel/:id"
             element={
@@ -118,11 +130,11 @@ function App() {
             }
           />
 
-          {/* Policies */}
+          {/* ================= POLICIES ================= */}
           <Route path="/termsConditions" element={<TermsConditions />} />
           <Route path="/privacyPolicy" element={<PrivacyPolicy />} />
 
-          {/* Protected User Dashboard */}
+          {/* ================= USER DASHBOARD ================= */}
           <Route
             path="/user/dashboard/*"
             element={
@@ -143,8 +155,9 @@ function App() {
             <Route path="support" element={<Support />} />
           </Route>
 
-          {/* Catch-all redirect */}
+          {/* ================= FALLBACK ================= */}
           <Route path="*" element={<Navigate to="/" replace />} />
+
         </Routes>
       </Router>
     </ThemeProvider>

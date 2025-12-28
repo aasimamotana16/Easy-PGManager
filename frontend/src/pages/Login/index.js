@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Navbar from "../../components/navbar";
 import ImageCarousel1 from "../../components/imageCarousel";
 
@@ -13,9 +14,32 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
 
+  const navigate = useNavigate();
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log({ role, email, password, rememberMe });
+
+    // MOCK LOGIN (NO BACKEND)
+    const mockUser = {
+      id: 1,
+      name: "Asima Motana",
+      email: email || "asima@example.com",
+      role: role,
+    };
+
+    // Save user session
+    localStorage.setItem("user", JSON.stringify(mockUser));
+
+    if (rememberMe) {
+      localStorage.setItem("rememberMe", "true");
+    }
+
+    // Redirect
+    if (role === "user") {
+      navigate("/user/dashboard");
+    } else {
+      navigate("/owner/dashboard"); // future ready
+    }
   };
 
   return (

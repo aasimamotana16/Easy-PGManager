@@ -1,16 +1,30 @@
-// src/components/ListingCard/index.js
-export default function ListingCard({ name, location, price, amenities }) {
+export default function ListingCard({ name, location, address, roomImages }) {
+  const mainImage = roomImages?.[0]; // first image of the room
+
   return (
-    <div className="p-6 border border-border rounded-xl bg-card shadow-card hover:shadow-hover transition">
+    <div className="w-72 flex-shrink-0 p-4 border border-border rounded-xl bg-card shadow-card hover:shadow-hover transition">
+      {/* Image */}
+      <div className="w-full h-48 mb-4 rounded-lg overflow-hidden bg-gray-200">
+        {mainImage ? (
+          <img
+            src={mainImage}
+            alt={name}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="flex items-center justify-center h-full text-gray-400">
+            No Image
+          </div>
+        )}
+      </div>
+
+      {/* Details */}
       <h3 className="text-xl font-semibold text-primary mb-1">{name}</h3>
       <p className="text-sm text-text-secondary mb-1">
         <strong>Location:</strong> {location}
       </p>
-      <p className="text-sm text-text-secondary mb-1">
-        <strong>Price:</strong> {price}
-      </p>
       <p className="text-sm text-text-secondary">
-        <strong>Amenities:</strong> {amenities.join(", ")}
+        <strong>Address:</strong> {address || "N/A"}
       </p>
     </div>
   );
