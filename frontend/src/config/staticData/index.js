@@ -638,67 +638,7 @@ export const hosteldetails = [
     rating: 4.1,
     image: "/images/oceanviewhostel.jpg",
     roomImages: []
-  },
-  {
-    id: 106,
-    name: "Campus Hostel",
-    location: "Anand",
-    address: "34 University Road, Anand",
-    price: "₹4700/month",
-    rent: 4700,
-    amenities: ["WiFi", "Meals", "Parking"],
-    facilities: ["WiFi", "Meals", "Parking", "Security"],
-    ownerName: "Mrs. Sneha Desai",
-    ownerContact: "9876543220",
-    rulesList: [
-      { icon: "noguest", text: "No guests allowed" },
-      { icon: "clean", text: "Maintain cleanliness" },
-    ],
-    gender: "Female",
-    rating: 4.2,
-    image: "/images/campushostel.jpg",
-    roomImages: []
-  },
-  {
-    id: 107,
-    name: "Metro Hostel",
-    location: "Gandhinagar",
-    address: "90 Sector 21, Gandhinagar",
-    price: "₹5300/month",
-    rent: 5300,
-    amenities: ["AC", "WiFi", "Security"],
-    facilities: ["AC", "WiFi", "Security", "Gym"],
-    ownerName: "Mr. Nilesh Patel",
-    ownerContact: "9876543221",
-    rulesList: [
-      { icon: "nosmoke", text: "No smoking" },
-      { icon: "music", text: "Maintain silence after 10 PM" },
-    ],
-    gender: "Male",
-    rating: 4.6,
-    image: "/images/metrohostel.jpg",
-    roomImages: []
-  },
-  {
-    id: 108,
-    name: "Heritage Hostel",
-    location: "Junagadh",
-    address: "12 Palace Road, Junagadh",
-    price: "₹4600/month",
-    rent: 4600,
-    amenities: ["WiFi", "Meals", "Laundry"],
-    facilities: ["WiFi", "Meals", "Laundry", "Security"],
-    ownerName: "Ms. Rupal Mehta",
-    ownerContact: "9876543222",
-    rulesList: [
-      { icon: "nopet", text: "No pets allowed" },
-      { icon: "clean", text: "Keep premises clean" },
-    ],
-    gender: "Female",
-    rating: 4.3,
-    image: "/images/heritagehostel.jpg",
-    roomImages: []
-  },
+  }
 ];
 
 // =====================
