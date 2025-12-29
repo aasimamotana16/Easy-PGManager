@@ -1,6 +1,6 @@
 import React from "react";
 
-// Mock data for the user
+// Mock data (later replace with API)
 const userData = {
   profile: {
     name: "Asima Motana",
@@ -15,80 +15,134 @@ const userData = {
       status: "Active",
       nextDue: "05 Jan 2026",
     },
-    {
-      pgName: "Sunrise PG",
-      roomNo: "B-101",
-      rent: "₹4,500",
-      status: "Pending",
-      nextDue: "10 Jan 2026",
-    },
   ],
 };
 
 const DashboardHome = () => {
   const { profile, bookings } = userData;
 
+  const activeBooking = bookings.find((b) => b.status === "Active");
+
   return (
-    <div className="space-y-6">
-      {/* Welcome card */}
-      <div className="bg-white p-6 rounded-2xl shadow">
-        <h1 className="text-2xl font-semibold text-primary">Welcome, {profile.name} 👋</h1>
+    <div className="space-y-8">
+      {/* Welcome Section */}
+      <div className="bg-white p-6 rounded-2xl shadow border">
+        <h1 className="text-2xl font-semibold text-primary">
+          Welcome back, {profile.name} 👋
+        </h1>
         <p className="text-buttonDEFAULT mt-1">
-          Here’s an overview of your PG / Hostel stay
+          Manage your PG stay, payments, and support from one place.
         </p>
       </div>
 
-      {/* User Stats (based on first booking for quick stats) */}
-      {bookings.length > 0 && (
+      {/* Quick Stats */}
+      {activeBooking && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <StatCard title="PG Name" value={bookings[0].pgName} />
-          <StatCard title="Room No" value={bookings[0].roomNo} />
-          <StatCard title="Rent" value={bookings[0].rent} />
-          <StatCard title="Status" value={bookings[0].status} />
+          <StatCard title="PG Name" value={activeBooking.pgName} />
+          <StatCard title="Room No" value={activeBooking.roomNo} />
+          <StatCard title="Monthly Rent" value={activeBooking.rent} />
+          <StatCard
+            title="Status"
+            value={activeBooking.status}
+            highlight
+          />
         </div>
       )}
 
-      {/* Info cards for all bookings */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {bookings.map((booking, index) => (
-          <InfoCard
-            key={index}
-            title={`Booking ${index + 1}`}
-            items={[
-              ["PG", booking.pgName],
-              ["Room", booking.roomNo],
-              ["Status", booking.status],
-              ["Rent", booking.rent],
-              ["Next Payment Due", booking.nextDue],
-            ]}
-          />
-        ))}
+      {/* Quick Actions */}
+      <div className="bg-primarySoft p-6 rounded-2xl border border-border">
+        <h2 className="text-lg font-semibold text-primaryDark mb-4">
+          Quick Actions
+        </h2>
+
+        <div className="flex flex-wrap gap-4">
+          <ActionButton label="Pay Rent" />
+          <ActionButton label="View Agreement" />
+          <ActionButton label="Upload Documents" />
+          <ActionButton label="Contact Support" />
+        </div>
+      </div>
+
+      {/* All Bookings */}
+      <div>
+        <h2 className="text-xl font-semibold text-primaryDark mb-4">
+          Your Bookings
+        </h2>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {bookings.map((booking, index) => (
+            <BookingCard key={index} booking={booking} />
+          ))}
+        </div>
       </div>
     </div>
   );
 };
 
-// StatCard remains same
-const StatCard = ({ title, value }) => (
-  <div className="bg-primarySoft rounded-2xl shadow p-5 border border-border">
+/* ---------- Reusable Components ---------- */
+
+const StatCard = ({ title, value, highlight }) => (
+  <div className="bg-white rounded-2xl shadow p-5 border border-border">
     <p className="text-buttonDEFAULT text-sm">{title}</p>
-    <p className="text-primary text-lg font-semibold mt-1">{value}</p>
+    <p
+      className={`text-lg font-semibold mt-1 ${
+        highlight ? "text-green-600" : "text-primary"
+      }`}
+    >
+      {value}
+    </p>
   </div>
 );
 
-// InfoCard remains same
-const InfoCard = ({ title, items }) => (
+const ActionButton = ({ label }) => (
+  <button className="px-5 py-2.5 bg-primary text-white rounded-xl text-sm hover:opacity-90 transition">
+    {label}
+  </button>
+);
+
+const BookingCard = ({ booking }) => (
   <div className="bg-white rounded-2xl shadow p-6 border border-border">
-    <h2 className="text-primaryDark text-lg font-semibold mb-4">{title}</h2>
+    <div className="flex justify-between items-center mb-4">
+      <h3 className="text-primaryDark font-semibold text-lg">
+        {booking.pgName}
+      </h3>
+      <StatusBadge status={booking.status} />
+    </div>
+
     <div className="space-y-3 text-sm">
-      {items.map(([label, value], i) => (
-        <div key={i} className="flex justify-between">
-          <span className="text-buttonDEFAULT">{label}</span>
-          <span className="text-primary font-medium">{value}</span>
-        </div>
-      ))}
+      <InfoRow label="Room No" value={booking.roomNo} />
+      <InfoRow label="Monthly Rent" value={booking.rent} />
+      <InfoRow label="Next Due Date" value={booking.nextDue} />
+    </div>
+
+    <div className="mt-5 flex gap-3">
+      <button className="px-4 py-2 bg-primary text-white rounded-xl text-sm">
+        View Details
+      </button>
+      <button className="px-4 py-2 bg-gray-800 text-white rounded-xl text-sm">
+        Pay Rent
+      </button>
     </div>
   </div>
+);
+
+const InfoRow = ({ label, value }) => (
+  <div className="flex justify-between">
+    <span className="text-buttonDEFAULT">{label}</span>
+    <span className="text-primary font-medium">{value}</span>
+  </div>
+);
+
+const StatusBadge = ({ status }) => (
+  <span
+    className={`px-3 py-1 rounded-full text-xs font-medium ${
+      status === "Active"
+        ? "bg-green-100 text-green-700"
+        : "bg-yellow-100 text-yellow-700"
+    }`}
+  >
+    {status}
+  </span>
 );
 
 export default DashboardHome;

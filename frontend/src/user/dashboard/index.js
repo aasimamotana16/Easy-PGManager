@@ -1,17 +1,16 @@
 // src/pages/user/dashboard/index.js
 
 // Layout
-export { default as UserDashboardLayout } from "./layout";
+export { default as UserDashboardLayout } from "./dashboardLayout";
 
 // Pages
-// src/pages/user/dashboard/index.js
 export { default as DashboardHome } from "./dashboardHome";
-export { default as Profile } from "./profile";
-export { default as Payments } from "./payment";
-export { default as Agreements } from "./rAgreement";
+export { default as Profile } from "./userProfile";
+export { default as Payments } from "./userPayments";
+export { default as Agreements } from "./userAgreement";
 export { default as CheckIns } from "./checkIns";
-export { default as Documents } from "./documents";
+export { default as Documents } from "./userDocuments";
 export { default as Timeline } from "./timeLine";
-export { default as Rebook } from "./reBook";
+export { default as Rebook } from "./userRebook";
 export { default as OwnerContact } from "./ownerContact";
-export { default as Support } from "./support";
+export { default as Support } from "./supportPage";
