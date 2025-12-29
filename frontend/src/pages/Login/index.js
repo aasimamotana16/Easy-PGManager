@@ -19,26 +19,36 @@ const Login = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    // MOCK LOGIN (NO BACKEND)
-    const mockUser = {
-      id: 1,
-      name: "Asima Motana",
-      email: email || "asima@example.com",
-      role: role,
-    };
+    /* ================= USER LOGIN (DEV MODE) ================= */
+    if (role === "user") {
+      const mockUser = {
+        id: 1,
+        name: "Asima Motana",
+        email: email || "asima@example.com",
+        role: "user",
+      };
 
-    // Save user session
-    localStorage.setItem("user", JSON.stringify(mockUser));
+      localStorage.setItem("user", JSON.stringify(mockUser));
+      localStorage.removeItem("owner"); // safety
+      navigate("/user/dashboard");
+    }
+
+    /* ================= OWNER LOGIN (DEV MODE) ================= */
+    if (role === "owner") {
+      const mockOwner = {
+        id: 101,
+        name: "Demo Owner",
+        email: email || "owner@example.com",
+        role: "owner",
+      };
+
+      localStorage.setItem("owner", JSON.stringify(mockOwner));
+      localStorage.removeItem("user"); // safety
+      navigate("/owner/dashboard");
+    }
 
     if (rememberMe) {
       localStorage.setItem("rememberMe", "true");
-    }
-
-    // Redirect
-    if (role === "user") {
-      navigate("/user/dashboard");
-    } else {
-      navigate("/owner/dashboard"); // future ready
     }
   };
 
@@ -160,7 +170,7 @@ const Login = () => {
                   </a>.
                 </p>
 
-                {/* Sign Up Link */}
+                {/* Sign Up */}
                 <p className="text-center mt-6 text-text-secondary text-sm sm:text-base">
                   Don’t have an account?{" "}
                   <a
