@@ -6,7 +6,7 @@ import CssBaseline from "@mui/material/CssBaseline";
 
 import theme from "./theme";
 
-// Public Pages
+/* ================= PUBLIC PAGES ================= */
 import Home from "./pages/Home";
 import SignUp from "./pages/signup";
 import Login from "./pages/Login";
@@ -17,6 +17,8 @@ import Contact from "./pages/contact";
 import Services from "./pages/services";
 import FAQ from "./pages/faq";
 import { PGOverview, PGFullDetails } from "./pages/detailsPage";
+
+/* ================= BOOKING ================= */
 import BookingPage from "./pages/booking";
 import ConfirmBooking from "./pages/booking/confirm";
 import CancelBooking from "./pages/booking/cancelBooking";
@@ -24,10 +26,12 @@ import CancelForm from "./pages/booking/cancelForm";
 import CancelConfirm from "./pages/booking/cancelConfirm";
 import CancelSuccess from "./pages/booking/cancelSuccess";
 import RentalAgreement from "./pages/booking/agreement";
+
+/* ================= POLICIES ================= */
 import TermsConditions from "./pages/termsConditions";
 import PrivacyPolicy from "./pages/privacyPolicy";
 
-// User Dashboard Pages
+/* ================= USER DASHBOARD ================= */
 import {
   UserDashboardLayout,
   DashboardHome,
@@ -42,30 +46,38 @@ import {
   Support,
 } from "./user/dashboard";
 
-/* ===============================
-   PROTECTED ROUTES (DEV MODE)
-   =============================== */
+/* ================= OWNER DASHBOARD ================= */
+import OwnerDashboardLayout from "./owner/dashboard/layout";
+import OwnerDashboardHome from "./owner/dashboard/dashboardHome";
+import PgManagement from "./owner/dashboard/pgManagment";
+import RoomManagement from "./owner/dashboard/pgManagment/roomManagement";
+import TenantManagement from "./owner/dashboard/tenantManagement";
+import OAgreements from "./owner/dashboard/oAgreements";
+import OSupport from "./owner/dashboard/oSupport";
+//import Bookings from "./owner/dashboard/oBookings";
+import Earnings from "./owner/dashboard/totalEarnings";
+import OwnerProfile from "./owner/dashboard/profileStatus";
 
-// Only check if user exists
-// (Booking condition removed for now)
-const ProtectedRoute = ({ children }) => {
+/* ================= PROTECTED ROUTES ================= */
+
+// USER protected
+const UserProtectedRoute = ({ children }) => {
   const user = JSON.parse(localStorage.getItem("user"));
-
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-
+  if (!user) return <Navigate to="/login" replace />;
   return children;
 };
 
-// For cancellation flow
+// OWNER protected
+const OwnerProtectedRoute = ({ children }) => {
+  const owner = JSON.parse(localStorage.getItem("owner"));
+  if (!owner) return <Navigate to="/login" replace />;
+  return children;
+};
+
+// Booking flow protected (user only)
 const ProtectedBookingRoute = ({ children }) => {
   const user = JSON.parse(localStorage.getItem("user"));
-
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-
+  if (!user) return <Navigate to="/login" replace />;
   return children;
 };
 
@@ -96,7 +108,7 @@ function App() {
           <Route path="/confirm/:id" element={<ConfirmBooking />} />
           <Route path="/agreement/:id" element={<RentalAgreement />} />
 
-          {/* ================= CANCELLATION (PROTECTED) ================= */}
+          {/* ================= CANCELLATION ================= */}
           <Route
             path="/cancel/:id"
             element={
@@ -138,13 +150,13 @@ function App() {
           <Route
             path="/user/dashboard/*"
             element={
-              <ProtectedRoute>
+              <UserProtectedRoute>
                 <UserDashboardLayout />
-              </ProtectedRoute>
+              </UserProtectedRoute>
             }
           >
             <Route index element={<DashboardHome />} />
-            <Route path="profile" element={<Profile />} />
+            <Route path="userProfile" element={<Profile />} />
             <Route path="payments" element={<Payments />} />
             <Route path="agreements" element={<Agreements />} />
             <Route path="check-ins" element={<CheckIns />} />
@@ -153,6 +165,25 @@ function App() {
             <Route path="rebook" element={<Rebook />} />
             <Route path="owner-contact" element={<OwnerContact />} />
             <Route path="support" element={<Support />} />
+          </Route>
+
+          {/* ================= OWNER DASHBOARD ================= */}
+          <Route
+            path="/owner/dashboard/*"
+            element={
+              <OwnerProtectedRoute>
+                <OwnerDashboardLayout />
+              </OwnerProtectedRoute>
+            }
+          >
+            <Route index element={<OwnerDashboardHome />} />
+            <Route path="pgManagment" element={<PgManagement />} />
+            <Route path="pgs/rooms" element={<RoomManagement />} />
+            <Route path="tenant-management" element={<TenantManagement />} />
+            <Route path="agreements" element={<OAgreements />} />
+            <Route path="support" element={<OSupport />} />
+            <Route path="earnings" element={<Earnings />} />
+            <Route path="profile" element={<OwnerProfile />} />
           </Route>
 
           {/* ================= FALLBACK ================= */}

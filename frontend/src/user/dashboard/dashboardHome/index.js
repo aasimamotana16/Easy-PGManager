@@ -31,7 +31,7 @@ const DashboardHome = () => {
           Welcome back, {profile.name} 👋
         </h1>
         <p className="text-buttonDEFAULT mt-1">
-          Manage your PG stay, payments, and support from one place.
+          Manage your PG stay, payments, nd support from one place.
         </p>
       </div>
 

@@ -1,3 +1,4 @@
+// src/owner/dashboard/dashboardHome/index.js
 import React from "react";
 
 const stats = [
@@ -15,6 +16,7 @@ const recentActivity = [
 const OwnerDashboardHome = () => {
   return (
     <div className="space-y-8">
+      {/* Welcome */}
       <div className="bg-card p-6 rounded-2xl border border-border">
         <h1 className="text-2xl font-semibold text-primary">
           Welcome back, Owner 👋

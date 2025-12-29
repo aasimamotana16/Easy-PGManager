@@ -1,3 +1,4 @@
+// src/owner/dashboard/layout/index.js
 import React from "react";
 import { Outlet, NavLink } from "react-router-dom";
 
@@ -12,11 +13,13 @@ const OwnerDashboardLayout = () => {
 
         <nav className="px-4 space-y-2">
           <MenuLink to="/owner/dashboard" label="Dashboard" />
-          <MenuLink to="/owner/dashboard/pgManagment" label="My PGs" />
-          <MenuLink to="/owner/dashboard/bookings" label="Bookings" />
+          <MenuLink to="/owner/dashboard/pgManagement" label="My PGs" />
+          <MenuLink to="/owner/dashboard/pgManagement/rooms" label="Rooms" />
+          <MenuLink to="/owner/dashboard/tenantManagement" label="Tenants" />
+          <MenuLink to="/owner/dashboard/oBookings" label="Bookings" />
           <MenuLink to="/owner/dashboard/totalEarnings" label="Earnings" />
-          <MenuLink to="/owner/dashboard/agreements" label="Agreements" />
-          <MenuLink to="/owner/dashboard/support" label="Support" />
+          <MenuLink to="/owner/dashboard/oAgreements" label="Agreements" />
+          <MenuLink to="/owner/dashboard/oSupport" label="Support" />
           <MenuLink to="/owner/dashboard/profileStatus" label="Profile" />
         </nav>
       </aside>
