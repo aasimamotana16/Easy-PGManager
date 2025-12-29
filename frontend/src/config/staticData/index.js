@@ -275,11 +275,11 @@ export const pgdetails = [
       { type: "Double Sharing", price: 4500 },
     ],
 
-    image: "/images/availablePGsImg/sunriseimg/roomimg1.jpeg",
+    image: "/images/serviceImage/availablePGsImg/sunriseimg/roomimg3.jpeg",
     roomImages: [
-      "/images/availablePGsImg/sunriseI]img/roomimg1.jpeg",
-      "/images/availablePGsImg/sunriseimg/roomimg2.jpeg",
-      "/images/availablePGsImg/sunriseimg/roomimg3.jpeg",
+      "/images/serviceImage/availablePGsImg/sunriseimg/roomimg3.jpeg",
+      "/images/serviceImage/availablePGsImg/sunriseimg/roomimg2.jpeg",
+      "/images/serviceImage/availablePGsImg/sunriseimg/roomimg1.jpeg",
     ],
   },
 
@@ -311,11 +311,11 @@ export const pgdetails = [
       { type: "Double Sharing", price: 5500 },
     ],
 
-    image: "/images/availablePGsImg/greenNestImg/greenNest1.jpg",
+    image: "/images/serviceImage/availablePGsImg/greeNestImg/greenNest2.jpg",
     roomImages: [
-      "/images/availablePGsImg/greenNestImg/greenNest2.jpg",
-      "/images/availablePGsImg/greenNestImg/greenNest3.jpg",
-      "/images/availablePGsImg/greenNestImg/greenNest1.jpg",
+      "/images/serviceImage/availablePGsImg/greeNestImg/greenNest2.jpg",
+      "/images/serviceImage/availablePGsImg/greeNestImg/GreenNest3.jpg",
+      "/images/serviceImage/availablePGsImg/greeNestImg/greenNest1.jpg",
     ],
   },
 
@@ -347,11 +347,11 @@ export const pgdetails = [
       { type: "Double Sharing", price: 4800 },
     ],
 
-    image: "/images/availablePGsImg/shreeImg/shree1.jpg",
+    image: "/images/serviceImage/availablePGsImg/shreeImg/shree1.jpg",
     roomImages: [
-      "/images/availablePGsImg/shreeImg/shree2.jpg",
-      "/images/availablePGsImg/shreeImg/shree3.jpg",
-      "/images/availablePGsImg/shreeImg/shree1.jpg",
+      "/images/serviceImage/availablePGsImg/shreeImg/shree2.jpg",
+      "/images/serviceImage/availablePGsImg/shreeImg/shree3.jpg",
+      "/images/serviceImage/availablePGsImg/shreeImg/shree1.jpg",
     ],
   },
 
@@ -383,11 +383,11 @@ export const pgdetails = [
       { type: "Double Sharing", price: 5000 },
     ],
 
-    image: "/images/availablePGsImg/harmonyImg/harmony1.jpg",
+    image: "/images/serviceImage/availablePGsImg/harmonyimg/haarmony1.jpg",
     roomImages: [
-      "/images/availablePGsImg/harmonyImg/harmony2.jpg",
-      "/images/availablePGsImg/harmonyImg/harmony3.jpg",
-      "/images/availablePGsImg/harmonyImg/harmony1.jpg",
+      "/images/serviceImage/availablePGsImg/harmonyimg/harmony2.jpg",
+      "/images/serviceImage/availablePGsImg/harmonyimg/harmony3.jpg",
+      "/images/serviceImage/availablePGsImg/harmonyimg/haarmony1.jpg",
     ],
   },
 
@@ -419,11 +419,11 @@ export const pgdetails = [
       { type: "Double Sharing", price: 4200 },
     ],
 
-    image: "/images/availablePGsImg/lotusImg/lotus1.jpg",
+    image: "/images/serviceImage/availablePGsImg/lotusImg/lotus1.jpg",
     roomImages: [
-      "/images/availablePGsImg/lotusImg/lotus2.jpg",
-      "/images/availablePGsImg/lotusImg/lotus3.jpg",
-      "/images/availablePGsImg/lotusImg/lotus1.jpg",
+      "/images/serviceImage/availablePGsImg/lotusImg/lotus2.jpg",
+      "/images/serviceImage/availablePGsImg/lotusImg/lotus3.jpg",
+      "/images/serviceImage/availablePGsImg/lotusImg/lotus1.jpg",
     ],
   },
 
@@ -455,11 +455,13 @@ export const pgdetails = [
       { type: "Double Sharing", price: 4700 },
     ],
 
-    image: "/images/availablePGsImg/pearlImg/pearl1.jpg",
+    image: "/images/serviceImage/availablePGsImg/pearlImg/pearl3.jpeg",
     roomImages: [
-      "/images/availablePGsImg/pearlImg/pearl2.jpg",
-      "/images/availablePGsImg/pearlImg/pearl3.jpg",
-      "/images/availablePGsImg/pearlImg/pearl1.jpg",
+      "/images/serviceImage/availablePGsImg/pearlImg/pearl2.jpeg",
+      "/images/serviceImage/availablePGsImg/pearlImg/img3.jpg",
+      "/images/serviceImage/availablePGsImg/pearlImg/pearl1.jpg",
+      "/images/serviceImage/availablePGsImg/pearlImg/pearl3.jpeg",
+
     ],
   },
 
@@ -491,11 +493,11 @@ export const pgdetails = [
       { type: "Double Sharing", price: 5300 },
     ],
 
-    image: "/images/availablePGsImg/skylineImg/skyline1.jpg",
+    image: "/images/serviceImage/availablePGsImg/skylineImg/skyline2.jpeg",
     roomImages: [
-      "/images/availablePGsImg/skylineImg/skyline2.jpg",
-      "/images/availablePGsImg/skylineImg/skyline3.jpg",
-      "/images/availablePGsImg/skylineImg/skyline1.jpg",
+      "/images/serviceImage/availablePGsImg/skylineImg/skyline2.jpeg",
+      "/images/serviceImage/availablePGsImg/skylineImg/img5.jpg",
+      "/images/serviceImage/availablePGsImg/skylineImg/skyline1.jpeg",
     ],
   },
 
@@ -527,11 +529,11 @@ export const pgdetails = [
       { type: "Double Sharing", price: 4600 },
     ],
 
-    image: "/images/availablePGsImg/royalstayImg/royalstay1.jpg",
+    image: "/images/serviceImage/availablePGsImg/royalstayImg/royalstay2.jpg",
     roomImages: [
-      "/images/availablePGsImg/royalstayImg/royalstay2.jpg",
-      "/images/availablePGsImg/royalstayImg/royalstay3.jpg",
-      "/images/availablePGsImg/royalstayImg/royalstay1.jpg",
+      "/images/serviceImage/availablePGsImg/royalstayImg/royalstay2.jpg",
+      "/images/serviceImage/availablePGsImg/royalstayImg/royalstay3.jpg",
+      "/images/serviceImage/availablePGsImg/royalstayImg/royalstay1.jpg",
     ],
   },
 ];
@@ -556,12 +558,15 @@ export const hosteldetails = [
     ],
     gender: "Male",
     rating: 4.2,
-    image: "/images/cityhostel.jpg",
-    roomImages: [
-      "/images/hostels/cityhostel/city1.jpg",
-      "/images/hostels/cityhostel/city2.jpg",
-      "/images/hostels/cityhostel/city3.jpg",
-    ],
+   image:
+"/images/serviceImage/availableHostelsimg/cityHostelimg/cityhostel2.jpeg",
+
+roomImages: [
+  "/images/serviceImage/availableHostelsimg/cityHostelimg/cityhostel2.jpg",
+  "/images/servicemImage/availableHostelsimg/cityHostelimg/cityhostel1.jpeg",
+  "/images/serviceImage/availableHostelsimg/cityHostelimg/cityhostel3.jpg",
+],
+
   },
 
   {
@@ -581,12 +586,15 @@ export const hosteldetails = [
     ],
     gender: "Female",
     rating: 4.6,
-    image: "/images/elitehostel.jpg",
-    roomImages: [
-      "/images/hostels/elite/elite1.jpg",
-      "/images/hostels/elite/elite2.jpg",
-      "/images/hostels/elite/elite3.jpg",
-    ],
+    image:
+"/images/serviceImage/availableHostelsimg/eliteHostelimg/elitehostel1.jpg",
+
+roomImages: [
+  "/images/serviceImage/availableHostelsimg/eliteHostelimg/elitehostel1.jpg",
+  "/images/serviceImage/availableHostelsimg/eliteHostelimg/elite2.jpeg",
+  "/images/serviceImage/availableHostelsimg/eliteHostelimg/elite3.jpeg",
+],
+
   },
 
   {
@@ -606,12 +614,15 @@ export const hosteldetails = [
     ],
     gender: "Male",
     rating: 4.3,
-    image: "/images/riverviewhostel.jpg",
-    roomImages: [
-      "/images/hostels/riverview/river1.jpg",
-      "/images/hostels/riverview/river2.jpg",
-      "/images/hostels/riverview/river3.jpg",
-    ],
+    image:
+"/images/serviceImage/availableHostelsimg/riverviewHostelimg/riverview1.jpeg",
+
+roomImages: [
+  "/images/serviceImage/availableHostelsimg/riverviewHostelimg/riverview1.jpeg",
+  "/images/serviceImage/availableHostelsimg/riverviewHostelimg/riverview2.jpeg",
+  "/images/serviceImage/availableHostelsimg/riverviewHostelimg/riverview3.jpeg",
+],
+
   },
 
   {
@@ -631,12 +642,15 @@ export const hosteldetails = [
     ],
     gender: "Female",
     rating: 4.5,
-    image: "/images/brightstayhostel.jpg",
-    roomImages: [
-      "/images/hostels/brightstay/bright1.jpg",
-      "/images/hostels/brightstay/bright2.jpg",
-      "/images/hostels/brightstay/bright3.jpg",
-    ],
+   image:
+"/images/serviceImage/availableHostelsimg/brightstayHostelimg/brightstay1.jpeg",
+
+roomImages: [
+  "/images/serviceImage/availableHostelsimg/brightstayHostelimg/brightstay1.jpeg",
+  "/images/serviceImage/availableHostelsimg/brightstayHostelimg/brightstay2.jpeg",
+  "/images/serviceImage/availableHostelsimg/brightstayHostelimg/brightstay3.jpeg",
+],
+
   },
 
   {
@@ -656,12 +670,15 @@ export const hosteldetails = [
     ],
     gender: "Male",
     rating: 4.1,
-    image: "/images/oceanviewhostel.jpg",
-    roomImages: [
-      "/images/hostels/oceanview/ocean1.jpg",
-      "/images/hostels/oceanview/ocean2.jpg",
-      "/images/hostels/oceanview/ocean3.jpg",
-    ],
+   image:
+"/images/serviceImage/availableHostelsimg/oceanviewHostelImg/oceanview1.jpeg",
+
+roomImages: [
+  "/images/serviceImage/availableHostelsimg/oceanviewHostelImg/oceanview1.jpeg",
+  "/images/serviceImage/availableHostelsimg/oceanviewHostelImg/oceanview2.jpeg",
+  "/images/serviceImage/availableHostelsimg/oceanviewHostelImg/oceanview3.jpeg",
+],
+
   },
 ];
 

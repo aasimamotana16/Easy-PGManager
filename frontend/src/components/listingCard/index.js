@@ -1,10 +1,17 @@
-export default function ListingCard({ name, location, address, roomImages }) {
-  const mainImage = roomImages?.[0]; // first image of the room
+export default function ListingCard({
+  name,
+  location,
+  address,
+  image,
+  roomImages,
+}) {
+  // Priority: image → roomImages[0]
+  const mainImage = image || roomImages?.[0];
 
   return (
     <div className="w-72 flex-shrink-0 p-4 border border-border rounded-xl bg-card shadow-card hover:shadow-hover transition">
       {/* Image */}
-      <div className="w-full h-48 mb-4 rounded-lg overflow-hidden bg-gray-200">
+      <div className="w-full h-49 mb-4 rounded-lg overflow-hidden bg-gray-200">
         {mainImage ? (
           <img
             src={mainImage}
