@@ -557,8 +557,13 @@ export const hosteldetails = [
     gender: "Male",
     rating: 4.2,
     image: "/images/cityhostel.jpg",
-    roomImages: []
+    roomImages: [
+      "/images/hostels/cityhostel/city1.jpg",
+      "/images/hostels/cityhostel/city2.jpg",
+      "/images/hostels/cityhostel/city3.jpg",
+    ],
   },
+
   {
     id: 101,
     name: "Elite Hostel",
@@ -577,8 +582,13 @@ export const hosteldetails = [
     gender: "Female",
     rating: 4.6,
     image: "/images/elitehostel.jpg",
-    roomImages: []
+    roomImages: [
+      "/images/hostels/elite/elite1.jpg",
+      "/images/hostels/elite/elite2.jpg",
+      "/images/hostels/elite/elite3.jpg",
+    ],
   },
+
   {
     id: 103,
     name: "RiverView Hostel",
@@ -597,8 +607,13 @@ export const hosteldetails = [
     gender: "Male",
     rating: 4.3,
     image: "/images/riverviewhostel.jpg",
-    roomImages: []
+    roomImages: [
+      "/images/hostels/riverview/river1.jpg",
+      "/images/hostels/riverview/river2.jpg",
+      "/images/hostels/riverview/river3.jpg",
+    ],
   },
+
   {
     id: 104,
     name: "BrightStay Hostel",
@@ -617,8 +632,13 @@ export const hosteldetails = [
     gender: "Female",
     rating: 4.5,
     image: "/images/brightstayhostel.jpg",
-    roomImages: []
+    roomImages: [
+      "/images/hostels/brightstay/bright1.jpg",
+      "/images/hostels/brightstay/bright2.jpg",
+      "/images/hostels/brightstay/bright3.jpg",
+    ],
   },
+
   {
     id: 105,
     name: "OceanView Hostel",
@@ -637,9 +657,14 @@ export const hosteldetails = [
     gender: "Male",
     rating: 4.1,
     image: "/images/oceanviewhostel.jpg",
-    roomImages: []
-  }
+    roomImages: [
+      "/images/hostels/oceanview/ocean1.jpg",
+      "/images/hostels/oceanview/ocean2.jpg",
+      "/images/hostels/oceanview/ocean3.jpg",
+    ],
+  },
 ];
+
 
 // =====================
 // TERMS & CONDITIONS
