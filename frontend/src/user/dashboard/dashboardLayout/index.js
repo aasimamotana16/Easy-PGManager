@@ -1,3 +1,5 @@
+// src/user/dashboard/dashboardLayout.js
+
 import React from "react";
 import { NavLink, Outlet } from "react-router-dom";
 
@@ -7,11 +9,12 @@ const UserDashboardLayout = () => {
       {/* Sidebar */}
       <aside className="w-64 bg-white shadow-md hidden md:block">
         <div className="p-6 text-xl font-semibold text-primary">
-          User Dashboard
+          EasyPG Manager
         </div>
 
         <nav className="px-4 space-y-2">
-          <MenuLink to="/user/dashboard/home" label="Dashboard" />
+          {/* Use absolute paths starting from /user/dashboard */}
+          <MenuLink to="/user/dashboard" label="Dashboard" />
           <MenuLink to="/user/dashboard/profile" label="Profile" />
           <MenuLink to="/user/dashboard/payments" label="Payments" />
           <MenuLink to="/user/dashboard/agreements" label="Agreements" />

@@ -34,7 +34,19 @@ const HomeSearch = () => {
               label="Select City"
               value={city}
               onChange={(e) => setCity(e.target.value)}
-              options={["Nadiad", "Ahemdabad","Surat","Baroda","Navsari"]}
+              options={["Ahmedabad",
+    "Surat",
+    "Vadodara",
+    "Rajkot",
+    "Bhavnagar",
+    "Jamnagar",
+    "Gandhinagar",
+    "Nadiad",
+    "Anand",
+    "Bharuch",
+    "Valsad",
+    "Vapi",
+    "Navsari",]}
             />
           </div>
 

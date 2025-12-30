@@ -34,10 +34,10 @@ const PGFullDetails = () => {
           <div className="max-w-7xl w-full lg:flex lg:gap-8 px-4 sm:px-6 lg:px-0">
             {/* Left: Image and Book Now */}
             <div className="lg:w-1/2 flex flex-col gap-8">
-              {gallery.length > 0 && (
+              {gallery.length > 0 ? (
                 <div className="relative h-80 sm:h-[450px] rounded-xl overflow-hidden shadow-lg">
                   <img
-                    src={gallery[currentIndex]}
+                    src={gallery[currentIndex].startsWith("http") ? gallery[currentIndex] : process.env.PUBLIC_URL + gallery[currentIndex]}
                     alt="PG"
                     className="w-full h-full object-cover"
                   />
@@ -62,6 +62,10 @@ const PGFullDetails = () => {
                     <ChevronRightIcon className="h-6 w-6" />
                   </button>
                 </div>
+              ) : (
+                <div className="w-full h-80 sm:h-[450px] bg-gray-200 rounded-xl flex items-center justify-center text-gray-400">
+                  No Images Available
+                </div>
               )}
 
               {/* Book Now Button below image */}
@@ -79,12 +83,20 @@ const PGFullDetails = () => {
 
             {/* Right: Details */}
             <div className="lg:w-1/2 flex flex-col gap-3 mt-6 lg:mt-0">
-              <div className="bg-white p-3 rounded-lg shadow-sm">
+              {/* Basic Info */}
+              <div className="bg-white p-4 rounded-lg shadow-sm space-y-1">
                 <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{pg.name}</h1>
                 <p className="text-base sm:text-lg text-gray-600">{pg.location}</p>
-                <p className="text-sm sm:text-base text-gray-600">{pg.address}</p>
+                {pg.address && <p className="text-sm sm:text-base text-gray-600">{pg.address}</p>}
+                {pg.ownerName && <p className="text-sm sm:text-base text-gray-600">Owner: {pg.ownerName}</p>}
+                 {pg.ownerContact && <p className="text-sm sm:text-base text-gray-600">Contact: {pg.ownerContact}</p>}
+                {pg.startingPrice && <p className="text-sm sm:text-base text-gray-600">Starting Price: {pg.startingPrice}</p>}
+                {pg.pgType && <p className="text-sm sm:text-base text-gray-600">PG Type: {pg.pgType}</p>}
+                {pg.rating && <p className="text-sm sm:text-base text-yellow-500">Rating: {pg.rating} ★</p>}
+                {pg.description && <p className="text-sm sm:text-base text-gray-700 mt-2">{pg.description}</p>}
               </div>
 
+              {/* Room Sharing & Prices */}
               {pg.sharing?.length > 0 && (
                 <div className="bg-white p-3 rounded-lg shadow-sm">
                   <h2 className="font-semibold text-lg sm:text-xl mb-2">Room Sharing & Prices</h2>
@@ -99,6 +111,7 @@ const PGFullDetails = () => {
                 </div>
               )}
 
+              {/* Amenities */}
               {pg.amenities?.length > 0 && (
                 <div className="bg-white p-3 rounded-lg shadow-sm">
                   <h2 className="font-semibold text-lg sm:text-xl mb-2">Amenities</h2>
@@ -115,6 +128,24 @@ const PGFullDetails = () => {
                 </div>
               )}
 
+              {/* Facilities */}
+              {pg.facilities?.length > 0 && (
+                <div className="bg-white p-3 rounded-lg shadow-sm">
+                  <h2 className="font-semibold text-lg sm:text-xl mb-2">Facilities</h2>
+                  <div className="flex flex-wrap gap-2">
+                    {pg.facilities.map((f, i) => (
+                      <span
+                        key={i}
+                        className="text-sm sm:text-base px-2 py-1 border rounded-full bg-gray-50"
+                      >
+                        {f}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* House Rules */}
               {pg.rulesList?.length > 0 && (
                 <div className="bg-amber-100 p-3 rounded-lg shadow-sm">
                   <h2 className="font-semibold text-lg sm:text-xl mb-2">House Rules</h2>

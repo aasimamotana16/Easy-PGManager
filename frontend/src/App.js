@@ -6,7 +6,7 @@ import CssBaseline from "@mui/material/CssBaseline";
 
 import theme from "./theme";
 
-// Public Pages
+/* ================= PUBLIC PAGES ================= */
 import Home from "./pages/Home";
 import SignUp from "./pages/signup";
 import Login from "./pages/Login";
@@ -17,6 +17,8 @@ import Contact from "./pages/contact";
 import Services from "./pages/services";
 import FAQ from "./pages/faq";
 import { PGOverview, PGFullDetails } from "./pages/detailsPage";
+
+/* ================= BOOKING ================= */
 import BookingPage from "./pages/booking";
 import ConfirmBooking from "./pages/booking/confirm";
 import CancelBooking from "./pages/booking/cancelBooking";
@@ -24,10 +26,12 @@ import CancelForm from "./pages/booking/cancelForm";
 import CancelConfirm from "./pages/booking/cancelConfirm";
 import CancelSuccess from "./pages/booking/cancelSuccess";
 import RentalAgreement from "./pages/booking/agreement";
+
+/* ================= POLICIES ================= */
 import TermsConditions from "./pages/termsConditions";
 import PrivacyPolicy from "./pages/privacyPolicy";
 
-// User Dashboard Pages
+/* ================= USER DASHBOARD ================= */
 import {
   UserDashboardLayout,
   DashboardHome,
@@ -42,16 +46,38 @@ import {
   Support,
 } from "./user/dashboard";
 
-// Protected Route Wrapper for dashboard
-const ProtectedRoute = ({ children }) => {
+/* ================= OWNER DASHBOARD ================= */
+import OwnerDashboardLayout from "./owner/dashboard/layout";
+import OwnerDashboardHome from "./owner/dashboard/dashboardHome";
+import PgManagement from "./owner/dashboard/pgManagment";
+import AddProperty from "./owner/dashboard/pgManagment/addProperty";
+import RoomManagement from "./owner/dashboard/pgManagment/roomManagement";
+import AddRooms from "./owner/dashboard/pgManagment/addRooms"; 
+import TenantManagement from "./owner/dashboard/tenantManagement";
+import OAgreements from "./owner/dashboard/oAgreements";
+import OSupport from "./owner/dashboard/oSupport";
+import Earnings from "./owner/dashboard/totalEarnings";
+import OwnerProfile from "./owner/dashboard/profileStatus";
+import SubmitApproval from "./owner/dashboard/pgManagment/submitApproval";
+import SetRoomPrice from "./owner/dashboard/pgManagment/roomPrice";
+
+/* ================= PROTECTED ROUTES ================= */
+
+// USER protected
+const UserProtectedRoute = ({ children }) => {
   const user = JSON.parse(localStorage.getItem("user"));
-  const hasBooking = user?.pgId;
   if (!user) return <Navigate to="/login" replace />;
-  if (!hasBooking) return <Navigate to="/book" replace />;
   return children;
 };
 
-// Protected Route Wrapper for cancellation
+// OWNER protected
+const OwnerProtectedRoute = ({ children }) => {
+  const owner = JSON.parse(localStorage.getItem("owner"));
+  if (!owner) return <Navigate to="/login" replace />;
+  return children;
+};
+
+// Booking flow protected
 const ProtectedBookingRoute = ({ children }) => {
   const user = JSON.parse(localStorage.getItem("user"));
   if (!user) return <Navigate to="/login" replace />;
@@ -64,7 +90,8 @@ function App() {
       <CssBaseline />
       <Router>
         <Routes>
-          {/* Public Pages */}
+
+          {/* ================= PUBLIC ROUTES ================= */}
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<SignUp />} />
@@ -75,16 +102,16 @@ function App() {
           <Route path="/services" element={<Services />} />
           <Route path="/faq" element={<FAQ />} />
 
-          {/* PG Details Pages */}
+          {/* ================= PG DETAILS ================= */}
           <Route path="/pg/:id" element={<PGOverview />} />
           <Route path="/pg/:id/details" element={<PGFullDetails />} />
 
-          {/* Booking Flow */}
+          {/* ================= BOOKING FLOW ================= */}
           <Route path="/book/:id" element={<BookingPage />} />
           <Route path="/confirm/:id" element={<ConfirmBooking />} />
           <Route path="/agreement/:id" element={<RentalAgreement />} />
 
-          {/* Cancellation Flow (protected) */}
+          {/* ================= CANCELLATION ================= */}
           <Route
             path="/cancel/:id"
             element={
@@ -118,21 +145,21 @@ function App() {
             }
           />
 
-          {/* Policies */}
+          {/* ================= POLICIES ================= */}
           <Route path="/termsConditions" element={<TermsConditions />} />
           <Route path="/privacyPolicy" element={<PrivacyPolicy />} />
 
-          {/* Protected User Dashboard */}
+          {/* ================= USER DASHBOARD ================= */}
           <Route
             path="/user/dashboard/*"
             element={
-              <ProtectedRoute>
+              <UserProtectedRoute>
                 <UserDashboardLayout />
-              </ProtectedRoute>
+              </UserProtectedRoute>
             }
           >
             <Route index element={<DashboardHome />} />
-            <Route path="profile" element={<Profile />} />
+            <Route path="userProfile" element={<Profile />} />
             <Route path="payments" element={<Payments />} />
             <Route path="agreements" element={<Agreements />} />
             <Route path="check-ins" element={<CheckIns />} />
@@ -143,8 +170,33 @@ function App() {
             <Route path="support" element={<Support />} />
           </Route>
 
-          {/* Catch-all redirect */}
+          {/* ================= OWNER DASHBOARD ================= */}
+          <Route
+            path="/owner/dashboard/*"
+            element={
+              <OwnerProtectedRoute>
+                <OwnerDashboardLayout />
+              </OwnerProtectedRoute>
+            }
+          >
+            <Route index element={<OwnerDashboardHome />} />
+            <Route path="pgManagment" element={<PgManagement />} />
+            <Route path="pgManagment/addProperty" element={<AddProperty />} />
+            <Route path="pgManagment/addRooms" element={<AddRooms />} /> {/* ✅ NEW */}
+            <Route path="pgs/rooms" element={<RoomManagement />} />
+            <Route path="tenant-management" element={<TenantManagement />} />
+            <Route path="agreements" element={<OAgreements />} />
+            <Route path="support" element={<OSupport />} />
+            <Route path="earnings" element={<Earnings />} />
+            <Route path="profile" element={<OwnerProfile />} />
+            <Route path="pgManagment/submitApproval" element={<SubmitApproval/>}/>
+            <Route path="pgManagment/roomManagement" element={<RoomManagement/>}/>
+            <Route path="pgManagment/roomPrice" element={<SetRoomPrice/>}/>
+          </Route>
+
+          {/* ================= FALLBACK ================= */}
           <Route path="*" element={<Navigate to="/" replace />} />
+
         </Routes>
       </Router>
     </ThemeProvider>

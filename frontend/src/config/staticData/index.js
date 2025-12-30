@@ -168,39 +168,96 @@ export const services = [
 ];
 
 
+// =====================
 // Gender options
-export const genderOptions = ["Any", "Boys", "Girls", "Co-living"];
+// =====================
+export const genderOptions = [
+  { label: "Any", value: "Any" },
+  { label: "Boys", value: "Boys" },
+  { label: "Girls", value: "Girls" },
+];
+export const propertyTypes = [
+  { label: "PG", value: "PG" },
+  { label: "Hostel", value: "Hostel" },
+  { label: "Flat", value: "Flat" },
+];
 
+// =====================
 // Occupancy options
-export const occupancyOptions = ["Any", "Single", "Double", "Triple", "3+"];
+// =====================
+export const occupancyOptions = [
+  { label: "Any", value: "Any" },
+  { label: "Single Sharing", value: "Single" },
+  { label: "Double Sharing", value: "Double" },
+  { label: "Triple Sharing", value: "Triple" },
+  { label: "3+ Sharing", value: "3+" },
+];
 
+
+// =====================
 // Rent cycle options
-export const rentCycleOptions = ["Any", "01-01", "10-10", "15-15"];
+// =====================
+export const rentCycleOptions = [
+  { label: "Any", value: "Any" },
+  { label: "Monthly", value: "Monthly" },
+  { label: "Quarterly", value: "Quarterly" },
+  { label: "Yearly", value: "Yearly" },
+];
 
-// Grace period options
-export const gracePeriodOptions = ["Any", "Nil", "5 Days", "7 Days", "10 Days"];
 
+// =====================
 // Amenities list
+// =====================
 export const amenitiesList = [
-  "Hygienic Food", "Daily Newspaper", "Power Backup", "Wi-fi", "Fully Furnished",
-  "RO Water", "Water Cooler", "Parking", "CCTV", "Attached Washroom", "AC",
-  "Geyser", "Peaceful Living", "Balcony", "Desert Cooler", "Gas/Induction",
-  "Fridge", "Laundry/Washing Machine", "Bed + Mattress", "TV/LED", "Wardrobe/Almirah",
+  "Hygienic Food",
+  "Daily Newspaper",
+  "Power Backup",
+  "Wi-fi",
+  "Fully Furnished",
+  "RO Water",
+  "Water Cooler",
+  "Parking",
+  "CCTV",
+  "Attached Washroom",
+  "AC",
+  "Geyser",
+  "Peaceful Living",
+  "Balcony",
+  "Desert Cooler",
+  "Gas/Induction",
+  "Fridge",
+  "Laundry/Washing Machine",
+  "Bed + Mattress",
+  "TV/LED",
+  "Wardrobe/Almirah",
 ];
 
+
+// =====================
 // Additional facilities list
+// =====================
 export const extrasList = [
-  "Kitchen Amenities", "Table-Chair", "Library", "First Aid Medical Facility", "Cleaning", "GYM"
+  "Kitchen Amenities",
+  "Table-Chair",
+  "Library",
+  "First Aid Medical Facility",
+  "Cleaning",
+  "GYM",
 ];
+
 
 export const pgdetails = [
   {
     id: 1,
     name: "Sunrise PG",
     location: "Nadiad",
-    address: "123 MG Road, Nadiad",
+    gender: "Male",
+    rating: 4.3,
 
     startingPrice: "₹4500 / month",
+    startingPriceNumber: 4500,
+
+    roomPricing: { single: 6500, double: 4500 },
 
     amenities: ["WiFi", "Laundry", "Meals"],
     facilities: ["WiFi", "Laundry", "Meals", "Common Room", "Hot Water"],
@@ -217,41 +274,273 @@ export const pgdetails = [
     ],
 
     sharing: [
-      { type: "Single Sharing", price: "₹6500 / month" },
-      { type: "Double Sharing", price: "₹4500 / month" },
+      { type: "Single Sharing", price: 6500 },
+      { type: "Double Sharing", price: 4500 },
     ],
 
-    gender: "Male",
-    rating: 4.3,
-
-    image: "/images/sunrise-pg.jpg",
+    image: "/images/serviceImage/availablePGsImg/sunriseimg/roomimg3.jpeg",
     roomImages: [
-      "/images/sunriseimg/roomimg1.jpeg",
-      "/images/sunriseimg/roomimg2.jpeg",
-      "/images/sunriseimg/roomimg3.jpeg",
+      "/images/serviceImage/availablePGsImg/sunriseimg/roomimg3.jpeg",
+      "/images/serviceImage/availablePGsImg/sunriseimg/roomimg2.jpeg",
+      "/images/serviceImage/availablePGsImg/sunriseimg/roomimg1.jpeg",
     ],
   },
+
   {
     id: 2,
     name: "GreenNest PG",
     location: "Ahmedabad",
-    address: "45 Green Street, Ahmedabad",
-    price: "₹5500/month",
-    rent: 5500,
+    gender: "Female",
+    rating: 4.7,
+
+    startingPrice: "₹5500 / month",
+    startingPriceNumber: 5500,
+
+    roomPricing: { single: 7000, double: 5500 },
+
     amenities: ["AC", "Parking", "Security"],
     facilities: ["AC", "Parking", "Security", "Gym", "Common Kitchen"],
+
     ownerName: "Mrs. Seema Shah",
     ownerContact: "9123456780",
+
     rulesList: [
       { icon: "noguest", text: "No guests allowed" },
       { icon: "clean", text: "Keep the premises clean" },
     ],
+
+    sharing: [
+      { type: "Single Sharing", price: 7000 },
+      { type: "Double Sharing", price: 5500 },
+    ],
+
+    image: "/images/serviceImage/availablePGsImg/greeNestImg/greenNest2.jpg",
+    roomImages: [
+      "/images/serviceImage/availablePGsImg/greeNestImg/greenNest2.jpg",
+      "/images/serviceImage/availablePGsImg/greeNestImg/GreenNest3.jpg",
+      "/images/serviceImage/availablePGsImg/greeNestImg/greenNest1.jpg",
+    ],
+  },
+
+  {
+    id: 3,
+    name: "Shree PG",
+    location: "Surat",
+    gender: "Male",
+    rating: 4.4,
+
+    startingPrice: "₹4800 / month",
+    startingPriceNumber: 4800,
+
+    roomPricing: { single: 6500, double: 4800 },
+
+    amenities: ["WiFi", "Meals", "Security"],
+    facilities: ["WiFi", "Meals", "Security", "Laundry", "Common Room"],
+
+    ownerName: "Mr. Ketan Joshi",
+    ownerContact: "9876543211",
+
+    rulesList: [
+      { icon: "nosmoke", text: "No smoking" },
+      { icon: "clean", text: "Maintain cleanliness" },
+    ],
+
+    sharing: [
+      { type: "Single Sharing", price: 6500 },
+      { type: "Double Sharing", price: 4800 },
+    ],
+
+    image: "/images/serviceImage/availablePGsImg/shreeImg/shree1.jpg",
+    roomImages: [
+      "/images/serviceImage/availablePGsImg/shreeImg/shree2.jpg",
+      "/images/serviceImage/availablePGsImg/shreeImg/shree3.jpg",
+      "/images/serviceImage/availablePGsImg/shreeImg/shree1.jpg",
+    ],
+  },
+
+  {
+    id: 4,
+    name: "Harmony PG",
+    location: "Rajkot",
     gender: "Female",
-    rating: 4.7,
-    image: "/images/greennest-pg.jpg",
-    roomImages: []
+    rating: 4.5,
+
+    startingPrice: "₹5000 / month",
+    startingPriceNumber: 5000,
+
+    roomPricing: { single: 7000, double: 5000 },
+
+    amenities: ["AC", "WiFi", "Meals"],
+    facilities: ["AC", "WiFi", "Meals", "Study Room", "Security"],
+
+    ownerName: "Ms. Priya Trivedi",
+    ownerContact: "9876543212",
+
+    rulesList: [
+      { icon: "music", text: "No loud music" },
+      { icon: "noguest", text: "No guests allowed" },
+    ],
+
+    sharing: [
+      { type: "Single Sharing", price: 7000 },
+      { type: "Double Sharing", price: 5000 },
+    ],
+
+    image: "/images/serviceImage/availablePGsImg/harmonyimg/haarmony1.jpg",
+    roomImages: [
+      "/images/serviceImage/availablePGsImg/harmonyimg/harmony2.jpg",
+      "/images/serviceImage/availablePGsImg/harmonyimg/harmony3.jpg",
+      "/images/serviceImage/availablePGsImg/harmonyimg/haarmony1.jpg",
+    ],
+  },
+
+  {
+    id: 5,
+    name: "Lotus PG",
+    location: "Bhavnagar",
+    gender: "Male",
+    rating: 4.1,
+
+    startingPrice: "₹4200 / month",
+    startingPriceNumber: 4200,
+
+    roomPricing: { single: 6000, double: 4200 },
+
+    amenities: ["WiFi", "Laundry"],
+    facilities: ["WiFi", "Laundry", "Meals", "Security"],
+
+    ownerName: "Mr. Arvind Desai",
+    ownerContact: "9876543213",
+
+    rulesList: [
+      { icon: "clean", text: "Keep rooms clean" },
+      { icon: "nosmoke", text: "No smoking" },
+    ],
+
+    sharing: [
+      { type: "Single Sharing", price: 6000 },
+      { type: "Double Sharing", price: 4200 },
+    ],
+
+    image: "/images/serviceImage/availablePGsImg/lotusImg/lotus1.jpg",
+    roomImages: [
+      "/images/serviceImage/availablePGsImg/lotusImg/lotus2.jpg",
+      "/images/serviceImage/availablePGsImg/lotusImg/lotus3.jpg",
+      "/images/serviceImage/availablePGsImg/lotusImg/lotus1.jpg",
+    ],
+  },
+
+  {
+    id: 6,
+    name: "Pearl PG",
+    location: "Anand",
+    gender: "Female",
+    rating: 4.2,
+
+    startingPrice: "₹4700 / month",
+    startingPriceNumber: 4700,
+
+    roomPricing: { single: 6500, double: 4700 },
+
+    amenities: ["WiFi", "Meals", "Parking"],
+    facilities: ["WiFi", "Meals", "Parking", "Security"],
+
+    ownerName: "Mrs. Neha Shah",
+    ownerContact: "9876543214",
+
+    rulesList: [
+      { icon: "noguest", text: "No guests allowed" },
+      { icon: "clean", text: "Maintain cleanliness" },
+    ],
+
+    sharing: [
+      { type: "Single Sharing", price: 6500 },
+      { type: "Double Sharing", price: 4700 },
+    ],
+
+    image: "/images/serviceImage/availablePGsImg/pearlImg/pearl3.jpeg",
+    roomImages: [
+      "/images/serviceImage/availablePGsImg/pearlImg/pearl2.jpeg",
+      "/images/serviceImage/availablePGsImg/pearlImg/img3.jpg",
+      "/images/serviceImage/availablePGsImg/pearlImg/pearl1.jpg",
+      "/images/serviceImage/availablePGsImg/pearlImg/pearl3.jpeg",
+
+    ],
+  },
+
+  {
+    id: 7,
+    name: "Skyline PG",
+    location: "Gandhinagar",
+    gender: "Male",
+    rating: 4.6,
+
+    startingPrice: "₹5300 / month",
+    startingPriceNumber: 5300,
+
+    roomPricing: { single: 7000, double: 5300 },
+
+    amenities: ["AC", "WiFi", "Security"],
+    facilities: ["AC", "WiFi", "Security", "Gym"],
+
+    ownerName: "Mr. Manish Patel",
+    ownerContact: "9876543215",
+
+    rulesList: [
+      { icon: "nosmoke", text: "No smoking" },
+      { icon: "music", text: "Maintain silence after 10 PM" },
+    ],
+
+    sharing: [
+      { type: "Single Sharing", price: 7000 },
+      { type: "Double Sharing", price: 5300 },
+    ],
+
+    image: "/images/serviceImage/availablePGsImg/skylineImg/skyline2.jpeg",
+    roomImages: [
+      "/images/serviceImage/availablePGsImg/skylineImg/skyline2.jpeg",
+      "/images/serviceImage/availablePGsImg/skylineImg/img5.jpg",
+      "/images/serviceImage/availablePGsImg/skylineImg/skyline1.jpeg",
+    ],
+  },
+
+  {
+    id: 8,
+    name: "RoyalStay PG",
+    location: "Junagadh",
+    gender: "Female",
+    rating: 4.3,
+
+    startingPrice: "₹4600 / month",
+    startingPriceNumber: 4600,
+
+    roomPricing: { single: 6500, double: 4600 },
+
+    amenities: ["WiFi", "Meals", "Laundry"],
+    facilities: ["WiFi", "Meals", "Laundry", "Security"],
+
+    ownerName: "Ms. Rupal Mehta",
+    ownerContact: "9876543216",
+
+    rulesList: [
+      { icon: "nopet", text: "No pets allowed" },
+      { icon: "clean", text: "Keep premises clean" },
+    ],
+
+    sharing: [
+      { type: "Single Sharing", price: 6500 },
+      { type: "Double Sharing", price: 4600 },
+    ],
+
+    image: "/images/serviceImage/availablePGsImg/royalstayImg/royalstay2.jpg",
+    roomImages: [
+      "/images/serviceImage/availablePGsImg/royalstayImg/royalstay2.jpg",
+      "/images/serviceImage/availablePGsImg/royalstayImg/royalstay3.jpg",
+      "/images/serviceImage/availablePGsImg/royalstayImg/royalstay1.jpg",
+    ],
   },
 ];
+
 
 export const hosteldetails = [
   {
@@ -272,9 +561,17 @@ export const hosteldetails = [
     ],
     gender: "Male",
     rating: 4.2,
-    image: "/images/cityhostel.jpg",
-    roomImages: []
+   image:
+"/images/serviceImage/availableHostelsimg/cityHostelimg/cityhostel2.jpeg",
+
+roomImages: [
+  "/images/serviceImage/availableHostelsimg/cityHostelimg/cityhostel2.jpg",
+  "/images/servicemImage/availableHostelsimg/cityHostelimg/cityhostel1.jpeg",
+  "/images/serviceImage/availableHostelsimg/cityHostelimg/cityhostel3.jpg",
+],
+
   },
+
   {
     id: 101,
     name: "Elite Hostel",
@@ -292,8 +589,99 @@ export const hosteldetails = [
     ],
     gender: "Female",
     rating: 4.6,
-    image: "/images/elitehostel.jpg",
-    roomImages: []
+    image:
+"/images/serviceImage/availableHostelsimg/eliteHostelimg/elitehostel1.jpg",
+
+roomImages: [
+  "/images/serviceImage/availableHostelsimg/eliteHostelimg/elitehostel1.jpg",
+  "/images/serviceImage/availableHostelsimg/eliteHostelimg/elite2.jpeg",
+  "/images/serviceImage/availableHostelsimg/eliteHostelimg/elite3.jpeg",
+],
+
+  },
+
+  {
+    id: 103,
+    name: "RiverView Hostel",
+    location: "Surat",
+    address: "12 Riverside Road, Surat",
+    price: "₹4500/month",
+    rent: 4500,
+    amenities: ["WiFi", "Meals", "Security"],
+    facilities: ["WiFi", "Meals", "Security", "Laundry", "Common Room"],
+    ownerName: "Mr. Harsh Patel",
+    ownerContact: "9876543217",
+    rulesList: [
+      { icon: "nosmoke", text: "No smoking" },
+      { icon: "noguest", text: "No guests allowed" },
+    ],
+    gender: "Male",
+    rating: 4.3,
+    image:
+"/images/serviceImage/availableHostelsimg/riverviewHostelimg/riverview1.jpeg",
+
+roomImages: [
+  "/images/serviceImage/availableHostelsimg/riverviewHostelimg/riverview1.jpeg",
+  "/images/serviceImage/availableHostelsimg/riverviewHostelimg/riverview2.jpeg",
+  "/images/serviceImage/availableHostelsimg/riverviewHostelimg/riverview3.jpeg",
+],
+
+  },
+
+  {
+    id: 104,
+    name: "BrightStay Hostel",
+    location: "Rajkot",
+    address: "78 College Road, Rajkot",
+    price: "₹5000/month",
+    rent: 5000,
+    amenities: ["AC", "WiFi", "Meals"],
+    facilities: ["AC", "WiFi", "Meals", "Study Room", "Security"],
+    ownerName: "Ms. Kavita Joshi",
+    ownerContact: "9876543218",
+    rulesList: [
+      { icon: "music", text: "No loud music" },
+      { icon: "clean", text: "Maintain cleanliness" },
+    ],
+    gender: "Female",
+    rating: 4.5,
+   image:
+"/images/serviceImage/availableHostelsimg/brightstayHostelimg/brightstay1.jpeg",
+
+roomImages: [
+  "/images/serviceImage/availableHostelsimg/brightstayHostelimg/brightstay1.jpeg",
+  "/images/serviceImage/availableHostelsimg/brightstayHostelimg/brightstay2.jpeg",
+  "/images/serviceImage/availableHostelsimg/brightstayHostelimg/brightstay3.jpeg",
+],
+
+  },
+
+  {
+    id: 105,
+    name: "OceanView Hostel",
+    location: "Bhavnagar",
+    address: "56 Seaside Road, Bhavnagar",
+    price: "₹4200/month",
+    rent: 4200,
+    amenities: ["WiFi", "Laundry"],
+    facilities: ["WiFi", "Laundry", "Meals", "Security"],
+    ownerName: "Mr. Rajesh Shah",
+    ownerContact: "9876543219",
+    rulesList: [
+      { icon: "clean", text: "Keep rooms clean" },
+      { icon: "nosmoke", text: "No smoking" },
+    ],
+    gender: "Male",
+    rating: 4.1,
+   image:
+"/images/serviceImage/availableHostelsimg/oceanviewHostelImg/oceanview1.jpeg",
+
+roomImages: [
+  "/images/serviceImage/availableHostelsimg/oceanviewHostelImg/oceanview1.jpeg",
+  "/images/serviceImage/availableHostelsimg/oceanviewHostelImg/oceanview2.jpeg",
+  "/images/serviceImage/availableHostelsimg/oceanviewHostelImg/oceanview3.jpeg",
+],
+
   },
 ];
 

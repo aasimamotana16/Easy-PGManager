@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Navbar from "../../components/navbar";
 import ImageCarousel1 from "../../components/imageCarousel";
 
@@ -13,9 +14,42 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
 
+  const navigate = useNavigate();
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log({ role, email, password, rememberMe });
+
+    /* ================= USER LOGIN (DEV MODE) ================= */
+    if (role === "user") {
+      const mockUser = {
+        id: 1,
+        name: "Asima Motana",
+        email: email || "asima@example.com",
+        role: "user",
+      };
+
+      localStorage.setItem("user", JSON.stringify(mockUser));
+      localStorage.removeItem("owner"); // safety
+      navigate("/user/dashboard");
+    }
+
+    /* ================= OWNER LOGIN (DEV MODE) ================= */
+    if (role === "owner") {
+      const mockOwner = {
+        id: 101,
+        name: "Demo Owner",
+        email: email || "owner@example.com",
+        role: "owner",
+      };
+
+      localStorage.setItem("owner", JSON.stringify(mockOwner));
+      localStorage.removeItem("user"); // safety
+      navigate("/owner/dashboard");
+    }
+
+    if (rememberMe) {
+      localStorage.setItem("rememberMe", "true");
+    }
   };
 
   return (
@@ -136,7 +170,7 @@ const Login = () => {
                   </a>.
                 </p>
 
-                {/* Sign Up Link */}
+                {/* Sign Up */}
                 <p className="text-center mt-6 text-text-secondary text-sm sm:text-base">
                   Don’t have an account?{" "}
                   <a
