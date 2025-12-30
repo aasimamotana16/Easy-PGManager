@@ -175,9 +175,12 @@ export const genderOptions = [
   { label: "Any", value: "Any" },
   { label: "Boys", value: "Boys" },
   { label: "Girls", value: "Girls" },
-  { label: "Co-living", value: "Co-living" },
 ];
-
+export const propertyTypes = [
+  { label: "PG", value: "PG" },
+  { label: "Hostel", value: "Hostel" },
+  { label: "Flat", value: "Flat" },
+];
 
 // =====================
 // Occupancy options

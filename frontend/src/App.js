@@ -50,13 +50,16 @@ import {
 import OwnerDashboardLayout from "./owner/dashboard/layout";
 import OwnerDashboardHome from "./owner/dashboard/dashboardHome";
 import PgManagement from "./owner/dashboard/pgManagment";
+import AddProperty from "./owner/dashboard/pgManagment/addProperty";
 import RoomManagement from "./owner/dashboard/pgManagment/roomManagement";
+import AddRooms from "./owner/dashboard/pgManagment/addRooms"; 
 import TenantManagement from "./owner/dashboard/tenantManagement";
 import OAgreements from "./owner/dashboard/oAgreements";
 import OSupport from "./owner/dashboard/oSupport";
-//import Bookings from "./owner/dashboard/oBookings";
 import Earnings from "./owner/dashboard/totalEarnings";
 import OwnerProfile from "./owner/dashboard/profileStatus";
+import SubmitApproval from "./owner/dashboard/pgManagment/submitApproval";
+import SetRoomPrice from "./owner/dashboard/pgManagment/roomPrice";
 
 /* ================= PROTECTED ROUTES ================= */
 
@@ -74,7 +77,7 @@ const OwnerProtectedRoute = ({ children }) => {
   return children;
 };
 
-// Booking flow protected (user only)
+// Booking flow protected
 const ProtectedBookingRoute = ({ children }) => {
   const user = JSON.parse(localStorage.getItem("user"));
   if (!user) return <Navigate to="/login" replace />;
@@ -178,12 +181,17 @@ function App() {
           >
             <Route index element={<OwnerDashboardHome />} />
             <Route path="pgManagment" element={<PgManagement />} />
+            <Route path="pgManagment/addProperty" element={<AddProperty />} />
+            <Route path="pgManagment/addRooms" element={<AddRooms />} /> {/* ✅ NEW */}
             <Route path="pgs/rooms" element={<RoomManagement />} />
             <Route path="tenant-management" element={<TenantManagement />} />
             <Route path="agreements" element={<OAgreements />} />
             <Route path="support" element={<OSupport />} />
             <Route path="earnings" element={<Earnings />} />
             <Route path="profile" element={<OwnerProfile />} />
+            <Route path="pgManagment/submitApproval" element={<SubmitApproval/>}/>
+            <Route path="pgManagment/roomManagement" element={<RoomManagement/>}/>
+            <Route path="pgManagment/roomPrice" element={<SetRoomPrice/>}/>
           </Route>
 
           {/* ================= FALLBACK ================= */}

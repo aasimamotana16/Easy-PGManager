@@ -6,15 +6,14 @@ const OwnerDashboardLayout = () => {
   return (
     <div className="flex min-h-screen bg-background.DEFAULT">
       {/* Sidebar */}
-      <aside className="w-64 bg-card border-r border-border hidden md:block">
+      <aside className="w-64 bg-primarySoft border-r border-border hidden md:block">
         <div className="p-6 text-xl font-semibold text-primary">
           Owner Dashboard
         </div>
 
         <nav className="px-4 space-y-2">
           <MenuLink to="/owner/dashboard" label="Dashboard" />
-          <MenuLink to="/owner/dashboard/pgManagement" label="My PGs" />
-          <MenuLink to="/owner/dashboard/pgManagement/rooms" label="Rooms" />
+          <MenuLink to="/owner/dashboard/pgManagment" label="My PGs" />
           <MenuLink to="/owner/dashboard/tenantManagement" label="Tenants" />
           <MenuLink to="/owner/dashboard/oBookings" label="Bookings" />
           <MenuLink to="/owner/dashboard/totalEarnings" label="Earnings" />
