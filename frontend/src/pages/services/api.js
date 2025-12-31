@@ -1,7 +1,7 @@
 import axios from "axios";
 
 /**
- * Base Axios instance
+ * Base axios instance
  * Backend running on port 5000
  */
 const API = axios.create({
@@ -30,7 +30,7 @@ export const getCities = () => API.get("/cities");
 export const getFaqs = () => API.get("/faqs"); // fixed plural to match your route
 
 /* =========================
-   FEATURES / HOME APIs
+   FEATURES / HOME page APIs
 ========================= */
 export const getHomeFeatures = () => API.get("/features");
 
@@ -53,7 +53,7 @@ export const createBooking = (bookingData) => API.post("/bookings/create", booki
 // Rooms
 export const getAllRooms = () => API.get("/rooms/all");
 export const getRoom = (roomId) => API.get(`/rooms/${roomId}`);
-export const createRoom = (roomData) => API.post("/rooms/create", roomData);
+export const createRoom = (roomData) => API.post("/rooms/create",roomData);
 
 // Payments
 export const payRent = (paymentData) => API.post("/payments/pay-rent", paymentData);
@@ -62,5 +62,4 @@ export const getAllPayments = () => API.get("/payments/all");
 // Agreements
 export const getAgreement = (bookingId) => API.get(`/agreements/${bookingId}`);
 export const createAgreement = (agreementData) => API.post("/agreements/create", agreementData);
-
-export default API;
+export default API; 
