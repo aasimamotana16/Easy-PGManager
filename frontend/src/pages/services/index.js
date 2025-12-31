@@ -6,7 +6,7 @@ import HostelListings from "./hostelListing";
 import Filters from "./servicesFilter";
 
 import { services, pgdetails, hosteldetails } from "../../config/staticData";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 
 export default function Services() {
   const [filters, setFilters] = useState({
@@ -32,7 +32,7 @@ export default function Services() {
     }));
   };
 
-  const applyFilters = (list) => {
+  const applyFilters = useCallback((list) => {
     if (!list) return [];
     return list.filter((item) => {
       if (
@@ -62,7 +62,7 @@ export default function Services() {
       }
       return true;
     });
-  };
+  }, [filters]);
 
   const sortedList = useMemo(() => {
     const sortList = (list) => {
@@ -76,7 +76,7 @@ export default function Services() {
       pg: sortList(applyFilters(pgdetails)),
       hostel: sortList(applyFilters(hosteldetails)),
     };
-  }, [filters]);
+  }, [applyFilters, filters.sortBy]);
 
   return (
     <div className="bg-gray-50 min-h-screen">
