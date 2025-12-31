@@ -43,6 +43,37 @@ const AddProperty = () => {
     },
   });
 
+  // 🔒 validation helper
+  const validateForm = () => {
+    if (!formData.name.trim()) return "Property Name is required";
+    if (!formData.propertyType) return "Property Type is required";
+    if (!formData.forWhom) return "Please select For whom";
+    if (!formData.totalFloors || formData.totalFloors <= 0)
+      return "Enter valid Total Floors";
+    if (!formData.description.trim())
+      return "Description is required";
+
+    if (!formData.city.trim()) return "City is required";
+    if (!formData.address.trim()) return "Full Address is required";
+    if (!/^\d{6}$/.test(formData.pincode))
+      return "Enter valid 6 digit Pincode";
+
+    if (formData.facilities.length === 0)
+      return "Select at least one Facility";
+
+    if (!formData.rules.curfew)
+      return "Curfew Time is required";
+
+    if (!formData.proofDocuments.aadhaar)
+      return "Aadhaar document required";
+    if (!formData.proofDocuments.electricityBill)
+      return "Electricity Bill required";
+    if (!formData.proofDocuments.propertyTax)
+      return "Property Tax document required";
+
+    return null;
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -89,10 +120,18 @@ const AddProperty = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+
+    const error = validateForm();
+    if (error) {
+      alert(error); // ⛔ stop submit
+      return;
+    }
+
     console.log("ADD PROPERTY DATA 👉", formData);
 
-    // Navigate to AddRooms page after saving property
-    navigate("/owner/dashBoard/pgManagment/addRooms", { state: { propertyData: formData } });
+    navigate("/owner/dashBoard/pgManagment/addRooms", {
+      state: { propertyData: formData },
+    });
   };
 
   return (
@@ -104,58 +143,21 @@ const AddProperty = () => {
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* ======= First Row ======= */}
         <div className="flex flex-wrap gap-6 items-stretch">
-          {/* Basic Details */}
           <div className="flex-1 min-w-[350px]">
             <CFormCard className="border border-gray-400 h-full relative">
               <span className="absolute -top-3 left-4 bg-white px-2 font-semibold text-gray-700">
                 Basic Details
               </span>
               <div className="mt-4 space-y-3">
-                <CInput
-                  label="Property Name"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  placeholder="Enter property name"
-                  required
-                />
-                <CSelect
-                  label="Property Type"
-                  name="propertyType"
-                  value={formData.propertyType}
-                  onChange={handleChange}
-                  options={propertyTypes}
-                  required
-                />
-                <CSelect
-                  label="For"
-                  name="forWhom"
-                  value={formData.forWhom}
-                  onChange={handleChange}
-                  options={genderOptions}
-                  required
-                />
-                <CInput
-                  label="Total Floors"
-                  type="number"
-                  name="totalFloors"
-                  value={formData.totalFloors}
-                  onChange={handleChange}
-                />
-                <CInput
-                  type="textarea"
-                  label="Description"
-                  name="description"
-                  value={formData.description}
-                  onChange={handleChange}
-                  rows={6}
-                  placeholder="Enter property description"
-                />
+                <CInput label="Property Name" name="name" value={formData.name} onChange={handleChange} placeholder="Enter property name" required />
+                <CSelect label="Property Type" name="propertyType" value={formData.propertyType} onChange={handleChange} options={propertyTypes} required />
+                <CSelect label="For" name="forWhom" value={formData.forWhom} onChange={handleChange} options={genderOptions} required />
+                <CInput label="Total Floors" type="number" name="totalFloors" value={formData.totalFloors} onChange={handleChange} />
+                <CInput type="textarea" label="Description" name="description" value={formData.description} onChange={handleChange} rows={6} placeholder="Enter property description" />
               </div>
             </CFormCard>
           </div>
 
-          {/* Location */}
           <div className="flex-1 min-w-[400px]">
             <CFormCard className="border border-gray-400 h-full relative">
               <span className="absolute -top-3 left-4 bg-white px-2 font-semibold text-gray-700">
@@ -164,15 +166,7 @@ const AddProperty = () => {
               <div className="mt-4 space-y-3">
                 <CInput label="City" name="city" value={formData.city} onChange={handleChange} required />
                 <CInput label="Area" name="area" value={formData.area} onChange={handleChange} />
-                <CInput
-                  type="textarea"
-                  label="Full Address"
-                  name="address"
-                  value={formData.address}
-                  onChange={handleChange}
-                  rows={4}
-                  required
-                />
+                <CInput type="textarea" label="Full Address" name="address" value={formData.address} onChange={handleChange} rows={4} required />
                 <CInput label="Pincode" name="pincode" value={formData.pincode} onChange={handleChange} />
               </div>
             </CFormCard>
@@ -181,7 +175,6 @@ const AddProperty = () => {
 
         {/* ======= Second Row ======= */}
         <div className="flex flex-wrap gap-6 items-stretch">
-          {/* Facilities */}
           <div className="flex-1 min-w-[350px]">
             <CFormCard className="border border-gray-400 h-full relative">
               <span className="absolute -top-3 left-4 bg-white px-2 font-semibold text-gray-700">
@@ -190,12 +183,7 @@ const AddProperty = () => {
               <div className="mt-4">
                 {facilitiesList.map((item) => (
                   <label key={item} className="block mb-2">
-                    <input
-                      type="checkbox"
-                      className="mr-2"
-                      checked={formData.facilities.includes(item)}
-                      onChange={() => toggleFacility(item)}
-                    />
+                    <input type="checkbox" className="mr-2" checked={formData.facilities.includes(item)} onChange={() => toggleFacility(item)} />
                     {item}
                   </label>
                 ))}
@@ -203,7 +191,6 @@ const AddProperty = () => {
             </CFormCard>
           </div>
 
-          {/* Rules */}
           <div className="flex-1 min-w-[350px]">
             <CFormCard className="border border-gray-400 h-full relative">
               <span className="absolute -top-3 left-4 bg-white px-2 font-semibold text-gray-700">
@@ -212,21 +199,11 @@ const AddProperty = () => {
               <div className="mt-4">
                 {rulesList.map((rule) => (
                   <label key={rule.key} className="block mb-2">
-                    <input
-                      type="checkbox"
-                      className="mr-2"
-                      checked={formData.rules[rule.key]}
-                      onChange={(e) => updateRule(rule.key, e.target.checked)}
-                    />
+                    <input type="checkbox" className="mr-2" checked={formData.rules[rule.key]} onChange={(e) => updateRule(rule.key, e.target.checked)} />
                     {rule.label}
                   </label>
                 ))}
-                <CInput
-                  type="time"
-                  label="Curfew Time"
-                  value={formData.rules.curfew}
-                  onChange={(e) => updateRule("curfew", e.target.value)}
-                />
+                <CInput type="time" label="Curfew Time" value={formData.rules.curfew} onChange={(e) => updateRule("curfew", e.target.value)} />
               </div>
             </CFormCard>
           </div>
@@ -241,19 +218,9 @@ const AddProperty = () => {
             {["aadhaar", "electricityBill", "propertyTax"].map((key) => (
               <div key={key} className="flex items-center gap-4">
                 <label className="font-bold">
-                  {key === "aadhaar"
-                    ? "Aadhaar Card"
-                    : key === "electricityBill"
-                    ? "Electricity Bill"
-                    : "Property Tax Document"}
-                  :
+                  {key === "aadhaar" ? "Aadhaar Card" : key === "electricityBill" ? "Electricity Bill" : "Property Tax Document"}:
                 </label>
-                <input
-                  type="file"
-                  accept=".jpg,.png,.pdf"
-                  disabled={!!formData.proofDocuments[key]}
-                  onChange={(e) => handleFileChange(e, key)}
-                />
+                <input type="file" accept=".jpg,.png,.pdf" disabled={!!formData.proofDocuments[key]} onChange={(e) => handleFileChange(e, key)} />
                 {formData.proofDocuments[key] && (
                   <>
                     <span className="text-gray-700">{formData.proofDocuments[key].name}</span>

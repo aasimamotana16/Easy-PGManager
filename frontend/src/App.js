@@ -60,7 +60,9 @@ import Earnings from "./owner/dashboard/totalEarnings";
 import OwnerProfile from "./owner/dashboard/profileStatus";
 import SubmitApproval from "./owner/dashboard/pgManagment/submitApproval";
 import SetRoomPrice from "./owner/dashboard/pgManagment/roomPrice";
-
+import ProfileCard from "./owner/dashboard/profileStatus/profileCard";
+import StatsCard from "./owner/dashboard/profileStatus/statCard";
+import ExtraInfoCard from "./owner/dashboard/profileStatus/extraCardinfo";
 /* ================= PROTECTED ROUTES ================= */
 
 // USER protected
@@ -188,10 +190,13 @@ function App() {
             <Route path="agreements" element={<OAgreements />} />
             <Route path="support" element={<OSupport />} />
             <Route path="earnings" element={<Earnings />} />
-            <Route path="profile" element={<OwnerProfile />} />
+            <Route path="profileStatus" element={<OwnerProfile />} />
             <Route path="pgManagment/submitApproval" element={<SubmitApproval/>}/>
             <Route path="pgManagment/roomManagement" element={<RoomManagement/>}/>
             <Route path="pgManagment/roomPrice" element={<SetRoomPrice/>}/>
+            <Route path="profileStatus/profileCard" element={<ProfileCard/>}/>
+            <Route path="profileStatus/statCard" element={<StatsCard/>}/>
+            <Route path="profileStatus/extraCardinfo" element={<ExtraInfoCard/>}/>
           </Route>
 
           {/* ================= FALLBACK ================= */}
