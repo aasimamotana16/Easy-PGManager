@@ -1,5 +1,8 @@
-// src/pages/login/resetPassword.js
 import React, { useState } from "react";
+// 1. ADD THESE IMPORTS
+import { useParams, useNavigate } from "react-router-dom";
+import { resetPassword } from "../../services/api"; 
+
 import Navbar from "../../components/navbar";
 import CFormCard from "../../components/cFormCard";
 import CInput from "../../components/cInput";
@@ -8,15 +11,29 @@ import CButton from "../../components/cButton";
 const ResetPassword = () => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  
+  // 2. INITIALIZE HOOKS
+  const { token } = useParams(); 
+  const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  // 3. MAKE THIS FUNCTION ASYNC
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    
     if (password !== confirmPassword) {
       alert("Passwords do not match");
       return;
     }
-    console.log("Resetting password to:", password);
-    // Trigger backend logic here
+
+    try {
+      // 4. CALL THE BACKEND
+      const response = await resetPassword(token, { password });
+      alert(response.data.message || "Password updated successfully!");
+      navigate("/login"); 
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || "Invalid or expired link. Please try again.");
+    }
   };
 
   return (

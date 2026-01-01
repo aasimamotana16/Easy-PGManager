@@ -2,24 +2,51 @@ import React, { useState } from "react";
 import Navbar from "../../components/navbar";
 import ImageCarousel1 from "../../components/imageCarousel";
 
+import { useNavigate } from "react-router-dom";
+
 import CFormCard from "../../components/cFormCard";
 import CInput from "../../components/cInput";
 import CButton from "../../components/cButton";
-
+import { registerUser } from  "../../services/api";
 const SignUp = () => {
+  const navigate = useNavigate();
   const [role, setRole] = useState("user");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log("Sign up clicked");
+
+    // Optional: Add a check for confirmPassword if your partner has that state
     if (password !== confirmPassword) {
-      alert("Passwords do not match!");
+      alert("Passwords do not match");
       return;
     }
-    console.log({ role, name, email, password });
+
+    try {
+      // Calls your registerUser function in api.js
+      await registerUser({
+        name,
+        email,
+        password,
+        role,
+      });
+
+      alert("Signup successful! Redirecting to login...");
+      
+      // Redirect to login page after successful signup 
+
+      navigate("/login"); 
+
+    } catch (err) {
+      console.error(err);
+      // This shows the real error from your backend (like 'User already exists')
+      const errorMessage = err.response?.data?.message || "Signup failed";
+      alert(errorMessage);
+    }
   };
 
   return (

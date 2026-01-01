@@ -17,6 +17,7 @@ import Contact from "./pages/contact";
 import Services from "./pages/services";
 import FAQ from "./pages/faq";
 import { PGOverview, PGFullDetails } from "./pages/detailsPage";
+import SearchResults from "./pages/searchResults";
 
 /* ================= BOOKING ================= */
 import BookingPage from "./pages/booking";
@@ -97,10 +98,11 @@ function App() {
           <Route path="/signup" element={<SignUp />} />
           <Route path="/about" element={<About />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/reset-password/:token" element={<ResetPassword />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/services" element={<Services />} />
           <Route path="/faq" element={<FAQ />} />
+          <Route path="/search-results" element={< SearchResults />} />
 
           {/* ================= PG DETAILS ================= */}
           <Route path="/pg/:id" element={<PGOverview />} />

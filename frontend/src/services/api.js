@@ -1,0 +1,69 @@
+import axios from "axios";
+
+/**
+ * Base axios instance
+ * Backend running on port 5000
+ */
+const API = axios.create({
+  baseURL: "http://localhost:5000",
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
+
+/* =========================
+   AUTH APIs
+========================= */
+export const registerUser = (data) => API.post("/auth/signup", data);
+export const loginUser = (data) => API.post("/auth/login", data);
+export const forgotPassword = (data) => API.post("/auth/forgot-password", data);
+export const resetPassword = (token, data) => API.post(`/auth/reset-password/${token}`, data);
+
+/* =========================
+   CITY APIs
+========================= */
+export const getCities = () => API.get("/cities");
+
+/* =========================
+   FAQ APIs
+========================= */
+export const getFaqs = () => API.get("/faqs"); 
+
+/* =========================
+   FEATURES / HOME page APIs
+========================= */
+// This name matches what your HomeFeatures component is looking for
+export const getHomeFeatures = () => API.get("/features");
+
+/* =========================
+   PG SEARCH APIs
+========================= */
+export const searchPGs = (params) => API.get("/pgs/search", { params });
+
+/* =========================
+   USER FLOW / DASHBOARD APIs
+========================= */
+export const getDashboard = () => API.get("/user/dashboard");
+export const getBookings = () => API.get("/bookings/my");
+export const createBooking = (bookingData) => API.post("/bookings/create", bookingData);
+
+/* =========================
+   ROOM APIs
+========================= */
+export const getAllRooms = () => API.get("/rooms/all");
+export const getRoom = (roomId) => API.get(`/rooms/${roomId}`);
+export const createRoom = (roomData) => API.post("/rooms/create", roomData);
+
+/* =========================
+   PAYMENT APIs
+========================= */
+export const payRent = (paymentData) => API.post("/payments/pay-rent", paymentData);
+export const getAllPayments = () => API.get("/payments/all");
+
+/* =========================
+   AGREEMENT APIs
+========================= */
+export const getAgreement = (bookingId) => API.get(`/agreements/${bookingId}`);
+export const createAgreement = (agreementData) => API.post("/agreements/create", agreementData);
+
+export default API;

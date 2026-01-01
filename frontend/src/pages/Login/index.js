@@ -7,6 +7,7 @@ import CFormCard from "../../components/cFormCard";
 import CInput from "../../components/cInput";
 import CButton from "../../components/cButton";
 import CCheckbox from "../../components/cCheckbox";
+import { loginUser } from "../../services/api";
 
 const Login = () => {
   const [role, setRole] = useState("user");
@@ -16,39 +17,40 @@ const Login = () => {
 
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    /* ================= USER LOGIN (DEV MODE) ================= */
-    if (role === "user") {
-      const mockUser = {
-        id: 1,
-        name: "Asima Motana",
-        email: email || "asima@example.com",
-        role: "user",
-      };
-
-      localStorage.setItem("user", JSON.stringify(mockUser));
-      localStorage.removeItem("owner"); // safety
-      navigate("/user/dashboard");
+    if (!email || !password) {
+      alert("Please enter both email and password");
+      return;
     }
 
-    /* ================= OWNER LOGIN (DEV MODE) ================= */
-    if (role === "owner") {
-      const mockOwner = {
-        id: 101,
-        name: "Demo Owner",
-        email: email || "owner@example.com",
-        role: "owner",
-      };
+    try {
+      // 1. Call your real API
+      const response = await loginUser({ email, password, role });
+      const { token, user } = response.data;
 
-      localStorage.setItem("owner", JSON.stringify(mockOwner));
-      localStorage.removeItem("user"); // safety
-      navigate("/owner/dashboard");
-    }
+      // 2. Save the real token
+      localStorage.setItem("token", token);
 
-    if (rememberMe) {
-      localStorage.setItem("rememberMe", "true");
+      // 3. Keep your partner's redirect logic but use real data
+      if (role === "user") {
+        localStorage.setItem("user", JSON.stringify(user));
+        localStorage.removeItem("owner");
+        navigate("/user/dashboard");
+      } else {
+        localStorage.setItem("owner", JSON.stringify(user));
+        localStorage.removeItem("user");
+        navigate("/owner/dashboard");
+      }
+
+      if (rememberMe) {
+        localStorage.setItem("rememberMe", "true");
+      }
+    } catch (err) {
+      console.error(err);
+      // This shows the real error (e.g., "Invalid Email or Password")
+      alert(err.response?.data?.message || "Login failed");
     }
   };
 

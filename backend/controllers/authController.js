@@ -5,17 +5,14 @@ import crypto from "crypto";
 /* ================= REGISTER ================= */
 export const registerUser = async (req, res) => {
   try {
-    const { fullName, email, password, confirmPassword, role } = req.body;
+    const { username, password } = req.body;
 
-    if (!fullName || !email || !password || !confirmPassword) {
-      return res.status(400).json({ message: "All fields are required" });
+    if (!username || !password) {
+      return res.status(400).json({ message: "Username and password are required" });
     }
 
-    if (password !== confirmPassword) {
-      return res.status(400).json({ message: "Passwords do not match" });
-    }
-
-    const existingUser = await User.findOne({ email });
+    // Use username as fullName and create a dummy email
+    const existingUser = await User.findOne({ email: username + "@test.com" });
     if (existingUser) {
       return res.status(400).json({ message: "User already exists" });
     }
@@ -23,10 +20,10 @@ export const registerUser = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = await User.create({
-      fullName,
-      email,
+      fullName: username,
+      email: username + "@test.com",
       password: hashedPassword,
-      role: role || "tenant"
+      role: "tenant" // default role
     });
 
     res.status(201).json({
@@ -47,23 +44,17 @@ export const registerUser = async (req, res) => {
 /* ================= LOGIN ================= */
 export const loginUser = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { username, password } = req.body;
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: username + "@test.com" });
     if (!user) {
-      return res.status(400).json({ message: "Invalid email or password" });
+      return res.status(400).json({ message: "Invalid username or password" });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(400).json({ message: "Invalid email or password" });
+      return res.status(400).json({ message: "Invalid username or password" });
     }
-
-    const roleMap = {
-      tenant: 0,
-      owner: 1,
-      admin: 2
-    };
 
     res.status(200).json({
       message: "Login successful",
@@ -71,8 +62,7 @@ export const loginUser = async (req, res) => {
         id: user._id,
         fullName: user.fullName,
         email: user.email,
-        role: roleMap[user.role],   // numeric role
-        roleName: user.role         // string role
+        role: user.role
       }
     });
 
@@ -85,13 +75,11 @@ export const loginUser = async (req, res) => {
 /* ================= FORGOT PASSWORD ================= */
 export const forgotPassword = async (req, res) => {
   try {
-    const { email } = req.body;
+    const { username } = req.body;
+    const user = await User.findOne({ email: username + "@test.com" });
 
-    const user = await User.findOne({ email });
     if (!user) {
-      return res.json({
-        message: "If email exists, reset link generated"
-      });
+      return res.json({ message: "If username exists, reset link generated" });
     }
 
     const token = crypto.randomBytes(20).toString("hex");
