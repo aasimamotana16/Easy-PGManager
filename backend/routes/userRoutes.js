@@ -1,26 +1,22 @@
-import express from "express";
-import UserDashboard from "../models/userDashboardModel.js";
-
+const express = require("express");
 const router = express.Router();
+const { 
+  registerUser, 
+  loginUser, 
+  getUserProfile, 
+  getUserDashboard 
+} = require("../controllers/userController");
+const { protect } = require("../middleware/authMiddleware");
 
-// Create dashboard (mock)
-router.post("/create", async (req, res) => {
-  try {
-    const dashboard = await UserDashboard.create(req.body);
-    res.json({ success: true, dashboard });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-});
+// --- Public Routes (No token needed) ---
+router.post("/register", registerUser);
+router.post("/login", loginUser);
 
-// Get dashboard data
-router.get("/dashboard", async (req, res) => {
-  try {
-    const data = await UserDashboard.find();
-    res.json({ success: true, data });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-});
+// --- Protected Routes (Token required) ---
+// Route for the main dashboard data
+router.get("/dashboard-stats", protect, getUserDashboard);
 
-export default router;
+// Route for the profile page
+router.get("/profile", protect, getUserProfile);
+
+module.exports = router;

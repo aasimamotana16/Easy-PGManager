@@ -5,7 +5,8 @@ require('dotenv').config();
 
 const authRoutes = require('./routes/authRoutes');
 const cityRoutes = require('./routes/cityRoutes'); // Added this
-const featureRoutes = require("./routes/featuresRoutes");
+const featuresRoutes = require("./routes/featuresRoutes");
+const userRoutes = require("./routes/userRoutes");
 
 const app = express();
 
@@ -21,6 +22,9 @@ mongoose.connect(process.env.MONGO_URI)
 // ROUTES
 app.use('/auth', authRoutes);
 app.use('/cities', cityRoutes); // Added this to match your frontend API call
+
+// Add this near your other app.use statements
+app.use("/api/users", require("./routes/userRoutes"));
 
 const PORT = 5000;
 app.listen(PORT, () => console.log(`Backend running on port ${PORT}`));

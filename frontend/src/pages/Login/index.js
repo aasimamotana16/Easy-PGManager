@@ -41,23 +41,23 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const response = await fetch("https://your-api-url.com/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password, role }),
-      });
+      // Use the API function from your api.js
+      const response = await loginUser({ email, password, role });
+      const data = response.data;
 
-      const data = await response.json();
+      // Check if response is successful (Axios throws error for non-2xx codes)
+      if (data) {
+        // SAVE THE JWT TOKEN - This is what the dashboard needs
+        if (data.token) {
+          localStorage.setItem("token", data.token);
+        }
 
-      if (response.ok && data.success) {
         if (role === "user") {
-          localStorage.setItem("user", JSON.stringify(data.user));
+          localStorage.setItem("user", JSON.stringify(data));
           localStorage.removeItem("owner");
           navigate("/user/dashboard");
         } else if (role === "owner") {
-          localStorage.setItem("owner", JSON.stringify(data.owner));
+          localStorage.setItem("owner", JSON.stringify(data));
           localStorage.removeItem("user");
           navigate("/owner/dashboard");
         }
@@ -65,12 +65,12 @@ const Login = () => {
         if (rememberMe) {
           localStorage.setItem("rememberMe", "true");
         }
-      } else {
-        alert(data.message || "Login failed. Please check your credentials.");
       }
     } catch (error) {
       console.error("Login error:", error);
-      alert("Something went wrong. Please try again later.");
+      // Handle Axios error responses
+      const errorMessage = error.response?.data?.message || "Login failed. Please check your credentials.";
+      alert(errorMessage);
     } finally {
       setLoading(false);
     }

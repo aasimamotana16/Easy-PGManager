@@ -1,11 +1,11 @@
 import React, { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { pgdetails, hosteldetails } from "../../config/staticData";
 import CButton from "../../components/cButton";
 
 const BookingPage = () => {
   const { id } = useParams();
-  const navigate = useNavigate();
+  
 
   // Find the PG by ID
   const pg = [...pgdetails, ...hosteldetails].find(
