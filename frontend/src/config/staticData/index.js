@@ -142,7 +142,14 @@ export const services = [
     description: "Track service requests and manage maintenance schedules efficiently.",
     icon: "🛠️",
   },
+  {
+    id: 4,
+    title: "Verified Listings",
+    description: "Browse verified PGs and hostels with all the details you need.",
+    icon: "📋", // you can replace with another emoji or SVG icon
+  },
 ];
+
 
   export const faqs = [
   {

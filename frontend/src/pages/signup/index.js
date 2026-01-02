@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Navbar from "../../components/navbar";
 import ImageCarousel1 from "../../components/imageCarousel";
 
@@ -12,14 +13,59 @@ const SignUp = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const navigate = useNavigate();
+
+  const validateEmail = (email) => {
+    const re =
+      /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@(([^<>()[\]\\.,;:\s@"]+\.)+[^<>()[\]\\.,;:\s@"]{2,})$/i;
+    return re.test(String(email).toLowerCase());
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Basic Validation
+    if (!name || !email || !password || !confirmPassword) {
+      alert("Please fill in all fields.");
+      return;
+    }
+
+    if (!validateEmail(email)) {
+      alert("Please enter a valid email address.");
+      return;
+    }
+
     if (password !== confirmPassword) {
       alert("Passwords do not match!");
       return;
     }
-    console.log({ role, name, email, password });
+
+    setLoading(true);
+
+    try {
+      // Call your API here
+      const response = await fetch("https://your-api-url.com/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role, name, email, password }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        alert("Sign up successful! Please login.");
+        navigate("/login");
+      } else {
+        alert(data.message || "Sign up failed. Try again.");
+      }
+    } catch (error) {
+      console.error("SignUp Error:", error);
+      alert("Something went wrong. Please try again later.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -47,7 +93,7 @@ const SignUp = () => {
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-2.5 sm:gap-3">
 
-              {/* Role Selector using CButton */}
+              {/* Role Selector */}
               <div className="flex w-full border border-border rounded-md overflow-hidden mb-2">
                 <CButton
                   type="button"
@@ -70,7 +116,7 @@ const SignUp = () => {
                 </CButton>
               </div>
 
-              {/* Inputs with placeholders */}
+              {/* Inputs */}
               <CInput
                 label="Full Name"
                 type="text"
@@ -106,8 +152,9 @@ const SignUp = () => {
                 fullWidth
                 variant="contained"
                 className="mt-1.5 py-2 text-base rounded-md font-medium"
+                disabled={loading}
               >
-                Sign Up
+                {loading ? "Signing Up..." : "Sign Up"}
               </CButton>
             </form>
 

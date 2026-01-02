@@ -34,19 +34,21 @@ const HomeSearch = () => {
               label="Select City"
               value={city}
               onChange={(e) => setCity(e.target.value)}
-              options={["Ahmedabad",
-    "Surat",
-    "Vadodara",
-    "Rajkot",
-    "Bhavnagar",
-    "Jamnagar",
-    "Gandhinagar",
-    "Nadiad",
-    "Anand",
-    "Bharuch",
-    "Valsad",
-    "Vapi",
-    "Navsari",]}
+              options={[
+                { value: "ahmedabad", label: "Ahmedabad" },
+                { value: "surat", label: "Surat" },
+                { value: "vadodara", label: "Vadodara" },
+                { value: "rajkot", label: "Rajkot" },
+                { value: "bhavnagar", label: "Bhavnagar" },
+                { value: "jamnagar", label: "Jamnagar" },
+                { value: "gandhinagar", label: "Gandhinagar" },
+                { value: "nadiad", label: "Nadiad" },
+                { value: "anand", label: "Anand" },
+                { value: "bharuch", label: "Bharuch" },
+                { value: "valsad", label: "Valsad" },
+                { value: "vapi", label: "Vapi" },
+                { value: "navsari", label: "Navsari" },
+              ]}
             />
           </div>
 

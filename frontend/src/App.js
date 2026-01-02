@@ -16,7 +16,10 @@ import ResetPassword from "./pages/Login/resetPassword";
 import Contact from "./pages/contact";
 import Services from "./pages/services";
 import FAQ from "./pages/faq";
-import { PGOverview, PGFullDetails } from "./pages/detailsPage";
+import PGFullDetails, { PGOverview } from "./pages/detailsPage";
+
+/* ================= FIND MY PG ================= */
+import FindMyPg from "./pages/findMypg";
 
 /* ================= BOOKING ================= */
 import BookingPage from "./pages/booking";
@@ -52,7 +55,7 @@ import OwnerDashboardHome from "./owner/dashboard/dashboardHome";
 import PgManagement from "./owner/dashboard/pgManagment";
 import AddProperty from "./owner/dashboard/pgManagment/addProperty";
 import RoomManagement from "./owner/dashboard/pgManagment/roomManagement";
-import AddRooms from "./owner/dashboard/pgManagment/addRooms"; 
+import AddRooms from "./owner/dashboard/pgManagment/addRooms";
 import TenantManagement from "./owner/dashboard/tenantManagement";
 import OAgreements from "./owner/dashboard/oAgreements";
 import OSupport from "./owner/dashboard/oSupport";
@@ -63,6 +66,7 @@ import SetRoomPrice from "./owner/dashboard/pgManagment/roomPrice";
 import ProfileCard from "./owner/dashboard/profileStatus/profileCard";
 import StatsCard from "./owner/dashboard/profileStatus/statCard";
 import ExtraInfoCard from "./owner/dashboard/profileStatus/extraCardinfo";
+
 /* ================= PROTECTED ROUTES ================= */
 
 // USER protected
@@ -95,6 +99,7 @@ function App() {
 
           {/* ================= PUBLIC ROUTES ================= */}
           <Route path="/" element={<Home />} />
+          <Route path="/findMypg" element={<FindMyPg />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<SignUp />} />
           <Route path="/about" element={<About />} />
@@ -184,19 +189,19 @@ function App() {
             <Route index element={<OwnerDashboardHome />} />
             <Route path="pgManagment" element={<PgManagement />} />
             <Route path="pgManagment/addProperty" element={<AddProperty />} />
-            <Route path="pgManagment/addRooms" element={<AddRooms />} /> {/* ✅ NEW */}
+            <Route path="pgManagment/addRooms" element={<AddRooms />} />
             <Route path="pgs/rooms" element={<RoomManagement />} />
             <Route path="tenant-management" element={<TenantManagement />} />
             <Route path="agreements" element={<OAgreements />} />
             <Route path="support" element={<OSupport />} />
             <Route path="earnings" element={<Earnings />} />
             <Route path="profileStatus" element={<OwnerProfile />} />
-            <Route path="pgManagment/submitApproval" element={<SubmitApproval/>}/>
-            <Route path="pgManagment/roomManagement" element={<RoomManagement/>}/>
-            <Route path="pgManagment/roomPrice" element={<SetRoomPrice/>}/>
-            <Route path="profileStatus/profileCard" element={<ProfileCard/>}/>
-            <Route path="profileStatus/statCard" element={<StatsCard/>}/>
-            <Route path="profileStatus/extraCardinfo" element={<ExtraInfoCard/>}/>
+            <Route path="pgManagment/submitApproval" element={<SubmitApproval />} />
+            <Route path="pgManagment/roomManagement" element={<RoomManagement />} />
+            <Route path="pgManagment/roomPrice" element={<SetRoomPrice />} />
+            <Route path="profileStatus/profileCard" element={<ProfileCard />} />
+            <Route path="profileStatus/statCard" element={<StatsCard />} />
+            <Route path="profileStatus/extraCardinfo" element={<ExtraInfoCard />} />
           </Route>
 
           {/* ================= FALLBACK ================= */}

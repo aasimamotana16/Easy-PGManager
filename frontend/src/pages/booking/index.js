@@ -1,126 +1,106 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import Navbar from "../../components/navbar";
-import Footer from "../../components/footer";
-import CButton from "../../components/cButton";
-import CInput from "../../components/cInput";
 import { pgdetails, hosteldetails } from "../../config/staticData";
+import CButton from "../../components/cButton";
 
-const BookingPage = ({ user }) => {
+const BookingPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const property = [...pgdetails, ...hosteldetails].find(
+  // Find the PG by ID
+  const pg = [...pgdetails, ...hosteldetails].find(
     (item) => item.id === parseInt(id)
   );
 
-  useEffect(() => {
-    // Optional login check
-    // if (!user || user.role !== "tenant") {
-    //   navigate("/login");
-    // }
-  }, [user, navigate]);
+  const [persons, setPersons] = useState(1);
 
-  const [formData, setFormData] = useState({
-    name: user?.name || "",
-    email: user?.email || "",
-    phone: "",
-    checkIn: "",
-    checkOut: "",
-  });
+  if (!pg) return <div className="text-center mt-20">PG not found</div>;
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const increase = () => {
+    if (persons < (pg.sharing?.[0]?.available || 5)) setPersons(persons + 1);
+  };
+  const decrease = () => {
+    if (persons > 1) setPersons(persons - 1);
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    navigate(`/confirm/${id}`, { state: { bookingData: formData } });
-  };
-
-  if (!property) {
-    return (
-      <div className="min-h-screen flex flex-col bg-gray-50">
-        <Navbar />
-        <div className="flex-1 flex items-center justify-center text-center py-32 text-red-500 text-2xl">
-          Property not found!
-        </div>
-        <Footer />
-      </div>
-    );
-  }
+  const totalRent = (pg.sharing?.[0]?.price || 0) * persons;
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50 font-roboto">
-      <Navbar />
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
+      <div className="max-w-md w-full bg-white rounded-xl p-6 shadow-lg">
+        <h2 className="text-2xl font-bold mb-1">Book {pg.name}</h2>
+        <p className="text-gray-500 mb-6">{pg.location}</p>
 
-      {/* Main Content */}
-      <div className="flex-1 w-full px-4 sm:px-6 lg:px-0 py-20 flex justify-center">
-        <div className="w-full max-w-3xl lg:max-w-4xl">
-          <h1 className="text-4xl md:text-4xl font-bold mb-2 text-center">{`Book ${property.name}`}</h1>
-          <p className="text-lg md:text-xl text-gray-600 mb-6 text-center">
-            {property.location} · Rent: {property.price}
-          </p>
-
-          <form
-            onSubmit={handleSubmit}
-            className="bg-white shadow-md rounded-xl p-6 sm:p-8 md:p-10 space-y-4"
-          >
-            <CInput
-              label="Full Name"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              required
-              className="mb-2"
-            />
-            <CInput
-              label="Email Address"
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              required
-              className="mb-2"
-            />
-            <CInput
-              label="Phone Number"
-              name="phone"
-              value={formData.phone}
-              onChange={handleChange}
-              required
-              className="mb-2"
-            />
-            <CInput
-              label="Check-In Date"
-              type="date"
-              name="checkIn"
-              value={formData.checkIn}
-              onChange={handleChange}
-              required
-              className="mb-2"
-            />
-            <CInput
-              label="Check-Out Date"
-              type="date"
-              name="checkOut"
-              value={formData.checkOut}
-              onChange={handleChange}
-              required
-              className="mb-2"
-            />
-
-            <CButton
-              type="submit"
-              className="w-full text-lg md:text-xl mt-2"
-            >
-              Confirm Booking
-            </CButton>
-          </form>
+        {/* Booking Form */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+          <input
+            type="text"
+            placeholder="Full Name"
+            className="w-full p-3 rounded-lg border border-gray-300 text-base sm:text-sm"
+          />
+          <input
+            type="email"
+            placeholder="Email Address"
+            className="w-full p-3 rounded-lg border border-gray-300 text-base sm:text-sm"
+          />
+          <input
+            type="email"
+            placeholder="Email Address"
+            className="w-full p-3 rounded-lg border border-gray-300 text-base sm:text-sm"
+          />
+          <input
+            type="tel"
+            placeholder="Phone Number"
+            className="w-full p-3 rounded-lg border border-gray-300 text-base sm:text-sm"
+          />
+          <input
+            type="date"
+            placeholder="Check-in Date"
+            className="w-full p-3 rounded-lg border border-gray-300 text-base sm:text-sm"
+          />
+          <input
+            type="date"
+            placeholder="Check-out Date"
+            className="w-full p-3 rounded-lg border border-gray-300 text-base sm:text-sm"
+          />
         </div>
-      </div>
 
-      <Footer />
+        {/* Number of Persons */}
+        <div className="flex flex-col sm:flex-row items-center justify-between mb-4 gap-2 sm:gap-0">
+          <span className="text-green-600">
+            {pg.sharing?.[0]?.available || 5} Beds Available
+          </span>
+          <div className="flex items-center gap-2 mt-2 sm:mt-0">
+            <button
+              onClick={decrease}
+              className="px-4 py-2 bg-gray-200 rounded text-lg"
+            >
+              −
+            </button>
+            <span className="text-lg font-medium">{persons}</span>
+            <button
+              onClick={increase}
+              className="px-4 py-2 bg-gray-200 rounded text-lg"
+            >
+              +
+            </button>
+          </div>
+        </div>
+
+        {/* Rent Info */}
+        <div className="bg-gray-100 p-4 rounded mb-4 text-center text-base sm:text-lg">
+          <p>Per Person Rent ₹{pg.sharing?.[0]?.price}/month</p>
+          <p className="font-semibold">Total Rent ₹{totalRent}/month</p>
+        </div>
+
+        <CButton
+          size="lg"
+          className="w-full bg-orange-500 text-white text-lg"
+          onClick={() => alert("Booking Confirmed")}
+        >
+          Confirm Booking
+        </CButton>
+      </div>
     </div>
   );
 };

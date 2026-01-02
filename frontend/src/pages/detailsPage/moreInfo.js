@@ -168,5 +168,4 @@ const PGFullDetails = () => {
     </div>
   );
 };
-
 export default PGFullDetails;

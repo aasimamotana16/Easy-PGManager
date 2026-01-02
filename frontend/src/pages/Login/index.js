@@ -13,42 +13,65 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const validateEmail = (email) => {
+    const re =
+      /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@(([^<>()[\]\\.,;:\s@"]+\.)+[^<>()[\]\\.,;:\s@"]{2,})$/i;
+    return re.test(String(email).toLowerCase());
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    /* ================= USER LOGIN (DEV MODE) ================= */
-    if (role === "user") {
-      const mockUser = {
-        id: 1,
-        name: "Asima Motana",
-        email: email || "asima@example.com",
-        role: "user",
-      };
-
-      localStorage.setItem("user", JSON.stringify(mockUser));
-      localStorage.removeItem("owner"); // safety
-      navigate("/user/dashboard");
+    // Validation
+    if (!email || !password) {
+      alert("Please fill in both email and password.");
+      return;
     }
 
-    /* ================= OWNER LOGIN (DEV MODE) ================= */
-    if (role === "owner") {
-      const mockOwner = {
-        id: 101,
-        name: "Demo Owner",
-        email: email || "owner@example.com",
-        role: "owner",
-      };
-
-      localStorage.setItem("owner", JSON.stringify(mockOwner));
-      localStorage.removeItem("user"); // safety
-      navigate("/owner/dashboard");
+    if (!validateEmail(email)) {
+      alert("Please enter a valid email address.");
+      return;
     }
 
-    if (rememberMe) {
-      localStorage.setItem("rememberMe", "true");
+    setLoading(true);
+
+    try {
+      const response = await fetch("https://your-api-url.com/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password, role }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        if (role === "user") {
+          localStorage.setItem("user", JSON.stringify(data.user));
+          localStorage.removeItem("owner");
+          navigate("/user/dashboard");
+        } else if (role === "owner") {
+          localStorage.setItem("owner", JSON.stringify(data.owner));
+          localStorage.removeItem("user");
+          navigate("/owner/dashboard");
+        }
+
+        if (rememberMe) {
+          localStorage.setItem("rememberMe", "true");
+        }
+      } else {
+        alert(data.message || "Login failed. Please check your credentials.");
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      alert("Something went wrong. Please try again later.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -140,11 +163,12 @@ const Login = () => {
                   {/* Submit Button */}
                   <CButton
                     type="submit"
-                    text="Login"
+                    text={loading ? "Logging in..." : "Login"}
                     fullWidth
                     variant="contained"
                     size="md"
                     className="mt-2"
+                    disabled={loading}
                   />
                 </form>
 
