@@ -3,11 +3,14 @@ import { useNavigate } from "react-router-dom";
 import Navbar from "../../components/navbar";
 import ImageCarousel1 from "../../components/imageCarousel";
 
+import { useNavigate } from "react-router-dom";
+
 import CFormCard from "../../components/cFormCard";
 import CInput from "../../components/cInput";
 import CButton from "../../components/cButton";
-
+import { registerUser } from  "../../services/api";
 const SignUp = () => {
+  const navigate = useNavigate();
   const [role, setRole] = useState("user");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -24,6 +27,7 @@ const SignUp = () => {
   };
 
   const handleSubmit = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     // Basic Validation
@@ -38,7 +42,7 @@ const SignUp = () => {
     }
 
     if (password !== confirmPassword) {
-      alert("Passwords do not match!");
+      alert("Passwords do not match");
       return;
     }
 

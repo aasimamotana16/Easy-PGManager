@@ -1,8 +1,8 @@
-import express from "express";
-import { getFeatures } from "../controllers/featuresController.js";
-
+const express = require("express");
 const router = express.Router();
+const { getHomeFeatures } = require("../controllers/featuresController");
 
-router.get("/", getFeatures);
+// This matches the API.get("/features") call in your api.js
+router.get("/features", getHomeFeatures);
 
-export default router;
+module.exports = router;

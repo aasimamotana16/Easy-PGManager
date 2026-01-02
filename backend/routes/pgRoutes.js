@@ -1,10 +1,8 @@
-
-import express from "express";
-import { searchPGs } from "../controllers/pgController.js";
-
+const express = require('express');
 const router = express.Router();
+const pgController = require('../controllers/pgController');
 
-// SEARCH PGs WITH FILTERS
-router.get("/search", searchPGs);
+// This matches the frontend call: API.get("/pgs/search")
+router.get('/search', pgController.searchPGs);
 
-export default router;
+module.exports = router;
