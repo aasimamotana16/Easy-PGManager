@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { homeBannerStats, features } from "../../../config/staticData";
-import { getHomeFeatures } from "../../../services/api"; 
+import { getHomeFeatures } from "../../../api/api"; 
 import CFormCard from "../../../components/cFormCard";
 import CButton from "../../../components/cButton";
 

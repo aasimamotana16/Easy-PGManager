@@ -7,7 +7,7 @@ import CFormCard from "../../components/cFormCard";
 import CInput from "../../components/cInput";
 import CButton from "../../components/cButton";
 import CCheckbox from "../../components/cCheckbox";
-import { loginUser } from "../../services/api";
+import { loginUser } from "../../api/api";
 
 const Login = () => {
   const [role, setRole] = useState("user");

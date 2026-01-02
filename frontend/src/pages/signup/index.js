@@ -1,24 +1,24 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+
 import Navbar from "../../components/navbar";
 import ImageCarousel1 from "../../components/imageCarousel";
-
-import { useNavigate } from "react-router-dom";
 
 import CFormCard from "../../components/cFormCard";
 import CInput from "../../components/cInput";
 import CButton from "../../components/cButton";
-import { registerUser } from  "../../services/api";
+
+import { registerUser } from "../../api/api";
+
 const SignUp = () => {
   const navigate = useNavigate();
+
   const [role, setRole] = useState("user");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
-
-  const navigate = useNavigate();
 
   const validateEmail = (email) => {
     const re =
@@ -27,10 +27,8 @@ const SignUp = () => {
   };
 
   const handleSubmit = async (e) => {
-  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Basic Validation
     if (!name || !email || !password || !confirmPassword) {
       alert("Please fill in all fields.");
       return;
@@ -42,31 +40,29 @@ const SignUp = () => {
     }
 
     if (password !== confirmPassword) {
-      alert("Passwords do not match");
+      alert("Passwords do not match.");
       return;
     }
 
     setLoading(true);
 
     try {
-      // Call your API here
-      const response = await fetch("https://your-api-url.com/signup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ role, name, email, password }),
+      const response = await registerUser({
+        role,
+        name,
+        email,
+        password,
       });
 
-      const data = await response.json();
-
-      if (response.ok && data.success) {
+      if (response?.data?.success) {
         alert("Sign up successful! Please login.");
         navigate("/login");
       } else {
-        alert(data.message || "Sign up failed. Try again.");
+        alert(response?.data?.message || "Sign up failed.");
       }
     } catch (error) {
       console.error("SignUp Error:", error);
-      alert("Something went wrong. Please try again later.");
+      alert("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -83,7 +79,7 @@ const SignUp = () => {
           <CFormCard className="pt-4 pb-6 px-6 sm:pt-6 sm:pb-8 sm:px-8 md:pt-8 md:pb-10 md:px-10 shadow-xl rounded-md">
 
             {/* Logo */}
-            <div className="mb-1 flex justify-center">
+            <div className="mb-2 flex justify-center">
               <img
                 src="/logos/logo1.png"
                 alt="EasyPG Manager Logo"
@@ -91,12 +87,14 @@ const SignUp = () => {
               />
             </div>
 
-            <h1 className="text-center font-bold mb-1 sm:mb-4 text-xl sm:text-2xl md:text-2xl text-primary">
+            <h1 className="text-center font-bold mb-3 text-xl sm:text-2xl text-primary">
               Create Your EasyPG Manager Account
             </h1>
 
-            <form onSubmit={handleSubmit} className="flex flex-col gap-2.5 sm:gap-3">
-
+            <form
+              onSubmit={handleSubmit}
+              className="flex flex-col gap-2.5 sm:gap-3"
+            >
               {/* Role Selector */}
               <div className="flex w-full border border-border rounded-md overflow-hidden mb-2">
                 <CButton
@@ -104,7 +102,7 @@ const SignUp = () => {
                   fullWidth
                   variant={role === "user" ? "contained" : "outlined"}
                   onClick={() => setRole("user")}
-                  className="rounded-none py-1 text-sm sm:text-base"
+                  className="rounded-none py-1"
                 >
                   User
                 </CButton>
@@ -114,7 +112,7 @@ const SignUp = () => {
                   fullWidth
                   variant={role === "owner" ? "contained" : "outlined"}
                   onClick={() => setRole("owner")}
-                  className="rounded-none py-1 text-sm sm:text-base"
+                  className="rounded-none py-1"
                 >
                   Owner
                 </CButton>
@@ -123,11 +121,11 @@ const SignUp = () => {
               {/* Inputs */}
               <CInput
                 label="Full Name"
-                type="text"
                 value={name}
                 placeholder="Enter your full name"
                 onChange={(e) => setName(e.target.value)}
               />
+
               <CInput
                 label="Email"
                 type="email"
@@ -135,6 +133,7 @@ const SignUp = () => {
                 placeholder="Enter your email address"
                 onChange={(e) => setEmail(e.target.value)}
               />
+
               <CInput
                 label="Password"
                 type="password"
@@ -142,6 +141,7 @@ const SignUp = () => {
                 placeholder="Enter your password"
                 onChange={(e) => setPassword(e.target.value)}
               />
+
               <CInput
                 label="Confirm Password"
                 type="password"
@@ -150,27 +150,25 @@ const SignUp = () => {
                 onChange={(e) => setConfirmPassword(e.target.value)}
               />
 
-              {/* Submit Button */}
               <CButton
                 type="submit"
                 fullWidth
                 variant="contained"
-                className="mt-1.5 py-2 text-base rounded-md font-medium"
+                className="mt-2 py-2 text-base rounded-md font-medium"
                 disabled={loading}
               >
                 {loading ? "Signing Up..." : "Sign Up"}
               </CButton>
             </form>
 
-            {/* Login Link */}
-            <p className="text-center mt-2 sm:mt-3 text-sm sm:text-base text-text-secondary">
+            <p className="text-center mt-3 text-sm text-text-secondary">
               Already have an account?{" "}
-              <a
-                href="/login"
-                className="font-semibold text-primary hover:underline"
+              <span
+                onClick={() => navigate("/login")}
+                className="font-semibold text-primary cursor-pointer hover:underline"
               >
                 Login
-              </a>
+              </span>
             </p>
           </CFormCard>
         </div>
@@ -179,7 +177,6 @@ const SignUp = () => {
         <div className="hidden lg:flex justify-center items-center w-1/2 xl:w-6/12">
           <ImageCarousel1 />
         </div>
-
       </div>
     </div>
   );

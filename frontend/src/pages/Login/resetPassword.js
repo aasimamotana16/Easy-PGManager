@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 // 1. ADD THESE IMPORTS
 import { useParams, useNavigate } from "react-router-dom";
-import { resetPassword } from "../../services/api"; 
+import { resetPassword } from "../../api/api"; 
 
 import Navbar from "../../components/navbar";
 import CFormCard from "../../components/cFormCard";

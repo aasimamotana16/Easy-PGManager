@@ -3,7 +3,7 @@ import Navbar from "../../components/navbar";
 import CFormCard from "../../components/cFormCard";
 import CInput from "../../components/cInput";
 import CButton from "../../components/cButton";
-import { forgotPassword } from "../../services/api"; // Ensure this matches your api.js export
+import { forgotPassword } from "../../api/api"; // Ensure this matches your api.js export
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState("");
