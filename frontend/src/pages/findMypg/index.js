@@ -20,9 +20,17 @@ export default function FindMyPG() {
     sortBy: "",
   });
 
-  // handle single filter change
+  // handle filter change
   const handleFilterChange = (key, value) => {
-    setFilters((prev) => ({ ...prev, [key]: value }));
+    if (key === "reset") {
+      resetFilters();
+      return;
+    }
+
+    setFilters((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
   };
 
   // toggle amenities
@@ -35,7 +43,7 @@ export default function FindMyPG() {
     }));
   };
 
-  // reset all filters
+  // reset filters
   const resetFilters = () => {
     setFilters({
       lookingFor: "Any",
@@ -48,30 +56,51 @@ export default function FindMyPG() {
     });
   };
 
-  // apply filters logic
+  // apply filters
   const applyFilters = useCallback(
     (list) => {
-      if (!list) return [];
+      if (!list || list.length === 0) return [];
 
       return list.filter((item) => {
-        if (filters.lookingFor !== "Any" && item.gender !== filters.lookingFor)
+        if (
+          filters.lookingFor !== "Any" &&
+          item.gender &&
+          item.gender !== filters.lookingFor
+        )
           return false;
 
-        if (filters.occupancy !== "Any" && item.occupancy !== filters.occupancy)
+        if (
+          filters.occupancy !== "Any" &&
+          item.occupancy &&
+          item.occupancy !== filters.occupancy
+        )
           return false;
 
-        if (filters.rentCycle !== "Any" && item.rentCycle !== filters.rentCycle)
+        if (
+          filters.rentCycle !== "Any" &&
+          item.rentCycle &&
+          item.rentCycle !== filters.rentCycle
+        )
           return false;
 
-        if (filters.minPrice && item.rent < Number(filters.minPrice))
+        if (
+          filters.minPrice &&
+          Number(item.rent) < Number(filters.minPrice)
+        )
           return false;
 
-        if (filters.maxPrice && item.rent > Number(filters.maxPrice))
+        if (
+          filters.maxPrice &&
+          Number(item.rent) > Number(filters.maxPrice)
+        )
           return false;
 
         if (
           filters.amenities.length > 0 &&
-          !filters.amenities.every((a) => item.amenities.includes(a))
+          (!item.amenities ||
+            !filters.amenities.every((a) =>
+              item.amenities.includes(a)
+            ))
         )
           return false;
 
@@ -81,7 +110,7 @@ export default function FindMyPG() {
     [filters]
   );
 
-  // filter + sort data
+  // filter + sort
   const filteredData = useMemo(() => {
     const sortList = (list) => {
       if (filters.sortBy === "priceAsc")
@@ -108,17 +137,21 @@ export default function FindMyPG() {
           Find My PG
         </h1>
 
-        {/* Filters */}
         <Filters
           filters={filters}
           handleFilterChange={handleFilterChange}
           toggleAmenity={toggleAmenity}
-          onResetFilters={resetFilters}
         />
 
-        {/* Listings */}
         <PGListings list={filteredData.pg} />
         <HostelListings list={filteredData.hostel} />
+
+        {filteredData.pg.length === 0 &&
+          filteredData.hostel.length === 0 && (
+            <p className="text-center text-gray-500 mt-12">
+              No PG or Hostel matches your filters
+            </p>
+          )}
       </div>
 
       <Footer />

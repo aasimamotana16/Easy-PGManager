@@ -150,29 +150,93 @@ export const services = [
   },
 ];
 
-
-  export const faqs = [
+export const faqs = [
+  // General Questions
   {
     id: 1,
+    category: "General Questions",
     question: "What is EasyPG Manager?",
-    answer: "EasyPG Manager is a platform designed to simplify PG and hostel management with modern tools."
+    answer:
+      "EasyPG Manager is a platform designed to simplify PG and hostel management with modern tools."
   },
   {
     id: 2,
+    category: "General Questions",
     question: "Can tenants pay rent online?",
-    answer: "Yes, tenants can pay securely online through integrated billing and payment features."
+    answer:
+      "Yes, tenants can pay securely online through integrated billing and payment features."
   },
   {
     id: 3,
-    question: "Is there support for PG owners?",
-    answer: "Absolutely. Owners can track tenants, manage billing, and handle service requests efficiently."
+    category: "General Questions",
+    question: "Is there a mobile app for tenants?",
+    answer:
+      "Yes, EasyPG Manager provides a mobile app for tenants to check bookings, pay rent, and submit requests."
   },
+
+  // Support Team
   {
     id: 4,
+    category: "Support Team",
+    question: "Is there support for PG owners?",
+    answer:
+      "Absolutely. Owners can track tenants, manage billing, and handle service requests efficiently."
+  },
+  {
+    id: 5,
+    category: "Support Team",
+    question: "How can I contact support?",
+    answer:
+      "You can reach our support team via email, live chat, or phone. Response times are typically under 24 hours."
+  },
+  {
+    id: 6,
+    category: "Support Team",
+    question: "Can I request a feature for the dashboard?",
+    answer:
+      "Yes, feature requests can be submitted directly from your dashboard, and our team reviews them regularly."
+  },
+
+  // Miscellaneous
+  {
+    id: 7,
+    category: "Miscellaneous",
     question: "Does EasyPG Manager provide maintenance tracking?",
-    answer: "Yes, you can log service requests and track maintenance schedules directly in the dashboard."
+    answer:
+      "Yes, you can log service requests and track maintenance schedules directly in the dashboard."
+  },
+  {
+    id: 8,
+    category: "Miscellaneous",
+    question: "Can I integrate third-party tools?",
+    answer:
+      "EasyPG Manager supports integrations with payment gateways, accounting software, and notification services."
+  },
+  {
+    id: 9,
+    category: "Miscellaneous",
+    question: "Is my data secure?",
+    answer:
+      "Yes, we use industry-standard encryption and secure servers to ensure your data is fully protected."
+  },
+
+  // Other Category Example
+  {
+    id: 10,
+    category: "Billing & Payments",
+    question: "Are online payments secure?",
+    answer:
+      "Yes, all online payments are processed securely through trusted gateways with encryption."
+  },
+  {
+    id: 11,
+    category: "Billing & Payments",
+    question: "Can I get a receipt for every payment?",
+    answer:
+      "Absolutely, all payments generate digital receipts which you can download or email."
   }
 ];
+
 
 
 // =====================

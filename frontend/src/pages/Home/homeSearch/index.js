@@ -6,20 +6,48 @@ import { getCities } from "../../../api/api";
 
 const HomeSearch = () => {
   const navigate = useNavigate();
+
   const [city, setCity] = useState("");
   const [cityOptions, setCityOptions] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchCityData = async () => {
       try {
         const response = await getCities();
-        const formattedCities = response.data.map((cityName) => ({
-          label: cityName,
-          value: cityName,
-        }));
+
+        // ✅ SAFE DATA HANDLING
+        let cities = [];
+
+        if (Array.isArray(response?.data)) {
+          cities = response.data;
+        } else if (Array.isArray(response?.data?.cities)) {
+          cities = response.data.cities;
+        }
+
+        const formattedCities = cities.map((item) => {
+          if (typeof item === "string") {
+            return { label: item, value: item };
+          }
+          return {
+            label: item.name,
+            value: item.name,
+          };
+        });
+
         setCityOptions(formattedCities);
-      } catch (err) {
-        console.error("Error fetching cities:", err);
+      } catch (error) {
+        console.error("Error fetching cities:", error);
+
+        // ✅ FALLBACK (IMPORTANT)
+        setCityOptions([
+          { label: "Ahmedabad", value: "Ahmedabad" },
+          { label: "Surat", value: "Surat" },
+          { label: "Vadodara", value: "Vadodara" },
+          { label: "Rajkot", value: "Rajkot" },
+        ]);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -31,7 +59,6 @@ const HomeSearch = () => {
       alert("Please select a city first!");
       return;
     }
-
     navigate(`/search-results?city=${city}&type=${type}`);
   };
 
@@ -53,6 +80,8 @@ const HomeSearch = () => {
           value={city}
           onChange={(e) => setCity(e.target.value)}
           options={cityOptions}
+          disabled={loading}
+          placeholder={loading ? "Loading cities..." : "Select city"}
         />
       </div>
 

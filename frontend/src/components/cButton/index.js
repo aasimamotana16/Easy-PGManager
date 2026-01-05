@@ -1,4 +1,3 @@
-// src/components/cButton/index.js
 import React from "react";
 
 const CButton = ({
@@ -11,14 +10,14 @@ const CButton = ({
   fullWidth = false,
   className = "",
 }) => {
-  // Variant styles
+  // Variant styles (NO HARDCODED COLORS)
   const variantClasses = {
     contained:
-      "bg-primary text-text-primary hover:bg-button-hover hover:text-text-primary",
+      "bg-primary text-black hover:bg-button-hover",
     outlined:
-      "border border-button-DEFAULT text-button-DEFAULT hover:bg-button-hover hover:text-text-light",
+      "border border-primary text-black hover:bg-primary",
     text:
-      "text-button-DEFAULT hover:text-button-hover bg-transparent",
+      "text-black hover:text-button-hover bg-transparent",
   };
 
   const sizeClasses = {
@@ -28,7 +27,9 @@ const CButton = ({
   };
 
   const finalClasses = `
-    rounded-md font-semibold shadow-soft hover:shadow-hover transition
+    rounded-md font-semibold
+    shadow-soft hover:shadow-hover
+    transition-all duration-200
     ${variantClasses[variant] || variantClasses.contained}
     ${sizeClasses[size] || sizeClasses.md}
     ${fullWidth ? "w-full" : ""}
@@ -36,7 +37,11 @@ const CButton = ({
   `;
 
   return (
-    <button type={type} onClick={onClick} className={finalClasses}>
+    <button
+      type={type}
+      onClick={onClick}
+      className={finalClasses}
+    >
       {text || children}
     </button>
   );
