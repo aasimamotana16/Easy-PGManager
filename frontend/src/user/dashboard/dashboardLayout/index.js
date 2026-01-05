@@ -22,16 +22,16 @@ const UserDashboardLayout = () => {
   }, []);
 
   return (
-    <div className="flex min-h-screen bg-primarySoft">
+    <div className="flex min-h-screen bg-default">
       {/* Sidebar - EXACTLY as you provided */}
-      <aside className="w-64 bg-white shadow-md hidden md:block">
+      <aside className="w-64 bg-primarySoft shadow-md hidden md:block">
         <div className="p-6 text-xl font-semibold text-primary">
           EasyPG Manager
         </div>
 
         <nav className="px-4 space-y-2">
           <MenuLink to="/user/dashboard" label="Dashboard" />
-          <MenuLink to="/user/dashboard/profile" label="Profile" />
+          <MenuLink to="/user/dashboard/userprofile" label="Profile" />
           <MenuLink to="/user/dashboard/payments" label="Payments" />
           <MenuLink to="/user/dashboard/agreements" label="Agreements" />
           <MenuLink to="/user/dashboard/check-ins" label="Check-ins" />
