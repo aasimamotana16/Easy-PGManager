@@ -322,6 +322,7 @@ export const pgdetails = [
     id: 1,
     name: "Sunrise PG",
     location: "Nadiad",
+    address: "Salman park society , Barkosia Road, Nadiad, Gujarat, India",
     gender: "Male",
     rating: 4.3,
 

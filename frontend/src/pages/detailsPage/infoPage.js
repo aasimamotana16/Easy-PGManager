@@ -45,10 +45,10 @@ const PGOverview = () => {
         </div>
 
         {/* Horizontal Card Layout */}
-        <div className="flex flex-col lg:flex-row gap-10 items-start">
+        <div className="flex flex-col lg:flex-row gap-40 items-start">
           
           {/* Left: Image with frame */}
-          <div className="lg:w-1/2 bg-gray-100 p-3 rounded-2xl shadow-inner flex items-center justify-center">
+          <div className="lg:w-full bg-gray-100 p-3 rounded-2xl shadow-inner flex items-center justify-center">
             {mainImage ? (
               <img
                 src={
@@ -67,7 +67,7 @@ const PGOverview = () => {
           </div>
 
           {/* Right: Info Section */}
-          <div className="lg:w-1/2 bg-white rounded-3xl shadow-lg p-8 flex flex-col justify-between space-y-6">
+          <div className="lg:w-full bg-white rounded-3xl shadow-lg p-8 flex flex-col justify-between space-y-6">
             
             {/* Price */}
             {(pg.price || pg.startingPrice) && (
