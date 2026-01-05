@@ -63,6 +63,7 @@ import SetRoomPrice from "./owner/dashboard/pgManagment/roomPrice";
 import ProfileCard from "./owner/dashboard/profileStatus/profileCard";
 import StatsCard from "./owner/dashboard/profileStatus/statCard";
 import ExtraInfoCard from "./owner/dashboard/profileStatus/extraCardinfo";
+import BookingManagement from "./owner/dashboard/oBookings";
 
 /* ================= PROTECTED ROUTES ================= */
 
@@ -188,7 +189,7 @@ function App() {
             <Route path="pgManagment/addProperty" element={<AddProperty />} />
             <Route path="pgManagment/addRooms" element={<AddRooms />} />
             <Route path="pgs/rooms" element={<RoomManagement />} />
-            <Route path="tenant-management" element={<TenantManagement />} />
+            <Route path="tenantManagement" element={<TenantManagement />} />
             <Route path="agreements" element={<OAgreements />} />
             <Route path="support" element={<OSupport />} />
             <Route path="earnings" element={<Earnings />} />
@@ -199,6 +200,7 @@ function App() {
             <Route path="profileStatus/profileCard" element={<ProfileCard />} />
             <Route path="profileStatus/statCard" element={<StatsCard />} />
             <Route path="profileStatus/extraCardinfo" element={<ExtraInfoCard />} />
+            <Route path="oBookings" element={<BookingManagement/>}/>
           </Route>
 
           {/* ================= FALLBACK ================= */}
