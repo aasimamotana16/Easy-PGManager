@@ -7,6 +7,7 @@ const authRoutes = require('./routes/authRoutes');
 const cityRoutes = require('./routes/cityRoutes'); // Added this
 const featuresRoutes = require("./routes/featuresRoutes");
 const userRoutes = require("./routes/userRoutes");
+const paymentRoutes = require("./routes/paymentRoutes");
 
 const app = express();
 
@@ -25,6 +26,9 @@ app.use('/cities', cityRoutes); // Added this to match your frontend API call
 
 // Add this near your other app.use statements
 app.use("/api/users", require("./routes/userRoutes"));
+
+// payment
+app.use("api/payments", require("./routes/paymentRoutes"));
 
 const PORT = 5000;
 app.listen(PORT, () => console.log(`Backend running on port ${PORT}`));

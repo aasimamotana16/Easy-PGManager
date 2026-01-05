@@ -1,10 +1,34 @@
-import mongoose from "mongoose";
+const mongoose = require("mongoose");
 
-const paymentSchema = new mongoose.Schema({
-  bookingId: String,
-  amount: Number,
-  status: { type: String, default: "Pending" }
+const paymentSchema = mongoose.Schema({
+  user: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: "User", 
+    required: true 
+  },
+  amountPaid: { 
+    type: Number, 
+    required: true 
+  },
+  paymentDate: { 
+    type: Date, 
+    default: Date.now 
+  },
+  paymentMethod: { 
+    type: String, 
+    enum: ["UPI", "Card", "Cash", "Net Banking"], 
+    default: "UPI" 
+  },
+  paymentStatus: { 
+    type: String, 
+    enum: ["Success", "Pending", "Failed"], 
+    default: "Success" 
+  },
+  transactionId: { 
+    type: String, 
+    unique: true, 
+    required: true 
+  }
 }, { timestamps: true });
 
-const Payment = mongoose.model("Payment", paymentSchema);
-export default Payment;
+module.exports = mongoose.model("Payment", paymentSchema);

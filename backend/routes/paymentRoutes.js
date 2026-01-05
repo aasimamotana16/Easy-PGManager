@@ -1,26 +1,12 @@
-import express from "express";
-import Payment from "../models/paymentModel.js";
-
+const express = require("express");
 const router = express.Router();
+const { getUserPayments, addPaymentRecord } = require("../controllers/paymentController");
+const { protect } = require("../middleware/authMiddleware"); // Ensure you have this middleware
 
-// Create payment
-router.post("/pay-rent", async (req, res) => {
-  try {
-    const payment = await Payment.create(req.body);
-    res.json({ success: true, payment });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-});
+// URL: /api/payments/history
+router.get("/history", protect, getUserPayments);
 
-// Get all payments
-router.get("/all", async (req, res) => {
-  try {
-    const payments = await Payment.find();
-    res.json({ success: true, payments });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-});
+// URL: /api/payments/add
+router.post("/add", protect, addPaymentRecord);
 
-export default router;
+module.exports = router;
