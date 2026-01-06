@@ -8,6 +8,7 @@ const cityRoutes = require('./routes/cityRoutes'); // Added this
 const featuresRoutes = require("./routes/featuresRoutes");
 const userRoutes = require("./routes/userRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
+const ownerRoutes = require('./routes/ownerRoutes');
 
 const app = express();
 
@@ -29,6 +30,9 @@ app.use("/api/users", require("./routes/userRoutes"));
 
 // payment
 app.use("/api/payments", require("./routes/paymentRoutes"));
+
+// Your partner's routes will likely be app.use('/api/user', ...)
+app.use('/api/owner', ownerRoutes);
 
 const PORT = 5000;
 app.listen(PORT, () => console.log(`Backend running on port ${PORT}`));

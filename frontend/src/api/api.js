@@ -13,8 +13,7 @@ const API = axios.create({
 
 /**
  * TOKEN INTERCEPTOR
- * This is the "magic" that grabs your login token from local storage
- * and sends it to the backend so the Dashboard doesn't give a 401 error.
+ * Automatically attaches the JWT token to every request
  */
 API.interceptors.request.use((req) => {
   const userToken = localStorage.getItem("token");
@@ -25,8 +24,19 @@ API.interceptors.request.use((req) => {
 });
 
 /* =========================
+   OWNER & PROPERTY APIs 
+   (Matches: backend/routes/ownerRoutes.js)
+========================= */
+
+// Fetches { totalPgs, totalRooms }
+export const getOwnerDashboardStats = () => API.get("/owner/dashboard-summary");
+
+// Sends { name, location, numberOfRooms, rent } to Atlas
+export const addPgProperty = (pgData) => API.post("/owner/add-pg", pgData);
+
+
+/* =========================
    AUTH & USER APIs 
-   (Updated to match your new backend userRoutes)
 ========================= */
 export const registerUser = (userData) => API.post("/users/register", userData);
 export const loginUser = (userData) => API.post("/users/login", userData);

@@ -1,13 +1,11 @@
 const mongoose = require('mongoose');
 
 const pgSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  city: { type: String, required: true }, // Must match the value from your dropdown
-  type: { type: String, enum: ['Paying Guest', 'Hostel Stay'], required: true },
-  price: { type: Number, required: true },
-  address: { type: String, required: true },
-  amenities: [String],
-  image: { type: String }
-}, { timestamps: true });
+  ownerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  pgName: { type: String, required: true },
+  status: { type: String, enum: ['live', 'pending', 'closed'], default: 'pending' },
+  location: { type: String },
+  createdAt: { type: Date, default: Date.now }
+});
 
-module.exports = mongoose.model('PG', pgSchema);
+module.exports = mongoose.model('PgListing', pgSchema);
