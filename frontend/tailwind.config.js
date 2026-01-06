@@ -4,49 +4,46 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        /* ===== BRAND / PRIMARY ===== */
-        primary: "#D97706",       // Warm amber for headings/buttons
-        primaryDark: "#B45309",   // Hover states for buttons/links
-        primarySoft: "#FEF3C7",   // Soft background accent
+        primary: "#D97706",
+        primaryDark: "#B45309",
+        primarySoft: "#FEF3C7",
 
-        /* ===== BACKGROUNDS ===== */
         background: {
-          DEFAULT: "#F9FAF7",     // Main page background (soft white)
-          muted: "#F5F3F1",       // Section separation / subtle panels
-          dark: "#1F1F1F",        // Navbar / footer dark mode
+          DEFAULT: "#F9FAF7",
+          muted: "#F5F3F1",
+          dark: "#1F1F1F",
         },
 
-        /* ===== TEXT ===== */
         text: {
-          primary: "#1C1C1C",     // Main headings
-          secondary: "#4B4B4B",   // Paragraphs / content
-          muted: "#6B6B6B",       // Labels / helper text
-          light: "#FFFFFF",        // On dark background
+          primary: "#1C1C1C",
+          secondary: "#4B4B4B",
+          muted: "#6B6B6B",
+          light: "#FFFFFF",
         },
 
-        /* ===== CARDS ===== */
-        card: "#FFFFFF",           // White cards
-        cardSky: "#E0F2FE",       // Sky blue cards
+        card: "#FFFFFF",
+        cardSky: "#E0F2FE",
 
-        /* ===== BORDERS ===== */
-        border: "#E5E0D9",        // Light beige border
+        border: "#E5E0D9",
 
-        /* ===== BUTTONS ===== */
         button: {
-          DEFAULT: "#D97706",     // Amber
-          hover: "#B45309",       // Darker amber
-          ghost: "#FEF3C7",       // Soft button background
+          DEFAULT: "#D97706",
+          hover: "#B45309",
+          ghost: "#FEF3C7",
         },
 
-        /* ===== STATUS / ACCENTS ===== */
         accent: {
-          success: "#16A34A",     // Green
-          warning: "#D97706",     // Amber
-          danger: "#DC2626",      // Red
+          success: "#16A34A",
+          warning: "#D97706",
+          danger: "#DC2626",
         },
       },
 
-      /* ===== BORDER RADIUS ===== */
+     backgroundImage: {
+        'dashboard-gradient': 'linear-gradient(to bottom, #D1FAE5, #FEF3C7, #FFFFFF)',
+        'card-gradient': 'linear-gradient(to bottom, #FEF3C7, #D97706)',
+        'progress-gradient': 'linear-gradient(to right, #D1FAE5, #FEF3C7, #FFFFFF)'
+     },
       borderRadius: {
         sm: "6px",
         md: "10px",
@@ -55,24 +52,22 @@ module.exports = {
         "2xl": "24px",
       },
 
-      /* ===== SHADOWS ===== */
       boxShadow: {
-        soft: "0 2px 8px rgba(28, 28, 28, 0.06)", // subtle
+        soft: "0 2px 8px rgba(28, 28, 28, 0.06)",
         card: "0 8px 24px rgba(28, 28, 28, 0.08)",
         hover: "0 12px 32px rgba(28, 28, 28, 0.12)",
       },
 
-      /* ===== FONT SIZES ===== */
       fontSize: {
-        xs: ["0.875rem", { lineHeight: "1.4rem" }],      // 14px → small labels, readable
-        sm: ["1rem", { lineHeight: "1.6rem" }],          // 16px → form labels/body text
-        base: ["1.125rem", { lineHeight: "1.8rem" }],    // 18px → normal body text
-        lg: ["1.375rem", { lineHeight: "2rem" }],        // 22px → larger body or subheadings
-        xl: ["1.625rem", { lineHeight: "2.25rem" }],     // 26px → subheadings
-        "2xl": ["2rem", { lineHeight: "2.5rem" }],       // 32px → section headings
-        "3xl": ["2.5rem", { lineHeight: "3rem" }],       // 40px → large headings
-        "4xl": ["3rem", { lineHeight: "3.5rem" }],       // 48px → hero headings
-        "5xl": ["3.75rem", { lineHeight: "4rem" }],      // 60px → main hero or key titles
+        xs: ["0.875rem", { lineHeight: "1.4rem" }],
+        sm: ["1rem", { lineHeight: "1.6rem" }],
+        base: ["1.125rem", { lineHeight: "1.8rem" }],
+        lg: ["1.375rem", { lineHeight: "2rem" }],
+        xl: ["1.625rem", { lineHeight: "2.25rem" }],
+        "2xl": ["2rem", { lineHeight: "2.5rem" }],
+        "3xl": ["2.5rem", { lineHeight: "3rem" }],
+        "4xl": ["3rem", { lineHeight: "3.5rem" }],
+        "5xl": ["3.75rem", { lineHeight: "4rem" }],
       },
     },
   },

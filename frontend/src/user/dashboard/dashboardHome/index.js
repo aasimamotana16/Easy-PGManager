@@ -1,6 +1,8 @@
 import React, { useState } from "react";
+import { FaMoneyBillWave, FaFileContract, FaUpload, FaHeadset } from "react-icons/fa";
+import CButton from "../../../components/cButton";
 
-// Mock data (later replace with API)
+/* ---------- Mock Data ---------- */
 const userData = {
   profile: {
     name: "Asima Motana",
@@ -36,27 +38,27 @@ const DashboardHome = () => {
 
   const activeBooking = bookings.find((b) => b.status === "Active");
 
-  // Upload Document
-  const handleUpload = (index) => {
-    const file = prompt(`Upload file for ${documents[index].name} (enter file name)`);
-    if (file) {
-      const updatedDocs = [...documents];
-      updatedDocs[index].uploaded = true;
-      setDocuments(updatedDocs);
-      alert(`${documents[index].name} uploaded successfully!`);
-    }
+  /* ---------- Handlers ---------- */
+  const handlePayRent = () => {
+    if (!activeBooking) return;
+    alert(`Rent ${activeBooking.rent} paid for ${activeBooking.pgName}`);
   };
 
-  // Pay Rent
-  const handlePayRent = () => {
-    if (activeBooking) alert(`Paid ${activeBooking.rent} for ${activeBooking.pgName}`);
+  const handleViewAgreement = () => alert("Opening PG Agreement...");
+  const handleUploadDocuments = () => {
+    setDocuments(documents.map((d) => ({ ...d, uploaded: true })));
+    alert("Documents uploaded successfully");
   };
+  const handleSupport = () => alert("Support team will contact you shortly");
+  const handleViewDetails = (pgName) => alert(`Viewing details for ${pgName}`);
 
   return (
-    <div className="space-y-8 bg-default p-6 rounded-2xl">
+    /* 🌿 MINT → TEAL GRADIENT BACKGROUND */
+    <div className="space-y-8 p-6 rounded-2xl 
+      bg-dashboard-gradient">
 
-      {/* Welcome Section */}
-      <div className="bg-white p-6 rounded-2xl shadow border">
+      {/* Welcome */}
+      <div className="bg-white p-6 rounded-2xl shadow-lg border">
         <h1 className="text-2xl font-semibold text-primary">
           Welcome back, {profile.name} 👋
         </h1>
@@ -65,36 +67,33 @@ const DashboardHome = () => {
         </p>
       </div>
 
-      {/* Top Dashboard Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-
-        {/* Current Booking */}
+      {/* Top Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         {activeBooking && (
           <DashboardCard title="Current Booking" icon="🏠">
             <p className="font-medium">{activeBooking.pgName}</p>
             <p>Room: {activeBooking.roomNo}</p>
-            <p>Status: <StatusBadge status={activeBooking.status} /></p>
+            <StatusBadge status={activeBooking.status} />
           </DashboardCard>
         )}
 
-        {/* Next Payment */}
         {activeBooking && (
           <DashboardCard title="Next Payment" icon="📅">
             <p className="font-medium">{activeBooking.rent}</p>
             <p>Due on {activeBooking.nextDue}</p>
-            <button
-              className="mt-2 px-4 py-1 bg-orange-500 text-white rounded"
+            <CButton
+              className="mt-3 hover:scale-105 transition-transform"
               onClick={handlePayRent}
             >
               Pay Rent
-            </button>
+            </CButton>
           </DashboardCard>
         )}
       </div>
 
-      {/* Quick Stats (Your Original Cards) */}
+      {/* Stats */}
       {activeBooking && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard title="PG Name" value={activeBooking.pgName} />
           <StatCard title="Room No" value={activeBooking.roomNo} />
           <StatCard title="Monthly Rent" value={activeBooking.rent} />
@@ -102,27 +101,56 @@ const DashboardHome = () => {
         </div>
       )}
 
-      {/* Quick Actions Section */}
-      <div className="bg-primarySoft p-6 rounded-2xl border border-border mt-6">
+      {/* Quick Actions */}
+      <div className="bg-white p-6 rounded-2xl shadow-lg border">
         <h2 className="text-lg font-semibold text-primaryDark mb-4">
           Quick Actions
         </h2>
         <div className="flex flex-wrap gap-4">
-          <ActionButton label="Pay Rent" />
-          <ActionButton label="View Agreement" />
-          <ActionButton label="Upload Documents" />
-          <ActionButton label="Contact Support" />
+          <CButton
+            icon={<FaMoneyBillWave className="mr-2" />}
+            className="hover:scale-105 transition-transform"
+            onClick={handlePayRent}
+          >
+            Pay Rent
+          </CButton>
+          <CButton
+            icon={<FaFileContract className="mr-2" />}
+            className="hover:scale-105 transition-transform"
+            onClick={handleViewAgreement}
+          >
+            View Agreement
+          </CButton>
+          <CButton
+            icon={<FaUpload className="mr-2" />}
+            className="hover:scale-105 transition-transform"
+            onClick={handleUploadDocuments}
+          >
+            Upload Documents
+          </CButton>
+          <CButton
+            icon={<FaHeadset className="mr-2" />}
+            className="hover:scale-105 transition-transform"
+            onClick={handleSupport}
+          >
+            Contact Support
+          </CButton>
         </div>
       </div>
 
-      {/* All Bookings */}
-      <div className="mt-6">
+      {/* Bookings */}
+      <div>
         <h2 className="text-xl font-semibold text-primaryDark mb-4">
           Your Bookings
         </h2>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {bookings.map((booking, index) => (
-            <BookingCard key={index} booking={booking} />
+            <BookingCard
+              key={index}
+              booking={booking}
+              onView={() => handleViewDetails(booking.pgName)}
+              onPay={handlePayRent}
+            />
           ))}
         </div>
       </div>
@@ -130,55 +158,48 @@ const DashboardHome = () => {
   );
 };
 
-/* ---------- Reusable Components ---------- */
-
+/* ---------- Components ---------- */
 const DashboardCard = ({ title, icon, children }) => (
-  <div className="bg-white rounded-2xl shadow p-5 border flex flex-col gap-2">
-    <div className="flex items-center gap-2 text-lg font-semibold">
+  <div className="bg-white rounded-2xl shadow-lg p-5 border hover:shadow-2xl transition-shadow">
+    <div className="flex items-center gap-2 font-semibold">
       <span>{icon}</span>
       {title}
     </div>
-    <div className="mt-2 text-sm">{children}</div>
+    <div className="mt-3 text-sm space-y-1">{children}</div>
   </div>
 );
 
 const StatCard = ({ title, value, highlight }) => (
-  <div className="bg-white rounded-2xl shadow p-5 border border-border">
+  <div className="bg-white rounded-2xl shadow-lg p-5 border hover:shadow-2xl transition-shadow">
     <p className="text-buttonDEFAULT text-sm">{title}</p>
-    <p
-      className={`text-lg font-semibold mt-1 ${highlight ? "text-green-600" : "text-primary"}`}
-    >
+    <p className={`text-lg font-semibold mt-1 ${highlight ? "text-green-600" : "text-primary"}`}>
       {value}
     </p>
   </div>
 );
 
-const ActionButton = ({ label }) => (
-  <button className="px-5 py-2.5 bg-primary text-white rounded-xl text-sm hover:opacity-90 transition">
-    {label}
-  </button>
-);
-
-const BookingCard = ({ booking }) => (
-  <div className="bg-white rounded-2xl shadow p-6 border border-border">
+const BookingCard = ({ booking, onView, onPay }) => (
+  <div className="bg-white rounded-2xl shadow-lg p-6 border hover:shadow-2xl transition-shadow">
     <div className="flex justify-between items-center mb-4">
-      <h3 className="text-primaryDark font-semibold text-lg">{booking.pgName}</h3>
+      <h3 className="font-semibold text-lg">{booking.pgName}</h3>
       <StatusBadge status={booking.status} />
     </div>
 
-    <div className="space-y-3 text-sm">
+    <div className="space-y-2 text-sm">
       <InfoRow label="Room No" value={booking.roomNo} />
       <InfoRow label="Monthly Rent" value={booking.rent} />
-      <InfoRow label="Next Due Date" value={booking.nextDue} />
+      <InfoRow label="Next Due" value={booking.nextDue} />
     </div>
 
     <div className="mt-5 flex gap-3">
-      <button className="px-4 py-2 bg-primary text-white rounded-xl text-sm">
+      <CButton className="hover:scale-105 transition-transform" onClick={onView}>
         View Details
-      </button>
-      <button className="px-4 py-2 bg-gray-800 text-white rounded-xl text-sm">
-        Pay Rent
-      </button>
+      </CButton>
+      {booking.status === "Active" && (
+        <CButton className="hover:scale-105 transition-transform" onClick={onPay}>
+          Pay Rent
+        </CButton>
+      )}
     </div>
   </div>
 );
@@ -186,14 +207,14 @@ const BookingCard = ({ booking }) => (
 const InfoRow = ({ label, value }) => (
   <div className="flex justify-between">
     <span className="text-buttonDEFAULT">{label}</span>
-    <span className="text-primary font-medium">{value}</span>
+    <span className="font-medium">{value}</span>
   </div>
 );
 
 const StatusBadge = ({ status }) => (
   <span
     className={`px-3 py-1 rounded-full text-xs font-medium ${
-      status === "Active" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"
+      status === "Active" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"
     }`}
   >
     {status}

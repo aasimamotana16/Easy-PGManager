@@ -23,9 +23,8 @@ const UserDashboardLayout = () => {
 
   return (
     <div className="flex min-h-screen bg-default">
-      {/* Sidebar - EXACTLY as you provided */}
-      <aside className="w-64 bg-primarySoft shadow-md hidden md:block">
-        <div className="p-6 text-xl font-semibold text-primary">
+      <aside className="w-64 bg-background-dark shadow-md hidden md:block">
+        <div className="p-6 text-xl font-semibold text-white">
           EasyPG Manager
         </div>
 
@@ -37,7 +36,6 @@ const UserDashboardLayout = () => {
           <MenuLink to="/user/dashboard/check-ins" label="Check-ins" />
           <MenuLink to="/user/dashboard/documents" label="Documents" />
           <MenuLink to="/user/dashboard/timeline" label="Timeline" />
-          <MenuLink to="/user/dashboard/rebook" label="Rebook" />
           <MenuLink to="/user/dashboard/owner-contact" label="Owner Contact" />
           <MenuLink to="/user/dashboard/support" label="Support" />
         </nav>
@@ -59,7 +57,7 @@ const MenuLink = ({ to, label }) => (
       `block px-4 py-2 rounded-lg text-sm transition-colors duration-200 ${
         isActive
           ? "bg-primary text-white font-medium"
-          : "text-primary hover:bg-primarySoft"
+          : "text-white hover:text-primary"
       }`
     }
   >

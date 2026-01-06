@@ -1,20 +1,112 @@
+import React, { useState } from "react";
+import CButton from "../../../components/cButton";
+import CInput from "../../../components/cInput";
+
 const Support = () => {
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    subject: "",
+    message: "",
+  });
+
+  const [submitted, setSubmitted] = useState(false);
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    // Call backend API here to save support request
+    console.log("Support Request Submitted:", formData);
+    setSubmitted(true);
+    setFormData({ name: "", email: "", subject: "", message: "" });
+  };
+
   return (
-    <div className="bg-white p-6 rounded-2xl shadow border">
-      <h2 className="text-xl font-semibold mb-2">Support</h2>
+    <div className="space-y-8">
 
-      <p className="text-buttonDEFAULT mb-4">
-        Need help? Raise a support ticket.
-      </p>
+      {/* GRADIENT WRAPPER */}
+      <div className="bg-dashboard-gradient rounded-3xl p-6 space-y-6">
 
-      <button className="px-4 py-2 bg-primary text-white rounded-xl mr-3">
-        Raise Ticket
-      </button>
-      <button className="px-4 py-2 bg-gray-800 text-white rounded-xl">
-        Contact Owner
-      </button>
+        {/* SUPPORT CARD */}
+        <div className="bg-white rounded-2xl shadow p-6 space-y-5">
+
+          <h2 className="text-lg font-semibold text-primary">Support</h2>
+          <p className="text-gray-500 text-sm">
+            Need help? Contact our support team or submit your query below.
+          </p>
+
+          {/* Support Contact Info */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <Info label="Email" value="support@easypgmanager.com" />
+            <Info label="Phone" value="+91 98765 43210" />
+            <Info label="Working Hours" value="Mon-Sat, 9AM - 6PM" />
+          </div>
+
+          {/* Support Form */}
+          {submitted && (
+            <p className="text-green-600 font-medium mb-3">
+              Your query has been submitted successfully!
+            </p>
+          )}
+
+          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <CInput
+              type="text"
+              name="name"
+              placeholder="Your Name"
+              value={formData.name}
+              onChange={handleChange}
+              required
+            />
+            <CInput
+              type="email"
+              name="email"
+              placeholder="Your Email"
+              value={formData.email}
+              onChange={handleChange}
+              required
+            />
+            <CInput
+              type="text"
+              name="subject"
+              placeholder="Subject"
+              value={formData.subject}
+              onChange={handleChange}
+              required
+              className="md:col-span-2"
+            />
+            <CInput
+              type="textarea"
+              name="message"
+              placeholder="Your Message"
+              value={formData.message}
+              onChange={handleChange}
+              required
+              className="md:col-span-2 h-32"
+            />
+            <CButton
+              type="submit"
+              className="bg-primary text-white px-5 py-3 rounded-xl md:col-span-2"
+            >
+              Submit
+            </CButton>
+          </form>
+        </div>
+
+      </div>
     </div>
   );
 };
+
+// Reusable Info component
+const Info = ({ label, value }) => (
+  <div className="bg-gray-50 rounded-xl p-4">
+    <p className="text-gray-400 text-xs mb-1">{label}</p>
+    <p className="font-medium">{value}</p>
+  </div>
+);
 
 export default Support;
