@@ -23,7 +23,7 @@ const OwnerContact = () => {
           {/* Header */}
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-primary">Owner Contact</h2>
-            <span className="px-3 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700">
+            <span className="px-3 py-1 text-xs font-medium rounded-full bg-green-1 text-green-2">
               Verified
             </span>
           </div>
@@ -63,7 +63,7 @@ const OwnerContact = () => {
 
 // Info component reused for consistency
 const Info = ({ label, value }) => (
-  <div className="bg-gray-50 rounded-xl p-4">
+  <div className="bg-gray-2 rounded-xl p-4">
     <p className="text-gray-400 text-xs mb-1">{label}</p>
     <p className="font-medium">{value}</p>
   </div>

@@ -4,7 +4,6 @@ import "react-calendar/dist/Calendar.css";
 import CButton from "../../../components/cButton";
 
 const CheckIns = () => {
-  // Mock state for check-ins
   const [checkedIn, setCheckedIn] = useState(false);
   const [history, setHistory] = useState([
     { checkOut: "2026-01-01", checkIn: "2026-01-03" },
@@ -13,7 +12,6 @@ const CheckIns = () => {
 
   const handleCheckInOut = () => {
     if (!checkedIn) {
-      // Checking in
       setCheckedIn(true);
       const last = history[history.length - 1];
       if (last && last.checkIn === "Pending") {
@@ -21,13 +19,11 @@ const CheckIns = () => {
         setHistory([...history.slice(0, -1), last]);
       }
     } else {
-      // Checking out
       setCheckedIn(false);
       setHistory([...history, { checkOut: new Date().toISOString().slice(0, 10), checkIn: "Pending" }]);
     }
   };
 
-  // Highlight calendar dates based on history
   const tileClassName = ({ date, view }) => {
     if (view === "month") {
       for (let entry of history) {
@@ -35,9 +31,9 @@ const CheckIns = () => {
         const checkIn = entry.checkIn !== "Pending" ? new Date(entry.checkIn) : null;
 
         if (checkIn && date >= checkOut && date <= checkIn) {
-          return "bg-green-100 text-green-800 font-semibold rounded";
+          return "bg-green-1 text-green-2 font-semibold rounded";
         } else if (!checkIn && date >= checkOut) {
-          return "bg-gray-100 text-gray-600 font-medium rounded";
+          return "bg-background-muted text-textSecondary font-medium rounded";
         }
       }
     }
@@ -47,12 +43,12 @@ const CheckIns = () => {
     <div className="space-y-8">
 
       {/* GRADIENT WRAPPER */}
-      <div className="bg-dashboard-gradient rounded-3xl p-6 space-y-6">
+      <div className="bg-dashboard-gradient rounded-2xl p-6 space-y-6">
 
         {/* HEADER */}
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-2xl font-semibold text-primary">Check-ins</h2>
-          <CButton className="bg-primary text-white px-5 py-2 rounded-xl" onClick={handleCheckInOut}>
+          <CButton className="bg-primary text-text-light px-5 py-2 rounded-xl" onClick={handleCheckInOut}>
             {checkedIn ? "Check Out" : "Check In"}
           </CButton>
         </div>
@@ -61,21 +57,25 @@ const CheckIns = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
           {/* CALENDAR CARD */}
-          <div className="bg-white rounded-2xl shadow p-6">
+          <div className="bg-card rounded-2xl shadow-card p-6">
             <Calendar
               tileClassName={tileClassName}
               showNeighboringMonth={false}
             />
-            <p className="mt-2 text-sm text-gray-500">Green = Present, Gray = Out/Pending</p>
+            <p className="mt-2 text-sm text-text-muted">Green = Present, Gray = Out/Pending</p>
           </div>
 
           {/* HISTORY CARD */}
-          <div className="bg-white rounded-2xl shadow p-6 flex flex-col gap-4">
+          <div className="bg-card rounded-2xl shadow-card p-6 flex flex-col gap-4">
             <h3 className="text-lg font-semibold text-primary">Past Activities</h3>
             {history.map((entry, index) => (
-              <div key={index} className="bg-gray-50 rounded-xl p-4">
-                <p><span className="font-medium">Check Out:</span> {entry.checkOut}</p>
-                <p><span className="font-medium">Check In:</span> {entry.checkIn}</p>
+              <div key={index} className="bg-cardSoft rounded-xl p-4">
+                <p>
+                  <span className="font-medium text-text-primary">Check Out:</span> {entry.checkOut}
+                </p>
+                <p>
+                  <span className="font-medium text-text-primary">Check In:</span> {entry.checkIn}
+                </p>
               </div>
             ))}
           </div>

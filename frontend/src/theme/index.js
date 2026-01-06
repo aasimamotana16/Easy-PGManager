@@ -4,38 +4,67 @@ import { createTheme } from '@mui/material/styles';
 const theme = createTheme({
   palette: {
     mode: 'light',
+
+    // Tailwind primary colors
     primary: {
-      main: '#d2a86c',        // Light brown (Tan) → matches Tailwind `primary`
-      contrastText: '#000000' // Black text on buttons
+      main: '#D97706',        // Tailwind primary
+      dark: '#B45309',        // Tailwind primaryDark
+      light: '#FEF3C7',       // Tailwind primarySoft
+      contrastText: '#FFFFFF' // White text on primary buttons
     },
+
+    // Secondary can map to accent.warning or another semantic color
     secondary: {
-      main: '#A0522D',        // Rich brown → matches Tailwind `secondary`
+      main: '#4B4B4B',        // Tailwind text.secondary
       contrastText: '#FFFFFF'
     },
+
+    // Backgrounds
     background: {
-      default: '#FFFFFF',     // Page background → Tailwind `background.DEFAULT`
-      paper: '#d6f4ea'        // Soft beige for cards/inputs → Tailwind `background.paper`
+      default: '#F9FAF7',     // Tailwind background.DEFAULT
+      paper: '#F5F3F1',       // Tailwind background.muted
     },
+
+    // Text colors
     text: {
-      primary: '#333333',     // Dark text → Tailwind `text.primary`
-      secondary: '#000000'    // Black text → Tailwind `text.secondary`
+      primary: '#1C1C1C',     // Tailwind text.primary
+      secondary: '#4B4B4B',   // Tailwind text.secondary
+      disabled: '#6B6B6B'     // Tailwind text.muted
     },
-    navbar: {
-      main: '#000000'         // Black navbar → Tailwind `navbar`
-    },
+
+    // Cards
     card: {
-      main: '#F5F5DC',        // Soft beige card → Tailwind `card.DEFAULT`
-      mint: '#98FF98'         // Mint card → Tailwind `card.mint`
+      main: '#FFFFFF',        // Tailwind card
+      sky: '#E0F2FE'          // Tailwind cardSky
     },
-    buttonHover: {
-      main: '#A0522D'         // Hover state for buttons → Tailwind `buttonHover`
+
+    // Borders
+    divider: '#E5E0D9',       // Tailwind border
+
+    // Buttons
+    button: {
+      main: '#D97706',        // Tailwind button.DEFAULT
+      hover: '#B45309',       // Tailwind button.hover
+      ghost: '#FEF3C7'        // Tailwind button.ghost
+    },
+
+    // Accents
+    success: {
+      main: '#16A34A'         // Tailwind accent.success
+    },
+    warning: {
+      main: '#D97706'         // Tailwind accent.warning
+    },
+    error: {
+      main: '#DC2626'         // Tailwind accent.danger
     }
   },
+
   components: {
     MuiAppBar: {
       styleOverrides: {
         root: {
-          backgroundColor: '#000000', // Black navbar
+          backgroundColor: '#1F1F1F', // Tailwind background.dark
           color: '#FFFFFF'
         }
       }
@@ -43,14 +72,14 @@ const theme = createTheme({
     MuiButton: {
       styleOverrides: {
         root: {
-          borderRadius: '8px',
+          borderRadius: '10px',        // Tailwind borderRadius.md
           textTransform: 'none',
           fontWeight: 700,
           transition: '0.3s ease',
-          backgroundColor: '#d2a86c', // Primary tan
-          color: '#000000',           // Black text
+          backgroundColor: '#D97706',  // Tailwind button.DEFAULT
+          color: '#FFFFFF',
           '&:hover': {
-            backgroundColor: '#A0522D', // Rich brown hover
+            backgroundColor: '#B45309', // Tailwind button.hover
             color: '#FFFFFF'
           }
         }
@@ -59,9 +88,9 @@ const theme = createTheme({
     MuiCard: {
       styleOverrides: {
         root: {
-          borderRadius: '12px',
-          backgroundColor: '#F5F5DC', // Soft beige card
-          color: '#333333'
+          borderRadius: '14px',        // Tailwind borderRadius.lg
+          backgroundColor: '#FFFFFF',  // Tailwind card
+          color: '#1C1C1C'
         }
       }
     },
@@ -69,12 +98,12 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           '& .MuiInputBase-root': {
-            backgroundColor: '#FFFFFF', // White input
-            borderRadius: '8px',
-            color: '#333333'
+            backgroundColor: '#FFFFFF',
+            borderRadius: '10px',      // Tailwind borderRadius.md
+            color: '#1C1C1C'
           },
           '& .MuiInputBase-input::placeholder': {
-            color: '#666666', // Subtle gray placeholder
+            color: '#6B6B6B',          // Tailwind text.muted
             opacity: 1
           }
         }
@@ -83,12 +112,12 @@ const theme = createTheme({
     MuiLink: {
       styleOverrides: {
         root: {
-          color: '#000000',
+          color: '#4B4B4B',            // Tailwind text.secondary
           textDecoration: 'none',
           transition: '0.3s ease',
           '&:hover': {
-            color: '#A0522D',
-            borderBottom: '2px solid #A0522D'
+            color: '#B45309',          // Tailwind primaryDark
+            borderBottom: '2px solid #B45309'
           }
         }
       }

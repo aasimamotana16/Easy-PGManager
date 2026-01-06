@@ -104,7 +104,7 @@ const Support = () => {
 // Reusable Info component
 const Info = ({ label, value }) => (
   <div className="bg-gray-50 rounded-xl p-4">
-    <p className="text-gray-400 text-xs mb-1">{label}</p>
+    <p className="text-text-muted  text-xs mb-1">{label}</p>
     <p className="font-medium">{value}</p>
   </div>
 );
