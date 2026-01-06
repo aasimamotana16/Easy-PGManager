@@ -28,7 +28,7 @@ app.use('/cities', cityRoutes); // Added this to match your frontend API call
 app.use("/api/users", require("./routes/userRoutes"));
 
 // payment
-app.use("api/payments", require("./routes/paymentRoutes"));
+app.use("/api/payments", require("./routes/paymentRoutes"));
 
 const PORT = 5000;
 app.listen(PORT, () => console.log(`Backend running on port ${PORT}`));
