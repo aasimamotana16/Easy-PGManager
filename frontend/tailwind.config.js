@@ -4,21 +4,16 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // ORANGE / PRIMARY
-        primary: {
-          DEFAULT: "#D97706",
-          dark: "#B45309",
-          soft: "#FEF3C7",
-        },
+        primary: "#D97706",
+        primaryDark: "#B45309",
+        primarySoft: "#FEF3C7",
 
-        // BACKGROUNDS
         background: {
           DEFAULT: "#F9FAF7",
           muted: "#F5F3F1",
           dark: "#1F1F1F",
         },
 
-        // TEXT
         text: {
           primary: "#1C1C1C",
           secondary: "#4B4B4B",
@@ -26,49 +21,29 @@ module.exports = {
           light: "#FFFFFF",
         },
 
-        // CARDS
-        card: {
-          DEFAULT: "#FFFFFF",
-          sky: "#E0F2FE",
-        },
+        card: "#FFFFFF",
+        cardSky: "#E0F2FE",
 
-        // BORDER
         border: "#E5E0D9",
 
-        // BUTTONS
         button: {
           DEFAULT: "#D97706",
           hover: "#B45309",
           ghost: "#FEF3C7",
         },
 
-        // STATUS / ACCENTS
-        green: {
-          1: "#bbffd4",   // success
-          2: "#14532D",   // success dark (for text)
-        },
-        red: {
-          1: "#DC2626",   // danger
-        },
-        amber: {
-          1: "#D97706",   // warning
-        },
-
-        // GRAYS (optional)
-        gray: {
-          100: "#F3F4F6",
-          400: "#9CA3AF",
-          600: "#4B5563",
-          700: "#374151",
+        accent: {
+          success: "#16A34A",
+          warning: "#D97706",
+          danger: "#DC2626",
         },
       },
 
-      backgroundImage: {
+     backgroundImage: {
         'dashboard-gradient': 'linear-gradient(to bottom, #D1FAE5, #FEF3C7, #FFFFFF)',
         'card-gradient': 'linear-gradient(to bottom, #FEF3C7, #D97706)',
-        'progress-gradient': 'linear-gradient(to right, #D1FAE5, #FEF3C7, #FFFFFF)',
-      },
-
+        'progress-gradient': 'linear-gradient(to right, #D1FAE5, #FEF3C7, #FFFFFF)'
+     },
       borderRadius: {
         sm: "6px",
         md: "10px",
