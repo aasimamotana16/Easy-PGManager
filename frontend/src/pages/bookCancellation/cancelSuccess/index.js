@@ -1,9 +1,12 @@
 import React from "react";
-import Navbar from "../../components/navbar";
-import Footer from "../../components/footer";
-import CButton from "../../components/cButton";
+import { useNavigate } from "react-router-dom";
+import Navbar from "../../../components/navbar";
+import Footer from "../../../components/footer";
+import CButton from "../../../components/cButton";
 
 const CancelSuccess = () => {
+  const navigate = useNavigate();
+
   return (
     <>
       <Navbar />
@@ -17,7 +20,12 @@ const CancelSuccess = () => {
           Your profile is archived for 10 days with read-only access.
         </p>
 
-        <CButton>Go to Dashboard</CButton>
+        <CButton
+          onClick={() => navigate("/pages/Home")} // ✅ Navigate to user dashboard
+          className="bg-blue-500 text-white hover:bg-blue-600"
+        >
+          Go to Dashboard
+        </CButton>
       </section>
 
       <Footer />

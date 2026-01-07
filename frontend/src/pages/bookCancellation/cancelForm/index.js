@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import CButton from "../../components/cButton";
-import CancelConfirmModal from "./cancelConfirm";
+import CButton from "../../../components/cButton";
+import CInput from "../../../components/cInput"; // ✅ custom input
+import CSelect from "../../../components/cSelect"; // ✅ custom select
+import CancelConfirmModal from "../cancelConfirm";
 
 const reasons = [
   "Change in plans",
@@ -25,7 +27,9 @@ const CancelForm = () => {
   });
 
   const isValid =
-    form.email && form.password && form.reason &&
+    form.email &&
+    form.password &&
+    form.reason &&
     (form.reason !== "Other" || form.otherReason);
 
   return (
@@ -36,42 +40,36 @@ const CancelForm = () => {
         Your profile will be archived for 10 days.
       </div>
 
-      <h2 className="text-2xl font-bold mb-6 text-primary">
-        Cancel Booking
-      </h2>
+      <h2 className="text-2xl font-bold mb-6 text-primary">Cancel Booking</h2>
 
       <div className="space-y-5">
-        <input
+        <CInput
           type="email"
           placeholder="Email"
-          className="w-full p-3 rounded-lg border"
+          value={form.email}
           onChange={(e) => setForm({ ...form, email: e.target.value })}
         />
 
-        <input
+        <CInput
           type="password"
           placeholder="Password"
-          className="w-full p-3 rounded-lg border"
+          value={form.password}
           onChange={(e) => setForm({ ...form, password: e.target.value })}
         />
 
-        <select
-          className="w-full p-3 rounded-lg border"
+        <CSelect
+          placeholder="Select reason"
+          value={form.reason}
           onChange={(e) => setForm({ ...form, reason: e.target.value })}
-        >
-          <option value="">Select reason</option>
-          {reasons.map((r) => (
-            <option key={r}>{r}</option>
-          ))}
-        </select>
+          options={reasons}
+        />
 
         {form.reason === "Other" && (
-          <textarea
+          <CInput
+            type="text"
             placeholder="Enter reason"
-            className="w-full p-3 rounded-lg border"
-            onChange={(e) =>
-              setForm({ ...form, otherReason: e.target.value })
-            }
+            value={form.otherReason}
+            onChange={(e) => setForm({ ...form, otherReason: e.target.value })}
           />
         )}
 
@@ -87,7 +85,7 @@ const CancelForm = () => {
       {showModal && (
         <CancelConfirmModal
           onClose={() => setShowModal(false)}
-          onConfirm={() => navigate("/booking/cancel-success")}
+          onConfirm={() => navigate("/cancel-success")}
         />
       )}
     </section>

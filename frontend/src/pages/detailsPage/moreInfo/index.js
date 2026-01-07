@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { pgdetails, hosteldetails } from "../../config/staticData";
-import Navbar from "../../components/navbar";
-import Footer from "../../components/footer";
-import CButton from "../../components/cButton";
+import { pgdetails, hosteldetails } from "../../../config/staticData";
+import Navbar from "../../../components/navbar";
+import Footer from "../../../components/footer";
+import CButton from "../../../components/cButton";
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/solid";
 
 const ruleIcons = {

@@ -1,5 +1,5 @@
 import React from "react";
-import CButton from "../../components/cButton";
+import CButton from "../../../components/cButton";
 
 const CancelConfirmModal = ({ onClose, onConfirm }) => {
   return (

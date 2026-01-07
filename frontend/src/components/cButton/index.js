@@ -5,12 +5,12 @@ const CButton = ({
   children,
   onClick,
   type = "button",
-  variant = "contained", // "contained", "outlined", "text"
-  size = "md",           // "sm", "md", "lg"
+  variant = "contained", 
+  size = "md",           
   fullWidth = false,
   className = "",
 }) => {
-  // Variant styles (NO HARDCODED COLORS)
+  // Variant styles
   const variantClasses = {
     contained:
       "bg-primary text-black hover:bg-button-hover",

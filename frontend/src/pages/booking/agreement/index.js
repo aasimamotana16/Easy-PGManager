@@ -1,10 +1,10 @@
 // src/pages/booking/agreement.js
 import React from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import Navbar from "../../components/navbar";
-import Footer from "../../components/footer";
-import CButton from "../../components/cButton";
-import { pgdetails, hosteldetails } from "../../config/staticData";
+import Navbar from "../../../components/navbar";
+import Footer from "../../../components/footer";
+import CButton from "../../../components/cButton";
+import { pgdetails, hosteldetails } from "../../../config/staticData";
 
 const Agreement = ({ user }) => {
   const { id } = useParams();

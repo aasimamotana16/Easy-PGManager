@@ -18,14 +18,19 @@ import Services from "./pages/services";
 import FAQ from "./pages/faq";
 import PGFullDetails, { PGOverview } from "./pages/detailsPage";
 import FindMyPg from "./pages/findMypg";
+
 /* ================= BOOKING ================= */
-import BookingPage from "./pages/booking";
-import ConfirmBooking from "./pages/booking/confirm";
-import CancelBooking from "./pages/booking/cancelBooking";
-import CancelForm from "./pages/booking/cancelForm";
-import CancelConfirm from "./pages/booking/cancelConfirm";
-import CancelSuccess from "./pages/booking/cancelSuccess";
+import BookingPage from "./pages/booking/bookNowPage";
+import ConfirmBooking from "./pages/booking/confirmBook";
 import RentalAgreement from "./pages/booking/agreement";
+
+/* ================= CANCELLATION ================= */
+import {
+  CancelBooking,
+  CancelConfirm,
+  CancelForm,
+  CancelSuccess,
+} from "./pages/bookCancellation"; // <- new index.js export
 
 /* ================= POLICIES ================= */
 import TermsConditions from "./pages/termsConditions";
@@ -94,7 +99,6 @@ function App() {
       <CssBaseline />
       <Router>
         <Routes>
-
           {/* ================= PUBLIC ROUTES ================= */}
           <Route path="/" element={<Home />} />
           <Route path="/findMypg" element={<FindMyPg />} />
@@ -200,12 +204,11 @@ function App() {
             <Route path="profileStatus/profileCard" element={<ProfileCard />} />
             <Route path="profileStatus/statCard" element={<StatsCard />} />
             <Route path="profileStatus/extraCardinfo" element={<ExtraInfoCard />} />
-            <Route path="oBookings" element={<BookingManagement/>}/>
+            <Route path="oBookings" element={<BookingManagement />} />
           </Route>
 
           {/* ================= FALLBACK ================= */}
           <Route path="*" element={<Navigate to="/" replace />} />
-
         </Routes>
       </Router>
     </ThemeProvider>

@@ -1,21 +1,23 @@
 import React, { useEffect } from "react";
 import { useParams, useLocation, Link, useNavigate } from "react-router-dom";
-import Navbar from "../../components/navbar";
-import Footer from "../../components/footer";
-import CButton from "../../components/cButton";
-import { pgdetails, hosteldetails } from "../../config/staticData";
+import Navbar from "../../../components/navbar";
+import Footer from "../../../components/footer";
+import CButton from "../../../components/cButton";
+import { pgdetails, hosteldetails } from "../../../config/staticData";
 
-const ConfirmBooking = ({ user }) => {
+const ConfirmBooking = () => {
   const { id } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
 
+  // Find the property
   const property = [...pgdetails, ...hosteldetails].find(
     (item) => item.id === parseInt(id)
   );
 
   const bookingData = location.state?.bookingData;
 
+  // Save tenant profile in localStorage
   useEffect(() => {
     if (!bookingData || !property) return;
 
@@ -28,7 +30,7 @@ const ConfirmBooking = ({ user }) => {
       bookingId,
       personalInfo: {
         fullName: bookingData.fullName || "Guest User",
-        mobile: bookingData.mobile || "9999999999",
+        mobile: bookingData.phone || "9999999999",
         email: bookingData.email || "guest@email.com",
         gender: property.gender || "N/A",
       },
@@ -55,6 +57,7 @@ const ConfirmBooking = ({ user }) => {
     localStorage.setItem("tenantProfile", JSON.stringify(tenantProfile));
   }, [bookingData, property]);
 
+  // Show warning if booking not completed
   if (!bookingData || !property) {
     return (
       <div className="min-h-screen flex flex-col bg-background-muted">
@@ -87,7 +90,7 @@ const ConfirmBooking = ({ user }) => {
           successfully confirmed.
         </p>
 
-        {/* Rental Agreement */}
+        {/* Rental Agreement Section */}
         <div className="bg-card shadow-card rounded-xl p-4 sm:p-8 mb-8 sm:mb-10">
           <h2 className="text-xl sm:text-2xl font-semibold mb-2 sm:mb-3">
             Rental Agreement
@@ -110,10 +113,11 @@ const ConfirmBooking = ({ user }) => {
             text="Cancel Booking"
             variant="outlined"
             className="text-sm sm:text-base border-red-500 text-red-500 hover:bg-red-500 hover:text-white"
-            onClick={() => navigate(`/booking/cancel/${id}`)}
+            onClick={() => navigate(`/cancel/${id}`)} // ✅ correct path
           />
         </div>
 
+        {/* Back to Services */}
         <Link to="/services">
           <CButton
             text="Back to Services"
