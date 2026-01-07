@@ -2,8 +2,6 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import Navbar from "../../components/navbar";
-import ImageCarousel1 from "../../components/imageCarousel";
-
 import CFormCard from "../../components/cFormCard";
 import CInput from "../../components/cInput";
 import CButton from "../../components/cButton";
@@ -69,50 +67,54 @@ const SignUp = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-background-default">
+    <div className="min-h-screen flex flex-col bg-background.DEFAULT">
       <Navbar />
 
-      <div className="flex-1 flex flex-col lg:flex-row justify-center items-center px-4 sm:px-6 lg:px-12 xl:px-16 py-4 sm:py-6 gap-6">
-
-        {/* LEFT : SIGNUP FORM */}
-        <div className="w-full max-w-[480px] sm:max-w-[600px] md:max-w-[680px] lg:w-1/3 xl:w-5/12 flex flex-col items-center">
-          <CFormCard className="pt-4 pb-6 px-6 sm:pt-6 sm:pb-8 sm:px-8 md:pt-8 md:pb-10 md:px-10 shadow-xl rounded-md">
-
+      {/* Full-screen Background Image */}
+      <section
+        className="relative w-full h-screen flex items-center justify-start px-8 lg:px-20"
+        style={{
+          backgroundImage: "url('/images/aboutImages/aboutIMG1.png')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
+      >
+        {/* SignUp Form Left Side */}
+        <div className="flex w-full max-w-lg lg:max-w-xl flex-col justify-center h-full mt-2">
+          
+          {/* White Card */}
+          <CFormCard className="bg-white border border-border rounded-xl shadow-lg p-8 sm:p-10">
+            
             {/* Logo */}
-            <div className="mb-2 flex justify-center">
+            <div className="mb-1  flex justify-center">
               <img
                 src="/logos/logo1.png"
                 alt="EasyPG Manager Logo"
-                className="h-12 sm:h-14 md:h-16 w-auto"
+                className="h-12 sm:h-16 md:h-20 w-auto"
               />
             </div>
 
-            <h1 className="text-center font-bold mb-3 text-xl sm:text-2xl text-primary">
+            <h1 className="text-2xl sm:text-2xl font-bold mb-5 text-primary text-center">
               Create Your EasyPG Manager Account
             </h1>
 
-            <form
-              onSubmit={handleSubmit}
-              className="flex flex-col gap-2.5 sm:gap-3"
-            >
+            <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+
               {/* Role Selector */}
-              <div className="flex w-full border border-border rounded-md overflow-hidden mb-2">
+              <div className="flex gap-2 mb-4">
                 <CButton
-                  type="button"
+                  size="sm"
                   fullWidth
                   variant={role === "user" ? "contained" : "outlined"}
                   onClick={() => setRole("user")}
-                  className="rounded-none py-1"
                 >
                   User
                 </CButton>
-
                 <CButton
-                  type="button"
+                  size="sm"
                   fullWidth
                   variant={role === "owner" ? "contained" : "outlined"}
                   onClick={() => setRole("owner")}
-                  className="rounded-none py-1"
                 >
                   Owner
                 </CButton>
@@ -125,7 +127,6 @@ const SignUp = () => {
                 placeholder="Enter your full name"
                 onChange={(e) => setName(e.target.value)}
               />
-
               <CInput
                 label="Email"
                 type="email"
@@ -133,7 +134,6 @@ const SignUp = () => {
                 placeholder="Enter your email address"
                 onChange={(e) => setEmail(e.target.value)}
               />
-
               <CInput
                 label="Password"
                 type="password"
@@ -141,7 +141,6 @@ const SignUp = () => {
                 placeholder="Enter your password"
                 onChange={(e) => setPassword(e.target.value)}
               />
-
               <CInput
                 label="Confirm Password"
                 type="password"
@@ -161,7 +160,8 @@ const SignUp = () => {
               </CButton>
             </form>
 
-            <p className="text-center mt-3 text-sm text-text-secondary">
+            {/* Already have account */}
+            <p className="text-center mt-4 text-sm text-text-secondary">
               Already have an account?{" "}
               <span
                 onClick={() => navigate("/login")}
@@ -170,14 +170,10 @@ const SignUp = () => {
                 Login
               </span>
             </p>
+
           </CFormCard>
         </div>
-
-        {/* RIGHT : IMAGE */}
-        <div className="hidden lg:flex justify-center items-center w-1/2 xl:w-6/12">
-          <ImageCarousel1 />
-        </div>
-      </div>
+      </section>
     </div>
   );
 };

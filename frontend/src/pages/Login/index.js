@@ -1,8 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import Navbar from "../../components/navbar";
-import ImageCarousel1 from "../../components/imageCarousel";
-
 import CFormCard from "../../components/cFormCard";
 import CInput from "../../components/cInput";
 import CButton from "../../components/cButton";
@@ -16,8 +13,6 @@ const Login = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const navigate = useNavigate();
-
   const validateEmail = (email) => {
     const re =
       /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@(([^<>()[\]\\.,;:\s@"]+\.)+[^<>()[\]\\.,;:\s@"]{2,})$/i;
@@ -26,202 +21,154 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    // Validation
     if (!email || !password) {
       alert("Please fill in both email and password.");
       return;
     }
-
     if (!validateEmail(email)) {
       alert("Please enter a valid email address.");
       return;
     }
-
     setLoading(true);
-
     try {
-      // Use the API function from your api.js
       const response = await loginUser({ email, password, role });
       const data = response.data;
-
-      // Check if response is successful
       if (data && data.success) {
-        // 1. SAVE THE JWT TOKEN
-        if (data.token) {
-          localStorage.setItem("token", data.token);
-        }
-
-        // 2. GET THE REAL ROLE FROM THE DATABASE DATA
-        // We use data.user.role because the backend knows the truth
-        const serverRole = data.user.role.toLowerCase(); 
-
+        if (data.token) localStorage.setItem("token", data.token);
+        const serverRole = data.user.role.toLowerCase();
         if (serverRole === "owner") {
           localStorage.setItem("owner", JSON.stringify(data.user));
           localStorage.removeItem("user");
-          navigate("/owner/dashboard"); // Goes to Owner Dashboard
+          window.location.href = "/owner/dashboard";
         } else {
           localStorage.setItem("user", JSON.stringify(data.user));
           localStorage.removeItem("owner");
-          navigate("/user/dashboard"); // Goes to User Dashboard
+          window.location.href = "/user/dashboard";
         }
-
-        if (rememberMe) {
-          localStorage.setItem("rememberMe", "true");
-        }
+        if (rememberMe) localStorage.setItem("rememberMe", "true");
       }
     } catch (error) {
-      console.error("Login error:", error);
-      const errorMessage = error.response?.data?.message || "Login failed. Please check your credentials.";
-      alert(errorMessage);
+      alert(error.response?.data?.message || "Login failed. Check credentials.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-background.DEFAULT md:pt-2 lg:pt-0">
-      {/* Navbar */}
+    <div className="min-h-screen flex flex-col bg-background.DEFAULT">
       <Navbar />
 
-      {/* Main Content */}
-      <main className="flex-1">
-        <div className="grid grid-cols-1 lg:grid-cols-2 min-h-screen place-items-center lg:place-items-stretch px-4 lg:px-6 py-1 gap-x-8">
+      {/* Full-screen Background Image Section */}
+      <section
+        className="relative w-full min-h-screen flex items-center px-8 lg:px-20"
+        style={{
+          backgroundImage: "url('/images/aboutImages/aboutIMG1.png')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
+      >
+        {/* Login Form Left Side */}
+        <div className="relative w-full max-w-2xl lg:max-w-xl flex flex-col justify-start mb-2">
+          
+          {/* White Card */}
+          <CFormCard className="bg-white border border-border rounded-xl shadow-lg p-8 sm:p-10 mt-1">
 
-          {/* LEFT : LOGIN FORM */}
-          <div className="flex w-full lg:w-auto justify-center lg:justify-end items-center min-h-[100vh]">
-            <div className="w-full max-w-[360px] sm:max-w-[480px] md:max-w-[680px] mx-auto lg:mx-0">
-
-              <CFormCard className="p-6 sm:p-8 bg-card border border-border rounded-xl shadow-card hover:shadow-hover transition">
-
-                {/* Logo */}
-                <div className="mb-6 flex justify-center">
-                  <img
-                    src="/logos/logo1.png"
-                    alt="EasyPG Manager Logo"
-                    className="h-14 sm:h-16 md:h-20 w-auto"
-                  />
-                </div>
-
-                <h1 className="text-center font-bold mb-6 text-2xl sm:text-3xl md:text-2xl text-primary">
-                  Login – EasyPG Manager
-                </h1>
-
-                <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-
-                  {/* Role Toggle */}
-                  <div className="flex gap-2">
-                    <CButton
-                      size="sm"
-                      fullWidth
-                      variant={role === "user" ? "contained" : "outlined"}
-                      onClick={() => setRole("user")}
-                    >
-                      User
-                    </CButton>
-
-                    <CButton
-                      size="sm"
-                      fullWidth
-                      variant={role === "owner" ? "contained" : "outlined"}
-                      onClick={() => setRole("owner")}
-                    >
-                      Owner
-                    </CButton>
-                  </div>
-
-                  {/* Email */}
-                  <CInput
-                    label="Email"
-                    type="email"
-                    value={email}
-                    placeholder="Enter your email"
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
-
-                  {/* Password */}
-                  <CInput
-                    label="Password"
-                    type="password"
-                    value={password}
-                    placeholder="Enter your password"
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
-
-                  {/* Remember Me + Forgot Password */}
-                  <div className="flex justify-between items-center text-sm sm:text-base">
-                    <CCheckbox
-                      label="Remember Me"
-                      checked={rememberMe}
-                      onChange={(e) => setRememberMe(e.target.checked)}
-                    />
-
-                    <a
-                      href="/forgot-password"
-                      className="font-semibold text-primary hover:underline"
-                    >
-                      Forgot Password?
-                    </a>
-                  </div>
-
-                  {/* Submit Button */}
-                  <CButton
-                    type="submit"
-                    text={loading ? "Logging in..." : "Login"}
-                    fullWidth
-                    variant="contained"
-                    size="md"
-                    className="mt-2"
-                    disabled={loading}
-                  />
-                </form>
-
-                {/* Terms & Privacy */}
-                <p className="text-center mt-4 text-xs sm:text-sm text-gray-500">
-                  By logging in, you agree to our{" "}
-                  <a
-                    href="/termsConditions"
-                    className="text-primary hover:underline"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    Terms & Conditions
-                  </a>{" "}
-                  and{" "}
-                  <a
-                    href="/privacyPolicy"
-                    className="text-primary hover:underline"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    Privacy Policy
-                  </a>.
-                </p>
-
-                {/* Sign Up */}
-                <p className="text-center mt-6 text-text-secondary text-sm sm:text-base">
-                  Don’t have an account?{" "}
-                  <a
-                    href="/signup"
-                    className="font-semibold text-primary hover:underline"
-                  >
-                    Sign Up
-                  </a>
-                </p>
-
-              </CFormCard>
+            {/* Logo */}
+            <div className="mb-1 flex justify-center">
+              <img
+                src="/logos/logo1.png"
+                alt="EasyPG Manager Logo"
+                className="h-12 sm:h-16 md:h-20 w-auto"
+              />
             </div>
-          </div>
 
-          {/* RIGHT : IMAGE CAROUSEL */}
-          <div className="hidden lg:flex justify-start items-center">
-            <div className="w-full max-w-[500px]">
-              <ImageCarousel1 />
-            </div>
-          </div>
+            <h1 className="text-2xl sm:text-4xl lg:text-3xl font-bold mb-6 text-primary text-center">
+              Login – EasyPG Manager
+            </h1>
 
+            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+
+              {/* Role Toggle */}
+              <div className="flex gap-2 mb-4">
+                <CButton
+                  size="sm"
+                  fullWidth
+                  variant={role === "user" ? "contained" : "outlined"}
+                  onClick={() => setRole("user")}
+                >
+                  User
+                </CButton>
+                <CButton
+                  size="sm"
+                  fullWidth
+                  variant={role === "owner" ? "contained" : "outlined"}
+                  onClick={() => setRole("owner")}
+                >
+                  Owner
+                </CButton>
+              </div>
+
+              {/* Email & Password */}
+              <CInput
+                label="Email"
+                type="email"
+                value={email}
+                placeholder="Enter your email"
+                onChange={(e) => setEmail(e.target.value)}
+              />
+              <CInput
+                label="Password"
+                type="password"
+                value={password}
+                placeholder="Enter your password"
+                onChange={(e) => setPassword(e.target.value)}
+              />
+
+              {/* Remember Me + Forgot */}
+              <div className="flex justify-between items-center text-sm sm:text-base">
+                <CCheckbox
+                  label="Remember Me"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                />
+                <a href="/forgot-password" className="font-semibold text-primary hover:underline">
+                  Forgot Password?
+                </a>
+              </div>
+
+              {/* Submit */}
+              <CButton
+                type="submit"
+                text={loading ? "Logging in..." : "Login"}
+                fullWidth
+                variant="contained"
+                size="md"
+                className="mt-2"
+                disabled={loading}
+              />
+            </form>
+
+            {/* Terms & SignUp */}
+            <p className="text-center mt-4 text-sm text-gray-500">
+              By logging in, you agree to our{" "}
+              <a href="/termsConditions" className="text-primary hover:underline">
+                Terms & Conditions
+              </a>{" "}
+              and{" "}
+              <a href="/privacyPolicy" className="text-primary hover:underline">
+                Privacy Policy
+              </a>.
+            </p>
+            <p className="text-center mt-4 text-sm text-text-secondary">
+              Don’t have an account?{" "}
+              <a href="/signup" className="font-semibold text-primary hover:underline">
+                Sign Up
+              </a>
+            </p>
+
+          </CFormCard>
         </div>
-      </main>
+      </section>
     </div>
   );
 };

@@ -17,90 +17,112 @@ const Contact = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-white text-text-secondary">
+    <div className="min-h-screen flex flex-col bg-default text-text-secondary">
       <Navbar />
 
       {/* Page title */}
-      <h2 className="text-3xl lg:text-4xl font-bold text-center mt-10 mb-8">
-        CONTACT US
-      </h2>
+      <div className="text-center mt-6 mb-6 px-4">
+        <h2 className="text-3xl sm:text-4xl font-bold text-black">
+          Contact Us
+        </h2>
+      </div>
 
-      <main className="flex-1 grid grid-cols-1 lg:grid-cols-2 px-4 lg:px-12 py-6 gap-10">
-        {/* LEFT: Contact Info */}
-        <div className="bg-yellow-200 p-8 rounded-xl flex flex-col justify-center shadow-lg text-black font-semibold text-center space-y-6">
-          <div>
-            <p className="text-xl font-bold">Email Address</p>
-            <p className="mt-2">{contactInfo.email}</p>
-            <hr className="my-3 border-black" />
-          </div>
-          <div>
-            <p className="text-xl font-bold">Contact Number</p>
-            <p className="mt-2">For info : <strong>{contactInfo.supportPhone}</strong></p>
-            <p className="mt-1">For support details: <strong>{contactInfo.infoPhone}</strong></p>
-            <hr className="my-3 border-black" />
-          </div>
-          <div>
-            <p className="text-xl font-bold">Address</p>
-            <p className="mt-2">{contactInfo.addressLine1}</p>
-            <p className="mt-1">{contactInfo.addressLine2}</p>
-          </div>
-        </div>
-
-        {/* RIGHT: Form */}
-        <div className="flex items-center justify-center">
-          <div className="w-full max-w-md">
-            <div className="border-4 border-indigo-500 rounded-xl p-8 shadow-lg">
-              <h2 className="text-center font-bold mb-6 text-3xl text-indigo-600">
-                Get A Quote
+      <main className="flex-1 flex flex-col lg:flex-row gap-10 px-4 lg:px-12 mb-10">
+        {/* LEFT: Contact Form */}
+        <div className="flex-1 flex items-start justify-center">
+          <div className="w-full max-w-2xl">
+            <div className="bg-white border rounded-xl p-10 shadow-lg">
+              <h2 className="text-center font-bold mb-6 text-3xl text-primary">
+                Contact our Sales Team
               </h2>
               <form className="flex flex-col gap-5" onSubmit={handleSubmit}>
+                <div className="flex gap-4">
+                  <CInput
+                    label="First Name"
+                    type="text"
+                    value={name.split(" ")[0] || name}
+                    onChange={(e) => setName(e.target.value)}
+                  />
+                  <CInput
+                    label="Last Name"
+                    type="text"
+                    value={name.split(" ")[1] || ""}
+                    onChange={(e) => setName(e.target.value)}
+                  />
+                </div>
                 <CInput
-                  label="Name"
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                />
-                <CInput
-                  label="Mobile Number"
-                  type="tel"
-                  value={mobile}
-                  onChange={(e) => setMobile(e.target.value)}
-                />
-                <CInput
-                  label="Email ID *"
+                  label="Email Address"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
                 <CInput
-                  label="Message"
+                  label="Phone Number"
+                  type="tel"
+                  value={mobile}
+                  onChange={(e) => setMobile(e.target.value)}
+                />
+                 <CInput
+                  label="Your Message"
                   type="text"
                   multiline
-                  rows={4}
+                  rows={6}
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                 />
-                <div className="flex justify-between gap-4 mt-4">
-                  <CButton
-                    type="button"
-                    text="CANCEL"
-                    variant="outlined"
-                    className="w-1/2 py-3 font-semibold"
-                    onClick={() => {
-                      setName("");
-                      setMobile("");
-                      setEmail("");
-                      setMessage("");
-                    }}
-                  />
-                  <CButton
-                    type="submit"
-                    text="SUBMIT"
-                    variant="contained"
-                    className="w-1/2 py-3 font-semibold"
-                  />
-                </div>
+                <CButton
+                  type="submit"
+                  text="Send Message"
+                  variant="contained"
+                  className="mt-3 w-full py-3 font-semibold text-lg"
+                />
               </form>
+            </div>
+          </div>
+        </div>
+
+        {/* RIGHT: How can we help box */}
+        <div className="flex-1 flex flex-col gap-6">
+          <div className="bg-white p-8 rounded-xl shadow-lg flex flex-col justify-center h-full">
+            <h3 className="text-2xl font-bold text-gray-900 mb-4">
+              How can We Help?
+            </h3>
+            <p className="text-gray-600 mb-4">
+              Get in touch with our sales and support teams for demos, onboarding support, or product questions.
+            </p>
+
+            <ul className="space-y-3">
+              <li className="flex items-center gap-2 text-gray-700 font-semibold">
+                <span className="text-green-500 text-xl">✔</span>
+                Request a demo
+              </li>
+              <li className="flex items-center gap-2 text-gray-700 font-semibold">
+                <span className="text-green-500 text-xl">✔</span>
+                Learn which plan is right for your team
+              </li>
+              <li className="flex items-center gap-2 text-gray-700 font-semibold">
+                <span className="text-green-500 text-xl">✔</span>
+                Get onboarding help
+              </li>
+            </ul>
+
+            {/* Additional info cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-6">
+              <div className="bg-gray-50 p-6 rounded-xl shadow flex flex-col">
+                <h4 className="font-bold text-gray-900 mb-2">General Communication</h4>
+                <p className="text-gray-700 text-sm">For other queries, please get in touch with us via email.</p>
+                <p className="mt-2 font-medium text-indigo-600">{contactInfo.email}</p>
+              </div>
+              <div className="bg-gray-50 p-6 rounded-xl shadow flex flex-col">
+                <h4 className="font-bold text-gray-900 mb-2">Documentation</h4>
+                <p className="text-gray-700 text-sm">Get an overview of our features, integrations, and how to use them.</p>
+                <a
+                  href="#"
+                  className="mt-2 font-medium text-indigo-600 hover:underline"
+                >
+                  See Docs →
+                </a>
+              </div>
             </div>
           </div>
         </div>
