@@ -24,45 +24,49 @@ API.interceptors.request.use((req) => {
 });
 
 /* =========================
-   OWNER & PROPERTY APIs 
-   (Matches: backend/routes/ownerRoutes.js)
+    AUTH & USER APIs 
+    (Updated to match authRoutes.js)
 ========================= */
+// Points to router.post('/signup') in authRoutes.js
+export const registerUser = (userData) => API.post("/auth/signup", userData);
 
-// Fetches { totalPgs, totalRooms }
+// Points to router.post('/login') in authRoutes.js
+export const loginUser = (userData) => API.post("/auth/login", userData);
+
+// Password Management (Updated paths to /auth)
+export const forgotPassword = (email) => API.post("/auth/forgot-password", { email });
+export const resetPassword = (token, password) => API.post(`/auth/reset-password/${token}`, { password });
+
+// Profile & Stats (Keep /users if they are in userRoutes.js)
+export const getUserProfile = () => API.get("/users/profile");
+export const getDashboardStats = () => API.get("/users/dashboard-stats");
+
+
+/* =========================
+    OWNER & PROPERTY APIs 
+========================= */
 export const getOwnerDashboardStats = () => API.get("/owner/dashboard-summary");
-
-// Sends { name, location, numberOfRooms, rent } to Atlas
 export const addPgProperty = (pgData) => API.post("/owner/add-pg", pgData);
 
 
 /* =========================
-   AUTH & USER APIs 
-========================= */
-export const registerUser = (userData) => API.post("/users/register", userData);
-export const loginUser = (userData) => API.post("/users/login", userData);
-export const getUserProfile = () => API.get("/users/profile");
-export const getDashboardStats = () => API.get("/users/dashboard-stats");
-
-// Password Management
-export const forgotPassword = (email) => API.post("/users/forgot-password", { email });
-export const resetPassword = (token, password) => API.post(`/users/reset-password/${token}`, { password });
-
-/* =========================
-   CITY & HOME APIs
+    CITY & HOME APIs
 ========================= */
 export const getCities = () => API.get("/cities");
 export const getFaqs = () => API.get("/faqs");
 export const getHomeFeatures = () => API.get("/features");
 
+
 /* =========================
-   PG SEARCH & BOOKING APIs
+    PG SEARCH & BOOKING APIs
 ========================= */
 export const searchPGs = (params) => API.get("/pgs/search", { params });
 export const getBookings = () => API.get("/bookings/my");
 export const createBooking = (bookingData) => API.post("/bookings/create", bookingData);
 
+
 /* =========================
-   ROOMS & PAYMENTS APIs
+    ROOMS & PAYMENTS APIs
 ========================= */
 export const getAllRooms = () => API.get("/rooms/all");
 export const getRoom = (roomId) => API.get(`/rooms/${roomId}`);
@@ -71,7 +75,7 @@ export const payRent = (paymentData) => API.post("/payments/pay-rent", paymentDa
 export const getAllPayments = () => API.get("/payments/all");
 
 /* =========================
-   AGREEMENT APIs
+    AGREEMENT APIs
 ========================= */
 export const getAgreement = (bookingId) => API.get(`/agreements/${bookingId}`);
 export const createAgreement = (agreementData) => API.post("/agreements/create", agreementData);

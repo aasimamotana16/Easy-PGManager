@@ -1,26 +1,33 @@
 const mongoose = require('mongoose');
-const Pg = require('../models/pgModel');
+const Pg = require('../models/pgModel'); // Ensure this points to your PgListing model file
 
 // GET Dashboard Data
 const getOwnerDashboardData = async (req, res) => {
   try {
-    const testId = "695cadaa3dc3671162608700"; // Your Atlas Test ID
+    const testId = "695cadaa3dc3671162608700"; 
     const ownerId = req.user ? req.user.id : testId;
 
-    const query = { owner: new mongoose.Types.ObjectId(ownerId) };
+    // Updated to use 'ownerId' to match your model
+    const query = { ownerId: new mongoose.Types.ObjectId(ownerId) };
 
     const totalPgs = await Pg.countDocuments(query);
     
     const roomStats = await Pg.aggregate([
       { $match: query },
-      { $group: { _id: null, total: { $sum: "$numberOfRooms" } } }
+      { $group: { 
+          _id: null, 
+          totalRooms: { $sum: "$totalRooms" }, // Updated to match model field
+          liveListings: { $sum: "$liveListings" } // Adding live listings sum
+        } 
+      }
     ]);
 
     res.status(200).json({
       success: true,
       stats: {
         totalPgs: totalPgs,
-        totalRooms: roomStats[0]?.total || 0,
+        totalRooms: roomStats[0]?.totalRooms || 0,
+        liveListings: roomStats[0]?.liveListings || 0, // Now sending this to dashboard
         recentStatus: "Live from Database"
       },
       recentActivity: [
@@ -35,16 +42,18 @@ const getOwnerDashboardData = async (req, res) => {
 // POST Create New PG
 const createPg = async (req, res) => {
   try {
-    const { name, location, numberOfRooms, rent } = req.body;
+    // Destructure using names that match your model
+    const { pgName, location, totalRooms, liveListings } = req.body;
     const testId = "695cadaa3dc3671162608700";
     const ownerId = req.user ? req.user.id : testId;
 
     const newPg = await Pg.create({
-      owner: ownerId,
-      name,
+      ownerId: ownerId, // Matches model
+      pgName,           // Matches model
       location,
-      numberOfRooms,
-      rent
+      totalRooms: totalRooms || 0,
+      liveListings: liveListings || 0,
+      status: "live"    // Defaulting to live for testing
     });
 
     res.status(201).json({
