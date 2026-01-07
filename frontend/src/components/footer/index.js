@@ -52,6 +52,14 @@ const Footer = () => {
                 >
                   Contact
                 </Link>
+                </li>
+                <li>
+                <Link
+                  to="/findMypg"
+                  className="hover:text-primary hover:underline transition"
+                >
+                  FindMyPG
+                </Link>
               </li>
             </ul>
           </div>

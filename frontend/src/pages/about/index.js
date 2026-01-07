@@ -13,7 +13,7 @@ const About = () => {
     <div className="min-h-screen flex flex-col bg-background.DEFAULT text-text-secondary font-roboto">
       <Navbar />
 
-      <main className="flex-1 px-2 md:px-6 lg:px-8 py-12  space-y-16">
+      <main className="flex-1 space-y-16">
         <AboutIntro />
         <AboutWhoWeServe />
         <AboutFeatures />

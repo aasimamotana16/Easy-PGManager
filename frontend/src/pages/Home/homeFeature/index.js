@@ -44,7 +44,7 @@ const HomeFeatures = () => {
   return (
     <>
       {/* ================= FEATURES SECTION ================= */}
-      <section className="bg-background-default px-6 py-14 md:py-16">
+      <section className="bg-background-default px-6 py-14 md:py-16 mt-4">
         <motion.div
           className="text-center max-w-3xl mx-auto mb-10 md:mb-12"
           variants={fadeUp}
