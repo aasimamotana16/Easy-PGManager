@@ -9,15 +9,14 @@ export default function ListingCard({
   const mainImage = image || roomImages?.[0];
 
   return (
-    <div className="w-80 flex-shrink-0 bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-transform hover:scale-[1.02] flex flex-col overflow-hidden">
-      
+    <div className="w-80 flex-shrink-0 bg-white rounded-3xl transition-transform hover:scale-[1.02] flex flex-col overflow-hidden">
       {/* Framed Image */}
-      <div className="w-full h-64 md:h-72 lg:h-80 bg-gray-100 p-3 flex items-center justify-center">
+      <div className="w-full h-64 md:h-72 lg:h-80 bg-white p-3 flex items-center justify-center">
         {mainImage ? (
           <img
             src={mainImage}
             alt={name}
-            className="w-full h-full object-cover rounded-xl shadow-inner"
+            className="w-full h-full object-cover rounded-xl"
           />
         ) : (
           <div className="flex items-center justify-center h-full text-gray-400">

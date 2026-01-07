@@ -67,7 +67,7 @@ const HomeBanner = () => {
           </div>
 
           {/* RIGHT IMAGE (NO ANIMATION, BIGGER SIZE) */}
-          <div className="md:w-1/2 flex justify-center">
+          <div className="md:w-full flex justify-center">
             <img
               src="/images/homeImages/img12.png"
               alt="EasyPG Illustration"

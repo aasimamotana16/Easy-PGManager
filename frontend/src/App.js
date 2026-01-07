@@ -1,6 +1,11 @@
 // src/App.js
 import React from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 
@@ -30,7 +35,7 @@ import {
   CancelConfirm,
   CancelForm,
   CancelSuccess,
-} from "./pages/bookCancellation"; // <- new index.js export
+} from "./pages/bookCancellation";
 
 /* ================= POLICIES ================= */
 import TermsConditions from "./pages/termsConditions";
@@ -72,21 +77,18 @@ import BookingManagement from "./owner/dashboard/oBookings";
 
 /* ================= PROTECTED ROUTES ================= */
 
-// USER protected
 const UserProtectedRoute = ({ children }) => {
   const user = JSON.parse(localStorage.getItem("user"));
   if (!user) return <Navigate to="/login" replace />;
   return children;
 };
 
-// OWNER protected
 const OwnerProtectedRoute = ({ children }) => {
   const owner = JSON.parse(localStorage.getItem("owner"));
   if (!owner) return <Navigate to="/login" replace />;
   return children;
 };
 
-// Booking flow protected
 const ProtectedBookingRoute = ({ children }) => {
   const user = JSON.parse(localStorage.getItem("user"));
   if (!user) return <Navigate to="/login" replace />;
@@ -101,7 +103,11 @@ function App() {
         <Routes>
           {/* ================= PUBLIC ROUTES ================= */}
           <Route path="/" element={<Home />} />
+
+          {/* ✅ FIXED ROUTES */}
           <Route path="/findMypg" element={<FindMyPg />} />
+          <Route path="/findMypg/:type" element={<FindMyPg />} />
+
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<SignUp />} />
           <Route path="/about" element={<About />} />

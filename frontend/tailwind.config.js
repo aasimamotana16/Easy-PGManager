@@ -9,8 +9,8 @@ module.exports = {
         primarySoft: "#FEF3C7",
 
         background: {
-          DEFAULT: "#F9FAF7",
-          muted: "#F5F3F1",
+          default: "#ffffffff",
+          muted: "#ffffffff",
           dark: "#1F1F1F",
         },
 

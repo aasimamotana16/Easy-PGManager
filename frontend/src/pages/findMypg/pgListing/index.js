@@ -1,22 +1,58 @@
-import React, { useRef } from "react";
+import React, { useRef, useEffect } from "react";
 import ListingCard from "../../../components/listingCard";
 import { Link } from "react-router-dom";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
+import CButton from "../../../components/cButton";
 
 export default function PGListings({ list = [] }) {
   const containerRef = useRef(null);
+  const scrollInterval = useRef(null);
+
+  // Infinite scroll by duplicating list
+  const duplicatedList = [...list, ...list];
+
+  useEffect(() => {
+    const startAutoScroll = () => {
+      scrollInterval.current = setInterval(() => {
+        if (containerRef.current) {
+          const { scrollLeft, scrollWidth, clientWidth } = containerRef.current;
+          if (scrollLeft >= scrollWidth / 2) {
+            // Reset to start for seamless scroll
+            containerRef.current.scrollLeft = 0;
+          } else {
+            containerRef.current.scrollLeft += 1;
+          }
+        }
+      }, 10);
+    };
+
+    startAutoScroll();
+    return () => clearInterval(scrollInterval.current);
+  }, []);
+
+  const handleMouseEnter = () => clearInterval(scrollInterval.current);
+  const handleMouseLeave = () => {
+    scrollInterval.current = setInterval(() => {
+      if (containerRef.current) {
+        const { scrollLeft, scrollWidth } = containerRef.current;
+        if (scrollLeft >= scrollWidth / 2) {
+          containerRef.current.scrollLeft = 0;
+        } else {
+          containerRef.current.scrollLeft += 1;
+        }
+      }
+    }, 10);
+  };
 
   if (!list.length)
     return <p className="text-center text-lg mt-6">No PGs found</p>;
 
-  // Scroll left
   const scrollLeft = () => {
-    containerRef.current.scrollBy({ left: -300, behavior: "smooth" });
+    containerRef.current.scrollLeft -= 300;
   };
 
-  // Scroll right
   const scrollRight = () => {
-    containerRef.current.scrollBy({ left: 300, behavior: "smooth" });
+    containerRef.current.scrollLeft += 300;
   };
 
   return (
@@ -28,31 +64,38 @@ export default function PGListings({ list = [] }) {
       {/* Carousel Arrows */}
       <button
         onClick={scrollLeft}
-        className="absolute left-0 top-1/2 -translate-y-1/2 z-10 p-3 bg-white rounded-full shadow-lg hover:bg-amber-50 transition"
+        className="absolute left-0 top-1/2 -translate-y-1/2 z-10 p-3 bg-white rounded-full hover:bg-amber-50 transition"
       >
         <FaChevronLeft size={20} className="text-amber-600" />
       </button>
-
       <button
         onClick={scrollRight}
-        className="absolute right-0 top-1/2 -translate-y-1/2 z-10 p-3 bg-white rounded-full shadow-lg hover:bg-amber-50 transition"
+        className="absolute right-0 top-1/2 -translate-y-1/2 z-10 p-3 bg-white rounded-full hover:bg-amber-50 transition"
       >
         <FaChevronRight size={20} className="text-amber-600" />
       </button>
 
-      {/* Horizontal scroll container */}
+      {/* Scroll Container */}
       <div
         ref={containerRef}
-        className="flex gap-6 overflow-x-auto scroll-smooth px-12"
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        className="flex gap-6 overflow-x-hidden scroll-smooth px-12"
         style={{ scrollbarWidth: "none" }}
       >
-        {list.map((pg) => (
+        {duplicatedList.map((pg, idx) => (
           <Link
-            key={pg.id}
+            key={`${pg.id}-${idx}`}
             to={`/pg/${pg.id}`}
             className="flex-shrink-0 hover:scale-[1.03] transition transform"
           >
-            <ListingCard {...pg} />
+            <ListingCard {...pg}>
+              <CButton
+                text="View"
+                className="w-full mt-2"
+                onClick={() => window.location.assign(`/pg/${pg.id}`)}
+              />
+            </ListingCard>
           </Link>
         ))}
       </div>
