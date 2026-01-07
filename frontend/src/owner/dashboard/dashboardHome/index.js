@@ -52,7 +52,7 @@ const OwnerDashboardHome = () => {
     { label: "Server Status", value: dashboardData.recentStatus },
   ];
 
-  const recentActivity = [
+ const recentActivity = [
     { title: "Database Connection", detail: "Active" },
     { title: "Backend API Path", detail: "/api/owner/dashboard-summary" },
     { title: "Last Sync", detail: new Date().toLocaleTimeString() },
@@ -81,7 +81,7 @@ const OwnerDashboardHome = () => {
       </div>
 
       {/* Recent Activity / Debug Info */}
-      <div className="bg-card rounded-2xl border border-border p-6">
+      {/* <div className="bg-card rounded-2xl border border-border p-6">
         <h2 className="text-lg font-semibold text-primary mb-4">
           API Connection Details
         </h2>
@@ -93,7 +93,7 @@ const OwnerDashboardHome = () => {
             </div>
           ))}
         </div>
-      </div>
+      </div> */}
     </div>
   );
 };

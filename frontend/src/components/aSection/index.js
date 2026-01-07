@@ -1,4 +1,4 @@
-// src/components/Section.js
+// src/components/aSection/index.js
 import React from "react";
 
 const Section = ({ title, children, className = "" }) => {
@@ -10,8 +10,9 @@ const Section = ({ title, children, className = "" }) => {
         </h2>
       )}
       {children}
-     </section>
+    </section>
   );
 };
 
+// ✅ Default export is required for all About sections to work
 export default Section;

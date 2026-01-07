@@ -160,7 +160,7 @@ const DashboardHome = () => {
 
 /* ---------- Components ---------- */
 const DashboardCard = ({ title, icon, children }) => (
-  <div className="bg-white rounded-2xl shadow-lg p-5 border hover:shadow-2xl transition-shadow">
+  <div className="bg-card rounded-2xl shadow-lg p-5 border hover:shadow-2xl transition-shadow">
     <div className="flex items-center gap-2 font-semibold">
       <span>{icon}</span>
       {title}
@@ -170,7 +170,7 @@ const DashboardCard = ({ title, icon, children }) => (
 );
 
 const StatCard = ({ title, value, highlight }) => (
-  <div className="bg-white rounded-2xl shadow-lg p-5 border hover:shadow-2xl transition-shadow">
+  <div className="bg-card rounded-2xl shadow-lg p-5 border hover:shadow-2xl transition-shadow">
     <p className="text-buttonDEFAULT text-sm">{title}</p>
     <p className={`text-lg font-semibold mt-1 ${highlight ? "text-green-2" : "text-primary"}`}>
       {value}
@@ -179,7 +179,7 @@ const StatCard = ({ title, value, highlight }) => (
 );
 
 const BookingCard = ({ booking, onView, onPay }) => (
-  <div className="bg-white rounded-2xl shadow-lg p-6 border hover:shadow-2xl transition-shadow">
+  <div className="bg-card rounded-2xl shadow-lg p-6 border hover:shadow-2xl transition-shadow">
     <div className="flex justify-between items-center mb-4">
       <h3 className="font-semibold text-lg">{booking.pgName}</h3>
       <StatusBadge status={booking.status} />
@@ -214,7 +214,7 @@ const InfoRow = ({ label, value }) => (
 const StatusBadge = ({ status }) => (
   <span
     className={`px-3 py-1 rounded-full text-xs font-medium ${
-      status === "Active" ? "bg-green-1 text-green-2" : "bg-gray-1 text-gray-7"
+      status === "Active" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"
     }`}
   >
     {status}
