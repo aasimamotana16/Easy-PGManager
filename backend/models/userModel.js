@@ -18,13 +18,16 @@ const userSchema = new mongoose.Schema(
     phoneNumber: {
       type: String,
     },
+    // UPDATE THIS SECTION HERE:
     role: {
       type: String,
+      required: true,
+      enum: ["user", "owner", "admin"], // This ensures ONLY these 3 values are allowed
       default: "user",
+      lowercase: true, // This fixes the "Something went wrong" if frontend sends "Owner" instead of "owner"
     },
   },
   {
-    // This automatically creates 'createdAt' and 'updatedAt' in camelCase
     timestamps: true, 
   }
 );

@@ -45,21 +45,25 @@ const Login = () => {
       const response = await loginUser({ email, password, role });
       const data = response.data;
 
-      // Check if response is successful (Axios throws error for non-2xx codes)
-      if (data) {
-        // SAVE THE JWT TOKEN - This is what the dashboard needs
+      // Check if response is successful
+      if (data && data.success) {
+        // 1. SAVE THE JWT TOKEN
         if (data.token) {
           localStorage.setItem("token", data.token);
         }
 
-        if (role === "user") {
-          localStorage.setItem("user", JSON.stringify(data));
-          localStorage.removeItem("owner");
-          navigate("/user/dashboard");
-        } else if (role === "owner") {
-          localStorage.setItem("owner", JSON.stringify(data));
+        // 2. GET THE REAL ROLE FROM THE DATABASE DATA
+        // We use data.user.role because the backend knows the truth
+        const serverRole = data.user.role.toLowerCase(); 
+
+        if (serverRole === "owner") {
+          localStorage.setItem("owner", JSON.stringify(data.user));
           localStorage.removeItem("user");
-          navigate("/owner/dashboard");
+          navigate("/owner/dashboard"); // Goes to Owner Dashboard
+        } else {
+          localStorage.setItem("user", JSON.stringify(data.user));
+          localStorage.removeItem("owner");
+          navigate("/user/dashboard"); // Goes to User Dashboard
         }
 
         if (rememberMe) {
@@ -68,7 +72,6 @@ const Login = () => {
       }
     } catch (error) {
       console.error("Login error:", error);
-      // Handle Axios error responses
       const errorMessage = error.response?.data?.message || "Login failed. Please check your credentials.";
       alert(errorMessage);
     } finally {
