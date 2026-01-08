@@ -128,7 +128,7 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background.DEFAULT">
-      <Navbar />
+      {/*<Navbar />*/}
 
       <section className="relative w-full min-h-screen flex items-center px-4 sm:px-8 lg:px-20 overflow-hidden">
         {/* Background Images */}

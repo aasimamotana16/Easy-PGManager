@@ -98,7 +98,7 @@ const SignUp = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background.DEFAULT">
-      <Navbar />
+      {/*<Navbar />*/}
 
       {/* 🔹 IMAGE FADE SECTION */}
       <section className="relative w-full h-screen px-4 sm:px-8 lg:px-20 flex overflow-hidden">

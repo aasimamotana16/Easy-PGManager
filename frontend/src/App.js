@@ -23,6 +23,7 @@ import Services from "./pages/services";
 import FAQ from "./pages/faq";
 import PGFullDetails, { PGOverview } from "./pages/detailsPage";
 import FindMyPg from "./pages/findMypg";
+import DemoBook from "./pages/Home/demoBook";
 
 /* ================= BOOKING ================= */
 import BookingPage from "./pages/booking/bookNowPage";
@@ -116,6 +117,7 @@ function App() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/services" element={<Services />} />
           <Route path="/faq" element={<FAQ />} />
+          <Route path="/demoBook" element={<DemoBook/>}/>
 
           {/* ================= PG DETAILS ================= */}
           <Route path="/pg/:id" element={<PGOverview />} />

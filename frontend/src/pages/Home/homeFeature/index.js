@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { homeBannerStats, features } from "../../../config/staticData";
 import { getHomeFeatures } from "../../../api/api"; 
 import CFormCard from "../../../components/cFormCard";
 import CButton from "../../../components/cButton";
+import DemoBook from "../demoBook";
+
+/* ================= ANIMATION CONFIG ================= */
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -22,10 +24,16 @@ const stagger = {
   },
 };
 
+/* ================= COMPONENT ================= */
+
 const HomeFeatures = () => {
-  const navigate = useNavigate();
-  // Using static features as initial state so UI isn't empty while loading
-  const [featureList, setFeatureList] = useState(features); 
+  // Feature list
+  const [featureList, setFeatureList] = useState(features);
+
+  // Demo modal state
+  const [openDemo, setOpenDemo] = useState(false);
+
+  /* ================= FETCH FEATURES ================= */
 
   useEffect(() => {
     const fetchFeatureData = async () => {
@@ -38,6 +46,7 @@ const HomeFeatures = () => {
         console.error("Error loading features:", err);
       }
     };
+
     fetchFeatureData();
   }, []);
 
@@ -106,7 +115,7 @@ const HomeFeatures = () => {
             <div className="mt-8">
               <CButton
                 text="Schedule a Free Demo"
-                onClick={() => navigate("/demoBooking")}
+                onClick={() => setOpenDemo(true)}
               />
             </div>
 
@@ -154,6 +163,12 @@ const HomeFeatures = () => {
           </motion.div>
         </div>
       </section>
+
+      {/* ================= DEMO MODAL ================= */}
+      <DemoBook
+        isOpen={openDemo}
+        onClose={() => setOpenDemo(false)}
+      />
     </>
   );
 };
