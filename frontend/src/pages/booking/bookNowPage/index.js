@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { pgdetails, hosteldetails } from "../../../config/staticData";
 import CButton from "../../../components/cButton";
-import CInput from "../../../components/cInput"; // default CInput
+import CInput from "../../../components/cInput";
 
 const BookingPage = () => {
   const { id } = useParams();
@@ -26,18 +26,61 @@ const BookingPage = () => {
     price: pg?.sharing?.[0]?.price || 0,
   });
 
+  // 🔹 validation errors
+  const [errors, setErrors] = useState({});
+
   if (!pg) return <div className="text-center mt-20">PG not found</div>;
 
   const increase = () => {
     if (persons < (pg.sharing?.[0]?.available || 5)) setPersons(persons + 1);
   };
+
   const decrease = () => {
     if (persons > 1) setPersons(persons - 1);
   };
 
   const totalRent = (pg.sharing?.[0]?.price || 0) * persons;
 
+  // 🔹 validation function
+  const validate = () => {
+    const newErrors = {};
+
+    if (!form.fullName.trim()) {
+      newErrors.fullName = "Full name is required";
+    }
+
+    if (!form.email.trim()) {
+      newErrors.email = "Email is required";
+    } else if (!/^\S+@\S+\.\S+$/.test(form.email)) {
+      newErrors.email = "Enter a valid email address";
+    }
+
+    if (!form.phone.trim()) {
+      newErrors.phone = "Phone number is required";
+    } else if (!/^[6-9]\d{9}$/.test(form.phone)) {
+      newErrors.phone = "Enter a valid 10-digit phone number";
+    }
+
+    if (!form.checkIn) {
+      newErrors.checkIn = "Check-in date is required";
+    }
+
+    if (!form.checkOut) {
+      newErrors.checkOut = "Check-out date is required";
+    } else if (
+      form.checkIn &&
+      new Date(form.checkOut) <= new Date(form.checkIn)
+    ) {
+      newErrors.checkOut = "Check-out must be after check-in";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleBooking = () => {
+    if (!validate()) return;
+
     const bookingData = {
       ...form,
       sharingType: pg.sharing?.[0]?.type || "Single",
@@ -56,36 +99,75 @@ const BookingPage = () => {
 
         {/* Booking Form */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-          <CInput
-            type="text"
-            placeholder="Full Name"
-            value={form.fullName}
-            onChange={(e) => setForm({ ...form, fullName: e.target.value })}
-          />
-          <CInput
-            type="email"
-            placeholder="Email Address"
-            value={form.email}
-            onChange={(e) => setForm({ ...form, email: e.target.value })}
-          />
-          <CInput
-            type="tel"
-            placeholder="Phone Number"
-            value={form.phone}
-            onChange={(e) => setForm({ ...form, phone: e.target.value })}
-          />
-          <CInput
-            type="date"
-            placeholder="Check-in Date"
-            value={form.checkIn}
-            onChange={(e) => setForm({ ...form, checkIn: e.target.value })}
-          />
-          <CInput
-            type="date"
-            placeholder="Check-out Date"
-            value={form.checkOut}
-            onChange={(e) => setForm({ ...form, checkOut: e.target.value })}
-          />
+          <div>
+            <CInput
+              type="text"
+              placeholder="Full Name"
+              value={form.fullName}
+              onChange={(e) =>
+                setForm({ ...form, fullName: e.target.value })
+              }
+            />
+            {errors.fullName && (
+              <p className="text-red-500 text-sm">{errors.fullName}</p>
+            )}
+          </div>
+
+          <div>
+            <CInput
+              type="email"
+              placeholder="Email Address"
+              value={form.email}
+              onChange={(e) =>
+                setForm({ ...form, email: e.target.value })
+              }
+            />
+            {errors.email && (
+              <p className="text-red-500 text-sm">{errors.email}</p>
+            )}
+          </div>
+
+          <div>
+            <CInput
+              type="tel"
+              placeholder="Phone Number"
+              value={form.phone}
+              onChange={(e) =>
+                setForm({ ...form, phone: e.target.value })
+              }
+            />
+            {errors.phone && (
+              <p className="text-red-500 text-sm">{errors.phone}</p>
+            )}
+          </div>
+
+          <div>
+            <CInput
+              type="date"
+              placeholder="Check-in Date"
+              value={form.checkIn}
+              onChange={(e) =>
+                setForm({ ...form, checkIn: e.target.value })
+              }
+            />
+            {errors.checkIn && (
+              <p className="text-red-500 text-sm">{errors.checkIn}</p>
+            )}
+          </div>
+
+          <div>
+            <CInput
+              type="date"
+              placeholder="Check-out Date"
+              value={form.checkOut}
+              onChange={(e) =>
+                setForm({ ...form, checkOut: e.target.value })
+              }
+            />
+            {errors.checkOut && (
+              <p className="text-red-500 text-sm">{errors.checkOut}</p>
+            )}
+          </div>
         </div>
 
         {/* Number of Persons */}
@@ -119,7 +201,7 @@ const BookingPage = () => {
         <CButton
           size="lg"
           className="w-full bg-orange-500 text-white text-lg"
-          onClick={handleBooking} // ✅ navigate to confirm page with bookingData
+          onClick={handleBooking}
         >
           Confirm Booking
         </CButton>

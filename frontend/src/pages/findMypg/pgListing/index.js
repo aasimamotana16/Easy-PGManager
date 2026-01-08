@@ -1,12 +1,13 @@
 import React, { useRef, useEffect } from "react";
 import ListingCard from "../../../components/listingCard";
-import { Link } from "react-router-dom";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import CButton from "../../../components/cButton";
+import { useNavigate } from "react-router-dom";
 
 export default function PGListings({ list = [] }) {
   const containerRef = useRef(null);
   const scrollInterval = useRef(null);
+  const navigate = useNavigate();
 
   // Infinite scroll by duplicating list
   const duplicatedList = [...list, ...list];
@@ -15,9 +16,8 @@ export default function PGListings({ list = [] }) {
     const startAutoScroll = () => {
       scrollInterval.current = setInterval(() => {
         if (containerRef.current) {
-          const { scrollLeft, scrollWidth, clientWidth } = containerRef.current;
+          const { scrollLeft, scrollWidth } = containerRef.current;
           if (scrollLeft >= scrollWidth / 2) {
-            // Reset to start for seamless scroll
             containerRef.current.scrollLeft = 0;
           } else {
             containerRef.current.scrollLeft += 1;
@@ -31,6 +31,7 @@ export default function PGListings({ list = [] }) {
   }, []);
 
   const handleMouseEnter = () => clearInterval(scrollInterval.current);
+
   const handleMouseLeave = () => {
     scrollInterval.current = setInterval(() => {
       if (containerRef.current) {
@@ -55,6 +56,10 @@ export default function PGListings({ list = [] }) {
     containerRef.current.scrollLeft += 300;
   };
 
+  const handleNavigate = (id) => {
+    navigate(`/pg/${id}`);
+  };
+
   return (
     <div className="relative mt-24">
       <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6 text-center">
@@ -68,6 +73,7 @@ export default function PGListings({ list = [] }) {
       >
         <FaChevronLeft size={20} className="text-amber-600" />
       </button>
+
       <button
         onClick={scrollRight}
         className="absolute right-0 top-1/2 -translate-y-1/2 z-10 p-3 bg-white rounded-full hover:bg-amber-50 transition"
@@ -84,19 +90,22 @@ export default function PGListings({ list = [] }) {
         style={{ scrollbarWidth: "none" }}
       >
         {duplicatedList.map((pg, idx) => (
-          <Link
+          <div
             key={`${pg.id}-${idx}`}
-            to={`/pg/${pg.id}`}
-            className="flex-shrink-0 hover:scale-[1.03] transition transform"
+            onClick={() => handleNavigate(pg.id)}
+            className="flex-shrink-0 cursor-pointer hover:scale-[1.03] transition transform"
           >
             <ListingCard {...pg}>
               <CButton
                 text="View"
                 className="w-full mt-2"
-                onClick={() => window.location.assign(`/pg/${pg.id}`)}
+                onClick={(e) => {
+                  e.stopPropagation(); // prevent double navigation
+                  handleNavigate(pg.id);
+                }}
               />
             </ListingCard>
-          </Link>
+          </div>
         ))}
       </div>
     </div>

@@ -1,19 +1,10 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import CButton from "../../../components/cButton";
-import CInput from "../../../components/cInput"; // ✅ custom input
-import CSelect from "../../../components/cSelect"; // ✅ custom select
+import CInput from "../../../components/cInput";
+import CSelect from "../../../components/cSelect";
 import CancelConfirmModal from "../cancelConfirm";
-
-const reasons = [
-  "Change in plans",
-  "Found another PG",
-  "Location issue",
-  "Price issue",
-  "Facility issue",
-  "Personal reason",
-  "Other",
-];
+import { cancelReasons } from "../../../config/staticData"; 
 
 const CancelForm = () => {
   const navigate = useNavigate();
@@ -40,7 +31,9 @@ const CancelForm = () => {
         Your profile will be archived for 10 days.
       </div>
 
-      <h2 className="text-2xl font-bold mb-6 text-primary">Cancel Booking</h2>
+      <h2 className="text-2xl font-bold mb-6 text-primary">
+        Cancel Booking
+      </h2>
 
       <div className="space-y-5">
         <CInput
@@ -61,7 +54,7 @@ const CancelForm = () => {
           placeholder="Select reason"
           value={form.reason}
           onChange={(e) => setForm({ ...form, reason: e.target.value })}
-          options={reasons}
+          options={cancelReasons} // ✅ static data used
         />
 
         {form.reason === "Other" && (
@@ -69,7 +62,9 @@ const CancelForm = () => {
             type="text"
             placeholder="Enter reason"
             value={form.otherReason}
-            onChange={(e) => setForm({ ...form, otherReason: e.target.value })}
+            onChange={(e) =>
+              setForm({ ...form, otherReason: e.target.value })
+            }
           />
         )}
 

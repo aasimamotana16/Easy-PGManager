@@ -64,7 +64,6 @@ const HomeSearch = () => {
         <CSelect
           label="Select City"
           value={city}
-          // ✅ Support both native and custom select
           onChange={(e) => {
             if (e?.target?.value !== undefined) setCity(e.target.value);
             else if (e?.value !== undefined) setCity(e.value);
@@ -81,13 +80,13 @@ const HomeSearch = () => {
           onClick={() => handleSearch("pgListing")}
           text="Paying Guest"
           variant="contained"
-          className="flex-1 py-3 rounded-xl text-base font-semibold"
+          className="flex-1 py-3 rounded-md text-base font-semibold"
         />
         <CButton
           onClick={() => handleSearch("hostelListing")}
           text="Hostel Stay"
           variant="contained"
-          className="flex-1 py-3 rounded-xl text-base font-semibold"
+          className="flex-1 py-3 rounded-md text-base font-semibold"
         />
       </div>
     </div>

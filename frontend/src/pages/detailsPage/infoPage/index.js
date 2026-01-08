@@ -78,7 +78,7 @@ const PGOverview = () => {
                 <p className="text-2xl font-bold text-primary">
                   {pg.price || pg.startingPrice}
                   <span className="text-base font-medium text-text-secondary">
-                    {" "} / month
+                    {" "}
                   </span>
                 </p>
               </div>

@@ -841,3 +841,14 @@ export const homeBannerStats = [
   },
 ];
 
+export const cancelReasons = [
+  "Change in plans",
+  "Found another PG",
+  "Location issue",
+  "Price issue",
+  "Facility issue",
+  "Personal reason",
+  "Other",
+];
+
+

@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { useParams, useLocation, Link, useNavigate } from "react-router-dom";
+import { useParams, useLocation, useNavigate } from "react-router-dom";
 import Navbar from "../../../components/navbar";
 import Footer from "../../../components/footer";
 import CButton from "../../../components/cButton";
@@ -57,7 +57,7 @@ const ConfirmBooking = () => {
     localStorage.setItem("tenantProfile", JSON.stringify(tenantProfile));
   }, [bookingData, property]);
 
-  // Show warning if booking not completed
+  // 🚫 Block page if booking not completed
   if (!bookingData || !property) {
     return (
       <div className="min-h-screen flex flex-col bg-background-muted">
@@ -66,9 +66,10 @@ const ConfirmBooking = () => {
           <p className="text-text-danger text-lg sm:text-xl mb-6">
             Please complete booking first.
           </p>
-          <Link to="/services">
-            <CButton text="Go to Services" />
-          </Link>
+          <CButton
+            text="Go to Services"
+            onClick={() => navigate("/services")}
+          />
         </div>
         <Footer />
       </div>
@@ -107,24 +108,23 @@ const ConfirmBooking = () => {
           />
         </div>
 
-        {/* Cancel Booking Button */}
+        {/* Cancel Booking */}
         <div className="mb-6">
           <CButton
             text="Cancel Booking"
             variant="outlined"
             className="text-sm sm:text-base border-red-500 text-red-500 hover:bg-red-500 hover:text-white"
-            onClick={() => navigate(`/cancel/${id}`)} // ✅ correct path
+            onClick={() => navigate(`/cancel/${id}`)}
           />
         </div>
 
         {/* Back to Services */}
-        <Link to="/services">
-          <CButton
-            text="Back to Services"
-            variant="outlined"
-            className="text-sm sm:text-base"
-          />
-        </Link>
+        <CButton
+          text="Back to Services"
+          variant="outlined"
+          className="text-sm sm:text-base"
+          onClick={() => navigate("/services")}
+        />
       </div>
 
       <Footer />
