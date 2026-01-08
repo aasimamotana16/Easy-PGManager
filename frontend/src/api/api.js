@@ -80,4 +80,15 @@ export const getAllPayments = () => API.get("/payments/all");
 export const getAgreement = (bookingId) => API.get(`/agreements/${bookingId}`);
 export const createAgreement = (agreementData) => API.post("/agreements/create", agreementData);
 
+// src/utils/api.js (or wherever your axios instance is)
+
+// 1. Get all PGs for the owner (to display existing prices)
+export const getMyPgs = () => API.get('/owner/my-pgs');
+
+// 2. Update room prices for the latest PG
+export const updateRoomPrices = (roomPrices) => API.post('/owner/update-room-prices', { roomPrices });
+
+// 3. Delete a booking (the one you asked about earlier)
+export const deleteBooking = (id) => API.delete(`/owner/delete-booking/${id}`);
+
 export default API;

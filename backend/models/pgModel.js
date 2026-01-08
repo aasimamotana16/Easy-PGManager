@@ -27,10 +27,22 @@ const pgSchema = new mongoose.Schema({
   location: { 
     type: String 
   },
+ 
+roomPrices: [
+    {
+      roomType: { type: String },
+      pricePerMonth: { type: String },
+      pricePerYear: { type: String },
+      advancePayment: { type: String },
+      optional2Beds: { type: String },
+      optional3Beds: { type: String }
+    }
+  ], // Line 45: Array is closed correctly
+
   createdAt: { 
     type: Date, 
     default: Date.now 
   }
-});
+}); // T
 
 module.exports = mongoose.model('PgListing', pgSchema);

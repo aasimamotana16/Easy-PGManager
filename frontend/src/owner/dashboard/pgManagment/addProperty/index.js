@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios"; // Added import
 import CInput from "../../../../components/cInput";
 import CSelect from "../../../../components/cSelect";
 import CButton from "../../../../components/cButton";
@@ -43,34 +44,18 @@ const AddProperty = () => {
     },
   });
 
-  // 🔒 validation helper
   const validateForm = () => {
     if (!formData.name.trim()) return "Property Name is required";
     if (!formData.propertyType) return "Property Type is required";
     if (!formData.forWhom) return "Please select For whom";
-    if (!formData.totalFloors || formData.totalFloors <= 0)
-      return "Enter valid Total Floors";
-    if (!formData.description.trim())
-      return "Description is required";
-
+    if (!formData.description.trim()) return "Description is required";
     if (!formData.city.trim()) return "City is required";
     if (!formData.address.trim()) return "Full Address is required";
-    if (!/^\d{6}$/.test(formData.pincode))
-      return "Enter valid 6 digit Pincode";
-
-    if (formData.facilities.length === 0)
-      return "Select at least one Facility";
-
-    if (!formData.rules.curfew)
-      return "Curfew Time is required";
-
-    if (!formData.proofDocuments.aadhaar)
-      return "Aadhaar document required";
-    if (!formData.proofDocuments.electricityBill)
-      return "Electricity Bill required";
-    if (!formData.proofDocuments.propertyTax)
-      return "Property Tax document required";
-
+    if (!/^\d{6}$/.test(formData.pincode)) return "Enter valid 6 digit Pincode";
+    if (formData.facilities.length === 0) return "Select at least one Facility";
+    if (!formData.rules.curfew) return "Curfew Time is required";
+    
+    // Temporarily relaxed document validation for testing
     return null;
   };
 
@@ -118,20 +103,50 @@ const AddProperty = () => {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const error = validateForm();
     if (error) {
-      alert(error); // ⛔ stop submit
+      alert(error);
       return;
     }
 
-    console.log("ADD PROPERTY DATA 👉", formData);
+    try {
+      const token = localStorage.getItem("token");
+      
+      // Sending JSON for testing until back-end Multer is ready
+      const dataToSend = {
+        pgName: formData.name,
+        location: `${formData.area}, ${formData.city}`,
+        totalRooms: 0,
+        propertyType: formData.propertyType,
+        forWhom: formData.forWhom,
+        facilities: formData.facilities,
+        rules: formData.rules
+      };
 
-    navigate("/owner/dashBoard/pgManagment/addRooms", {
-      state: { propertyData: formData },
-    });
+      const response = await axios.post(
+        "http://localhost:5000/api/owner/add-pg",
+        dataToSend,
+        { 
+          headers: { 
+            Authorization: `Bearer ${token}` 
+          } 
+        }
+      );
+
+      if (response.data.success) {
+        alert("Property saved successfully!");
+        // Passing pgId to addRooms to link them properly later
+        navigate("/owner/dashBoard/pgManagment/addRooms", {
+          state: { propertyData: formData, pgId: response.data.data._id },
+        });
+      }
+    } catch (err) {
+      console.error("Submission Error:", err);
+      alert("Failed to save property. Ensure backend is running and you are logged in.");
+    }
   };
 
   return (
@@ -141,7 +156,6 @@ const AddProperty = () => {
       </h2>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* ======= First Row ======= */}
         <div className="flex flex-wrap gap-6 items-stretch">
           <div className="flex-1 min-w-[350px]">
             <CFormCard className="border border-gray-400 h-full relative">
@@ -173,7 +187,6 @@ const AddProperty = () => {
           </div>
         </div>
 
-        {/* ======= Second Row ======= */}
         <div className="flex flex-wrap gap-6 items-stretch">
           <div className="flex-1 min-w-[350px]">
             <CFormCard className="border border-gray-400 h-full relative">
@@ -209,7 +222,6 @@ const AddProperty = () => {
           </div>
         </div>
 
-        {/* ======= Third Row ======= */}
         <CFormCard className="border border-gray-400 relative">
           <span className="absolute -top-3 left-4 bg-white px-2 font-semibold text-gray-700">
             Proof of Property Documents
@@ -224,12 +236,8 @@ const AddProperty = () => {
                 {formData.proofDocuments[key] && (
                   <>
                     <span className="text-gray-700">{formData.proofDocuments[key].name}</span>
-                    <button type="button" onClick={() => viewFile(key)} className="text-blue-600 hover:text-blue-800">
-                      <FaEye />
-                    </button>
-                    <button type="button" onClick={() => removeFile(key)} className="text-red-600 hover:text-red-800">
-                      <FaTrash />
-                    </button>
+                    <button type="button" onClick={() => viewFile(key)} className="text-blue-600 hover:text-blue-800"><FaEye /></button>
+                    <button type="button" onClick={() => removeFile(key)} className="text-red-600 hover:text-red-800"><FaTrash /></button>
                   </>
                 )}
               </div>

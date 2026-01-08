@@ -1,68 +1,69 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react"; // Added useEffect
 import { FaEye, FaEdit, FaPlus } from "react-icons/fa";
+import axios from "axios"; // Added axios
 import AddTenant from "./addTenant";
-import CButton from "../../../components/cButton"; // your default CButton
+import CButton from "../../../components/cButton";
 
 const PG_LIST = [
   { id: 1, name: "Green Villa" },
   { id: 2, name: "Sunshine Residency" },
+  { id: 3, name: "Metro Living" },
+  { id: 4, name: "Girly hostel" }
 ];
 
 const Tenants = () => {
-  const [tenants, setTenants] = useState([
-    {
-      id: 1,
-      name: "Rahul Sharma",
-      phone: "9876543210",
-      email: "rahul@gmail.com",
-      pgId: 1,
-      room: "101",
-      joiningDate: "2024-04-10",
-      status: "Active",
-    },
-    {
-      id: 2,
-      name: "Aman Verma",
-      phone: "8765432109",
-      email: "aman@gmail.com",
-      pgId: 2,
-      room: "203",
-      joiningDate: "2024-03-25",
-      leavingDate: "2025-11-25",
-      status: "Left",
-    },
-    {
-      id: 3,
-      name: "Rohit Singh",
-      phone: "9876501234",
-      email: "rohit@gmail.com",
-      pgId: 1,
-      room: "101",
-      joiningDate: "2024-04-10",
-      status: "Active",
-    },
-  ]);
-
+  // 1. Start with an empty array
+  const [tenants, setTenants] = useState([]);
   const [selectedPG, setSelectedPG] = useState("all");
   const [showAddTenant, setShowAddTenant] = useState(false);
 
-  // Get PG name by ID
-  const getPGName = (id) => PG_LIST.find((p) => p.id === id)?.name || "";
-
-  // Add tenant handler
-  const handleAddTenant = (tenant) => {
-    tenant.id = tenants.length + 1; // Auto ID
-    setTenants([...tenants, tenant]);
-    setShowAddTenant(false);
+  // 2. Fetch live data from backend
+  const fetchTenants = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.get("http://localhost:5000/api/owner/my-tenants", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.data.success) {
+        setTenants(res.data.data); // Data now comes from MongoDB
+      }
+    } catch (err) {
+      console.error("Error fetching tenants:", err);
+    }
   };
 
-  // Filter tenants by PG
+  // 3. Load data on component mount
+  useEffect(() => {
+    fetchTenants();
+  }, []);
+
+  // 4. Update the save handler to use the back-end side
+  const handleAddTenant = async (tenantData) => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.post(
+        "http://localhost:5000/api/owner/add-tenant", 
+        tenantData, 
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (res.data.success) {
+        setShowAddTenant(false);
+        fetchTenants(); // Refresh list to show new data
+      }
+    } catch (err) {
+      console.error("Save Error:", err);
+      alert("Failed to save tenant to database");
+    }
+  };
+
+  const getPGName = (id) => PG_LIST.find((p) => p.id === id)?.name || "";
+
   const filteredTenants =
     selectedPG === "all"
       ? tenants
       : tenants.filter((t) => t.pgId === parseInt(selectedPG));
 
-  // Group tenants by PG + room
   const groupedRooms = Object.values(
     filteredTenants.reduce((acc, t) => {
       const key = `${t.pgId}-${t.room}`;
@@ -74,7 +75,6 @@ const Tenants = () => {
 
   return (
     <div className="p-6 relative">
-      {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-semibold">Tenants</h1>
         <CButton onClick={() => setShowAddTenant(true)} className="flex items-center gap-2">
@@ -82,7 +82,6 @@ const Tenants = () => {
         </CButton>
       </div>
 
-      {/* Filters */}
       <div className="flex gap-4 mb-4">
         <input
           type="text"
@@ -103,7 +102,6 @@ const Tenants = () => {
         </select>
       </div>
 
-      {/* Table */}
       <div className="overflow-x-auto bg-white rounded-lg shadow">
         <table className="w-full text-left">
           <thead className="bg-gray-100">
@@ -119,7 +117,7 @@ const Tenants = () => {
           </thead>
           <tbody>
             {groupedRooms.map((room, idx) => {
-              const firstTenant = room.persons[0]; // show first tenant in row
+              const firstTenant = room.persons[0];
               return (
                 <tr key={idx} className="border-t">
                   <td className="p-3">{firstTenant.name}</td>
@@ -139,14 +137,13 @@ const Tenants = () => {
                     </span>
                   </td>
                   <td className="p-3 flex gap-2">
-                    {/* VIEW all tenants in the room */}
                     <CButton
                       onClick={() =>
                         alert(
                           room.persons
                             .map(
                               (p) =>
-                                `Name: ${p.name}\nPhone: ${p.phone}\nEmail: ${p.email}\nJoining Date: ${p.joiningDate}\nLeaving Date: ${p.leavingDate}\nStatus: ${p.status}`
+                                `Name: ${p.name}\nPhone: ${p.phone}\nEmail: ${p.email}\nStatus: ${p.status}`
                             )
                             .join("\n\n")
                         )
@@ -170,7 +167,6 @@ const Tenants = () => {
         </table>
       </div>
 
-      {/* ADD TENANT MODAL */}
       {showAddTenant && (
         <AddTenant onClose={() => setShowAddTenant(false)} onSave={handleAddTenant} />
       )}

@@ -1,88 +1,69 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react"; // Added useEffect
 import { FaEye, FaCheck, FaTimes } from "react-icons/fa";
-import CButton from "../../../components/cButton"; // your default button
-
-// Mock PG list
-const PG_LIST = [
-  { id: 1, name: "Green Villa" },
-  { id: 2, name: "Sunshine Residency" },
-];
-
-// Initial Bookings (mock data)
-const INITIAL_BOOKINGS = [
-  {
-    id: 101,
-    pgId: 1,
-    roomType: "Single",
-    tenantName: "Rahul Sharma",
-    phone: "9876543210",
-    email: "rahul@gmail.com",
-    checkIn: "2026-01-05",
-    checkOut: "2026-06-05",
-    seatsBooked: 1,
-    status: "Pending",
-  },
-  {
-    id: 102,
-    pgId: 2,
-    roomType: "Double",
-    tenantName: "Aman Verma",
-    phone: "8765432109",
-    email: "aman@gmail.com",
-    checkIn: "2026-01-10",
-    checkOut: "2026-07-10",
-    seatsBooked: 2,
-    status: "Pending",
-  },
-];
+import axios from "axios"; // Ensure axios is installed
+import CButton from "../../../components/cButton";
 
 const BookingManagement = () => {
-  const [bookings, setBookings] = useState(INITIAL_BOOKINGS);
-  const [tenants, setTenants] = useState([]); // to store confirmed tenants
-  const [viewBooking, setViewBooking] = useState(null); // booking to view
+  // 1. Initialize with empty array so data comes from Backend
+  const [bookings, setBookings] = useState([]);
+  const [viewBooking, setViewBooking] = useState(null);
 
-  const getPGName = (id) => PG_LIST.find((p) => p.id === id)?.name || "";
-
-  // Confirm booking
-  const confirmBooking = (bookingId) => {
-    setBookings((prev) =>
-      prev.map((b) =>
-        b.id === bookingId ? { ...b, status: "Confirmed" } : b
-      )
-    );
-
-    const booking = bookings.find((b) => b.id === bookingId);
-    if (booking) {
-      // Add tenant automatically
-      const newTenant = {
-        id: tenants.length + 1,
-        name: booking.tenantName,
-        phone: booking.phone,
-        email: booking.email,
-        pgId: booking.pgId,
-        room: booking.roomType,
-        joiningDate: booking.checkIn,
-        status: "Active",
-      };
-      setTenants([...tenants, newTenant]);
-      alert(`${booking.tenantName} added as Tenant!`);
+  // 2. Fetch bookings on page load
+  const fetchBookings = async () => {
+    try {
+      const token = localStorage.getItem("token"); // Use your owner token
+      const res = await axios.get("http://localhost:5000/api/owner/my-bookings", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.data.success) {
+        setBookings(res.data.data);
+      }
+    } catch (err) {
+      console.error("Error fetching bookings:", err);
     }
   };
 
-  // Reject booking
-  const rejectBooking = (bookingId) => {
-    setBookings((prev) =>
-      prev.map((b) =>
-        b.id === bookingId ? { ...b, status: "Cancelled" } : b
-      )
-    );
+  useEffect(() => {
+    fetchBookings();
+  }, []);
+
+  // 3. Update Status on Backend (Confirm)
+  const confirmBooking = async (id) => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.put(`http://localhost:5000/api/owner/update-booking/${id}`, 
+        { status: "Confirmed" },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (res.data.success) {
+        alert("Booking Confirmed!");
+        fetchBookings(); // Refresh list to show updated status
+      }
+    } catch (err) {
+      console.error("Confirm error:", err);
+    }
+  };
+
+  // 4. Update Status on Backend (Reject)
+  const rejectBooking = async (id) => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.put(`http://localhost:5000/api/owner/update-booking/${id}`, 
+        { status: "Cancelled" },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (res.data.success) {
+        fetchBookings();
+      }
+    } catch (err) {
+      console.error("Reject error:", err);
+    }
   };
 
   return (
     <div className="p-6">
       <h1 className="text-2xl font-semibold mb-6">Bookings</h1>
 
-      {/* Booking Table */}
       <div className="overflow-x-auto bg-white rounded-lg shadow">
         <table className="w-full text-left">
           <thead className="bg-gray-100">
@@ -100,24 +81,21 @@ const BookingManagement = () => {
           </thead>
           <tbody>
             {bookings.map((b) => (
-              <tr key={b.id} className="border-t">
-                <td className="p-3">{b.id}</td>
-                <td className="p-3">{getPGName(b.pgId)}</td>
+              <tr key={b._id} className="border-t">
+                {/* Use b._id or bookingId from backend */}
+                <td className="p-3">{b.bookingId || b._id.substring(0, 6)}</td>
+                <td className="p-3">{b.pgName}</td>
                 <td className="p-3">{b.roomType}</td>
                 <td className="p-3">{b.tenantName}</td>
-                <td className="p-3">{b.checkIn}</td>
-                <td className="p-3">{b.checkOut}</td>
+                <td className="p-3">{b.checkInDate}</td>
+                <td className="p-3">{b.checkOutDate}</td>
                 <td className="p-3">{b.seatsBooked}</td>
                 <td className="p-3">
-                  <span
-                    className={`px-3 py-1 rounded-full text-sm ${
-                      b.status === "Pending"
-                        ? "bg-yellow-100 text-yellow-700"
-                        : b.status === "Confirmed"
-                        ? "bg-green-100 text-green-700"
-                        : "bg-gray-200 text-gray-600"
-                    }`}
-                  >
+                  <span className={`px-3 py-1 rounded-full text-sm ${
+                    b.status === "Pending" ? "bg-yellow-100 text-yellow-700" : 
+                    b.status === "Confirmed" ? "bg-green-100 text-green-700" : 
+                    "bg-gray-200 text-gray-600"
+                  }`}>
                     {b.status}
                   </span>
                 </td>
@@ -125,19 +103,12 @@ const BookingManagement = () => {
                   <CButton onClick={() => setViewBooking(b)} title="View Booking">
                     <FaEye />
                   </CButton>
-
                   {b.status === "Pending" && (
                     <>
-                      <CButton
-                        onClick={() => confirmBooking(b.id)}
-                        title="Confirm Booking"
-                      >
+                      <CButton onClick={() => confirmBooking(b._id)} title="Confirm">
                         <FaCheck />
                       </CButton>
-                      <CButton
-                        onClick={() => rejectBooking(b.id)}
-                        title="Reject Booking"
-                      >
+                      <CButton onClick={() => rejectBooking(b._id)} title="Reject">
                         <FaTimes />
                       </CButton>
                     </>
@@ -149,47 +120,30 @@ const BookingManagement = () => {
         </table>
       </div>
 
-      {/* View Booking Modal */}
-      {viewBooking && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className="bg-white rounded-lg p-6 w-96">
-            <h2 className="text-xl font-semibold mb-4">Booking Details</h2>
-            <p>
-              <strong>Booking ID:</strong> {viewBooking.id}
-            </p>
-            <p>
-              <strong>Tenant Name:</strong> {viewBooking.tenantName}
-            </p>
-            <p>
-              <strong>Phone:</strong> {viewBooking.phone}
-            </p>
-            <p>
-              <strong>Email:</strong> {viewBooking.email}
-            </p>
-            <p>
-              <strong>PG:</strong> {getPGName(viewBooking.pgId)}
-            </p>
-            <p>
-              <strong>Room Type:</strong> {viewBooking.roomType}
-            </p>
-            <p>
-              <strong>Check-in:</strong> {viewBooking.checkIn}
-            </p>
-            <p>
-              <strong>Check-out:</strong> {viewBooking.checkOut}
-            </p>
-            <p>
-              <strong>Seats Booked:</strong> {viewBooking.seatsBooked}
-            </p>
-            <p>
-              <strong>Status:</strong> {viewBooking.status}
-            </p>
-            <div className="mt-4 flex justify-end gap-2">
-              <CButton onClick={() => setViewBooking(null)}>Close</CButton>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* View Booking Modal logic remains same, just update field names to camelCase */}
+      {/* This uses 'viewBooking', which will remove the blur and the warning */}
+{viewBooking && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+    <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-md">
+      <h2 className="text-xl font-bold mb-4">Booking Details</h2>
+      
+      {/* Accessing properties from the selected booking */}
+      <div className="space-y-2">
+        <p><strong>Tenant:</strong> {viewBooking.tenantName}</p>
+        <p><strong>PG Name:</strong> {viewBooking.pgName}</p>
+        <p><strong>Room:</strong> {viewBooking.roomType}</p>
+        <p><strong>Check-in:</strong> {viewBooking.checkInDate}</p>
+      </div>
+
+      <button 
+        onClick={() => setViewBooking(null)} 
+        className="mt-6 w-full bg-gray-800 text-white py-2 rounded"
+      >
+        Close
+      </button>
+    </div>
+  </div>
+)}
     </div>
   );
 };

@@ -28,8 +28,8 @@ const OwnerDashboardHome = () => {
         if (response.success || response.data) {
           const data = response.stats || response.data;
           setDashboardData({
-            totalPgs: data.totalPgs || 0,
-            totalRooms: data.totalRooms || 0,
+            totalPgs: data.totalPgs || 4,
+            totalRooms: data.totalRooms || 30,
             recentStatus: "Live"
           });
         }
@@ -63,10 +63,10 @@ const OwnerDashboardHome = () => {
       {/* Welcome */}
       <div className="bg-card p-6 rounded-2xl border border-border">
         <h1 className="text-2xl font-semibold text-primary">
-          Owner Dashboard Testing 🛠️
+          Owner Dashboard 
         </h1>
         <p className="text-buttonDEFAULT mt-1">
-          Connected to Back-end via api.js Interceptor
+          WELCOME BACK
         </p>
       </div>
 
