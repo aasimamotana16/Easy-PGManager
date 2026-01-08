@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Navbar from "../../components/navbar";
 import CFormCard from "../../components/cFormCard";
 import CInput from "../../components/cInput";
@@ -19,16 +19,29 @@ const Login = () => {
   const [enteredOtp, setEnteredOtp] = useState("");
   const [otpMessage, setOtpMessage] = useState("");
 
+  // 🔹 Background images for animation
+  const images = [
+    "/images/aboutImages/aboutIMG1.png",
+    "/images/loginImages/loginImg1.jpg",
+    "/images/loginImages/loginImg2.jpg",
+  ];
+  const [currentImage, setCurrentImage] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentImage((prev) => (prev + 1) % images.length);
+    }, 5000); // change every 5 seconds
+    return () => clearInterval(interval);
+  }, []);
+
   const validateEmail = (email) => {
     const re =
       /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@(([^<>()[\]\\.,;:\s@"]+\.)+[^<>()[\]\\.,;:\s@"]{2,})$/i;
     return re.test(String(email).toLowerCase());
   };
 
-  // Generate frontend OTP
   const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString();
 
-  // Send OTP
   const handleSendOtp = () => {
     if (!email || !validateEmail(email)) {
       alert("Please enter a valid email first");
@@ -41,13 +54,11 @@ const Login = () => {
     console.log("Generated OTP:", otp); // Only for testing
   };
 
-  // Verify OTP
   const handleVerifyOtp = async () => {
     if (enteredOtp === generatedOtp) {
       alert("✅ OTP verified. Logging in...");
       setLoading(true);
       try {
-        // Call existing login API with email and dummy password (or leave empty)
         const response = await loginUser({ email, password, role });
         const data = response.data;
         if (data && data.success) {
@@ -81,7 +92,6 @@ const Login = () => {
       return;
     }
 
-    // Existing password login
     if (!email || !password) {
       alert("Please fill in both email and password.");
       return;
@@ -90,6 +100,7 @@ const Login = () => {
       alert("Please enter a valid email address.");
       return;
     }
+
     setLoading(true);
     try {
       const response = await loginUser({ email, password, role });
@@ -119,27 +130,33 @@ const Login = () => {
     <div className="min-h-screen flex flex-col bg-background.DEFAULT">
       <Navbar />
 
-      <section
-        className="relative w-full min-h-screen flex items-center px-8 lg:px-20"
-        style={{
-          backgroundImage: "url('/images/aboutImages/aboutIMG1.png')",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
-      >
-        <div className="relative w-full max-w-2xl lg:max-w-xl flex flex-col justify-start mb-2">
-          <CFormCard className="bg-white border border-border rounded-xl shadow-lg p-8 sm:p-10 mt-1">
+      <section className="relative w-full min-h-screen flex items-center px-4 sm:px-8 lg:px-20 overflow-hidden">
+        {/* Background Images */}
+        {images.map((img, index) => (
+          <div
+            key={index}
+            className="absolute inset-0 transition-opacity duration-1000"
+            style={{
+              backgroundImage: `url('${img}')`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+              opacity: index === currentImage ? 1 : 0,
+            }}
+          />
+        ))}
 
+        {/* Form Container */}
+        <div className="relative z-10 w-full max-w-xs sm:w-4/5 md:max-w-lg lg:max-w-xl flex flex-col justify-center h-full mx-auto lg:mx-0">
+          <CFormCard className="bg-white border border-border rounded-xl shadow-lg p-5 sm:p-8 md:p-10 w-full">
             <div className="mb-1 flex justify-center">
-              <img src="/logos/logo1.png" alt="Logo" className="h-12 sm:h-16 md:h-20 w-auto" />
+              <img src="/logos/logo1.png" alt="Logo" className="h-16 md:h-20 w-auto" />
             </div>
 
-            <h1 className="text-2xl sm:text-4xl lg:text-3xl font-bold mb-6 text-primary text-center">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold mb-6 text-primary text-center">
               Login – EasyPG Manager
             </h1>
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-
               {/* Role Toggle */}
               <div className="flex gap-2 mb-4">
                 <CButton
@@ -169,7 +186,7 @@ const Login = () => {
                 onChange={(e) => setEmail(e.target.value)}
               />
 
-              {/* Password field only shows if OTP not sent */}
+              {/* Password or OTP */}
               {!otpSent && (
                 <CInput
                   label="Password"
@@ -179,8 +196,6 @@ const Login = () => {
                   onChange={(e) => setPassword(e.target.value)}
                 />
               )}
-
-              {/* OTP input shows if sent */}
               {otpSent && (
                 <CInput
                   label="Enter OTP"
@@ -241,7 +256,6 @@ const Login = () => {
               </a>
             </p>
 
-            {/* OTP Message */}
             {otpMessage && <p className="mt-2 text-center text-sm">{otpMessage}</p>}
           </CFormCard>
         </div>
