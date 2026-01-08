@@ -88,20 +88,20 @@ const Contact = () => {
               </h2>
 
               <form className="flex flex-col gap-5" onSubmit={handleSubmit}>
-                <div className="flex gap-14">
+                <div className="flex gap-16">
                   <CInput
                     label="First Name"
                     type="text"
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
-                    className="px-10"
+                    className="px-9"
                   />
                   <CInput
                     label="Last Name"
                     type="text"
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
-                    className="px-10"
+                    className="px-9"
                   />
                 </div>
 
