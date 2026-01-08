@@ -13,14 +13,75 @@ const Login = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // OTP states
+  const [otpSent, setOtpSent] = useState(false);
+  const [generatedOtp, setGeneratedOtp] = useState("");
+  const [enteredOtp, setEnteredOtp] = useState("");
+  const [otpMessage, setOtpMessage] = useState("");
+
   const validateEmail = (email) => {
     const re =
       /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@(([^<>()[\]\\.,;:\s@"]+\.)+[^<>()[\]\\.,;:\s@"]{2,})$/i;
     return re.test(String(email).toLowerCase());
   };
 
+  // Generate frontend OTP
+  const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString();
+
+  // Send OTP
+  const handleSendOtp = () => {
+    if (!email || !validateEmail(email)) {
+      alert("Please enter a valid email first");
+      return;
+    }
+    const otp = generateOtp();
+    setGeneratedOtp(otp);
+    setOtpSent(true);
+    setOtpMessage(`OTP sent to ${email} (check console for demo)`);
+    console.log("Generated OTP:", otp); // Only for testing
+  };
+
+  // Verify OTP
+  const handleVerifyOtp = async () => {
+    if (enteredOtp === generatedOtp) {
+      alert("✅ OTP verified. Logging in...");
+      setLoading(true);
+      try {
+        // Call existing login API with email and dummy password (or leave empty)
+        const response = await loginUser({ email, password, role });
+        const data = response.data;
+        if (data && data.success) {
+          if (data.token) localStorage.setItem("token", data.token);
+          const serverRole = data.user.role.toLowerCase();
+          if (serverRole === "owner") {
+            localStorage.setItem("owner", JSON.stringify(data.user));
+            localStorage.removeItem("user");
+            window.location.href = "/owner/dashboard";
+          } else {
+            localStorage.setItem("user", JSON.stringify(data.user));
+            localStorage.removeItem("owner");
+            window.location.href = "/user/dashboard";
+          }
+          if (rememberMe) localStorage.setItem("rememberMe", "true");
+        }
+      } catch (error) {
+        alert(error.response?.data?.message || "Login failed.");
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      setOtpMessage("❌ OTP incorrect. Try again.");
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (otpSent) {
+      handleVerifyOtp();
+      return;
+    }
+
+    // Existing password login
     if (!email || !password) {
       alert("Please fill in both email and password.");
       return;
@@ -58,7 +119,6 @@ const Login = () => {
     <div className="min-h-screen flex flex-col bg-background.DEFAULT">
       <Navbar />
 
-      {/* Full-screen Background Image Section */}
       <section
         className="relative w-full min-h-screen flex items-center px-8 lg:px-20"
         style={{
@@ -67,19 +127,11 @@ const Login = () => {
           backgroundPosition: "center",
         }}
       >
-        {/* Login Form Left Side */}
         <div className="relative w-full max-w-2xl lg:max-w-xl flex flex-col justify-start mb-2">
-          
-          {/* White Card */}
           <CFormCard className="bg-white border border-border rounded-xl shadow-lg p-8 sm:p-10 mt-1">
 
-            {/* Logo */}
             <div className="mb-1 flex justify-center">
-              <img
-                src="/logos/logo1.png"
-                alt="EasyPG Manager Logo"
-                className="h-12 sm:h-16 md:h-20 w-auto"
-              />
+              <img src="/logos/logo1.png" alt="Logo" className="h-12 sm:h-16 md:h-20 w-auto" />
             </div>
 
             <h1 className="text-2xl sm:text-4xl lg:text-3xl font-bold mb-6 text-primary text-center">
@@ -108,7 +160,7 @@ const Login = () => {
                 </CButton>
               </div>
 
-              {/* Email & Password */}
+              {/* Email */}
               <CInput
                 label="Email"
                 type="email"
@@ -116,13 +168,47 @@ const Login = () => {
                 placeholder="Enter your email"
                 onChange={(e) => setEmail(e.target.value)}
               />
-              <CInput
-                label="Password"
-                type="password"
-                value={password}
-                placeholder="Enter your password"
-                onChange={(e) => setPassword(e.target.value)}
-              />
+
+              {/* Password field only shows if OTP not sent */}
+              {!otpSent && (
+                <CInput
+                  label="Password"
+                  type="password"
+                  value={password}
+                  placeholder="Enter your password"
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              )}
+
+              {/* OTP input shows if sent */}
+              {otpSent && (
+                <CInput
+                  label="Enter OTP"
+                  type="text"
+                  value={enteredOtp}
+                  placeholder="Enter OTP"
+                  onChange={(e) => setEnteredOtp(e.target.value)}
+                />
+              )}
+
+              {/* Buttons */}
+              {!otpSent ? (
+                <CButton
+                  text={loading ? "Sending..." : "Send OTP"}
+                  onClick={handleSendOtp}
+                  fullWidth
+                  className="mt-2"
+                  disabled={loading}
+                />
+              ) : (
+                <CButton
+                  text="Verify OTP"
+                  onClick={handleVerifyOtp}
+                  fullWidth
+                  className="mt-2"
+                  disabled={loading}
+                />
+              )}
 
               {/* Remember Me + Forgot */}
               <div className="flex justify-between items-center text-sm sm:text-base">
@@ -135,17 +221,6 @@ const Login = () => {
                   Forgot Password?
                 </a>
               </div>
-
-              {/* Submit */}
-              <CButton
-                type="submit"
-                text={loading ? "Logging in..." : "Login"}
-                fullWidth
-                variant="contained"
-                size="md"
-                className="mt-2"
-                disabled={loading}
-              />
             </form>
 
             {/* Terms & SignUp */}
@@ -166,6 +241,8 @@ const Login = () => {
               </a>
             </p>
 
+            {/* OTP Message */}
+            {otpMessage && <p className="mt-2 text-center text-sm">{otpMessage}</p>}
           </CFormCard>
         </div>
       </section>

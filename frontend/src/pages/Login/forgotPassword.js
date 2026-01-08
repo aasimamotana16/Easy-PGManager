@@ -3,25 +3,47 @@ import Navbar from "../../components/navbar";
 import CFormCard from "../../components/cFormCard";
 import CInput from "../../components/cInput";
 import CButton from "../../components/cButton";
-import { forgotPassword } from "../../api/api"; // Ensure this matches your api.js export
+import { forgotPassword } from "../../api/api"; // Your existing API call
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState("");
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  // OTP states
+  const [otpSent, setOtpSent] = useState(false);
+  const [generatedOtp, setGeneratedOtp] = useState("");
+  const [enteredOtp, setEnteredOtp] = useState("");
+  const [otpMessage, setOtpMessage] = useState("");
+
+  const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString();
+
+  const handleSendOtp = async () => {
     if (!email) {
       alert("Please enter your email");
       return;
     }
 
+    // Call existing backend API to notify user
     try {
-      // This sends the request to the backend to generate the link
       await forgotPassword({ email });
-      alert("If an account exists, a reset link has been generated in the backend terminal.");
     } catch (err) {
       console.error(err);
-      alert(err.response?.data?.message || "Error sending request");
+    }
+
+    // Frontend OTP generation
+    const otp = generateOtp();
+    setGeneratedOtp(otp);
+    setOtpSent(true);
+    setOtpMessage(`OTP sent to ${email} (check console for demo)`);
+    console.log("Generated OTP:", otp); // For testing
+  };
+
+  const handleVerifyOtp = () => {
+    if (enteredOtp === generatedOtp) {
+      alert("✅ OTP verified! You can now reset your password.");
+      setOtpMessage("OTP verified successfully. You can now set a new password.");
+      // You can navigate to ResetPassword page here if needed
+    } else {
+      setOtpMessage("❌ OTP incorrect. Try again.");
     }
   };
 
@@ -35,9 +57,10 @@ const ForgotPassword = () => {
               Forgot Password
             </h1>
             <p className="text-center mb-6 text-gray-600">
-              Enter your email and we'll send you a link to reset your password.
+              Enter your email to receive an OTP for password reset.
             </p>
-            <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+
+            <form className="flex flex-col gap-6" onSubmit={(e) => e.preventDefault()}>
               <CInput
                 label="Email Address"
                 type="email"
@@ -45,14 +68,41 @@ const ForgotPassword = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
-              <CButton
-                type="submit"
-                text="Send Reset Link"
-                fullWidth
-                variant="contained"
-                color="primary"
-                className="py-3 text-base sm:text-lg md:text-xl font-semibold"
-              />
+
+              {/* Show OTP input if sent */}
+              {otpSent && (
+                <CInput
+                  label="Enter OTP"
+                  type="text"
+                  placeholder="Enter OTP"
+                  value={enteredOtp}
+                  onChange={(e) => setEnteredOtp(e.target.value)}
+                />
+              )}
+
+              {/* Buttons */}
+              {!otpSent ? (
+                <CButton
+                  text="Send OTP"
+                  fullWidth
+                  variant="contained"
+                  color="primary"
+                  className="py-3 text-base sm:text-lg md:text-xl font-semibold"
+                  onClick={handleSendOtp}
+                />
+              ) : (
+                <CButton
+                  text="Verify OTP"
+                  fullWidth
+                  variant="contained"
+                  color="primary"
+                  className="py-3 text-base sm:text-lg md:text-xl font-semibold"
+                  onClick={handleVerifyOtp}
+                />
+              )}
+
+              {/* OTP Message */}
+              {otpMessage && <p className="mt-2 text-center text-sm">{otpMessage}</p>}
             </form>
           </CFormCard>
         </div>

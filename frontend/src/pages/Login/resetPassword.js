@@ -11,15 +11,42 @@ import CButton from "../../components/cButton";
 const ResetPassword = () => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  
+
+  // OTP related states for frontend demo
+  const [otp, setOtp] = useState("");
+  const [enteredOtp, setEnteredOtp] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpMessage, setOtpMessage] = useState("");
+
   // 2. INITIALIZE HOOKS
   const { token } = useParams(); 
   const navigate = useNavigate();
 
+  // Generate frontend OTP for demo
+  const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString();
+
+  const handleSendOtp = () => {
+    const newOtp = generateOtp();
+    setOtp(newOtp);
+    setOtpSent(true);
+    setOtpMessage(`OTP sent (check console for demo)`);
+    console.log("Generated OTP:", newOtp); // frontend-only OTP
+  };
+
   // 3. MAKE THIS FUNCTION ASYNC
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
+    if (!otpSent) {
+      alert("Please send OTP first.");
+      return;
+    }
+
+    if (enteredOtp !== otp) {
+      setOtpMessage("❌ OTP incorrect. Please try again.");
+      return;
+    }
+
     if (password !== confirmPassword) {
       alert("Passwords do not match");
       return;
@@ -45,27 +72,54 @@ const ResetPassword = () => {
             <h1 className="text-center font-bold mb-6 text-2xl sm:text-3xl md:text-4xl text-text-primary">
               Reset Password
             </h1>
+
             <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-              <CInput
-                label="New Password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-              <CInput
-                label="Confirm Password"
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-              />
-              <CButton
-                type="submit"
-                text="Reset Password"
-                fullWidth
-                variant="contained"
-                color="primary"
-                className="py-3 text-base sm:text-lg md:text-xl font-semibold"
-              />
+              {/* OTP Section */}
+              {!otpSent ? (
+                <CButton
+                  text="Send OTP"
+                  fullWidth
+                  variant="contained"
+                  color="primary"
+                  className="py-3 text-base sm:text-lg md:text-xl font-semibold"
+                  onClick={handleSendOtp}
+                />
+              ) : (
+                <CInput
+                  label="Enter OTP"
+                  type="text"
+                  placeholder="Enter OTP"
+                  value={enteredOtp}
+                  onChange={(e) => setEnteredOtp(e.target.value)}
+                />
+              )}
+
+              {otpSent && (
+                <>
+                  <CInput
+                    label="New Password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                  <CInput
+                    label="Confirm Password"
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                  />
+                  <CButton
+                    type="submit"
+                    text="Reset Password"
+                    fullWidth
+                    variant="contained"
+                    color="primary"
+                    className="py-3 text-base sm:text-lg md:text-xl font-semibold"
+                  />
+                </>
+              )}
+
+              {otpMessage && <p className="mt-2 text-center text-sm">{otpMessage}</p>}
             </form>
           </CFormCard>
         </div>

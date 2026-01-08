@@ -18,14 +18,41 @@ const SignUp = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // OTP states
+  const [otpStage, setOtpStage] = useState(false); // false = signup form, true = otp form
+  const [generatedOtp, setGeneratedOtp] = useState("");
+  const [enteredOtp, setEnteredOtp] = useState("");
+  const [otpMessage, setOtpMessage] = useState("");
+
   const validateEmail = (email) => {
     const re =
       /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@(([^<>()[\]\\.,;:\s@"]+\.)+[^<>()[\]\\.,;:\s@"]{2,})$/i;
     return re.test(String(email).toLowerCase());
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString();
+
+  // Step 1: Send OTP
+  const handleSendOtp = () => {
+    if (!email) {
+      alert("Please enter your email to receive OTP.");
+      return;
+    }
+
+    const otp = generateOtp();
+    setGeneratedOtp(otp);
+    setOtpMessage("OTP sent! ");
+    console.log("Generated OTP:", otp);
+
+    setOtpStage(true);
+  };
+
+  // Step 2: Verify OTP & SignUp
+  const handleVerifyOtpAndSignup = async () => {
+    if (enteredOtp !== generatedOtp) {
+      setOtpMessage("❌ OTP incorrect. Please try again.");
+      return;
+    }
 
     if (!name || !email || !password || !confirmPassword) {
       alert("Please fill in all fields.");
@@ -70,7 +97,6 @@ const SignUp = () => {
     <div className="min-h-screen flex flex-col bg-background.DEFAULT">
       <Navbar />
 
-      {/* Full-screen Background Image */}
       <section
         className="relative w-full h-screen flex items-center justify-start px-8 lg:px-20"
         style={{
@@ -79,14 +105,10 @@ const SignUp = () => {
           backgroundPosition: "center",
         }}
       >
-        {/* SignUp Form Left Side */}
         <div className="flex w-full max-w-lg lg:max-w-xl flex-col justify-center h-full mt-2">
-          
-          {/* White Card */}
           <CFormCard className="bg-white border border-border rounded-xl shadow-lg p-8 sm:p-10">
-            
-            {/* Logo */}
-            <div className="mb-1  flex justify-center">
+
+            <div className="mb-1 flex justify-center">
               <img
                 src="/logos/logo1.png"
                 alt="EasyPG Manager Logo"
@@ -94,73 +116,105 @@ const SignUp = () => {
               />
             </div>
 
-            <h1 className="text-2xl sm:text-2xl font-bold mb-5 text-primary text-center">
-              Create Your EasyPG Manager Account
-            </h1>
+            {!otpStage ? (
+              <>
+                <h1 className="text-2xl sm:text-2xl font-bold mb-5 text-primary text-center">
+                  Create Your EasyPG Manager Account
+                </h1>
 
-            <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+                <form className="flex flex-col gap-3">
+                  <div className="flex gap-2 mb-4">
+                    <CButton
+                      size="sm"
+                      fullWidth
+                      variant={role === "user" ? "contained" : "outlined"}
+                      onClick={() => setRole("user")}
+                    >
+                      User
+                    </CButton>
+                    <CButton
+                      size="sm"
+                      fullWidth
+                      variant={role === "owner" ? "contained" : "outlined"}
+                      onClick={() => setRole("owner")}
+                    >
+                      Owner
+                    </CButton>
+                  </div>
 
-              {/* Role Selector */}
-              <div className="flex gap-2 mb-4">
+                  <CInput
+                    label="Full Name"
+                    value={name}
+                    placeholder="Enter your full name"
+                    onChange={(e) => setName(e.target.value)}
+                  />
+                  <CInput
+                    label="Email"
+                    type="email"
+                    value={email}
+                    placeholder="Enter your email address"
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                  <CInput
+                    label="Password"
+                    type="password"
+                    value={password}
+                    placeholder="Enter your password"
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                  <CInput
+                    label="Confirm Password"
+                    type="password"
+                    value={confirmPassword}
+                    placeholder="Confirm your password"
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                  />
+
+                  <CButton
+                    type="button"
+                    fullWidth
+                    variant="contained"
+                    className="mt-2 py-2 text-base rounded-md font-medium"
+                    onClick={handleSendOtp}
+                  >
+                    Send OTP
+                  </CButton>
+                </form>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center gap-2 mb-4 cursor-pointer" onClick={() => setOtpStage(false)}>
+                  <span className="text-xl font-bold">←</span>
+                  <span className="text-sm text-primary font-medium">Back</span>
+                </div>
+
+                <h1 className="text-2xl sm:text-2xl font-bold mb-5 text-primary text-center">
+                  Verify OTP
+                </h1>
+
+                {otpMessage && <p className="text-center text-sm mb-2">{otpMessage}</p>}
+
+                <CInput
+                  label="Enter OTP"
+                  type="text"
+                  placeholder="Enter OTP"
+                  value={enteredOtp}
+                  onChange={(e) => setEnteredOtp(e.target.value)}
+                />
+
                 <CButton
-                  size="sm"
+                  type="button"
                   fullWidth
-                  variant={role === "user" ? "contained" : "outlined"}
-                  onClick={() => setRole("user")}
+                  variant="contained"
+                  className="mt-2 py-2 text-base rounded-md font-medium"
+                  onClick={handleVerifyOtpAndSignup}
+                  disabled={loading}
                 >
-                  User
+                  {loading ? "Signing Up..." : "Verify OTP & Sign Up"}
                 </CButton>
-                <CButton
-                  size="sm"
-                  fullWidth
-                  variant={role === "owner" ? "contained" : "outlined"}
-                  onClick={() => setRole("owner")}
-                >
-                  Owner
-                </CButton>
-              </div>
+              </>
+            )}
 
-              {/* Inputs */}
-              <CInput
-                label="Full Name"
-                value={name}
-                placeholder="Enter your full name"
-                onChange={(e) => setName(e.target.value)}
-              />
-              <CInput
-                label="Email"
-                type="email"
-                value={email}
-                placeholder="Enter your email address"
-                onChange={(e) => setEmail(e.target.value)}
-              />
-              <CInput
-                label="Password"
-                type="password"
-                value={password}
-                placeholder="Enter your password"
-                onChange={(e) => setPassword(e.target.value)}
-              />
-              <CInput
-                label="Confirm Password"
-                type="password"
-                value={confirmPassword}
-                placeholder="Confirm your password"
-                onChange={(e) => setConfirmPassword(e.target.value)}
-              />
-
-              <CButton
-                type="submit"
-                fullWidth
-                variant="contained"
-                className="mt-2 py-2 text-base rounded-md font-medium"
-                disabled={loading}
-              >
-                {loading ? "Signing Up..." : "Sign Up"}
-              </CButton>
-            </form>
-
-            {/* Already have account */}
             <p className="text-center mt-4 text-sm text-text-secondary">
               Already have an account?{" "}
               <span
