@@ -1,48 +1,52 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
-const pgSchema = new mongoose.Schema({
-  ownerId: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'User', 
-    required: true 
-  },
-  pgName: { 
-    type: String, 
-    required: true 
-  },
-  // Added these two fields to support your dashboard stats
-  totalRooms: { 
-    type: Number, 
-    default: 0 
-  },
-  liveListings: { 
-    type: Number, 
-    default: 0 
-  },
-  status: { 
-    type: String, 
-    enum: ['live', 'pending', 'closed'], 
-    default: 'pending' 
-  },
-  location: { 
-    type: String 
-  },
- 
-roomPrices: [
-    {
-      roomType: { type: String },
-      pricePerMonth: { type: String },
-      pricePerYear: { type: String },
-      advancePayment: { type: String },
-      optional2Beds: { type: String },
-      optional3Beds: { type: String }
+const pgSchema = new mongoose.Schema(
+  {
+    ownerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User', // This string links to your User model correctly
+      required: true
+    },
+    pgName: { 
+      type: String, 
+      required: [true, "Please add a PG name"] 
+    },
+    location: { 
+      type: String, 
+      required: [true, "Please add a location"] 
+    },
+    totalRooms: { 
+      type: Number, 
+      default: 0 
+    },
+    liveListings: { 
+      type: Number, 
+      default: 0 
+    },
+    status: {
+      type: String,
+      enum: ["live", "pending", "closed"],
+      default: "live"
+    },
+    // Room details array
+    rooms: [{
+      roomType: String,
+      totalRooms: Number,
+      bedsPerRoom: Number,
+      description: String
+    }],
+    // Prices object
+    roomPrices: {
+      single: Number,
+      double: Number,
+      triple: Number,
+      other: Number
     }
-  ], // Line 45: Array is closed correctly
-
-  createdAt: { 
-    type: Date, 
-    default: Date.now 
+  },
+  { 
+    timestamps: true 
   }
-}); // T
+);
 
-module.exports = mongoose.model('PgListing', pgSchema);
+// SAFE EXPORT: Prevents OverwriteModelError
+module.exports = mongoose.models.Pg || mongoose.model("Pg", pgSchema);

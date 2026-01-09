@@ -1,25 +1,47 @@
 const express = require('express');
 const router = express.Router();
 
-const { getOwnerDashboardData, createPg, getMyPgs, addTenant, getMyTenants, getMyBookings, addBooking, updateBookingStatus, updateRoomPrices} = require('../controllers/ownerController');
+// 1. Double-check that these names MATCH the bottom of ownerController.js exactly
+const { 
+  getOwnerDashboardData, 
+  createPg, 
+  getMyPgs, 
+  addTenant, 
+  getMyTenants, 
+  getMyBookings, 
+  addBooking, 
+  updateBookingStatus, 
+  updateRoomPrices,
+  updateOwnerProfile,
+  getOwnerProfile,
+  addRoom 
+} = require('../controllers/ownerController');
+
 const { protect, isOwner } = require('../middleware/authMiddleware');
 
-// Dashboard summary - Added protect and isOwner to ensure req.user exists
+// --- DASHBOARD ---
 router.get('/dashboard-summary', protect, isOwner, getOwnerDashboardData);
 
-// Add new PG - Added protect and isOwner so the PG is linked to the logged-in owner
+// --- PG MANAGEMENT ---
 router.post('/add-pg', protect, isOwner, createPg);
-
-// List all PGs - This is the missing piece for your "My PGs" table
 router.get('/my-pgs', protect, isOwner, getMyPgs);
 
-router.post('/add-tenant', protect, isOwner, addTenant); // For the Save button
-router.get('/my-tenants', protect, isOwner, getMyTenants);
-
-router.get('/my-bookings', protect, isOwner, getMyBookings);
-router.post('/add-booking', protect, isOwner, addBooking);
-
+// --- ROOM FLOW ---
+router.post('/add-room', protect, isOwner, addRoom);
 router.post('/update-room-prices', protect, isOwner, updateRoomPrices);
 
+// --- TENANT MANAGEMENT ---
+router.post('/add-tenant', protect, isOwner, addTenant);
+router.get('/my-tenants', protect, isOwner, getMyTenants);
+
+// --- BOOKING MANAGEMENT ---
+router.get('/my-bookings', protect, isOwner, getMyBookings);
+router.post('/add-booking', protect, isOwner, addBooking);
 router.put('/update-booking/:id', protect, isOwner, updateBookingStatus);
+
+
+// Route for Save Profile button
+router.get('/profile', protect, isOwner, getOwnerProfile);
+router.put('/update-profile', protect, isOwner, updateOwnerProfile);
+
 module.exports = router;

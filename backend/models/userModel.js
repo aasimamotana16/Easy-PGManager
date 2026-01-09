@@ -15,21 +15,32 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: [true, "Please add a password"],
     },
-    phoneNumber: {
+    // CHANGED: Use 'phone' to match your ownerController
+    phone: {
       type: String,
     },
-    // UPDATE THIS SECTION HERE:
+    // ADDED: Your controller needs this to save "Surat"
+    address: {
+      type: String,
+    },
     role: {
       type: String,
       required: true,
-      enum: ["user", "owner", "admin"], // This ensures ONLY these 3 values are allowed
+      enum: ["user", "owner", "admin"],
       default: "user",
-      lowercase: true, // This fixes the "Something went wrong" if frontend sends "Owner" instead of "owner"
+      lowercase: true,
     },
+    // Added for profile UI consistency
+    facebook: { type: String, default: "#" },
+    instagram: { type: String, default: "#" },
+    linkedin: { type: String, default: "#" },
+    twitter: { type: String, default: "#" },
+    profileImage: { type: String, default: "/images/profileImages/profile1.jpg" }
   },
   {
     timestamps: true, 
   }
 );
 
-module.exports = mongoose.model("User", userSchema);
+// SAFE EXPORT: Checks if model exists before compiling to prevent OverwriteModelError
+module.exports = mongoose.models.User || mongoose.model("User", userSchema);
