@@ -39,7 +39,7 @@ export default function Services() {
           />
 
           <h2 className="text-3xl sm:text-4xl font-extrabold text-orange-600 flex items-center justify-center gap-2 mb-4">
-            <span></span> Find Your Perfect PG
+            <span></span> Find Your Perfect Stay
           </h2>
 
           <p className="text-lg sm:text-xl mb-6">
@@ -52,7 +52,7 @@ export default function Services() {
             variant="contained"
             onClick={() => navigate("/findMypg")}
           >
-            Find My PG
+            Find My Stay
           </CButton>
         </div>
       </div>

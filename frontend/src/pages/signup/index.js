@@ -11,7 +11,7 @@ import { registerUser } from "../../api/api";
 const SignUp = () => {
   const navigate = useNavigate();
 
-  // 🔹 BACKGROUND IMAGE STATE (NEW)
+  // 🔹 BACKGROUND IMAGE STATE
   const images = [
     "/images/aboutImages/aboutIMG1.png",
     "/images/loginImages/loginImg1.jpg",
@@ -22,7 +22,7 @@ const SignUp = () => {
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentImage((prev) => (prev + 1) % images.length);
-    }, 5000); // change every 5s
+    }, 5000);
     return () => clearInterval(interval);
   }, []);
 
@@ -33,6 +33,9 @@ const SignUp = () => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // ✅ Terms state
+  const [agreeTerms, setAgreeTerms] = useState(false);
 
   const [otpStage, setOtpStage] = useState(false);
   const [generatedOtp, setGeneratedOtp] = useState("");
@@ -53,6 +56,12 @@ const SignUp = () => {
       alert("Please enter your email and phone number to receive OTP.");
       return;
     }
+
+    if (!agreeTerms) {
+      alert("Please agree to Terms & Conditions and Privacy Policy.");
+      return;
+    }
+
     const otp = generateOtp();
     setGeneratedOtp(otp);
     setOtpMessage("OTP sent! (Check console for demo)");
@@ -81,7 +90,13 @@ const SignUp = () => {
     setLoading(true);
 
     try {
-      const response = await registerUser({ role, name, email, phone, password });
+      const response = await registerUser({
+        role,
+        name,
+        email,
+        phone,
+        password,
+      });
       if (response?.data?.success) {
         alert("Sign up successful! Please login.");
         navigate("/login");
@@ -98,11 +113,9 @@ const SignUp = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background.DEFAULT">
-      {/*<Navbar />*/}
+      {/* <Navbar /> */}
 
-      {/* 🔹 IMAGE FADE SECTION */}
       <section className="relative w-full h-screen px-4 sm:px-8 lg:px-20 flex overflow-hidden">
-
         {/* Background Images */}
         {images.map((img, index) => (
           <div
@@ -118,21 +131,7 @@ const SignUp = () => {
         ))}
 
         {/* FORM CONTAINER */}
-        <div
-          className="
-            relative z-10
-            w-full
-            max-w-xs
-            sm:w-4/5
-            md:max-w-lg
-            lg:max-w-xl
-            flex flex-col
-            justify-center
-            h-full
-            mx-auto
-            lg:mx-0
-          "
-        >
+        <div className="relative z-10 w-full max-w-xs sm:w-4/5 md:max-w-lg lg:max-w-xl flex flex-col justify-center h-full mx-auto lg:mx-0">
           <CFormCard className="bg-white border border-border rounded-xl shadow-lg p-5 sm:p-8 md:p-10 w-full">
 
             {/* Logo */}
@@ -140,13 +139,13 @@ const SignUp = () => {
               <img
                 src="/logos/logo1.png"
                 alt="EasyPG Manager Logo"
-                className="h-16 md:h-20 w-auto"
+                className="h-12 md:h-20 w-auto"
               />
             </div>
 
             {!otpStage ? (
               <>
-                <h1 className="text-xl sm:text-2xl font-bold mb-4 text-primary text-center">
+                <h1 className="text-md sm:text-2xl font-bold mb-4 text-primary text-center">
                   Create Your EasyPG Manager Account
                 </h1>
 
@@ -170,31 +169,81 @@ const SignUp = () => {
                     </CButton>
                   </div>
 
-                  <CInput label="Full Name" value={name} placeholder="Enter your full name" onChange={(e) => setName(e.target.value)} />
-                  <CInput label="Email" type="email" value={email} placeholder="Enter your email address" onChange={(e) => setEmail(e.target.value)} />
-                  <CInput label="Phone Number" type="tel" value={phone} placeholder="Enter your phone number" onChange={(e) => setPhone(e.target.value)} />
-                  <CInput label="Password" type="password" value={password} placeholder="Enter your password" onChange={(e) => setPassword(e.target.value)} />
-                  <CInput label="Confirm Password" type="password" value={confirmPassword} placeholder="Confirm your password" onChange={(e) => setConfirmPassword(e.target.value)} />
+                  <CInput label="Full Name" value={name} onChange={(e) => setName(e.target.value)} />
+                  <CInput label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+                  <CInput label="Phone Number" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
+                  <CInput label="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+                  <CInput label="Confirm Password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
 
-                  <CButton type="button" fullWidth variant="contained" className="mt-2 py-2 text-base rounded-md font-medium" onClick={handleSendOtp}>
+                  {/* Terms */}
+                  <label className="flex items-start gap-2 text-xs text-gray-600 mt-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={agreeTerms}
+                      onChange={(e) => setAgreeTerms(e.target.checked)}
+                      className="mt-1 accent-primary"
+                    />
+                    <span>
+                      I agree to the{" "}
+                      <span
+                        className="text-primary font-medium hover:underline"
+                        onClick={() => navigate("/terms")}
+                      >
+                        Terms & Conditions
+                      </span>{" "}
+                      and{" "}
+                      <span
+                        className="text-primary font-medium hover:underline"
+                        onClick={() => navigate("/privacy")}
+                      >
+                        Privacy Policy
+                      </span>
+                    </span>
+                  </label>
+
+                  <CButton
+                    type="button"
+                    fullWidth
+                    variant="contained"
+                    className="mt-2 py-2 text-base rounded-md font-medium"
+                    onClick={handleSendOtp}
+                  >
                     Send OTP
                   </CButton>
                 </div>
               </>
             ) : (
               <>
-                <div className="flex items-center gap-2 mb-4 cursor-pointer" onClick={() => setOtpStage(false)}>
+                <div
+                  className="flex items-center gap-2 mb-4 cursor-pointer"
+                  onClick={() => setOtpStage(false)}
+                >
                   <span className="text-xl font-bold">←</span>
                   <span className="text-sm text-primary font-medium">Back</span>
                 </div>
 
-                <h1 className="text-2xl font-bold mb-5 text-primary text-center">Verify OTP</h1>
+                <h1 className="text-2xl font-bold mb-5 text-primary text-center">
+                  Verify OTP
+                </h1>
 
-                {otpMessage && <p className="text-center text-sm mb-2">{otpMessage}</p>}
+                {otpMessage && (
+                  <p className="text-center text-sm mb-2">{otpMessage}</p>
+                )}
 
-                <CInput label="Enter OTP" value={enteredOtp} onChange={(e) => setEnteredOtp(e.target.value)} />
+                <CInput
+                  label="Enter OTP"
+                  value={enteredOtp}
+                  onChange={(e) => setEnteredOtp(e.target.value)}
+                />
 
-                <CButton type="button" fullWidth variant="contained" className="mt-2 py-2 text-base rounded-md font-medium" onClick={handleVerifyOtpAndSignup} disabled={loading}>
+                <CButton
+                  type="button"
+                  fullWidth
+                  variant="contained"
+                  className="mt-2 py-2 text-base rounded-md font-medium"
+                  onClick={handleVerifyOtpAndSignup}
+                  disabled={loading}
+                >
                   {loading ? "Signing Up..." : "Verify OTP & Sign Up"}
                 </CButton>
               </>
@@ -202,10 +251,23 @@ const SignUp = () => {
 
             <p className="text-center mt-2 text-sm text-text-secondary">
               Already have an account?{" "}
-              <span onClick={() => navigate("/login")} className="font-semibold text-primary cursor-pointer hover:underline">
+              <span
+                onClick={() => navigate("/login")}
+                className="font-semibold text-primary cursor-pointer hover:underline"
+              >
                 Login
               </span>
             </p>
+
+            {/* 🔙 BACK TO HOME (NEW) */}
+            <div className="mt-3 text-center">
+              <span
+                onClick={() => navigate("/")}
+                className="text-sm text-gray-500 cursor-pointer hover:text-primary hover:underline"
+              >
+                ← Back to Home
+              </span>
+            </div>
 
           </CFormCard>
         </div>

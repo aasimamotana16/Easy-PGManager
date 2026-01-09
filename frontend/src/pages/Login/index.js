@@ -183,6 +183,7 @@ const Login = () => {
                 Privacy Policy
               </a>.
             </p>
+
             <p className="text-center mt-4 text-sm text-text-secondary">
               Don’t have an account?{" "}
               <a
@@ -192,6 +193,17 @@ const Login = () => {
                 Sign Up
               </a>
             </p>
+
+            {/* 🔙 BACK TO HOME (NEW) */}
+            <div className="mt-3 text-center">
+              <span
+                onClick={() => (window.location.href = "/")}
+                className="text-sm text-gray-500 cursor-pointer hover:text-primary hover:underline"
+              >
+                ← Back to Home
+              </span>
+            </div>
+
           </CFormCard>
         </div>
       </section>

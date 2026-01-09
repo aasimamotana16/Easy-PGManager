@@ -127,7 +127,7 @@ export default function FindMyPG() {
               : type === "hostelListing"
               ? `Hostels in ${city}`
               : `PGs & Hostels in ${city}`
-            : "Find My PG"}
+            : "Find My Perfect Stay"}
         </h1>
 
         {/* ================= FILTERS ================= */}
