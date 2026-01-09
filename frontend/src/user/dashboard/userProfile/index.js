@@ -4,7 +4,6 @@ import CButton from "../../../components/cButton";
 const Profile = () => {
   return (
     <div className="space-y-8">
-
       {/* GRADIENT WRAPPER */}
       <div className="bg-dashboard-gradient rounded-3xl p-6 space-y-8">
 
@@ -78,6 +77,24 @@ const Profile = () => {
             <Info label="City" value="Ahmedabad" />
             <Info label="State" value="Gujarat" />
             <Info label="Role" value="Tenant" />
+          </div>
+        </div>
+
+        {/* EMERGENCY CONTACT (NEW - REQUIRED) */}
+        <div className="bg-white rounded-2xl shadow p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-semibold">
+              Emergency Contact
+            </h3>
+            <CButton className="bg-primary text-white px-4 py-2 rounded-xl text-sm">
+              Edit Info
+            </CButton>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <Info label="Contact Name" value="Mother" />
+            <Info label="Relationship" value="Mother" />
+            <Info label="Phone Number" value="+91 9XXXXXXXXX" />
           </div>
         </div>
 

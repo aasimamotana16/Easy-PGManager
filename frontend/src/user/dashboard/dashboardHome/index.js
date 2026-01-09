@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { FaMoneyBillWave, FaFileContract, FaUpload, FaHeadset } from "react-icons/fa";
 import CButton from "../../../components/cButton";
 
@@ -7,7 +8,7 @@ const userData = {
   profile: {
     name: "Asima Motana",
     email: "asima@example.com",
-    contact: "+91 9876543210",
+    contact: "", // empty contact simulates incomplete profile
   },
   bookings: [
     {
@@ -32,31 +33,45 @@ const userData = {
 };
 
 const DashboardHome = () => {
+  const navigate = useNavigate();
   const { profile } = userData;
   const [bookings, setBookings] = useState(userData.bookings);
   const [documents, setDocuments] = useState(userData.documents);
+
+  const [modalBooking, setModalBooking] = useState(null); // modal state
 
   const activeBooking = bookings.find((b) => b.status === "Active");
 
   /* ---------- Handlers ---------- */
   const handlePayRent = () => {
     if (!activeBooking) return;
-    alert(`Rent ${activeBooking.rent} paid for ${activeBooking.pgName}`);
+    navigate("/user/dashboard/payments", { state: { booking: activeBooking } });
   };
 
-  const handleViewAgreement = () => alert("Opening PG Agreement...");
-  const handleUploadDocuments = () => {
-    setDocuments(documents.map((d) => ({ ...d, uploaded: true })));
-    alert("Documents uploaded successfully");
+  const handleViewAgreement = () => {
+    if (!activeBooking) return;
+    navigate("/user/dashboard/agreements", { state: { booking: activeBooking } });
   };
-  const handleSupport = () => alert("Support team will contact you shortly");
-  const handleViewDetails = (pgName) => alert(`Viewing details for ${pgName}`);
+
+  const handleUploadDocuments = () => {
+    navigate("/user/dashboard/documents", { state: { documents } });
+  };
+
+  const handleSupport = () => {
+    navigate("/user/dashboard/support");
+  };
+
+  const handleViewDetails = (booking) => {
+    setModalBooking(booking); // open modal with selected booking
+  };
+
+  const closeModal = () => setModalBooking(null);
+
+  /* ---------- Profile completeness check ---------- */
+  const isProfileComplete = profile.name && profile.email && profile.contact;
 
   return (
-    /* 🌿 MINT → TEAL GRADIENT BACKGROUND */
-    <div className="space-y-8 p-6 rounded-2xl 
-      bg-dashboard-gradient">
-
+    <div className="space-y-8 p-6 rounded-2xl bg-dashboard-gradient">
       {/* Welcome */}
       <div className="bg-white p-6 rounded-2xl shadow-lg border">
         <h1 className="text-2xl font-semibold text-primary">
@@ -65,6 +80,11 @@ const DashboardHome = () => {
         <p className="text-buttonDEFAULT mt-1">
           Manage your PG stay, payments, and support from one place.
         </p>
+        {!isProfileComplete && (
+          <p className="mt-2 text-sm text-red-500 font-medium">
+            Your profile is incomplete. Please update your personal information.
+          </p>
+        )}
       </div>
 
       {/* Top Cards */}
@@ -85,7 +105,7 @@ const DashboardHome = () => {
               className="mt-3 hover:scale-105 transition-transform"
               onClick={handlePayRent}
             >
-              Pay Rent
+              Next Payment
             </CButton>
           </DashboardCard>
         )}
@@ -107,13 +127,6 @@ const DashboardHome = () => {
           Quick Actions
         </h2>
         <div className="flex flex-wrap gap-4">
-          <CButton
-            icon={<FaMoneyBillWave className="mr-2" />}
-            className="hover:scale-105 transition-transform"
-            onClick={handlePayRent}
-          >
-            Pay Rent
-          </CButton>
           <CButton
             icon={<FaFileContract className="mr-2" />}
             className="hover:scale-105 transition-transform"
@@ -148,12 +161,38 @@ const DashboardHome = () => {
             <BookingCard
               key={index}
               booking={booking}
-              onView={() => handleViewDetails(booking.pgName)}
+              onView={() => handleViewDetails(booking)}
               onPay={handlePayRent}
             />
           ))}
         </div>
       </div>
+
+      {/* ---------- Modal for View Details ---------- */}
+      {modalBooking && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-lg">
+            <h2 className="text-xl font-semibold mb-4">{modalBooking.pgName}</h2>
+            <p>
+              <strong>Room No:</strong> {modalBooking.roomNo}
+            </p>
+            <p>
+              <strong>Rent:</strong> {modalBooking.rent}
+            </p>
+            <p>
+              <strong>Status:</strong> {modalBooking.status}
+            </p>
+            <p>
+              <strong>Next Due:</strong> {modalBooking.nextDue}
+            </p>
+            <div className="mt-5 text-right">
+              <CButton className="bg-red-500 text-white" onClick={closeModal}>
+                Close
+              </CButton>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -172,7 +211,11 @@ const DashboardCard = ({ title, icon, children }) => (
 const StatCard = ({ title, value, highlight }) => (
   <div className="bg-card rounded-2xl shadow-lg p-5 border hover:shadow-2xl transition-shadow">
     <p className="text-buttonDEFAULT text-sm">{title}</p>
-    <p className={`text-lg font-semibold mt-1 ${highlight ? "text-green-2" : "text-primary"}`}>
+    <p
+      className={`text-lg font-semibold mt-1 ${
+        highlight ? "text-green-2" : "text-primary"
+      }`}
+    >
       {value}
     </p>
   </div>
@@ -214,7 +257,9 @@ const InfoRow = ({ label, value }) => (
 const StatusBadge = ({ status }) => (
   <span
     className={`px-3 py-1 rounded-full text-xs font-medium ${
-      status === "Active" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"
+      status === "Active"
+        ? "bg-green-100 text-green-700"
+        : "bg-gray-100 text-gray-700"
     }`}
   >
     {status}

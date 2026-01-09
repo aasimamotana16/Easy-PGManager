@@ -55,6 +55,8 @@ import {
   Rebook,
   OwnerContact,
   Support,
+  ExplorePage
+  
 } from "./user/dashboard";
 
 /* ================= OWNER DASHBOARD ================= */
@@ -185,6 +187,7 @@ function App() {
             <Route path="rebook" element={<Rebook />} />
             <Route path="owner-contact" element={<OwnerContact />} />
             <Route path="support" element={<Support />} />
+            <Route path="explorePage" element={<ExplorePage/>}/>
           </Route>
 
           {/* ================= OWNER DASHBOARD ================= */}

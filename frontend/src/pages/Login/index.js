@@ -13,12 +13,6 @@ const Login = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // OTP states
-  const [otpSent, setOtpSent] = useState(false);
-  const [generatedOtp, setGeneratedOtp] = useState("");
-  const [enteredOtp, setEnteredOtp] = useState("");
-  const [otpMessage, setOtpMessage] = useState("");
-
   // 🔹 Background images for animation
   const images = [
     "/images/aboutImages/aboutIMG1.png",
@@ -30,7 +24,7 @@ const Login = () => {
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentImage((prev) => (prev + 1) % images.length);
-    }, 5000); // change every 5 seconds
+    }, 5000);
     return () => clearInterval(interval);
   }, []);
 
@@ -40,57 +34,8 @@ const Login = () => {
     return re.test(String(email).toLowerCase());
   };
 
-  const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString();
-
-  const handleSendOtp = () => {
-    if (!email || !validateEmail(email)) {
-      alert("Please enter a valid email first");
-      return;
-    }
-    const otp = generateOtp();
-    setGeneratedOtp(otp);
-    setOtpSent(true);
-    setOtpMessage(`OTP sent to ${email} (check console for demo)`);
-    console.log("Generated OTP:", otp); // Only for testing
-  };
-
-  const handleVerifyOtp = async () => {
-    if (enteredOtp === generatedOtp) {
-      alert("✅ OTP verified. Logging in...");
-      setLoading(true);
-      try {
-        const response = await loginUser({ email, password, role });
-        const data = response.data;
-        if (data && data.success) {
-          if (data.token) localStorage.setItem("token", data.token);
-          const serverRole = data.user.role.toLowerCase();
-          if (serverRole === "owner") {
-            localStorage.setItem("owner", JSON.stringify(data.user));
-            localStorage.removeItem("user");
-            window.location.href = "/owner/dashboard";
-          } else {
-            localStorage.setItem("user", JSON.stringify(data.user));
-            localStorage.removeItem("owner");
-            window.location.href = "/user/dashboard";
-          }
-          if (rememberMe) localStorage.setItem("rememberMe", "true");
-        }
-      } catch (error) {
-        alert(error.response?.data?.message || "Login failed.");
-      } finally {
-        setLoading(false);
-      }
-    } else {
-      setOtpMessage("❌ OTP incorrect. Try again.");
-    }
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (otpSent) {
-      handleVerifyOtp();
-      return;
-    }
 
     if (!email || !password) {
       alert("Please fill in both email and password.");
@@ -105,8 +50,10 @@ const Login = () => {
     try {
       const response = await loginUser({ email, password, role });
       const data = response.data;
+
       if (data && data.success) {
         if (data.token) localStorage.setItem("token", data.token);
+
         const serverRole = data.user.role.toLowerCase();
         if (serverRole === "owner") {
           localStorage.setItem("owner", JSON.stringify(data.user));
@@ -117,6 +64,7 @@ const Login = () => {
           localStorage.removeItem("owner");
           window.location.href = "/user/dashboard";
         }
+
         if (rememberMe) localStorage.setItem("rememberMe", "true");
       }
     } catch (error) {
@@ -128,7 +76,7 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background.DEFAULT">
-      {/*<Navbar />*/}
+      {/* <Navbar /> */}
 
       <section className="relative w-full min-h-screen flex items-center px-4 sm:px-8 lg:px-20 overflow-hidden">
         {/* Background Images */}
@@ -149,7 +97,11 @@ const Login = () => {
         <div className="relative z-10 w-full max-w-xs sm:w-4/5 md:max-w-lg lg:max-w-xl flex flex-col justify-center h-full mx-auto lg:mx-0">
           <CFormCard className="bg-white border border-border rounded-xl shadow-lg p-5 sm:p-8 md:p-10 w-full">
             <div className="mb-1 flex justify-center">
-              <img src="/logos/logo1.png" alt="Logo" className="h-16 md:h-20 w-auto" />
+              <img
+                src="/logos/logo1.png"
+                alt="Logo"
+                className="h-16 md:h-20 w-auto"
+              />
             </div>
 
             <h1 className="text-xl sm:text-2xl md:text-3xl font-bold mb-6 text-primary text-center">
@@ -186,44 +138,23 @@ const Login = () => {
                 onChange={(e) => setEmail(e.target.value)}
               />
 
-              {/* Password or OTP */}
-              {!otpSent && (
-                <CInput
-                  label="Password"
-                  type="password"
-                  value={password}
-                  placeholder="Enter your password"
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              )}
-              {otpSent && (
-                <CInput
-                  label="Enter OTP"
-                  type="text"
-                  value={enteredOtp}
-                  placeholder="Enter OTP"
-                  onChange={(e) => setEnteredOtp(e.target.value)}
-                />
-              )}
+              {/* Password */}
+              <CInput
+                label="Password"
+                type="password"
+                value={password}
+                placeholder="Enter your password"
+                onChange={(e) => setPassword(e.target.value)}
+              />
 
-              {/* Buttons */}
-              {!otpSent ? (
-                <CButton
-                  text={loading ? "Sending..." : "Send OTP"}
-                  onClick={handleSendOtp}
-                  fullWidth
-                  className="mt-2"
-                  disabled={loading}
-                />
-              ) : (
-                <CButton
-                  text="Verify OTP"
-                  onClick={handleVerifyOtp}
-                  fullWidth
-                  className="mt-2"
-                  disabled={loading}
-                />
-              )}
+              {/* Login Button */}
+              <CButton
+                text={loading ? "Logging in..." : "Login"}
+                type="submit"
+                fullWidth
+                className="mt-2"
+                disabled={loading}
+              />
 
               {/* Remember Me + Forgot */}
               <div className="flex justify-between items-center text-sm sm:text-base">
@@ -232,7 +163,10 @@ const Login = () => {
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
                 />
-                <a href="/forgot-password" className="font-semibold text-primary hover:underline">
+                <a
+                  href="/forgot-password"
+                  className="font-semibold text-primary hover:underline"
+                >
                   Forgot Password?
                 </a>
               </div>
@@ -251,12 +185,13 @@ const Login = () => {
             </p>
             <p className="text-center mt-4 text-sm text-text-secondary">
               Don’t have an account?{" "}
-              <a href="/signup" className="font-semibold text-primary hover:underline">
+              <a
+                href="/signup"
+                className="font-semibold text-primary hover:underline"
+              >
                 Sign Up
               </a>
             </p>
-
-            {otpMessage && <p className="mt-2 text-center text-sm">{otpMessage}</p>}
           </CFormCard>
         </div>
       </section>

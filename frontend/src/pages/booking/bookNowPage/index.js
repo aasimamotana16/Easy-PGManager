@@ -29,7 +29,10 @@ const BookingPage = () => {
   const increase = () => {
     if (persons < maxBeds) {
       setPersons(persons + 1);
-      setPersonsData([...personsData, { fullName: "", email: "", phone: "" }]);
+      setPersonsData([
+        ...personsData,
+        { fullName: "", email: "", phone: "" },
+      ]);
     }
   };
 
@@ -50,17 +53,32 @@ const BookingPage = () => {
     const newErrors = {};
 
     personsData.forEach((p, index) => {
-      if (!p.fullName.trim()) newErrors[`fullName_${index}`] = "Full Name required";
-      if (!p.email.trim()) newErrors[`email_${index}`] = "Email required";
-      else if (!/^\S+@\S+\.\S+$/.test(p.email)) newErrors[`email_${index}`] = "Invalid email";
+      if (!p.fullName.trim())
+        newErrors[`fullName_${index}`] = "Full Name required";
 
+      if (!p.email.trim())
+        newErrors[`email_${index}`] = "Email required";
+      else if (!/^\S+@\S+\.\S+$/.test(p.email))
+        newErrors[`email_${index}`] = "Invalid email";
+
+      // Phone validation for ALL persons
+      if (!p.phone?.trim())
+        newErrors[`phone_${index}`] = "Phone number required";
+      else if (!/^[6-9]\d{9}$/.test(p.phone))
+        newErrors[`phone_${index}`] = "Invalid phone number";
+
+      // Booking details ONLY for first person
       if (index === 0) {
-        if (!p.phone.trim()) newErrors.phone = "Phone number required";
-        else if (!/^[6-9]\d{9}$/.test(p.phone)) newErrors.phone = "Invalid phone number";
-        if (!p.checkIn) newErrors.checkIn = "Check-in date required";
-        if (!p.checkOut) newErrors.checkOut = "Check-out date required";
-        else if (p.checkIn && new Date(p.checkOut) <= new Date(p.checkIn))
-          newErrors.checkOut = "Check-out must be after check-in";
+        if (!p.checkIn)
+          newErrors.checkIn = "Check-in date required";
+
+        // Checkout is OPTIONAL
+        if (p.checkOut && p.checkIn) {
+          if (new Date(p.checkOut) <= new Date(p.checkIn)) {
+            newErrors.checkOut =
+              "Check-out must be after check-in";
+          }
+        }
       }
     });
 
@@ -70,6 +88,7 @@ const BookingPage = () => {
 
   const handleBooking = () => {
     if (!validate()) return;
+
     const bookingData = {
       pgId: pg.id,
       persons,
@@ -77,6 +96,7 @@ const BookingPage = () => {
       totalRent,
       members: personsData,
     };
+
     navigate(`/confirm/${pg.id}`, { state: { bookingData } });
   };
 
@@ -98,73 +118,100 @@ const BookingPage = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Full Name */}
                   <div>
-                    <label className="text-sm font-medium text-gray-600">Full Name</label>
+                    <label className="text-sm font-medium text-gray-600">
+                      Full Name
+                    </label>
                     <CInput
                       placeholder="Full Name"
                       value={person.fullName}
-                      onChange={(e) => handleChange(index, "fullName", e.target.value)}
+                      onChange={(e) =>
+                        handleChange(index, "fullName", e.target.value)
+                      }
                     />
                     {errors[`fullName_${index}`] && (
-                      <p className="text-red-500 text-sm">{errors[`fullName_${index}`]}</p>
+                      <p className="text-red-500 text-sm">
+                        {errors[`fullName_${index}`]}
+                      </p>
                     )}
                   </div>
 
                   {/* Email */}
                   <div>
-                    <label className="text-sm font-medium text-gray-600">Email</label>
+                    <label className="text-sm font-medium text-gray-600">
+                      Email
+                    </label>
                     <CInput
                       placeholder="Email"
                       value={person.email}
-                      onChange={(e) => handleChange(index, "email", e.target.value)}
+                      onChange={(e) =>
+                        handleChange(index, "email", e.target.value)
+                      }
                     />
                     {errors[`email_${index}`] && (
-                      <p className="text-red-500 text-sm">{errors[`email_${index}`]}</p>
+                      <p className="text-red-500 text-sm">
+                        {errors[`email_${index}`]}
+                      </p>
                     )}
                   </div>
 
-                  {/* First person additional fields */}
+                  {/* Phone */}
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">
+                      Phone Number
+                    </label>
+                    <CInput
+                      placeholder="Phone Number"
+                      value={person.phone}
+                      onChange={(e) =>
+                        handleChange(index, "phone", e.target.value)
+                      }
+                    />
+                    {errors[`phone_${index}`] && (
+                      <p className="text-red-500 text-sm">
+                        {errors[`phone_${index}`]}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* First person booking dates */}
                   {index === 0 && (
-                    <>
-                      {/* Phone */}
+                    <div className="md:col-span-2 grid grid-cols-2 gap-4">
                       <div>
-                        <label className="text-sm font-medium text-gray-600">Phone Number</label>
+                        <label className="text-sm font-medium text-gray-600">
+                          Check-in Date
+                        </label>
                         <CInput
-                          placeholder="Phone Number"
-                          value={person.phone}
-                          onChange={(e) => handleChange(index, "phone", e.target.value)}
+                          type="date"
+                          value={person.checkIn}
+                          onChange={(e) =>
+                            handleChange(index, "checkIn", e.target.value)
+                          }
                         />
-                        {errors.phone && (
-                          <p className="text-red-500 text-sm">{errors.phone}</p>
+                        {errors.checkIn && (
+                          <p className="text-red-500 text-sm">
+                            {errors.checkIn}
+                          </p>
                         )}
                       </div>
 
-                      {/* Check-in / Check-out row */}
-                      <div className="md:col-span-2 grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="text-sm font-medium text-gray-600">Check-in Date</label>
-                          <CInput
-                            type="date"
-                            value={person.checkIn}
-                            onChange={(e) => handleChange(index, "checkIn", e.target.value)}
-                          />
-                          {errors.checkIn && (
-                            <p className="text-red-500 text-sm">{errors.checkIn}</p>
-                          )}
-                        </div>
-
-                        <div>
-                          <label className="text-sm font-medium text-gray-600">Check-out Date</label>
-                          <CInput
-                            type="date"
-                            value={person.checkOut}
-                            onChange={(e) => handleChange(index, "checkOut", e.target.value)}
-                          />
-                          {errors.checkOut && (
-                            <p className="text-red-500 text-sm">{errors.checkOut}</p>
-                          )}
-                        </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">
+                          Expected Check-out Date (Optional)
+                        </label>
+                        <CInput
+                          type="date"
+                          value={person.checkOut}
+                          onChange={(e) =>
+                            handleChange(index, "checkOut", e.target.value)
+                          }
+                        />
+                        {errors.checkOut && (
+                          <p className="text-red-500 text-sm">
+                            {errors.checkOut}
+                          </p>
+                        )}
                       </div>
-                    </>
+                    </div>
                   )}
                 </div>
               </div>
@@ -176,20 +223,38 @@ const BookingPage = () => {
             <h3 className="text-xl font-semibold mb-4">Booking Summary</h3>
 
             <div className="flex justify-between items-center mb-4">
-              <span className="text-green-600">{maxBeds} Beds Available</span>
+              <span className="text-green-600">
+                {maxBeds} Beds Available
+              </span>
               <div className="flex items-center gap-3">
-                <button onClick={decrease} className="px-3 py-1 bg-gray-200 rounded">−</button>
+                <button
+                  onClick={decrease}
+                  className="px-3 py-1 bg-gray-200 rounded"
+                >
+                  −
+                </button>
                 <span>{persons}</span>
-                <button onClick={increase} className="px-3 py-1 bg-gray-200 rounded">+</button>
+                <button
+                  onClick={increase}
+                  className="px-3 py-1 bg-gray-200 rounded"
+                >
+                  +
+                </button>
               </div>
             </div>
 
             <div className="bg-gray-100 p-4 rounded mb-6 text-center">
               <p>Per Person ₹{pricePerPerson}/month</p>
-              <p className="font-semibold text-lg">Total ₹{totalRent}/month</p>
+              <p className="font-semibold text-lg">
+                Total ₹{totalRent}/month
+              </p>
             </div>
 
-            <CButton size="lg" className="w-full bg-orange-500 text-white" onClick={handleBooking}>
+            <CButton
+              size="lg"
+              className="w-full bg-orange-500 text-white"
+              onClick={handleBooking}
+            >
               Confirm Booking
             </CButton>
           </div>

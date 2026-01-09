@@ -38,6 +38,7 @@ const UserDashboardLayout = () => {
           <MenuLink to="/user/dashboard/timeline" label="Timeline" />
           <MenuLink to="/user/dashboard/owner-contact" label="Owner Contact" />
           <MenuLink to="/user/dashboard/support" label="Support" />
+          <MenuLink to="/user/dashboard/explorePage" label="Explore PGs&Hostels"/>
         </nav>
       </aside>
 

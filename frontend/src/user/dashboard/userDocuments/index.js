@@ -4,9 +4,30 @@ import CButton from "../../../components/cButton";
 const Documents = () => {
   // Mock data (replace with API later)
   const [documents, setDocuments] = useState([
-    { id: 1, name: " College ID ", status: "Uploaded", date: "01 Jan 2026", file: null },
-    { id: 2, name: "Aadhar Card ", status: "Pending", date: null, file: null },
-    { id: 3, name: "Rental Agreement Copy", status: "Uploaded", date: "01 Jan 2026", file: null },
+    {
+      id: 1,
+      name: "College ID",
+      status: "Uploaded",
+      date: "01 Jan 2026",
+      file: null,
+      required: false,
+    },
+    {
+      id: 2,
+      name: "Aadhar Card",
+      status: "Pending",
+      date: null,
+      file: null,
+      required: true,
+    },
+    {
+      id: 3,
+      name: "Rental Agreement Copy",
+      status: "Uploaded",
+      date: "01 Jan 2026",
+      file: null,
+      required: true,
+    },
   ]);
 
   const fileInputRef = useRef(null);
@@ -15,7 +36,7 @@ const Documents = () => {
   // Handle upload
   const handleUploadClick = (docId) => {
     setCurrentDocId(docId);
-    fileInputRef.current.click(); // trigger hidden input
+    fileInputRef.current.click();
   };
 
   const handleFileChange = (e) => {
@@ -29,7 +50,7 @@ const Documents = () => {
               ...doc,
               status: "Uploaded",
               date: new Date().toLocaleDateString("en-GB"),
-              file: file,
+              file,
             }
           : doc
       )
@@ -71,20 +92,36 @@ const Documents = () => {
 
       {/* GRADIENT WRAPPER */}
       <div className="bg-dashboard-gradient rounded-3xl p-6 space-y-6">
-
         {documents.map((doc) => (
           <div
             key={doc.id}
             className="bg-white rounded-2xl shadow p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
           >
             <div>
-              <h3 className="text-lg font-semibold text-primary">{doc.name}</h3>
+              <h3 className="text-lg font-semibold text-primary">
+                {doc.name}
+              </h3>
+
               {doc.date && (
-                <p className="text-xs text-gray-400 mt-1">Uploaded: {doc.date}</p>
+                <p className="text-xs text-gray-400 mt-1">
+                  Uploaded: {doc.date}
+                </p>
               )}
             </div>
 
             <div className="flex flex-wrap gap-3 items-center">
+              {/* Required / Optional badge */}
+              <span
+                className={`px-3 py-1 text-xs font-medium rounded-full ${
+                  doc.required
+                    ? "bg-red-100 text-red-700"
+                    : "bg-gray-100 text-gray-600"
+                }`}
+              >
+                {doc.required ? "Required" : "Optional"}
+              </span>
+
+              {/* Status badge */}
               <span
                 className={`px-3 py-1 text-xs font-medium rounded-full ${
                   doc.status === "Uploaded"
@@ -98,7 +135,9 @@ const Documents = () => {
               <CButton
                 className="border px-4 py-2 rounded-xl text-sm"
                 onClick={() =>
-                  doc.status === "Uploaded" ? handleView(doc) : handleUploadClick(doc.id)
+                  doc.status === "Uploaded"
+                    ? handleView(doc)
+                    : handleUploadClick(doc.id)
                 }
               >
                 {doc.status === "Uploaded" ? "View" : "Upload"}
@@ -115,7 +154,6 @@ const Documents = () => {
             </div>
           </div>
         ))}
-
       </div>
     </div>
   );
