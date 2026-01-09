@@ -31,13 +31,12 @@ const Support = () => {
       <div className="bg-dashboard-gradient rounded-3xl p-6 space-y-6">
 
         {/* SUPPORT CARD */}
-        <div className="bg-white rounded-2xl shadow p-6 space-y-5">
 
-          <h2 className="text-lg font-semibold text-primary">Support</h2>
-          <p className="text-gray-500 text-sm">
+          <h2 className="text-2xl font-semibold text-primary">Support</h2>
+          <p className="text-gray-600 text-md">
             Need help? Contact our support team or submit your query below.
           </p>
-
+          <div className="bg-white rounded-2xl shadow p-6 space-y-5">
           {/* Support Contact Info */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <Info label="Email" value="support@easypgmanager.com" />
