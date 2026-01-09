@@ -133,7 +133,7 @@ const Documents = () => {
               </span>
 
               <CButton
-                className="border px-4 py-2 rounded-xl text-sm"
+                className="border px-4 py-2  text-sm"
                 onClick={() =>
                   doc.status === "Uploaded"
                     ? handleView(doc)
@@ -145,7 +145,7 @@ const Documents = () => {
 
               {doc.status === "Uploaded" && (
                 <CButton
-                  className="border px-4 py-2 rounded-xl text-sm"
+                  className="border px-4 py-2  text-sm"
                   onClick={() => handleDownload(doc)}
                 >
                   Download

@@ -13,7 +13,7 @@ const CButton = ({
   // Variant styles
   const variantClasses = {
     contained:
-      "bg-primary text-black hover:bg-button-hover",
+      "bg-primary text-white hover:bg-button-hover",
     outlined:
       "border border-primary text-black hover:bg-primary",
     text:

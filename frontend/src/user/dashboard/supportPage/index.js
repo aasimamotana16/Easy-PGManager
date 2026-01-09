@@ -88,7 +88,7 @@ const Support = () => {
             />
             <CButton
               type="submit"
-              className="bg-primary text-white px-5 py-3 rounded-xl md:col-span-2"
+              className="  "
             >
               Submit
             </CButton>

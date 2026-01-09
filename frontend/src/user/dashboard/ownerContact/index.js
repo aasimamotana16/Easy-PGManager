@@ -24,14 +24,14 @@ const OwnerContact = () => {
       {/* Action Buttons on gradient */}
       <div className="flex flex-wrap gap-4 w-full max-w-3xl">
         <CButton
-          className="bg-primary  px-6 py-2"
+          className=" px-6 py-2"
           onClick={() => window.open(`tel:${ownerData.phone}`)}
         >
           Call Owner
         </CButton>
 
         <CButton
-          className="bg-primary/20  border border-primary px-6 py-2 "
+          className="  px-6 py-2 "
           onClick={() => window.open(`mailto:${ownerData.email}`)}
         >
           Email Owner

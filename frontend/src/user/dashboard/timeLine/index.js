@@ -59,7 +59,7 @@ const Timeline = () => {
             ))}
 
             <CButton 
-              className="bg-primary text-white px-5 py-2 rounded-xl mt-4"
+              className=" px-5 py-2  mt-4"
               onClick={downloadTimeline}
             >
               Download Timeline

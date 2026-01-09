@@ -100,17 +100,16 @@ const Agreements = () => {
 
       {/* GRADIENT WRAPPER */}
       <div className="bg-dashboard-gradient rounded-3xl p-6 space-y-6">
+         <h2 className="text-2xl font-semibold text-primary mt-4">
+              Rental Agreement
+            </h2>
 
         {/* AGREEMENT CARD */}
         <div className="bg-white rounded-2xl shadow p-6 space-y-5">
 
           {/* HEADER */}
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-primary">
-              Rental Agreement
-            </h2>
-
-            <span className="px-3 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700">
+                      <span className="px-3 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700">
               Active
             </span>
           </div>
@@ -129,14 +128,14 @@ const Agreements = () => {
           {/* ACTIONS */}
           <div className="flex flex-wrap gap-3 pt-2">
             <CButton
-              className="bg-primary text-white px-5 py-2 rounded-xl text-sm"
+              className="bg-primary  px-5 py-2  text-sm"
               onClick={() => setShowRules(true)}
             >
               View Rules
             </CButton>
 
             <CButton
-              className="border px-5 py-2 rounded-xl text-sm"
+              className="border px-5 py-2  text-sm"
               onClick={handleDownloadPDF}
             >
               Download PDF
@@ -170,7 +169,7 @@ const Agreements = () => {
 
             <CButton
               onClick={() => setShowRules(false)}
-              className="w-full mt-6 bg-primary text-white py-2 rounded-xl"
+              className="w-full mt-6 bg-primary  py-2 "
             >
               Close
             </CButton>

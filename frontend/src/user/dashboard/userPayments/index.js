@@ -49,7 +49,7 @@ const Payments = () => {
 
         {/* Pay Now Button */}
         <CButton
-          className="bg-green-600 text-white px-6 py-2 rounded-xl hover:opacity-90 transition mb-6"
+          className="bg-green-600  px-6 py-2  hover:opacity-90 transition mb-6"
           onClick={() => setIsPayModalOpen(true)}
         >
           Pay Next Rent

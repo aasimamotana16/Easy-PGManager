@@ -48,7 +48,7 @@ const CheckIns = () => {
         {/* HEADER */}
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-2xl font-semibold text-primary">Check-ins</h2>
-          <CButton className="bg-primary text-text-light px-5 py-2 rounded-xl" onClick={handleCheckInOut}>
+          <CButton className="  px-5 py-2 " onClick={handleCheckInOut}>
             {checkedIn ? "Check Out" : "Check In"}
           </CButton>
         </div>

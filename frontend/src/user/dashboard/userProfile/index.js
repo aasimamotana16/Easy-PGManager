@@ -28,10 +28,10 @@ const Profile = () => {
             </div>
 
             <div className="flex flex-wrap gap-3">
-              <CButton className="bg-primary text-white px-4 py-2 rounded-xl text-sm">
+              <CButton className="bg-primary  px-4 py-2 text-sm">
                 Upload Picture
               </CButton>
-              <CButton className="border px-4 py-2 rounded-xl text-sm">
+              <CButton className="border px-4 py-2  text-sm">
                 Remove Picture
               </CButton>
             </div>
@@ -65,7 +65,7 @@ const Profile = () => {
             <h3 className="text-lg font-semibold">
               Personal Information
             </h3>
-            <CButton className="bg-primary text-white px-4 py-2 rounded-xl text-sm">
+            <CButton className="bg-primary  px-4 py-2  text-sm">
               Edit Info
             </CButton>
           </div>
@@ -86,7 +86,7 @@ const Profile = () => {
             <h3 className="text-lg font-semibold">
               Emergency Contact
             </h3>
-            <CButton className="bg-primary text-white px-4 py-2 rounded-xl text-sm">
+            <CButton className="bg-primary  px-4 py-2  text-sm">
               Edit Info
             </CButton>
           </div>
