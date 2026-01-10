@@ -21,9 +21,11 @@ import ResetPassword from "./pages/Login/resetPassword";
 import Contact from "./pages/contact";
 import Services from "./pages/services";
 import FAQ from "./pages/faq";
-import PGFullDetails, { PGOverview } from "./pages/detailsPage";
 import FindMyPg from "./pages/findMypg";
 import DemoBook from "./pages/Home/demoBook";
+
+/* ================= PG DETAILS ================= */
+import PGFullDetails from "./pages/detailsPage";
 
 /* ================= BOOKING ================= */
 import BookingPage from "./pages/booking/bookNowPage";
@@ -55,8 +57,7 @@ import {
   Rebook,
   OwnerContact,
   Support,
-  ExplorePage
-  
+  ExplorePage,
 } from "./user/dashboard";
 
 /* ================= OWNER DASHBOARD ================= */
@@ -82,20 +83,17 @@ import BookingManagement from "./owner/dashboard/oBookings";
 
 const UserProtectedRoute = ({ children }) => {
   const user = JSON.parse(localStorage.getItem("user"));
-  if (!user) return <Navigate to="/login" replace />;
-  return children;
+  return user ? children : <Navigate to="/login" replace />;
 };
 
 const OwnerProtectedRoute = ({ children }) => {
   const owner = JSON.parse(localStorage.getItem("owner"));
-  if (!owner) return <Navigate to="/login" replace />;
-  return children;
+  return owner ? children : <Navigate to="/login" replace />;
 };
 
 const ProtectedBookingRoute = ({ children }) => {
   const user = JSON.parse(localStorage.getItem("user"));
-  if (!user) return <Navigate to="/login" replace />;
-  return children;
+  return user ? children : <Navigate to="/login" replace />;
 };
 
 function App() {
@@ -107,7 +105,6 @@ function App() {
           {/* ================= PUBLIC ROUTES ================= */}
           <Route path="/" element={<Home />} />
 
-          {/* ✅ FIXED ROUTES */}
           <Route path="/findMypg" element={<FindMyPg />} />
           <Route path="/findMypg/:type" element={<FindMyPg />} />
 
@@ -119,11 +116,10 @@ function App() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/services" element={<Services />} />
           <Route path="/faq" element={<FAQ />} />
-          <Route path="/demoBook" element={<DemoBook/>}/>
+          <Route path="/demoBook" element={<DemoBook />} />
 
-          {/* ================= PG DETAILS ================= */}
-          <Route path="/pg/:id" element={<PGOverview />} />
-          <Route path="/pg/:id/details" element={<PGFullDetails />} />
+          {/* ================= PG DETAILS (SINGLE PAGE) ================= */}
+          <Route path="/pg/:id" element={<PGFullDetails />} />
 
           {/* ================= BOOKING FLOW ================= */}
           <Route path="/book/:id" element={<BookingPage />} />
@@ -187,7 +183,7 @@ function App() {
             <Route path="rebook" element={<Rebook />} />
             <Route path="owner-contact" element={<OwnerContact />} />
             <Route path="support" element={<Support />} />
-            <Route path="explorePage" element={<ExplorePage/>}/>
+            <Route path="explorePage" element={<ExplorePage />} />
           </Route>
 
           {/* ================= OWNER DASHBOARD ================= */}
