@@ -324,7 +324,7 @@ export const pgdetails = [
     location: "Nadiad",
     address: "Salman park society , Barkosia Road, Nadiad, Gujarat, India",
     gender: "Male",
-    rating: 4.3,
+
 
     startingPrice: "₹4500 / month",
     startingPriceNumber: 4500,
@@ -363,7 +363,6 @@ export const pgdetails = [
     name: "GreenNest PG",
     location: "Ahmedabad",
     gender: "Female",
-    rating: 4.7,
 
     startingPrice: "₹5500 / month",
     startingPriceNumber: 5500,
@@ -399,7 +398,6 @@ export const pgdetails = [
     name: "Shree PG",
     location: "Surat",
     gender: "Male",
-    rating: 4.4,
 
     startingPrice: "₹4800 / month",
     startingPriceNumber: 4800,
@@ -435,7 +433,6 @@ export const pgdetails = [
     name: "Harmony PG",
     location: "Rajkot",
     gender: "Female",
-    rating: 4.5,
 
     startingPrice: "₹5000 / month",
     startingPriceNumber: 5000,
@@ -471,7 +468,6 @@ export const pgdetails = [
     name: "Lotus PG",
     location: "Bhavnagar",
     gender: "Male",
-    rating: 4.1,
 
     startingPrice: "₹4200 / month",
     startingPriceNumber: 4200,
@@ -507,7 +503,6 @@ export const pgdetails = [
     name: "Pearl PG",
     location: "Anand",
     gender: "Female",
-    rating: 4.2,
 
     startingPrice: "₹4700 / month",
     startingPriceNumber: 4700,
@@ -545,7 +540,6 @@ export const pgdetails = [
     name: "Skyline PG",
     location: "Gandhinagar",
     gender: "Male",
-    rating: 4.6,
 
     startingPrice: "₹5300 / month",
     startingPriceNumber: 5300,
@@ -581,7 +575,6 @@ export const pgdetails = [
     name: "RoyalStay PG",
     location: "Junagadh",
     gender: "Female",
-    rating: 4.3,
 
     startingPrice: "₹4600 / month",
     startingPriceNumber: 4600,
@@ -632,7 +625,6 @@ export const hosteldetails = [
       { icon: "clean", text: "Keep common areas clean" },
     ],
     gender: "Male",
-    rating: 4.2,
    image:
 "/images/serviceImage/availableHostelsimg/cityHostelimg/cityhostel2.jpeg",
 
@@ -660,7 +652,6 @@ roomImages: [
       { icon: "nopet", text: "No pets allowed" },
     ],
     gender: "Female",
-    rating: 4.6,
     image:
 "/images/serviceImage/availableHostelsimg/eliteHostelimg/elitehostel1.jpg",
 
@@ -688,7 +679,6 @@ roomImages: [
       { icon: "noguest", text: "No guests allowed" },
     ],
     gender: "Male",
-    rating: 4.3,
     image:
 "/images/serviceImage/availableHostelsimg/riverviewHostelimg/riverview1.jpeg",
 
@@ -716,7 +706,6 @@ roomImages: [
       { icon: "clean", text: "Maintain cleanliness" },
     ],
     gender: "Female",
-    rating: 4.5,
    image:
 "/images/serviceImage/availableHostelsimg/brightstayHostelimg/brightstay1.jpeg",
 
@@ -744,7 +733,6 @@ roomImages: [
       { icon: "nosmoke", text: "No smoking" },
     ],
     gender: "Male",
-    rating: 4.1,
    image:
 "/images/serviceImage/availableHostelsimg/oceanviewHostelImg/oceanview1.jpeg",
 

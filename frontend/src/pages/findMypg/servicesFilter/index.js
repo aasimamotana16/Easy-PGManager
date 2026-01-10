@@ -94,28 +94,12 @@ export default function Filters({
       </div>
 
       {/* Sort & Reset */}
-      <div className="flex flex-col md:flex-row justify-between items-center gap-6 pt-6 border-t">
-        <CInput
-          type="select"
-          label="Sort By"
-          value={filters.sortBy}
-          options={[
-            { label: "Default", value: "" },
-            { label: "Price: Low → High", value: "priceAsc" },
-            { label: "Price: High → Low", value: "priceDesc" },
-          ]}
-          onChange={(e) =>
-            handleFilterChange("sortBy", e.target.value)
-          }
-        />
-
-        <CButton
-          variant="outlined"
+             <CButton
+          variant="contained"
           onClick={() => handleFilterChange("reset")}
         >
           Reset Filters
         </CButton>
       </div>
-    </div>
   );
 }

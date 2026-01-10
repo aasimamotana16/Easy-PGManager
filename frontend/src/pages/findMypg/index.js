@@ -1,21 +1,19 @@
 // src/pages/findMypg/index.jsx
 import { useState, useMemo, useCallback } from "react";
-import { useLocation, useParams } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 
 import Navbar from "../../components/navbar";
 import Footer from "../../components/footer";
 
 import Filters from "./servicesFilter";
 import PGListings from "./pgListing";
-import HostelListings from "./hostelListing";
 
-import { pgdetails, hosteldetails } from "../../config/staticData";
+import { pgdetails } from "../../config/staticData";
 
 export default function FindMyPG() {
   const locationObj = useLocation();
-  const { type } = useParams(); // pgListing | hostelListing
 
-  // ✅ Get city from query param (used to filter `location` field in data)
+  // ✅ City from query param
   const city = new URLSearchParams(locationObj.search).get("city");
 
   const [filters, setFilters] = useState({
@@ -66,8 +64,12 @@ export default function FindMyPG() {
       if (!Array.isArray(list)) return [];
 
       return list.filter((item) => {
-        // ✅ LOCATION FILTER (case-insensitive)
-        if (city && item.location && item.location.toLowerCase() !== city.toLowerCase())
+        // 📍 Location filter
+        if (
+          city &&
+          item.location &&
+          item.location.toLowerCase() !== city.toLowerCase()
+        )
           return false;
 
         if (filters.lookingFor !== "Any" && item.gender !== filters.lookingFor)
@@ -97,19 +99,20 @@ export default function FindMyPG() {
     [filters, city]
   );
 
-  /* ================= SORT + FILTER DATA ================= */
+  /* ================= SORT + FILTER ================= */
 
-  const filteredData = useMemo(() => {
-    const sortList = (list) => {
-      if (filters.sortBy === "priceAsc") return [...list].sort((a, b) => a.rent - b.rent);
-      if (filters.sortBy === "priceDesc") return [...list].sort((a, b) => b.rent - a.rent);
-      return list;
-    };
+  const filteredPGs = useMemo(() => {
+    let list = applyFilters(pgdetails);
 
-    return {
-      pg: sortList(applyFilters(pgdetails)),
-      hostel: sortList(applyFilters(hosteldetails)),
-    };
+    if (filters.sortBy === "priceAsc") {
+      list = [...list].sort((a, b) => a.rent - b.rent);
+    }
+
+    if (filters.sortBy === "priceDesc") {
+      list = [...list].sort((a, b) => b.rent - a.rent);
+    }
+
+    return list;
   }, [applyFilters, filters.sortBy]);
 
   /* ================= RENDER ================= */
@@ -119,15 +122,9 @@ export default function FindMyPG() {
       <Navbar />
 
       <div className="max-w-7xl mx-auto px-6 py-16">
-        {/* ================= DYNAMIC HEADING ================= */}
+        {/* ================= HEADING ================= */}
         <h1 className="text-4xl font-extrabold text-center mb-6">
-          {city
-            ? type === "pgListing"
-              ? `PGs in ${city}`
-              : type === "hostelListing"
-              ? `Hostels in ${city}`
-              : `PGs & Hostels in ${city}`
-            : "Find My Perfect Stay"}
+          {city ? `PGs in ${city}` : "Find My Perfect PG"}
         </h1>
 
         {/* ================= FILTERS ================= */}
@@ -137,23 +134,13 @@ export default function FindMyPG() {
           toggleAmenity={toggleAmenity}
         />
 
-        {/* ================= LISTINGS ================= */}
-        {!type && (
-          <>
-            <PGListings list={filteredData.pg} />
-            <HostelListings list={filteredData.hostel} />
-          </>
-        )}
+        {/* ================= PG LISTINGS ================= */}
+        <PGListings list={filteredPGs} />
 
-        {type === "pgListing" && <PGListings list={filteredData.pg} />}
-        {type === "hostelListing" && <HostelListings list={filteredData.hostel} />}
-
-        {/* ================= NO DATA MESSAGE ================= */}
-        {((type === "pgListing" && filteredData.pg.length === 0) ||
-          (type === "hostelListing" && filteredData.hostel.length === 0) ||
-          (!type && filteredData.pg.length === 0 && filteredData.hostel.length === 0)) && (
+        {/* ================= NO DATA ================= */}
+        {filteredPGs.length === 0 && (
           <p className="text-center text-gray-500 mt-12">
-            No listings found for selected filters
+            No PGs found for selected filters
           </p>
         )}
       </div>

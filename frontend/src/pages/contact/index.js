@@ -4,10 +4,12 @@ import Footer from "../../components/footer";
 import CInput from "../../components/cInput";
 import CButton from "../../components/cButton";
 import { contactInfo } from "../../config/staticData";
+import { useNavigate } from "react-router-dom";
 
 const Contact = () => {
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
+  const navigate = useNavigate();
+
+  const [fullName, setFullName] = useState("");
   const [mobile, setMobile] = useState("");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
@@ -16,12 +18,8 @@ const Contact = () => {
   const validate = () => {
     const newErrors = {};
 
-    if (!firstName.trim()) {
-      newErrors.firstName = "First name is required";
-    }
-
-    if (!lastName.trim()) {
-      newErrors.lastName = "Last name is required";
+    if (!fullName.trim()) {
+      newErrors.fullName = "Full name is required";
     }
 
     if (!email.trim()) {
@@ -38,8 +36,6 @@ const Contact = () => {
 
     if (!message.trim()) {
       newErrors.message = "Message cannot be empty";
-    } else if (message.length < 10) {
-      newErrors.message = "Message must be at least 10 characters";
     }
 
     setErrors(newErrors);
@@ -50,8 +46,6 @@ const Contact = () => {
     e.preventDefault();
     if (!validate()) return;
 
-    const fullName = `${firstName} ${lastName}`;
-
     console.log({
       name: fullName,
       mobile,
@@ -59,9 +53,7 @@ const Contact = () => {
       message,
     });
 
-    // Reset
-    setFirstName("");
-    setLastName("");
+    setFullName("");
     setMobile("");
     setEmail("");
     setMessage("");
@@ -79,7 +71,7 @@ const Contact = () => {
       </div>
 
       <main className="flex-1 flex flex-col lg:flex-row gap-10 px-4 lg:px-12 mb-10">
-        {/* LEFT: Contact Form */}
+        {/* LEFT FORM */}
         <div className="flex-1 flex items-start justify-center">
           <div className="w-full max-w-2xl">
             <div className="bg-white border rounded-xl p-10 shadow-lg">
@@ -88,26 +80,14 @@ const Contact = () => {
               </h2>
 
               <form className="flex flex-col gap-5" onSubmit={handleSubmit}>
-                <div className="flex gap-16">
-                  <CInput
-                    label="First Name"
-                    type="text"
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
-                    className="px-9"
-                  />
-                  <CInput
-                    label="Last Name"
-                    type="text"
-                    value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
-                    className="px-9"
-                  />
-                </div>
-
-                {(errors.firstName || errors.lastName) && (
+                <CInput
+                  label="Full Name"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                />
+                {errors.fullName && (
                   <p className="text-red-500 text-sm -mt-3">
-                    {errors.firstName || errors.lastName}
+                    {errors.fullName}
                   </p>
                 )}
 
@@ -118,7 +98,9 @@ const Contact = () => {
                   onChange={(e) => setEmail(e.target.value)}
                 />
                 {errors.email && (
-                  <p className="text-red-500 text-sm -mt-3">{errors.email}</p>
+                  <p className="text-red-500 text-sm -mt-3">
+                    {errors.email}
+                  </p>
                 )}
 
                 <CInput
@@ -128,19 +110,22 @@ const Contact = () => {
                   onChange={(e) => setMobile(e.target.value)}
                 />
                 {errors.mobile && (
-                  <p className="text-red-500 text-sm -mt-3">{errors.mobile}</p>
+                  <p className="text-red-500 text-sm -mt-3">
+                    {errors.mobile}
+                  </p>
                 )}
 
                 <CInput
                   label="Your Message"
-                  type="text"
                   multiline
                   rows={6}
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                 />
                 {errors.message && (
-                  <p className="text-red-500 text-sm -mt-3">{errors.message}</p>
+                  <p className="text-red-500 text-sm -mt-3">
+                    {errors.message}
+                  </p>
                 )}
 
                 <CButton
@@ -154,53 +139,60 @@ const Contact = () => {
           </div>
         </div>
 
-        {/* RIGHT SIDE */}
+        {/* RIGHT INFO */}
         <div className="flex-1 flex flex-col gap-6">
           <div className="bg-white p-8 rounded-xl shadow-lg flex flex-col justify-center h-full">
             <h3 className="text-2xl font-bold text-gray-900 mb-4">
               How can We Help?
             </h3>
+
             <p className="text-gray-600 mb-4">
-              Get in touch with our sales and support teams for demos, onboarding support, or product questions.
+              Get in touch with our sales and support teams for demos, onboarding
+              support, or product questions.
             </p>
 
             <ul className="space-y-3">
-              <li className="flex items-center gap-2 text-gray-700 font-semibold">
-                <span className="text-green-500 text-xl">✔</span>
-                Request a demo
+              <li className="flex items-center gap-2 font-semibold">
+                <span className="text-green-500">✔</span> Request a demo
               </li>
-              <li className="flex items-center gap-2 text-gray-700 font-semibold">
-                <span className="text-green-500 text-xl">✔</span>
-                Learn which plan is right for your team
+              <li className="flex items-center gap-2 font-semibold">
+                <span className="text-green-500">✔</span> Learn which plan is
+                right for your team
               </li>
-              <li className="flex items-center gap-2 text-gray-700 font-semibold">
-                <span className="text-green-500 text-xl">✔</span>
-                Get onboarding help
+              <li className="flex items-center gap-2 font-semibold">
+                <span className="text-green-500">✔</span> Get onboarding help
               </li>
             </ul>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-6">
-              <div className="bg-gray-50 p-6 rounded-xl shadow flex flex-col">
+              {/* EMAIL CARD */}
+              <div className="bg-gray-50 p-6 rounded-xl shadow">
                 <h4 className="font-bold text-gray-900 mb-2">
                   General Communication
                 </h4>
-                <p className="text-gray-700 text-sm">
+                <p className="text-gray-700 text-sm mb-2">
                   For other queries, please get in touch with us via email.
                 </p>
-                <p className="mt-2 font-medium text-indigo-600">
-                  {contactInfo.email}
+                <p className="font-medium text-indigo-600 break-all">
+                email:support@easyPGmanager.com
                 </p>
               </div>
-              <div className="bg-gray-50 p-6 rounded-xl shadow flex flex-col">
+
+              {/* ABOUT US CARD */}
+              <div className="bg-gray-50 p-6 rounded-xl shadow">
                 <h4 className="font-bold text-gray-900 mb-2">
-                  Documentation
+                  About EasyPG Manager
                 </h4>
-                <p className="text-gray-700 text-sm">
-                  Get an overview of our features, integrations, and how to use them.
+                <p className="text-gray-700 text-sm mb-2">
+                  Learn more about our mission, vision, and how EasyPG Manager
+                  helps PG owners and tenants.
                 </p>
-                <a href="#" className="mt-2 font-medium text-indigo-600 hover:underline">
-                  See Docs →
-                </a>
+                <button
+                  onClick={() => navigate("/about")}
+                  className="font-medium text-indigo-600 hover:underline"
+                >
+                  About Us →
+                </button>
               </div>
             </div>
           </div>

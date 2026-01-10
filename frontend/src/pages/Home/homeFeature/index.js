@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { homeBannerStats, features } from "../../../config/staticData";
-import { getHomeFeatures } from "../../../api/api"; 
+import { getHomeFeatures } from "../../../api/api";
 import CFormCard from "../../../components/cFormCard";
 import CButton from "../../../components/cButton";
 import DemoBook from "../demoBook";
@@ -24,13 +24,24 @@ const stagger = {
   },
 };
 
+// Illustration floating animation (very subtle)
+const floatAnimation = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: [0, -8, 0],
+    transition: {
+      duration: 4,
+      ease: "easeInOut",
+      repeat: Infinity,
+    },
+  },
+};
+
 /* ================= COMPONENT ================= */
 
 const HomeFeatures = () => {
-  // Feature list
   const [featureList, setFeatureList] = useState(features);
-
-  // Demo modal state
   const [openDemo, setOpenDemo] = useState(false);
 
   /* ================= FETCH FEATURES ================= */
@@ -53,7 +64,23 @@ const HomeFeatures = () => {
   return (
     <>
       {/* ================= FEATURES SECTION ================= */}
-      <section className="bg-background-default px-6 py-14 md:py-16 mt-4">
+      <section className="bg-background-default px-6 py-14 md:py-16 mt-4 relative overflow-hidden">
+        {/* Optional Illustration Animation (hidden by default on small screens) */}
+        <motion.div
+          className="absolute right-10 top-1/2 -translate-y-1/2 hidden xl:block pointer-events-none"
+          variants={floatAnimation}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+        >
+          {/* Replace src when illustration is available */}
+          {/* <img
+            src="/images/homeImages/feature-illustration.png"
+            alt="Feature Illustration"
+            className="w-[260px] opacity-90"
+          /> */}
+        </motion.div>
+
         <motion.div
           className="text-center max-w-3xl mx-auto mb-10 md:mb-12"
           variants={fadeUp}
@@ -66,7 +93,8 @@ const HomeFeatures = () => {
           </h2>
 
           <p className="text-base sm:text-lg text-text-secondary leading-relaxed">
-            Powerful features designed to simplify daily operations for PG and hostel owners.
+            Powerful features designed to simplify daily operations for PG and
+            hostel owners.
           </p>
         </motion.div>
 
@@ -78,8 +106,9 @@ const HomeFeatures = () => {
           viewport={{ once: true }}
         >
           {featureList.map((feature, index) => (
-            <motion.div key={index} variants={fadeUp}>
-              <CFormCard>
+            <motion.div key={index} variants={fadeUp} className="h-full">
+              {/* Fixed card height without UI change */}
+              <CFormCard className="h-full min-h-[180px] flex flex-col">
                 <h3 className="text-lg md:text-xl font-semibold text-primary mb-3">
                   {feature.title}
                 </h3>
@@ -165,10 +194,7 @@ const HomeFeatures = () => {
       </section>
 
       {/* ================= DEMO MODAL ================= */}
-      <DemoBook
-        isOpen={openDemo}
-        onClose={() => setOpenDemo(false)}
-      />
+      <DemoBook isOpen={openDemo} onClose={() => setOpenDemo(false)} />
     </>
   );
 };
