@@ -34,12 +34,35 @@ const SetRoomPrice = () => {
     ]);
   };
 
-  const handleSubmit = () => {
-    console.log("ROOM PRICES:", roomPrices);
-    alert("Room prices saved successfully!");
-    navigate("/owner/dashboard/pgManagment/submitApproval");
-  };
+  const handleSubmit = async () => {
+    try {
+      // 1. Get the token you received during login
+      const token = localStorage.getItem('token'); 
 
+      // 2. Send data to the backend route we just verified
+      const response = await fetch('http://localhost:5000/api/owner/update-room-prices', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` // Verified in Postman
+        },
+        body: JSON.stringify({ roomPrices }) // Uses the camelCase variable [cite: 2026-01-01]
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        alert("Room prices saved successfully!");
+        navigate("/owner/dashboard/pgManagment/submitApproval");
+      } else {
+        alert("Error: " + result.message);
+      }
+    } catch (error) {
+      console.error("Connection Error:", error);
+      alert("Could not connect to the server.");
+    }
+  };
+  
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
       <h2 className="text-2xl font-semibold mb-4">Set Room Prices</h2>

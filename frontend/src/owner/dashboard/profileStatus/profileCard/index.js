@@ -10,15 +10,50 @@ const ProfileCard = ({ profileData, setProfileData }) => {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("profile");
 
+
+  React.useEffect(() => {
+    setTempData(profileData);
+  }, [profileData]);
+
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setTempData({ ...tempData, [name]: value });
   };
 
-  const handleSave = () => {
-    setProfileData(tempData);
-    setEditMode(false);
-    setSettingsOpen(false);
+ // PASTE THE NEW CODE HERE (Replacing the old handleSave)
+  const handleSave = async () => {
+    try {
+      const token = localStorage.getItem("token"); 
+
+      const response = await fetch("http://localhost:5000/api/owner/update-profile", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          name: tempData.name,
+          email: tempData.email,
+          phone: tempData.phone,
+          address: tempData.address
+        })
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setProfileData(result.data); // result.data matches your UI structure
+        setEditMode(false);
+        setSettingsOpen(false);
+        alert("Profile saved to database!");
+      } else {
+        alert("Error: " + result.message);
+      }
+    } catch (error) {
+      console.error("Failed to save profile:", error);
+      alert("Server connection failed.");
+    }
   };
 
   return (
@@ -61,7 +96,6 @@ const ProfileCard = ({ profileData, setProfileData }) => {
             <>
               <p>📧 {profileData.email}</p>
               <p>📞 {profileData.phone}</p>
-              <p>🏢 {profileData.pgName}</p>
               <p>📍 {profileData.address}</p>
               <p>🆔 Member ID: {profileData.memberId}</p>
             </>
@@ -129,6 +163,7 @@ const ProfileCard = ({ profileData, setProfileData }) => {
                     <p className="font-bold mb-2">Update Profile Info</p>
                     <input name="name" value={tempData.name} onChange={handleChange} className="border rounded px-2 py-1 w-full mb-2" />
                     <input name="email" value={tempData.email} onChange={handleChange} className="border rounded px-2 py-1 w-full mb-2" />
+                    
                     <input name="phone" value={tempData.phone} onChange={handleChange} className="border rounded px-2 py-1 w-full mb-2" />
                   </div>
                 )}
