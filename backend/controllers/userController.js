@@ -9,18 +9,37 @@ const generateToken = (id) => {
   });
 };
 
+// @desc    Get current logged-in user data
+// @route   GET /api/users/me
+const getMe = async (req, res) => {
+  try {
+    // req.user is populated by the 'protect' middleware
+    // Use camelCase for internal variables [cite: 2026-01-01]
+    const userProfile = await User.findById(req.user._id).select("-password");
+
+    if (userProfile) {
+      // Structure matches res.data.data used in your React component [cite: 2026-01-06]
+      res.status(200).json({
+        success: true,
+        data: userProfile
+      });
+    } else {
+      res.status(404).json({ message: "User not found" });
+    }
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching user data" });
+  }
+};
+
 // @desc    Register new user
-// @route   POST /api/users/register
 const registerUser = async (req, res) => {
   const { fullName, email, password } = req.body;
-
   try {
     const userExists = await User.findOne({ email });
     if (userExists) {
       return res.status(400).json({ message: "User already exists" });
     }
 
-    // Hash password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
@@ -44,13 +63,10 @@ const registerUser = async (req, res) => {
 };
 
 // @desc    Authenticate a user
-// @route   POST /api/users/login
 const loginUser = async (req, res) => {
   const { email, password } = req.body;
-
   try {
     const user = await User.findOne({ email });
-
     if (user && (await bcrypt.compare(password, user.password))) {
       res.json({
         _id: user._id,
@@ -66,13 +82,12 @@ const loginUser = async (req, res) => {
   }
 };
 
-// @desc    Get user profile
-// @route   GET /api/users/profile
+// @desc    Get user profile (Legacy/Alternative)
 const getUserProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select("-password");
     if (user) {
-      res.status(200).json({ success: true, data: { user } });
+      res.status(200).json({ success: true, data: user });
     } else {
       res.status(404).json({ message: "User not found" });
     }
@@ -82,11 +97,9 @@ const getUserProfile = async (req, res) => {
 };
 
 // @desc    Get dashboard stats
-// @route   GET /api/users/dashboard-stats
 const getUserDashboard = async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select("-password");
-
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -117,5 +130,6 @@ module.exports = {
   registerUser, 
   loginUser, 
   getUserProfile, 
-  getUserDashboard 
+  getUserDashboard,
+  getMe // Now correctly defined above
 };

@@ -8,20 +8,24 @@ const protect = async (req, res, next) => {
     try {
       userToken = req.headers.authorization.split(" ")[1];
       const decodedToken = jwt.verify(userToken, process.env.JWT_SECRET);
+      
+      // Select all fields needed for the profile [cite: 2026-01-01]
       req.user = await User.findById(decodedToken.id).select("-password");
-      next();
+      
+      return next(); // Use return to stop execution here after calling next()
     } catch (error) {
       console.error("Auth Error:", error);
-      res.status(401).json({ message: "Not authorized, token failed" });
+      return res.status(401).json({ message: "Not authorized, token failed" });
     }
   }
 
+  // If no token was found in the header
   if (!userToken) {
-    res.status(401).json({ message: "Not authorized, no token" });
+    return res.status(401).json({ message: "Not authorized, no token" });
   }
 };
 
-// Add this to check if the logged-in user is an owner
+// This stays the same for owner-only pages [cite: 2026-01-07]
 const isOwner = (req, res, next) => {
   if (req.user && req.user.role === 'owner') {
     next();
@@ -30,4 +34,13 @@ const isOwner = (req, res, next) => {
   }
 };
 
-module.exports = { protect, isOwner }; // Export both
+// NEW: Add this if you want to protect specific Tenant/User dashboard areas
+const isTenant = (req, res, next) => {
+  if (req.user && (req.user.role === 'tenant' || req.user.role === 'user')) {
+    next();
+  } else {
+    res.status(403).json({ message: "Access denied. Role not authorized." });
+  }
+};
+
+module.exports = { protect, isOwner, isTenant };

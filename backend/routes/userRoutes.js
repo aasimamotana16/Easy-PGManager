@@ -4,7 +4,8 @@ const {
   registerUser, 
   loginUser, 
   getUserProfile, 
-  getUserDashboard 
+  getUserDashboard, 
+  getMe
 } = require("../controllers/userController");
 const { protect } = require("../middleware/authMiddleware");
 
@@ -18,5 +19,8 @@ router.get("/dashboard-stats", protect, getUserDashboard);
 
 // Route for the profile page
 router.get("/profile", protect, getUserProfile);
+
+// This allows ANY logged-in user (Owner, Tenant, or Admin) to get their own data [cite: 2026-01-06]
+router.get("/me", protect, getMe);
 
 module.exports = router;

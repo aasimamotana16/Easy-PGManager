@@ -15,22 +15,42 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: [true, "Please add a password"],
     },
-    // CHANGED: Use 'phone' to match your ownerController
     phone: {
       type: String,
+      required: [true, "Please add a phone number"], // Updated to be required for Signup
     },
-    // ADDED: Your controller needs this to save "Surat"
+    // Matches "City" and "State" fields in UI
+    city: { type: String, default: "" },
+    state: { type: String, default: "" },
     address: {
       type: String,
     },
     role: {
       type: String,
       required: true,
-      enum: ["user", "owner", "admin"],
+      enum: ["user", "owner", "admin", "tenant"],
       default: "user",
       lowercase: true,
     },
-    // Added for profile UI consistency
+
+    // NEW: Matches the "Profile Completion" 80% circle
+    profileCompletion: {
+      type: Number,
+      default: 20, // Starts low after signup
+    },
+
+    // NEW: Matches the "Emergency Contact" section
+    emergencyContact: {
+      contactName: { type: String, default: "" },
+      relationship: { type: String, default: "" },
+      phoneNumber: { type: String, default: "" },
+    },
+    
+    // ADDED: Logic to track if OTP was successful
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
     facebook: { type: String, default: "#" },
     instagram: { type: String, default: "#" },
     linkedin: { type: String, default: "#" },
@@ -42,5 +62,4 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-// SAFE EXPORT: Checks if model exists before compiling to prevent OverwriteModelError
 module.exports = mongoose.models.User || mongoose.model("User", userSchema);

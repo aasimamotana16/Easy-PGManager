@@ -1,18 +1,70 @@
 const User = require("../models/userModel");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const nodemailer = require("nodemailer");
 
-// 1. REGISTER
+// Temporary in-memory store for OTPs
+const otpCache = {};
+
+// 1. SEND OTP
+exports.sendOtp = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ success: false, message: "Email is required" });
+
+    const finalEmail = email.toLowerCase().trim();
+    const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // FIXED: Debug line must be INSIDE the function to access finalEmail and generatedOtp
+    console.log(`\n--- [DEBUG] OTP for ${finalEmail}: ${generatedOtp} ---\n`);
+
+    // Store OTP for 5 minutes
+    otpCache[finalEmail] = {
+      otp: generatedOtp,
+      expires: Date.now() + 300000,
+    };
+
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS, // Ensure spaces are removed in .env
+      },
+    });
+
+    await transporter.sendMail({
+      from: `"EasyPG Manager" <${process.env.EMAIL_USER}>`,
+      to: finalEmail,
+      subject: "Verification Code for EasyPG Account",
+      html: `<h3>Your OTP is: ${generatedOtp}</h3><p>It is valid for 5 minutes.</p>`,
+    });
+
+    res.status(200).json({ success: true, message: "OTP sent to email" });
+  } catch (error) {
+    console.error("OTP ERROR:", error.message);
+    // Even if email fails, the console.log above still works for your test!
+    res.status(500).json({ success: false, message: "Error sending OTP" });
+  }
+};
+
+// 2. REGISTER (Includes phone and verified status)
 exports.registerUser = async (req, res) => {
   try {
-    const { email, password, fullName, name, role, phoneNumber, phone } = req.body;
+    const { email, password, fullName, name, role, phone, otp } = req.body;
 
     const finalEmail = email ? email.toLowerCase().trim() : null;
     const finalName = fullName || name || "New User";
     const finalRole = role ? role.toLowerCase().trim() : "user";
 
-    if (!finalEmail || !password) {
-      return res.status(400).json({ success: false, message: "Email and password are required" });
+    if (!finalEmail || !password || !otp) {
+      console.log("MISSING DATA:", { finalEmail, password, otp });
+      return res.status(400).json({ success: false, message: "Email, password, and OTP are required" });
+    }
+
+    // VERIFY OTP Logic
+    const cachedData = otpCache[finalEmail];
+    if (!cachedData || cachedData.otp !== otp || Date.now() > cachedData.expires) {
+      return res.status(400).json({ success: false, message: "Invalid or expired OTP" });
     }
 
     const existingUser = await User.findOne({ email: finalEmail });
@@ -26,10 +78,12 @@ exports.registerUser = async (req, res) => {
       fullName: finalName,
       email: finalEmail,
       password: hashedPassword,
-      phoneNumber: phoneNumber || phone || "",
-      role: finalRole
+      phone: phone || "", 
+      role: finalRole,
+      isVerified: true
     });
 
+    delete otpCache[finalEmail];
     res.status(201).json({ success: true, message: "Registration successful" });
   } catch (error) {
     console.error("REGISTRATION ERROR:", error.message);
@@ -37,7 +91,7 @@ exports.registerUser = async (req, res) => {
   }
 };
 
-// 2. LOGIN
+// 3. LOGIN
 exports.loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -63,7 +117,7 @@ exports.loginUser = async (req, res) => {
   }
 };
 
-// 3. FORGOT PASSWORD
+// 4. FORGOT PASSWORD
 exports.forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
@@ -79,7 +133,7 @@ exports.forgotPassword = async (req, res) => {
   }
 };
 
-// 4. RESET PASSWORD
+// 5. RESET PASSWORD
 exports.resetPassword = async (req, res) => {
   try {
     const { token } = req.params;

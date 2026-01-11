@@ -49,7 +49,7 @@ const DemoBook = ({ isOpen, onClose }) => {
     return newErrors;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const validationErrors = validate();
@@ -58,11 +58,36 @@ const DemoBook = ({ isOpen, onClose }) => {
       setErrors(validationErrors);
       return;
     }
+// ✅ Connect to Backend [cite: 2026-01-06]
+    try {
+      const response = await fetch('http://localhost:5000/api/request-demo', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        // Mapping frontend fields to backend camelCase keys [cite: 2026-01-01]
+        body: JSON.stringify({
+          yourName: formData.name,
+          emailAddress: formData.email,
+          phone: formData.phone,
+          message: formData.message
+        }),
+      });
 
-    // ✅ Valid form
-    console.log("Demo Request Submitted:", formData);
-    alert("Demo request submitted successfully!");
-    onClose();
+      const data = await response.json();
+
+      if (response.ok) {
+        alert("Demo request submitted successfully!");
+        onClose(); // Close modal after success
+        // Reset form
+        setFormData({ name: "", email: "", phone: "", message: "" });
+      } else {
+        alert("Error: " + data.message);
+      }
+    } catch (error) {
+      console.error("Submission failed:", error);
+      alert("Could not connect to the server. Please check if backend is running.");
+    }
   };
 
   /* ================= UI ================= */

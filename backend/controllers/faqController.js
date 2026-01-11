@@ -1,8 +1,8 @@
-import Faq from "../models/faqModel.js";
+const Faq = require("../models/faqModel");
 
 
 // GET all FAQs (YES API)
-export const getFaqs = async (req, res) => {
+const getFaqs = async (req, res) => {
   try {
     const faqs = await Faq.find({ isActive: true }).sort({ createdAt: -1 });
 
@@ -21,7 +21,7 @@ export const getFaqs = async (req, res) => {
 };
 
 // POST new FAQ
-export const addFaq = async (req, res) => {
+const addFaq = async (req, res) => {
   try {
     const { question, answer } = req.body;
 
@@ -47,3 +47,5 @@ export const addFaq = async (req, res) => {
     });
   }
 };
+
+module.exports = { getFaqs, addFaq };
