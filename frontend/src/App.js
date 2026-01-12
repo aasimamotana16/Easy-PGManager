@@ -122,9 +122,23 @@ function App() {
           <Route path="/pg/:id" element={<PGFullDetails />} />
 
           {/* ================= BOOKING FLOW ================= */}
-          <Route path="/book/:id" element={<BookingPage />} />
-          <Route path="/confirm/:id" element={<ConfirmBooking />} />
-          <Route path="/agreement/:id" element={<RentalAgreement />} />
+          {/* ================= BOOKING FLOW ================= */}
+<Route 
+  path="/book/:id" 
+  element={
+    <ProtectedBookingRoute>
+      <BookingPage />
+    </ProtectedBookingRoute>
+  } 
+/>
+<Route 
+  path="/confirm/:id" 
+  element={
+    <ProtectedBookingRoute>
+      <ConfirmBooking />
+    </ProtectedBookingRoute>
+  } 
+/>
 
           {/* ================= CANCELLATION ================= */}
           <Route

@@ -4,7 +4,7 @@ const pgSchema = new mongoose.Schema(
   {
     ownerId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User', // This string links to your User model correctly
+      ref: 'User',
       required: true
     },
     pgName: { 
@@ -15,27 +15,27 @@ const pgSchema = new mongoose.Schema(
       type: String, 
       required: [true, "Please add a location"] 
     },
-    totalRooms: { 
-      type: Number, 
-      default: 0 
+    // NEW: Fields for your "Available PGs" API [cite: 2026-01-11]
+    mainImage: { 
+      type: String, 
+      default: "https://via.placeholder.com/300" // Fallback image [cite: 2026-01-06]
     },
-    liveListings: { 
-      type: Number, 
-      default: 0 
-    },
+    amenities: [String], // ["WiFi", "Laundry", "AC"] [cite: 2026-01-11]
+    description: { type: String }, 
+    
+    totalRooms: { type: Number, default: 0 },
+    liveListings: { type: Number, default: 0 },
     status: {
       type: String,
       enum: ["live", "pending", "closed"],
       default: "live"
     },
-    // Room details array
     rooms: [{
       roomType: String,
       totalRooms: Number,
       bedsPerRoom: Number,
       description: String
     }],
-    // Prices object
     roomPrices: {
       single: Number,
       double: Number,
@@ -43,10 +43,7 @@ const pgSchema = new mongoose.Schema(
       other: Number
     }
   },
-  { 
-    timestamps: true 
-  }
+  { timestamps: true }
 );
 
-// SAFE EXPORT: Prevents OverwriteModelError
 module.exports = mongoose.models.Pg || mongoose.model("Pg", pgSchema);

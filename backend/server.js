@@ -14,6 +14,8 @@ const paymentRoutes = require("./routes/paymentRoutes");
 const ownerRoutes = require('./routes/ownerRoutes');
 const reviewRoutes = require('./routes/reviewRoutes'); // New route for dynamic reviews
 const User = require("./models/userModel"); // Add this if you use it for countDocuments
+// 1. Import the new PG routes [cite: 2026-01-06]
+const pgRoutes = require('./routes/pgRoutes');
 
 const app = express();
 
@@ -48,6 +50,9 @@ app.use('/api/admin', adminRoutes); // This connects the Add/Edit/Delete logic
 
 // Matches your requirement to let admin edit data themselves [cite: 2026-01-06]
 app.use('/api/reviews', reviewRoutes);
+
+// 2. Connect it to the /api/pg path [cite: 2026-01-06]
+app.use('/api/pg', pgRoutes);
 
 // Health Check (To verify if backend is alive in browser)
 app.get('/', (req, res) => {
