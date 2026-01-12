@@ -100,5 +100,3 @@ module.exports = {
   deleteUser 
 };
 
-// Export both using camelCase [cite: 2026-01-01]
-module.exports = { adminLogin, getAdminDashboardStats };
