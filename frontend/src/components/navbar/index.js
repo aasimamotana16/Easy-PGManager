@@ -71,42 +71,51 @@ const Navbar = () => {
 
         {/* CENTER: Desktop Links */}
         <div className="hidden md:flex gap-5">
+          {/* Always show Home */}
           <button
             className={`${navLinkClass("/")}`}
             onClick={() => navigate("/")}
           >
             Home
           </button>
-          <button
-            className={`${navLinkClass("/about")}`}
-            onClick={() => navigate("/about")}
-          >
-            About
-          </button>
-          <button
-            className={`${navLinkClass("/services")}`}
-            onClick={() => navigate("/services")}
-          >
-            Services
-          </button>
+
+          {/* Show FindMyPG always if logged in */}
           <button
             className={`${navLinkClass("/findmypg")}`}
             onClick={() => navigate("/findmypg")}
           >
             FindMyPG
           </button>
-          <button
-            className={`${navLinkClass("/contact")}`}
-            onClick={() => navigate("/contact")}
-          >
-            Contact
-          </button>
-          <button
-            className={`${navLinkClass("/faq")}`}
-            onClick={() => navigate("/faq")}
-          >
-            FAQ
-          </button>
+
+          {/* Show other links only if NOT logged in */}
+          {!isLoggedIn && (
+            <>
+              <button
+                className={`${navLinkClass("/about")}`}
+                onClick={() => navigate("/about")}
+              >
+                About
+              </button>
+              <button
+                className={`${navLinkClass("/services")}`}
+                onClick={() => navigate("/services")}
+              >
+                Services
+              </button>
+              <button
+                className={`${navLinkClass("/contact")}`}
+                onClick={() => navigate("/contact")}
+              >
+                Contact
+              </button>
+              <button
+                className={`${navLinkClass("/faq")}`}
+                onClick={() => navigate("/faq")}
+              >
+                FAQ
+              </button>
+            </>
+          )}
         </div>
 
         {/* RIGHT: Login/Profile */}
