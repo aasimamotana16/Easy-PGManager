@@ -11,8 +11,7 @@ const OwnerContact = () => {
   };
 
   return (
-    <div className=" bg-dashboard-gradient flex flex-col rounded-2xl items-center p-8 space-y-8">
-      
+    <div className="bg-dashboard-gradient flex flex-col rounded-2xl items-center p-8 space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between w-full max-w-3xl">
         <h2 className="text-3xl font-bold text-primary mt-3">Owner Contact</h2>
@@ -21,18 +20,25 @@ const OwnerContact = () => {
         </span>
       </div>
 
-      {/* Action Buttons on gradient */}
+      {/* Action Buttons */}
       <div className="flex flex-wrap gap-4 w-full max-w-3xl">
+        {/* Call Owner */}
         <CButton
-          className=" px-6 py-2"
-          onClick={() => window.open(`tel:${ownerData.phone}`)}
+          className="px-6 py-2"
+          onClick={() => {
+            // For mobile devices and desktops with dialer
+            window.location.href = `tel:${ownerData.phone}`;
+          }}
         >
           Call Owner
         </CButton>
 
+        {/* Email Owner */}
         <CButton
-          className="  px-6 py-2 "
-          onClick={() => window.open(`mailto:${ownerData.email}`)}
+          className="px-6 py-2"
+          onClick={() => {
+            window.location.href = `mailto:${ownerData.email}`;
+          }}
         >
           Email Owner
         </CButton>
@@ -41,7 +47,6 @@ const OwnerContact = () => {
       {/* Info Fields Card */}
       <div className="w-full max-w-3xl bg-white rounded-3xl shadow-lg p-8 space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-gray-700">
-          
           <Info label="Owner Name" value={ownerData.name} />
           <Info label="Phone" value={ownerData.phone} />
           <Info label="Email" value={ownerData.email} />
@@ -53,7 +58,7 @@ const OwnerContact = () => {
   );
 };
 
-// Info component without box
+// Info component
 const Info = ({ label, value, className }) => (
   <div className={className}>
     <p className="text-sm text-gray-500">{label}</p>

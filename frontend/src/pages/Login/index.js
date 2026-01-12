@@ -13,7 +13,6 @@ const Login = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // 🔹 Background images for animation
   const images = [
     "/images/aboutImages/aboutIMG1.png",
     "/images/loginImages/loginImg1.jpg",
@@ -47,6 +46,7 @@ const Login = () => {
     }
 
     setLoading(true);
+
     try {
       const response = await loginUser({ email, password, role });
       const data = response.data;
@@ -54,18 +54,16 @@ const Login = () => {
       if (data && data.success) {
         if (data.token) localStorage.setItem("token", data.token);
 
-        const serverRole = data.user.role.toLowerCase();
-        if (serverRole === "owner") {
-          localStorage.setItem("owner", JSON.stringify(data.user));
-          localStorage.removeItem("user");
-          window.location.href = "/owner/dashboard";
-        } else {
-          localStorage.setItem("user", JSON.stringify(data.user));
-          localStorage.removeItem("owner");
-          window.location.href = "/user/dashboard";
-        }
+        localStorage.setItem("userName", data.user.fullName);
+        localStorage.setItem("user", JSON.stringify(data.user));
+        localStorage.setItem("isLoggedIn", "true");
 
         if (rememberMe) localStorage.setItem("rememberMe", "true");
+
+        // 🔥 IMPORTANT FIX — notify Navbar
+        window.dispatchEvent(new Event("storage"));
+
+        window.location.href = "/";
       }
     } catch (error) {
       alert(error.response?.data?.message || "Login failed. Check credentials.");
@@ -76,10 +74,7 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background.DEFAULT">
-      {/* <Navbar /> */}
-
       <section className="relative w-full min-h-screen flex items-center px-4 sm:px-8 lg:px-20 overflow-hidden">
-        {/* Background Images */}
         {images.map((img, index) => (
           <div
             key={index}
@@ -93,15 +88,10 @@ const Login = () => {
           />
         ))}
 
-        {/* Form Container */}
         <div className="relative z-10 w-full max-w-xs sm:w-4/5 md:max-w-lg lg:max-w-xl flex flex-col justify-center h-full mx-auto lg:mx-0">
           <CFormCard className="bg-white border border-border rounded-xl shadow-lg p-5 sm:p-8 md:p-10 w-full">
             <div className="mb-1 flex justify-center">
-              <img
-                src="/logos/logo1.png"
-                alt="Logo"
-                className="h-16 md:h-20 w-auto"
-              />
+              <img src="/logos/logo1.png" alt="Logo" className="h-16 md:h-20" />
             </div>
 
             <h1 className="text-xl sm:text-2xl md:text-3xl font-bold mb-6 text-primary text-center">
@@ -109,101 +99,25 @@ const Login = () => {
             </h1>
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-              {/* Role Toggle */}
               <div className="flex gap-2 mb-4">
-                <CButton
-                  size="sm"
-                  fullWidth
-                  variant={role === "user" ? "contained" : "outlined"}
-                  onClick={() => setRole("user")}
-                >
+                <CButton size="sm" fullWidth variant={role === "user" ? "contained" : "outlined"} onClick={() => setRole("user")}>
                   User
                 </CButton>
-                <CButton
-                  size="sm"
-                  fullWidth
-                  variant={role === "owner" ? "contained" : "outlined"}
-                  onClick={() => setRole("owner")}
-                >
+                <CButton size="sm" fullWidth variant={role === "owner" ? "contained" : "outlined"} onClick={() => setRole("owner")}>
                   Owner
                 </CButton>
               </div>
 
-              {/* Email */}
-              <CInput
-                label="Email"
-                type="email"
-                value={email}
-                placeholder="Enter your email"
-                onChange={(e) => setEmail(e.target.value)}
-              />
+              <CInput label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+              <CInput label="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
 
-              {/* Password */}
-              <CInput
-                label="Password"
-                type="password"
-                value={password}
-                placeholder="Enter your password"
-                onChange={(e) => setPassword(e.target.value)}
-              />
+              <CButton text={loading ? "Logging in..." : "Login"} type="submit" fullWidth disabled={loading} />
 
-              {/* Login Button */}
-              <CButton
-                text={loading ? "Logging in..." : "Login"}
-                type="submit"
-                fullWidth
-                className="mt-2"
-                disabled={loading}
-              />
-
-              {/* Remember Me + Forgot */}
-              <div className="flex justify-between items-center text-sm sm:text-base">
-                <CCheckbox
-                  label="Remember Me"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                />
-                <a
-                  href="/forgot-password"
-                  className="font-semibold text-primary hover:underline"
-                >
-                  Forgot Password?
-                </a>
+              <div className="flex justify-between items-center">
+                <CCheckbox label="Remember Me" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} />
+                <a href="/forgot-password" className="font-semibold text-primary">Forgot Password?</a>
               </div>
             </form>
-
-            {/* Terms & SignUp */}
-            <p className="text-center mt-4 text-sm text-gray-500">
-              By logging in, you agree to our{" "}
-              <a href="/termsConditions" className="text-primary hover:underline">
-                Terms & Conditions
-              </a>{" "}
-              and{" "}
-              <a href="/privacyPolicy" className="text-primary hover:underline">
-                Privacy Policy
-              </a>.
-            </p>
-
-            <p className="text-center mt-4 text-sm text-text-secondary">
-              Don’t have an account?{" "}
-              <a
-                href="/signup"
-                className="font-semibold text-primary hover:underline"
-              >
-                Sign Up
-              </a>
-            </p>
-
-            {/* 🔙 BACK TO HOME (NEW) */}
-            <div className="mt-3 text-center">
-              <span
-                onClick={() => (window.location.href = "/")}
-                className="text-sm text-gray-500 cursor-pointer hover:text-primary hover:underline"
-              >
-                ← Back to Home
-              </span>
-            </div>
-
           </CFormCard>
         </div>
       </section>

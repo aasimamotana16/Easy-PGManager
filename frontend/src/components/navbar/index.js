@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { FaBars, FaUserCircle } from "react-icons/fa";
 import CButton from "../../components/cButton";
+import Sidebar from "../../components/sideBar"; // single sidebar component
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -9,118 +10,136 @@ const Navbar = () => {
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userName, setUserName] = useState("");
-  const [openSidebar, setOpenSidebar] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  /* 🔹 UI-only login check */
-  useEffect(() => {
+  /* 🔹 CENTRAL LOGIN CHECK */
+  const checkLoginStatus = () => {
     const loggedIn = localStorage.getItem("isLoggedIn");
     const name = localStorage.getItem("userName");
 
     if (loggedIn === "true") {
       setIsLoggedIn(true);
       setUserName(name || "User");
+    } else {
+      setIsLoggedIn(false);
+      setUserName("");
     }
+  };
+
+  /* 🔹 Run on load + route change */
+  useEffect(() => {
+    checkLoginStatus();
+  }, [location.pathname]);
+
+  /* 🔹 Detect login/logout from other tabs */
+  useEffect(() => {
+    window.addEventListener("storage", checkLoginStatus);
+    document.addEventListener("visibilitychange", checkLoginStatus);
+
+    return () => {
+      window.removeEventListener("storage", checkLoginStatus);
+      document.removeEventListener("visibilitychange", checkLoginStatus);
+    };
   }, []);
 
-  // Active link class handler
+  /* 🔹 Navbar link class */
   const navLinkClass = (path) =>
-    `font-semibold text-sm md:text-sm lg:text-base transition duration-300
-     ${
-       location.pathname === path
-         ? "text-text-light border-b-2 border-primary"
-         : "text-text-light/80 hover:text-text-light hover:border-b-2 hover:border-primary"
-     }`;
+    `relative font-semibold text-sm transition-colors duration-300
+      ${location.pathname === path ? "text-text-light border-b-2 border-primary" : "text-text-light/80 hover:text-text-light"}`;
 
   return (
     <>
-      <nav className="bg-background-dark border-b border-white/10">
-        <div className="flex justify-between items-center px-2 md:px-4 lg:px-6 py-1.5 md:py-2 lg:py-2.5">
+      <nav className="bg-background-dark border-b border-white/10 px-4 py-2 flex justify-between items-center">
+        {/* LEFT: Hamburger + Logo */}
+        <div className="flex items-center gap-3">
+          {isLoggedIn && (
+            <button onClick={() => setSidebarOpen(true)}>
+              <FaBars className="text-xl text-text-light" />
+            </button>
+          )}
 
-          {/* Logo */}
-          <div className="flex items-center">
-            <img
-              src="/logos/logo1.png"
-              alt="EasyPG Manager Logo"
-              className="h-8 md:h-9 lg:h-10 w-auto mr-2 cursor-pointer"
-              onClick={() => navigate("/")}
-            />
-            <span className="font-bold tracking-wide text-text-light hidden sm:block text-sm md:text-base lg:text-lg">
+          <div
+            className="flex items-center cursor-pointer"
+            onClick={() => navigate("/")}
+          >
+            <img src="/logos/logo1.png" className="h-8 mr-2" alt="logo" />
+            <span className="text-text-light font-bold hidden sm:block">
               EASYPGMANAGER
             </span>
           </div>
+        </div>
 
-          {/* Navigation Links (Desktop) */}
-          <div className="hidden md:flex gap-3 lg:gap-5">
-            <Link to="/" className={navLinkClass("/")}>Home</Link>
-            <Link to="/about" className={navLinkClass("/about")}>About</Link>
-            <Link to="/services" className={navLinkClass("/services")}>Services</Link>
-            <Link to="/findmypg" className={navLinkClass("/findmypg")}>FindMyPG</Link>
-            <Link to="/contact" className={navLinkClass("/contact")}>Contact</Link>
-            <Link to="/faq" className={navLinkClass("/faq")}>FAQ</Link>
-          </div>
+        {/* CENTER: Desktop Links */}
+        <div className="hidden md:flex gap-5">
+          <button
+            className={`${navLinkClass("/")}`}
+            onClick={() => navigate("/")}
+          >
+            Home
+          </button>
+          <button
+            className={`${navLinkClass("/about")}`}
+            onClick={() => navigate("/about")}
+          >
+            About
+          </button>
+          <button
+            className={`${navLinkClass("/services")}`}
+            onClick={() => navigate("/services")}
+          >
+            Services
+          </button>
+          <button
+            className={`${navLinkClass("/findmypg")}`}
+            onClick={() => navigate("/findmypg")}
+          >
+            FindMyPG
+          </button>
+          <button
+            className={`${navLinkClass("/contact")}`}
+            onClick={() => navigate("/contact")}
+          >
+            Contact
+          </button>
+          <button
+            className={`${navLinkClass("/faq")}`}
+            onClick={() => navigate("/faq")}
+          >
+            FAQ
+          </button>
+        </div>
 
-          {/* RIGHT ACTION AREA */}
-          <div className="flex items-center gap-3">
-            {!isLoggedIn ? (
-              <>
-                <CButton size="md" text="Sign Up" onClick={() => navigate("/signup")} />
-                <CButton size="md" text="Login" onClick={() => navigate("/login")} />
-              </>
-            ) : (
-              <>
-                {/* PROFILE */}
-                <div className="flex items-center gap-2 text-text-light">
-                  <FaUserCircle className="text-xl" />
-                  <span className="hidden sm:block font-medium">
-                    {userName}
-                  </span>
-                </div>
-
-                {/* HAMBURGER */}
-                <button onClick={() => setOpenSidebar(true)}>
-                  <FaBars className="text-xl text-text-light" />
-                </button>
-              </>
-            )}
-          </div>
-
+        {/* RIGHT: Login/Profile */}
+        <div className="flex items-center gap-3">
+          {!isLoggedIn ? (
+            <>
+              <CButton text="Sign Up" onClick={() => navigate("/signup")} />
+              <CButton text="Login" onClick={() => navigate("/login")} />
+            </>
+          ) : (
+            <button
+              className="flex items-center gap-2 text-text-light"
+              onClick={() => navigate("/user/dashboard/userProfile")}
+            >
+              <FaUserCircle className="text-xl" />
+              <span className="hidden sm:block">{userName}</span>
+            </button>
+          )}
         </div>
       </nav>
 
-      {/* RIGHT SIDEBAR */}
-      {openSidebar && (
-        <div className="fixed inset-0 z-50 flex justify-end">
-          <div className="w-72 bg-white h-full shadow-xl p-6">
-            <button
-              className="text-right w-full mb-6 font-bold"
-              onClick={() => setOpenSidebar(false)}
-            >
-              ✖
-            </button>
-
-            <ul className="space-y-4 font-semibold text-gray-800">
-              <li onClick={() => navigate("/")}>Home</li>
-              <li onClick={() => navigate("/profile")}>My Profile</li>
-              <li onClick={() => navigate("/bookings")}>My Bookings</li>
-              <li onClick={() => navigate("/payments")}>Payments</li>
-              <li
-                className="text-red-600 cursor-pointer"
-                onClick={() => {
-                  localStorage.removeItem("isLoggedIn");
-                  localStorage.removeItem("userName");
-                  navigate("/");
-                  window.location.reload();
-                }}
-              >
-                Logout
-              </li>
-            </ul>
+      {/* SIDEBAR OVERLAY */}
+      {sidebarOpen && isLoggedIn && (
+        <div className="fixed inset-0 z-50 flex">
+          {/* Sidebar content */}
+          <div className="w-80 bg-background-dark shadow-xl p-6">
+            <Sidebar closeSidebar={() => setSidebarOpen(false)} />
           </div>
 
           {/* Backdrop */}
           <div
             className="flex-1 bg-black/40"
-            onClick={() => setOpenSidebar(false)}
+            onClick={() => setSidebarOpen(false)}
           />
         </div>
       )}
