@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { FaBars, FaUserCircle } from "react-icons/fa";
 import CButton from "../../components/cButton";
-import Sidebar from "../../components/sideBar"; 
+import Sidebar from "../../components/sideBar"; // single sidebar component
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -62,60 +62,51 @@ const Navbar = () => {
             className="flex items-center cursor-pointer"
             onClick={() => navigate("/")}
           >
-            <img src="/logos/logo1.png" className="h-10 mr-2" alt="logo" />
-            <span className="text-text-light text-xl font-bold hidden sm:block">
+            <img src="/logos/logo1.png" className="h-8 mr-2" alt="logo" />
+            <span className="text-text-light font-bold hidden sm:block">
               EASYPGMANAGER
             </span>
           </div>
         </div>
 
         {/* CENTER: Desktop Links */}
-        <div className="hidden md:flex gap-5 ">
-          {/* Always show Home */}
+        <div className="hidden md:flex gap-5">
           <button
             className={`${navLinkClass("/")}`}
             onClick={() => navigate("/")}
           >
             Home
           </button>
-
-          {/* Show FindMyPG always if logged in */}
+          <button
+            className={`${navLinkClass("/about")}`}
+            onClick={() => navigate("/about")}
+          >
+            About
+          </button>
+          <button
+            className={`${navLinkClass("/services")}`}
+            onClick={() => navigate("/services")}
+          >
+            Services
+          </button>
           <button
             className={`${navLinkClass("/findmypg")}`}
             onClick={() => navigate("/findmypg")}
           >
             FindMyPG
           </button>
-
-          {/* Show other links only if NOT logged in */}
-          {!isLoggedIn && (
-            <>
-              <button
-                className={`${navLinkClass("/about")}`}
-                onClick={() => navigate("/about")}
-              >
-                About
-              </button>
-              <button
-                className={`${navLinkClass("/services")}`}
-                onClick={() => navigate("/services")}
-              >
-                Services
-              </button>
-              <button
-                className={`${navLinkClass("/contact")}`}
-                onClick={() => navigate("/contact")}
-              >
-                Contact
-              </button>
-              <button
-                className={`${navLinkClass("/faq")}`}
-                onClick={() => navigate("/faq")}
-              >
-                FAQ
-              </button>
-            </>
-          )}
+          <button
+            className={`${navLinkClass("/contact")}`}
+            onClick={() => navigate("/contact")}
+          >
+            Contact
+          </button>
+          <button
+            className={`${navLinkClass("/faq")}`}
+            onClick={() => navigate("/faq")}
+          >
+            FAQ
+          </button>
         </div>
 
         {/* RIGHT: Login/Profile */}
