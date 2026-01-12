@@ -1,16 +1,29 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useContext } from "react";
 import ListingCard from "../../../components/listingCard";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import CButton from "../../../components/cButton";
 import { useNavigate } from "react-router-dom";
+import { BackendContext } from "../../../context/backendContext"; // 2. Added Context Import
 
 export default function PGListings({ list = [] }) {
+  const { pgList } = useContext(BackendContext); // 3. Grab live data from Context
+
+  //const activeList = pgList.length > 0 ? pgList : list;
+
+  // To this:
+  const activeList = pgList;
+
+  // Change this line in PGListings/index.js:
+  const duplicatedList = activeList.length > 5 ? [...activeList, ...activeList] : activeList;
+
+  //const duplicatedList = [...activeList, ...activeList];
+
   const containerRef = useRef(null);
   const scrollInterval = useRef(null);
   const navigate = useNavigate();
 
   // Duplicate list for infinite feel
-  const duplicatedList = [...list, ...list];
+
 
   /* ================= AUTO SCROLL ================= */
   const startAutoScroll = () => {
@@ -21,11 +34,11 @@ export default function PGListings({ list = [] }) {
       const halfWidth = scrollWidth / 2;
 
       if (scrollLeft >= halfWidth) {
-        containerRef.current.scrollLeft = 0;
+        containerRef.current.scrollLeft += 1.5;
       } else {
-        containerRef.current.scrollLeft += 1; // scroll speed
+        containerRef.current.scrollLeft += 3; 
       }
-    }, 20); // smaller = faster
+    }, 15);
   };
 
   const stopAutoScroll = () => clearInterval(scrollInterval.current);
@@ -33,7 +46,7 @@ export default function PGListings({ list = [] }) {
   useEffect(() => {
     startAutoScroll();
     return () => stopAutoScroll();
-  }, []);
+  }, [activeList]);
 
   /* ================= ARROW SCROLL ================= */
   const scrollLeft = () => {
@@ -47,6 +60,7 @@ export default function PGListings({ list = [] }) {
   };
 
   const handleNavigate = (id) => {
+    // Navigating with the specific MongoDB _id
     navigate(`/pg/${id}`);
   };
 
@@ -84,17 +98,23 @@ export default function PGListings({ list = [] }) {
         ) : (
           duplicatedList.map((pg, idx) => (
             <div
-              key={`${pg.id}-${idx}`}
-              onClick={() => handleNavigate(pg.id)}
+              // Updated to use the unique _id from backend
+              key={`${pg._id}-${idx}`} 
+              onClick={() => handleNavigate(pg._id)}
               className="flex-shrink-0 cursor-pointer hover:scale-[1.03] transition-transform"
             >
-              <ListingCard {...pg}>
+              {/* Passing backend fields to the ListingCard [cite: 2026-01-11] */}
+              <ListingCard 
+                {...pg} 
+                id={pg._id} 
+                image={pg.mainImage} 
+              >
                 <CButton
                   text="View"
                   className="w-full mt-2"
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleNavigate(pg.id);
+                    handleNavigate(pg._id); 
                   }}
                 />
               </ListingCard>

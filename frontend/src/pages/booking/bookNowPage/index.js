@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { pgdetails, hosteldetails } from "../../../config/staticData";
+import { BackendContext } from "../../../context/backendContext"; 
 import CButton from "../../../components/cButton";
 import CInput from "../../../components/cInput";
 
@@ -8,9 +8,9 @@ const BookingPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const pg = [...pgdetails, ...hosteldetails].find(
-    (item) => item.id === parseInt(id)
-  );
+  const { pgList, loading } = useContext(BackendContext);
+
+  const pg = pgList?.find((item) => String(item._id) === String(id));
 
   const [persons, setPersons] = useState(1);
 
@@ -20,11 +20,24 @@ const BookingPage = () => {
 
   const [errors, setErrors] = useState({});
 
+  if (loading) return <div className="text-center mt-20">Loading...</div>;
   if (!pg) return <div className="text-center mt-20">PG not found</div>;
 
-  const maxBeds = pg.sharing?.[0]?.available || 5;
-  const pricePerPerson = pg.sharing?.[0]?.price || 0;
+  // --- UPDATED PRICE LOGIC START ---
+  // This checks multiple possible backend fields to ensure price is not 0
+  const pricePerPerson = Number(
+    pg.roomPrices?.singleSharing || 
+    pg.startingPrice || 
+    pg.rent || 
+    pg.price||
+    (pg.sharing && pg.sharing[0]?.price) ||
+    0);
+  
+  // Dynamic total calculation for the Booking Summary card
   const totalRent = pricePerPerson * persons;
+  // --- UPDATED PRICE LOGIC END ---
+
+  const maxBeds = pg.availableBeds || 5;
 
   const increase = () => {
     if (persons < maxBeds) {
@@ -61,22 +74,18 @@ const BookingPage = () => {
       else if (!/^\S+@\S+\.\S+$/.test(p.email))
         newErrors[`email_${index}`] = "Invalid email";
 
-      // Phone validation for ALL persons
       if (!p.phone?.trim())
         newErrors[`phone_${index}`] = "Phone number required";
       else if (!/^[6-9]\d{9}$/.test(p.phone))
         newErrors[`phone_${index}`] = "Invalid phone number";
 
-      // Booking details ONLY for first person
       if (index === 0) {
         if (!p.checkIn)
           newErrors.checkIn = "Check-in date required";
 
-        // Checkout is OPTIONAL
         if (p.checkOut && p.checkIn) {
           if (new Date(p.checkOut) <= new Date(p.checkIn)) {
-            newErrors.checkOut =
-              "Check-out must be after check-in";
+            newErrors.checkOut = "Check-out must be after check-in";
           }
         }
       }
@@ -90,14 +99,14 @@ const BookingPage = () => {
     if (!validate()) return;
 
     const bookingData = {
-      pgId: pg.id,
+      pgId: pg._id, 
       persons,
       pricePerPerson,
       totalRent,
       members: personsData,
     };
 
-    navigate(`/confirm/${pg.id}`, { state: { bookingData } });
+    navigate(`/confirm/${pg._id}`, { state: { bookingData } });
   };
 
   return (
@@ -107,7 +116,6 @@ const BookingPage = () => {
         <p className="text-gray-600 mb-8">{pg.location}</p>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* LEFT: FORM */}
           <div className="lg:col-span-2 space-y-6">
             {personsData.map((person, index) => (
               <div key={index} className="bg-white rounded-xl p-6 shadow">
@@ -116,99 +124,65 @@ const BookingPage = () => {
                 </h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Full Name */}
                   <div>
-                    <label className="text-sm font-medium text-gray-600">
-                      Full Name
-                    </label>
+                    <label className="text-sm font-medium text-gray-600">Full Name</label>
                     <CInput
                       placeholder="Full Name"
                       value={person.fullName}
-                      onChange={(e) =>
-                        handleChange(index, "fullName", e.target.value)
-                      }
+                      onChange={(e) => handleChange(index, "fullName", e.target.value)}
                     />
                     {errors[`fullName_${index}`] && (
-                      <p className="text-red-500 text-sm">
-                        {errors[`fullName_${index}`]}
-                      </p>
+                      <p className="text-red-500 text-sm">{errors[`fullName_${index}`]}</p>
                     )}
                   </div>
 
-                  {/* Email */}
                   <div>
-                    <label className="text-sm font-medium text-gray-600">
-                      Email
-                    </label>
+                    <label className="text-sm font-medium text-gray-600">Email</label>
                     <CInput
                       placeholder="Email"
                       value={person.email}
-                      onChange={(e) =>
-                        handleChange(index, "email", e.target.value)
-                      }
+                      onChange={(e) => handleChange(index, "email", e.target.value)}
                     />
                     {errors[`email_${index}`] && (
-                      <p className="text-red-500 text-sm">
-                        {errors[`email_${index}`]}
-                      </p>
+                      <p className="text-red-500 text-sm">{errors[`email_${index}`]}</p>
                     )}
                   </div>
 
-                  {/* Phone */}
                   <div>
-                    <label className="text-sm font-medium text-gray-600">
-                      Phone Number
-                    </label>
+                    <label className="text-sm font-medium text-gray-600">Phone Number</label>
                     <CInput
                       placeholder="Phone Number"
                       value={person.phone}
-                      onChange={(e) =>
-                        handleChange(index, "phone", e.target.value)
-                      }
+                      onChange={(e) => handleChange(index, "phone", e.target.value)}
                     />
                     {errors[`phone_${index}`] && (
-                      <p className="text-red-500 text-sm">
-                        {errors[`phone_${index}`]}
-                      </p>
+                      <p className="text-red-500 text-sm">{errors[`phone_${index}`]}</p>
                     )}
                   </div>
 
-                  {/* First person booking dates */}
                   {index === 0 && (
                     <div className="md:col-span-2 grid grid-cols-2 gap-4">
                       <div>
-                        <label className="text-sm font-medium text-gray-600">
-                          Check-in Date
-                        </label>
+                        <label className="text-sm font-medium text-gray-600">Check-in Date</label>
                         <CInput
                           type="date"
                           value={person.checkIn}
-                          onChange={(e) =>
-                            handleChange(index, "checkIn", e.target.value)
-                          }
+                          onChange={(e) => handleChange(index, "checkIn", e.target.value)}
                         />
                         {errors.checkIn && (
-                          <p className="text-red-500 text-sm">
-                            {errors.checkIn}
-                          </p>
+                          <p className="text-red-500 text-sm">{errors.checkIn}</p>
                         )}
                       </div>
 
                       <div>
-                        <label className="text-sm font-medium text-gray-600">
-                          Expected Check-out Date (Optional)
-                        </label>
+                        <label className="text-sm font-medium text-gray-600">Check-out (Optional)</label>
                         <CInput
                           type="date"
                           value={person.checkOut}
-                          onChange={(e) =>
-                            handleChange(index, "checkOut", e.target.value)
-                          }
+                          onChange={(e) => handleChange(index, "checkOut", e.target.value)}
                         />
                         {errors.checkOut && (
-                          <p className="text-red-500 text-sm">
-                            {errors.checkOut}
-                          </p>
+                          <p className="text-red-500 text-sm">{errors.checkOut}</p>
                         )}
                       </div>
                     </div>
@@ -218,7 +192,6 @@ const BookingPage = () => {
             ))}
           </div>
 
-          {/* RIGHT: SUMMARY */}
           <div className="bg-white rounded-xl p-6 shadow h-fit lg:w-full">
             <h3 className="text-xl font-semibold mb-4">Booking Summary</h3>
 
