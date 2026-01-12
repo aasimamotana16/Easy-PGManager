@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { FaBars, FaUserCircle } from "react-icons/fa";
 import CButton from "../../components/cButton";
-import Sidebar from "../../components/sideBar"; // single sidebar component
+import Sidebar from "../../components/sideBar"; 
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -62,15 +62,15 @@ const Navbar = () => {
             className="flex items-center cursor-pointer"
             onClick={() => navigate("/")}
           >
-            <img src="/logos/logo1.png" className="h-8 mr-2" alt="logo" />
-            <span className="text-text-light font-bold hidden sm:block">
+            <img src="/logos/logo1.png" className="h-10 mr-2" alt="logo" />
+            <span className="text-text-light text-xl font-bold hidden sm:block">
               EASYPGMANAGER
             </span>
           </div>
         </div>
 
         {/* CENTER: Desktop Links */}
-        <div className="hidden md:flex gap-5">
+        <div className="hidden md:flex gap-5 ">
           {/* Always show Home */}
           <button
             className={`${navLinkClass("/")}`}
