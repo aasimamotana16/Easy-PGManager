@@ -44,10 +44,7 @@ import TermsConditions from "./pages/termsConditions";
 import PrivacyPolicy from "./pages/privacyPolicy";
 
 /* ================= USER DASHBOARD ================= */
-/* ✅ LAYOUT MOVED TO COMPONENTS */
-import UserSidebar from "./components/sideBar/dashboardLayout";
-import OwnerSidebar from "./components/sideBar/layout";
-
+import UserSidebar from "./user/dashboard/dashboardLayout";
 import {
   DashboardHome,
   Profile,
@@ -63,6 +60,7 @@ import {
 } from "./user/dashboard";
 
 /* ================= OWNER DASHBOARD ================= */
+import OwnerSidebar from "./owner/dashboard/layout";
 import OwnerDashboardHome from "./owner/dashboard/dashboardHome";
 import PgManagement from "./owner/dashboard/pgManagment";
 import AddProperty from "./owner/dashboard/pgManagment/addProperty";
@@ -81,21 +79,16 @@ import StatsCard from "./owner/dashboard/profileStatus/statCard";
 import ExtraInfoCard from "./owner/dashboard/profileStatus/extraCardinfo";
 
 /* ================= PROTECTED ROUTES ================= */
-
 const UserProtectedRoute = ({ children }) => {
   const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
   const role = localStorage.getItem("role");
-  return isLoggedIn && role === "user"
-    ? children
-    : <Navigate to="/login" replace />;
+  return isLoggedIn && role === "user" ? children : <Navigate to="/login" replace />;
 };
 
 const OwnerProtectedRoute = ({ children }) => {
   const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
   const role = localStorage.getItem("role");
-  return isLoggedIn && role === "owner"
-    ? children
-    : <Navigate to="/login" replace />;
+  return isLoggedIn && role === "owner" ? children : <Navigate to="/login" replace />;
 };
 
 const ProtectedBookingRoute = ({ children }) => {
@@ -104,7 +97,6 @@ const ProtectedBookingRoute = ({ children }) => {
 };
 
 /* ================= APP ================= */
-
 function App() {
   return (
     <ThemeProvider theme={theme}>
@@ -193,7 +185,8 @@ function App() {
               </UserProtectedRoute>
             }
           >
-            <Route index element={<DashboardHome />} />
+            <Route index element={<Navigate to="dashboardHome" replace />} />
+            <Route path="dashboardHome" element={<DashboardHome />} />
             <Route path="userProfile" element={<Profile />} />
             <Route path="payments" element={<Payments />} />
             <Route path="agreements" element={<Agreements />} />
@@ -215,7 +208,8 @@ function App() {
               </OwnerProtectedRoute>
             }
           >
-            <Route index element={<OwnerDashboardHome />} />
+            <Route index element={<Navigate to="dashboardHome" replace />} />
+            <Route path="dashboardHome" element={<OwnerDashboardHome />} />
             <Route path="pgManagment" element={<PgManagement />} />
             <Route path="pgManagment/addProperty" element={<AddProperty />} />
             <Route path="pgManagment/addRooms" element={<AddRooms />} />
