@@ -1,14 +1,8 @@
 // src/App.js
 import React from "react";
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Navigate,
-} from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
-
 import theme from "./theme";
 
 /* ================= PUBLIC PAGES ================= */
@@ -44,8 +38,8 @@ import TermsConditions from "./pages/termsConditions";
 import PrivacyPolicy from "./pages/privacyPolicy";
 
 /* ================= USER DASHBOARD ================= */
-import UserSidebar from "./user/dashboard/dashboardLayout";
 import {
+  DashboardLayout,
   DashboardHome,
   Profile,
   Payments,
@@ -60,7 +54,7 @@ import {
 } from "./user/dashboard";
 
 /* ================= OWNER DASHBOARD ================= */
-import OwnerSidebar from "./owner/dashboard/layout";
+import OwnerLayout from "./owner/dashboard/layout";
 import OwnerDashboardHome from "./owner/dashboard/dashboardHome";
 import PgManagement from "./owner/dashboard/pgManagment";
 import AddProperty from "./owner/dashboard/pgManagment/addProperty";
@@ -74,21 +68,22 @@ import OAgreements from "./owner/dashboard/oAgreements";
 import OSupport from "./owner/dashboard/oSupport";
 import Earnings from "./owner/dashboard/totalEarnings";
 import OwnerProfile from "./owner/dashboard/profileStatus";
-import ProfileCard from "./owner/dashboard/profileStatus/profileCard";
-import StatsCard from "./owner/dashboard/profileStatus/statCard";
-import ExtraInfoCard from "./owner/dashboard/profileStatus/extraCardinfo";
 
 /* ================= PROTECTED ROUTES ================= */
 const UserProtectedRoute = ({ children }) => {
   const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
   const role = localStorage.getItem("role");
-  return isLoggedIn && role === "user" ? children : <Navigate to="/login" replace />;
+  return isLoggedIn && role === "user"
+    ? children
+    : <Navigate to="/login" replace />;
 };
 
 const OwnerProtectedRoute = ({ children }) => {
   const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
   const role = localStorage.getItem("role");
-  return isLoggedIn && role === "owner" ? children : <Navigate to="/login" replace />;
+  return isLoggedIn && role === "owner"
+    ? children
+    : <Navigate to="/login" replace />;
 };
 
 const ProtectedBookingRoute = ({ children }) => {
@@ -103,7 +98,8 @@ function App() {
       <CssBaseline />
       <Router>
         <Routes>
-          {/* ================= PUBLIC ROUTES ================= */}
+
+          {/* ===== PUBLIC ===== */}
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<SignUp />} />
@@ -117,71 +113,35 @@ function App() {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password/:token" element={<ResetPassword />} />
 
-          {/* ================= PG DETAILS ================= */}
+          {/* ===== PG DETAILS ===== */}
           <Route path="/pg/:id" element={<PGFullDetails />} />
 
-          {/* ================= BOOKING FLOW ================= */}
+          {/* ===== BOOKING ===== */}
           <Route
             path="/book/:id"
-            element={
-              <ProtectedBookingRoute>
-                <BookingPage />
-              </ProtectedBookingRoute>
-            }
+            element={<ProtectedBookingRoute><BookingPage /></ProtectedBookingRoute>}
           />
           <Route
             path="/confirm/:id"
-            element={
-              <ProtectedBookingRoute>
-                <ConfirmBooking />
-              </ProtectedBookingRoute>
-            }
+            element={<ProtectedBookingRoute><ConfirmBooking /></ProtectedBookingRoute>}
           />
 
-          {/* ================= CANCELLATION ================= */}
-          <Route
-            path="/cancel/:id"
-            element={
-              <ProtectedBookingRoute>
-                <CancelBooking />
-              </ProtectedBookingRoute>
-            }
-          />
-          <Route
-            path="/cancel-form/:id"
-            element={
-              <ProtectedBookingRoute>
-                <CancelForm />
-              </ProtectedBookingRoute>
-            }
-          />
-          <Route
-            path="/cancel-confirm/:id"
-            element={
-              <ProtectedBookingRoute>
-                <CancelConfirm />
-              </ProtectedBookingRoute>
-            }
-          />
-          <Route
-            path="/cancel-success"
-            element={
-              <ProtectedBookingRoute>
-                <CancelSuccess />
-              </ProtectedBookingRoute>
-            }
-          />
+          {/* ===== CANCELLATION ===== */}
+          <Route path="/cancel/:id" element={<ProtectedBookingRoute><CancelBooking /></ProtectedBookingRoute>} />
+          <Route path="/cancel-form/:id" element={<ProtectedBookingRoute><CancelForm /></ProtectedBookingRoute>} />
+          <Route path="/cancel-confirm/:id" element={<ProtectedBookingRoute><CancelConfirm /></ProtectedBookingRoute>} />
+          <Route path="/cancel-success" element={<ProtectedBookingRoute><CancelSuccess /></ProtectedBookingRoute>} />
 
-          {/* ================= POLICIES ================= */}
+          {/* ===== POLICIES ===== */}
           <Route path="/termsConditions" element={<TermsConditions />} />
           <Route path="/privacyPolicy" element={<PrivacyPolicy />} />
 
-          {/* ================= USER DASHBOARD ================= */}
+          {/* ===== USER DASHBOARD (CORRECT) ===== */}
           <Route
-            path="/user/dashboard/*"
+            path="/user/dashboard"
             element={
               <UserProtectedRoute>
-                <UserSidebar />
+                <DashboardLayout />
               </UserProtectedRoute>
             }
           >
@@ -199,12 +159,12 @@ function App() {
             <Route path="explorePage" element={<ExplorePage />} />
           </Route>
 
-          {/* ================= OWNER DASHBOARD ================= */}
+          {/* ===== OWNER DASHBOARD ===== */}
           <Route
-            path="/owner/dashboard/*"
+            path="/owner/dashboard"
             element={
               <OwnerProtectedRoute>
-                <OwnerSidebar />
+                <OwnerLayout />
               </OwnerProtectedRoute>
             }
           >
@@ -222,13 +182,11 @@ function App() {
             <Route path="oSupport" element={<OSupport />} />
             <Route path="totalEarnings" element={<Earnings />} />
             <Route path="profileStatus" element={<OwnerProfile />} />
-            <Route path="profileStatus/profileCard" element={<ProfileCard />} />
-            <Route path="profileStatus/statCard" element={<StatsCard />} />
-            <Route path="profileStatus/extraCardinfo" element={<ExtraInfoCard />} />
           </Route>
 
-          {/* ================= FALLBACK ================= */}
+          {/* ===== FALLBACK ===== */}
           <Route path="*" element={<Navigate to="/" replace />} />
+
         </Routes>
       </Router>
     </ThemeProvider>
