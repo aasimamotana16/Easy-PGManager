@@ -18,6 +18,7 @@ const User = require("./models/userModel"); // Add this if you use it for countD
 // 1. Import the new PG routes [cite: 2026-01-06]
 const pgRoutes = require('./routes/pgRoutes');
 const DemoRequest = require('./models/demoRequestModel');
+const Contact = require('./models/contactModel');
 
 const app = express();
 
@@ -125,6 +126,50 @@ app.post('/api/request-demo', async (req, res) => {
     });
   } catch (error) {
     console.error("Error processing request:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// --- CONTACT US API (DATABASE + REAL EMAIL) ---
+app.post('/api/contact-us', async (req, res) => {
+  try {
+    const { fullName, emailAddress, phoneNumber, yourMessage } = req.body;
+
+    // 1. Save to MongoDB Atlas [cite: 2026-01-06]
+    await Contact.create({ fullName, emailAddress, phoneNumber, yourMessage });
+
+    // 2. Setup Email Transporter (Same as before)
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+      }
+    });
+
+    // 3. Define Mail Content
+    const mailOptions = {
+      from: process.env.EMAIL_USER, 
+      to: process.env.EMAIL_USER, 
+      subject: `New Contact Message from ${fullName}`,
+      html: `
+        <h2>Contact Form Details</h2>
+        <p><strong>Name:</strong> ${fullName}</p>
+        <p><strong>Email:</strong> ${emailAddress}</p>
+        <p><strong>Phone:</strong> ${phoneNumber}</p>
+        <p><strong>Message:</strong> ${yourMessage}</p>
+      `
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    res.status(201).json({ 
+      
+      success: true, 
+      message: "Message sent and saved successfully!" 
+    });
+  } catch (error) {
+    console.error("Contact Error:", error);
     res.status(500).json({ success: false, message: "Server error" });
   }
 });
