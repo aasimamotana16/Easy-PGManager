@@ -16,6 +16,7 @@ const Contact = () => {
   });
 
   const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false); // New loading state
 
   /* ---------------- VALIDATION (NO MESSAGES) ---------------- */
   const validate = () => {
@@ -31,26 +32,55 @@ const Contact = () => {
   };
 
   /* ---------------- SUBMIT ---------------- */
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
 
-    console.log(form);
+    setLoading(true); // Start loading
 
-    setForm({
-      fullName: "",
-      email: "",
-      mobile: "",
-      message: "",
-    });
-    setErrors({});
+    // Prepare data to match your backend model [cite: 2026-01-01]
+    const contactData = {
+      fullName: form.fullName,
+      emailAddress: form.email,
+      phoneNumber: form.mobile,
+      yourMessage: form.message,
+    };
+
+    try {
+      const response = await fetch("http://localhost:5000/api/contact-us", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(contactData),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        alert("Message sent successfully!");
+        setForm({
+          fullName: "",
+          email: "",
+          mobile: "",
+          message: "",
+        });
+        setErrors({});
+      } else {
+        alert("Failed to send message: " + data.message);
+      }
+    } catch (error) {
+      console.error("Connection Error:", error);
+      alert("Server is not responding. Please check your backend.");
+    } finally {
+      setLoading(false); // Stop loading regardless of outcome
+    }
   };
 
   /* ---------------- CHANGE HANDLER ---------------- */
   const handleChange = (field) => (e) => {
     setForm({ ...form, [field]: e.target.value });
 
-    // remove red label as soon as user types
     if (errors[field]) {
       setErrors({ ...errors, [field]: false });
     }
@@ -80,82 +110,63 @@ const Contact = () => {
                 {/* FULL NAME */}
                 <CInput
                   label={
-                    <span
-                      className={
-                        errors.fullName ? "text-red-600 font-semibold" : ""
-                      }
-                    >
+                    <span className={errors.fullName ? "text-red-600 font-semibold" : ""}>
                       Full Name
-                      {errors.fullName && (
-                        <span className="text-red-600 ml-1">*</span>
-                      )}
+                      {errors.fullName && <span className="text-red-600 ml-1">*</span>}
                     </span>
                   }
                   value={form.fullName}
                   onChange={handleChange("fullName")}
+                  disabled={loading} // Prevent typing while sending
                 />
 
                 {/* EMAIL */}
                 <CInput
                   label={
-                    <span
-                      className={
-                        errors.email ? "text-red-600 font-semibold" : ""
-                      }
-                    >
+                    <span className={errors.email ? "text-red-600 font-semibold" : ""}>
                       Email Address
-                      {errors.email && (
-                        <span className="text-red-600 ml-1">*</span>
-                      )}
+                      {errors.email && <span className="text-red-600 ml-1">*</span>}
                     </span>
                   }
                   type="email"
                   value={form.email}
                   onChange={handleChange("email")}
+                  disabled={loading}
                 />
 
                 {/* PHONE */}
                 <CInput
                   label={
-                    <span
-                      className={
-                        errors.mobile ? "text-red-600 font-semibold" : ""
-                      }
-                    >
+                    <span className={errors.mobile ? "text-red-600 font-semibold" : ""}>
                       Phone Number
-                      {errors.mobile && (
-                        <span className="text-red-600 ml-1">*</span>
-                      )}
+                      {errors.mobile && <span className="text-red-600 ml-1">*</span>}
                     </span>
                   }
                   type="tel"
                   value={form.mobile}
                   onChange={handleChange("mobile")}
+                  disabled={loading}
                 />
 
                 {/* MESSAGE */}
                 <CInput
                   label={
-                    <span
-                      className={
-                        errors.message ? "text-red-600 font-semibold" : ""
-                      }
-                    >
+                    <span className={errors.message ? "text-red-600 font-semibold" : ""}>
                       Your Message
-                      {errors.message && (
-                        <span className="text-red-600 ml-1">*</span>
-                      )}
+                      {errors.message && <span className="text-red-600 ml-1">*</span>}
                     </span>
                   }
                   multiline
                   rows={6}
                   value={form.message}
                   onChange={handleChange("message")}
+                  disabled={loading}
                 />
 
                 <CButton
                   type="submit"
-                  text="Send Message"
+                  text={loading ? "Sending..." : "Send Message"}
+                  disabled={loading}
                   variant="contained"
                   className="mt-3 w-full py-3 font-semibold text-lg"
                 />
@@ -193,9 +204,7 @@ const Contact = () => {
                 <h4 className="font-bold text-gray-900 mb-2">
                   General Communication
                 </h4>
-                <p className="text-sm text-gray-700 mb-2">
-                  Email us at:
-                </p>
+                <p className="text-sm text-gray-700 mb-2">Email us at:</p>
                 <p className="font-medium text-indigo-600 break-all">
                   support@easyPGmanager.com
                 </p>
