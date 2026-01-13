@@ -1,5 +1,5 @@
 // Layout
-export { default as OwnerDashboardLayout } from "./layout";
+export { default as OwnerSidebar } from "./layout";
 
 // Pages
 export { default as OwnerDashboardHome } from "./dashboardHome";

@@ -3,9 +3,9 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { FaBars, FaUserCircle } from "react-icons/fa";
 import CButton from "../../components/cButton";
 
-// ✅ Import BOTH sidebars
-import UserSidebar from "../../components/sideBar/dashboardLayout";
-import OwnerSidebar from "../../components/sideBar/layout";
+// Import sidebars
+import UserSidebar from "../../user/dashboard/dashboardLayout";
+import OwnerSidebar from "../../owner/dashboard/layout";
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -13,19 +13,15 @@ const Navbar = () => {
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userName, setUserName] = useState("");
-  const [role, setRole] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
 
-  /* 🔹 Check login + role */
+  // Check login + username
   const checkLoginStatus = () => {
     const loggedIn = localStorage.getItem("isLoggedIn") === "true";
-    const name = localStorage.getItem("userName");
-    const storedRole = localStorage.getItem("role");
-
+    const name = localStorage.getItem("userName") || "User";
     setIsLoggedIn(loggedIn);
-    setUserName(name || "User");
-    setRole(storedRole);
+    setUserName(name);
   };
 
   useEffect(() => {
@@ -35,29 +31,28 @@ const Navbar = () => {
   useEffect(() => {
     window.addEventListener("storage", checkLoginStatus);
     document.addEventListener("visibilitychange", checkLoginStatus);
-
     return () => {
       window.removeEventListener("storage", checkLoginStatus);
       document.removeEventListener("visibilitychange", checkLoginStatus);
     };
   }, []);
 
-  /* 🔹 Show hamburger ONLY on dashboard pages */
+  // Check if current page is dashboard for hamburger
   const isDashboard =
-    location.pathname.startsWith("/user") ||
-    location.pathname.startsWith("/owner");
+    location.pathname.startsWith("/user/dashboard") ||
+    location.pathname.startsWith("/owner/dashboard");
 
-  const showHamburger = isLoggedIn && isDashboard;
+  const role = localStorage.getItem("role");
 
-  /* 🔹 Logout */
+  // Logout function
   const handleLogout = () => {
     localStorage.clear();
     setProfileOpen(false);
+    setSidebarOpen(false);
     navigate("/");
     window.dispatchEvent(new Event("storage"));
   };
 
-  /* 🔹 Nav link style */
   const navLinkClass = (path) =>
     `relative font-semibold text-sm transition-colors duration-300
      ${
@@ -66,12 +61,31 @@ const Navbar = () => {
          : "text-text-light/80 hover:text-text-light"
      }`;
 
+  // Navigate and open sidebar automatically for dashboard pages
+  const goToDashboard = () => {
+    if (role === "owner") {
+      navigate("/owner/dashboard/dashboardHome");
+    } else {
+      navigate("/user/dashboard/dashboardHome");
+    }
+    setSidebarOpen(true);
+  };
+
+  const goToProfile = () => {
+    if (role === "owner") {
+      navigate("/owner/dashboard/profileStatus");
+    } else {
+      navigate("/user/dashboard/userProfile");
+    }
+    setSidebarOpen(true);
+  };
+
   return (
     <>
       <nav className="bg-background-dark border-b border-white/10 px-4 py-2 flex justify-between items-center">
         {/* LEFT */}
         <div className="flex items-center gap-3">
-          {showHamburger && (
+          {isLoggedIn && isDashboard && (
             <button onClick={() => setSidebarOpen(true)}>
               <FaBars className="text-xl text-text-light" />
             </button>
@@ -117,7 +131,10 @@ const Navbar = () => {
           >
             Contact
           </button>
-          <button className={navLinkClass("/faq")} onClick={() => navigate("/faq")}>
+          <button
+            className={navLinkClass("/faq")}
+            onClick={() => navigate("/faq")}
+          >
             FAQ
           </button>
         </div>
@@ -145,11 +162,7 @@ const Navbar = () => {
                   <button
                     onClick={() => {
                       setProfileOpen(false);
-                      navigate(
-                        role === "owner"
-                          ? "/owner/dashboard"
-                          : "/user/dashboard"
-                      );
+                      goToDashboard();
                     }}
                     className="w-full text-left px-4 py-2 hover:bg-gray-100"
                   >
@@ -159,11 +172,7 @@ const Navbar = () => {
                   <button
                     onClick={() => {
                       setProfileOpen(false);
-                      navigate(
-                        role === "owner"
-                          ? "/owner/profile"
-                          : "/user/dashboard/userProfile"
-                      );
+                      goToProfile();
                     }}
                     className="w-full text-left px-4 py-2 hover:bg-gray-100"
                   >
@@ -193,7 +202,6 @@ const Navbar = () => {
               <UserSidebar closeSidebar={() => setSidebarOpen(false)} />
             )}
           </div>
-
           <div
             className="flex-1 bg-black/40"
             onClick={() => setSidebarOpen(false)}

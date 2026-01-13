@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
-import Navbar from "../../components/navbar";
 import CFormCard from "../../components/cFormCard";
 import CInput from "../../components/cInput";
 import CButton from "../../components/cButton";
 
-// Import sendOtp along with registerUser
-import { registerUser, sendOtp } from "../../api/api"; 
+import { registerUser, sendOtp } from "../../api/api";
 
 const SignUp = () => {
   const navigate = useNavigate();
@@ -44,7 +42,6 @@ const SignUp = () => {
     return re.test(String(email).toLowerCase());
   };
 
-  // ✅ UPDATED: Calls backend to generate and log the real OTP
   const handleSendOtp = async () => {
     if (!email || !phone) {
       alert("Please enter your email and phone number to receive OTP.");
@@ -57,8 +54,7 @@ const SignUp = () => {
 
     setLoading(true);
     try {
-      // Logic from backend side to avoid merge issues [cite: 2026-01-06]
-      const response = await sendOtp({ email }); 
+      const response = await sendOtp({ email });
       if (response?.data?.success) {
         setOtpMessage("OTP sent! (Check your VS Code terminal)");
         setOtpStage(true);
@@ -73,7 +69,6 @@ const SignUp = () => {
     }
   };
 
-  // ✅ UPDATED: Sends fullName and otp to the backend
   const handleVerifyOtpAndSignup = async () => {
     if (!enteredOtp) {
       setOtpMessage("❌ Please enter the OTP.");
@@ -97,22 +92,33 @@ const SignUp = () => {
     try {
       const response = await registerUser({
         role,
-        fullName: name, // Variable name mapped to camelCase [cite: 2026-01-01]
+        fullName: name,
         email,
         phone,
         password,
-        otp: enteredOtp, // Include OTP for backend verification
+        otp: enteredOtp,
       });
 
       if (response?.data?.success) {
-        alert("Sign up successful! Please login.");
-        navigate("/login");
+        const userObj = response.data.user;
+        if (userObj) {
+          localStorage.setItem("user", JSON.stringify(userObj));
+          localStorage.setItem("userName", userObj.fullName);
+          localStorage.setItem("userId", userObj._id);
+          localStorage.setItem("role", role);
+          localStorage.setItem("isLoggedIn", "true");
+          if (response.data.token) localStorage.setItem("token", response.data.token);
+          window.dispatchEvent(new Event("storage"));
+        }
+
+        alert("Sign up successful!");
+        // ✅ Redirect to HOME page
+        window.location.href = "/";
       } else {
         alert(response?.data?.message || "Sign up failed.");
       }
     } catch (error) {
       console.error("SignUp Error:", error);
-      // This catches the 400 error we saw in your browser console
       alert(error.response?.data?.message || "Something went wrong. Please try again.");
     } finally {
       setLoading(false);

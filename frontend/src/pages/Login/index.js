@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import Navbar from "../../components/navbar";
 import CFormCard from "../../components/cFormCard";
 import CInput from "../../components/cInput";
 import CButton from "../../components/cButton";
@@ -20,6 +19,7 @@ const Login = () => {
   ];
   const [currentImage, setCurrentImage] = useState(0);
 
+  // Image slider effect
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentImage((prev) => (prev + 1) % images.length);
@@ -52,17 +52,21 @@ const Login = () => {
       const data = response.data;
 
       if (data && data.success) {
-        if (data.token) localStorage.setItem("token", data.token);
+        const userObj = data.user;
+        if (!userObj) throw new Error("User data missing from server response");
 
-        localStorage.setItem("userName", data.user.fullName);
-        localStorage.setItem("user", JSON.stringify(data.user));
+        // ✅ Save user info for Navbar/Profile dropdown
+        localStorage.setItem("user", JSON.stringify(userObj));
+        localStorage.setItem("userName", userObj.fullName);
+        localStorage.setItem("userId", userObj._id);
+        localStorage.setItem("role", role);
         localStorage.setItem("isLoggedIn", "true");
-
+        if (data.token) localStorage.setItem("token", data.token);
         if (rememberMe) localStorage.setItem("rememberMe", "true");
 
-        // 🔥 IMPORTANT FIX — notify Navbar
         window.dispatchEvent(new Event("storage"));
 
+        // ✅ Redirect to HOME page
         window.location.href = "/";
       }
     } catch (error) {
@@ -99,23 +103,57 @@ const Login = () => {
             </h1>
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+              {/* Role Selection */}
               <div className="flex gap-2 mb-4">
-                <CButton size="sm" fullWidth variant={role === "user" ? "contained" : "outlined"} onClick={() => setRole("user")}>
+                <CButton
+                  size="sm"
+                  fullWidth
+                  variant={role === "user" ? "contained" : "outlined"}
+                  onClick={() => setRole("user")}
+                  type="button"
+                >
                   User
                 </CButton>
-                <CButton size="sm" fullWidth variant={role === "owner" ? "contained" : "outlined"} onClick={() => setRole("owner")}>
+                <CButton
+                  size="sm"
+                  fullWidth
+                  variant={role === "owner" ? "contained" : "outlined"}
+                  onClick={() => setRole("owner")}
+                  type="button"
+                >
                   Owner
                 </CButton>
               </div>
 
-              <CInput label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-              <CInput label="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+              <CInput
+                label="Email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+              <CInput
+                label="Password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
 
-              <CButton text={loading ? "Logging in..." : "Login"} type="submit" fullWidth disabled={loading} />
+              <CButton
+                text={loading ? "Logging in..." : "Login"}
+                type="submit"
+                fullWidth
+                disabled={loading}
+              />
 
               <div className="flex justify-between items-center">
-                <CCheckbox label="Remember Me" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} />
-                <a href="/forgot-password" className="font-semibold text-primary">Forgot Password?</a>
+                <CCheckbox
+                  label="Remember Me"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                />
+                <a href="/forgot-password" className="font-semibold text-primary">
+                  Forgot Password?
+                </a>
               </div>
             </form>
           </CFormCard>
