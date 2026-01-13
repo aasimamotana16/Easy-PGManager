@@ -1,6 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const nodemailer = require('nodemailer'); // Added for real email
 require('dotenv').config();
 
 // IMPORT ROUTES
@@ -16,6 +17,7 @@ const reviewRoutes = require('./routes/reviewRoutes'); // New route for dynamic 
 const User = require("./models/userModel"); // Add this if you use it for countDocuments
 // 1. Import the new PG routes [cite: 2026-01-06]
 const pgRoutes = require('./routes/pgRoutes');
+const DemoRequest = require('./models/demoRequestModel');
 
 const app = express();
 
@@ -76,20 +78,53 @@ app.get('/api/home-stats', async (req, res) => {
   }
 });
 
-// backend/server.js
-// Use camelCase for the request body fields [cite: 2026-01-01]
+// --- UPDATED REQUEST DEMO API (DATABASE + REAL EMAIL) ---
 app.post('/api/request-demo', async (req, res) => {
   try {
     const { yourName, emailAddress, phone, message } = req.body;
 
-    // Here you would typically save to MongoDB or send an email
-    console.log("New Demo Request:", { yourName, emailAddress, phone, message });
+    // 1. Save to MongoDB Atlas
+    await DemoRequest.create({ 
+      yourName, 
+      emailAddress, 
+      phone, 
+      message 
+    });
+    console.log("Demo request saved to Database");
+
+    // 2. Setup Email Transporter using your existing .env
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+      }
+    });
+
+    // 3. Define Mail Content
+    const mailOptions = {
+      from: process.env.EMAIL_USER, 
+      to: process.env.EMAIL_USER, 
+      subject: `New Demo Request from ${yourName}`,
+      html: `
+        <h2>Demo Request Details</h2>
+        <p><strong>Name:</strong> ${yourName}</p>
+        <p><strong>Email:</strong> ${emailAddress}</p>
+        <p><strong>Phone:</strong> ${phone}</p>
+        <p><strong>Message:</strong> ${message}</p>
+      `
+    };
+
+    // 4. Send Email notification
+    await transporter.sendMail(mailOptions);
+    console.log("Email notification sent successfully");
 
     res.status(201).json({ 
       success: true, 
-      message: "Demo request received successfully!" 
+      message: "Demo request submitted and email sent successfully!" 
     });
   } catch (error) {
+    console.error("Error processing request:", error);
     res.status(500).json({ success: false, message: "Server error" });
   }
 });
