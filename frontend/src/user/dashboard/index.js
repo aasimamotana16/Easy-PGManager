@@ -1,7 +1,7 @@
 // src/pages/user/dashboard/index.js
 
 // Layout
-export { default as UserDashboardLayout } from "./dashboardLayout";
+export { default as UserSidebar } from "../../components/sideBar/dashboardLayout";
 
 // Pages
 export { default as DashboardHome } from "./dashboardHome";

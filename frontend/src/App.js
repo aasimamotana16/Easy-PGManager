@@ -30,7 +30,6 @@ import PGFullDetails from "./pages/detailsPage";
 /* ================= BOOKING ================= */
 import BookingPage from "./pages/booking/bookNowPage";
 import ConfirmBooking from "./pages/booking/confirmBook";
-import RentalAgreement from "./pages/booking/agreement";
 
 /* ================= CANCELLATION ================= */
 import {
@@ -45,8 +44,11 @@ import TermsConditions from "./pages/termsConditions";
 import PrivacyPolicy from "./pages/privacyPolicy";
 
 /* ================= USER DASHBOARD ================= */
+/* ✅ LAYOUT MOVED TO COMPONENTS */
+import UserSidebar from "./components/sideBar/dashboardLayout";
+import OwnerSidebar from "./components/sideBar/layout";
+
 import {
-  UserDashboardLayout,
   DashboardHome,
   Profile,
   Payments,
@@ -61,40 +63,47 @@ import {
 } from "./user/dashboard";
 
 /* ================= OWNER DASHBOARD ================= */
-import OwnerDashboardLayout from "./owner/dashboard/layout";
 import OwnerDashboardHome from "./owner/dashboard/dashboardHome";
 import PgManagement from "./owner/dashboard/pgManagment";
 import AddProperty from "./owner/dashboard/pgManagment/addProperty";
-import RoomManagement from "./owner/dashboard/pgManagment/roomManagement";
 import AddRooms from "./owner/dashboard/pgManagment/addRooms";
+import RoomManagement from "./owner/dashboard/pgManagment/roomManagement";
+import SubmitApproval from "./owner/dashboard/pgManagment/submitApproval";
+import SetRoomPrice from "./owner/dashboard/pgManagment/roomPrice";
 import TenantManagement from "./owner/dashboard/tenantManagement";
+import BookingManagement from "./owner/dashboard/oBookings";
 import OAgreements from "./owner/dashboard/oAgreements";
 import OSupport from "./owner/dashboard/oSupport";
 import Earnings from "./owner/dashboard/totalEarnings";
 import OwnerProfile from "./owner/dashboard/profileStatus";
-import SubmitApproval from "./owner/dashboard/pgManagment/submitApproval";
-import SetRoomPrice from "./owner/dashboard/pgManagment/roomPrice";
 import ProfileCard from "./owner/dashboard/profileStatus/profileCard";
 import StatsCard from "./owner/dashboard/profileStatus/statCard";
 import ExtraInfoCard from "./owner/dashboard/profileStatus/extraCardinfo";
-import BookingManagement from "./owner/dashboard/oBookings";
 
 /* ================= PROTECTED ROUTES ================= */
 
 const UserProtectedRoute = ({ children }) => {
-  const user = JSON.parse(localStorage.getItem("user"));
-  return user ? children : <Navigate to="/login" replace />;
+  const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
+  const role = localStorage.getItem("role");
+  return isLoggedIn && role === "user"
+    ? children
+    : <Navigate to="/login" replace />;
 };
 
 const OwnerProtectedRoute = ({ children }) => {
-  const owner = JSON.parse(localStorage.getItem("owner"));
-  return owner ? children : <Navigate to="/login" replace />;
+  const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
+  const role = localStorage.getItem("role");
+  return isLoggedIn && role === "owner"
+    ? children
+    : <Navigate to="/login" replace />;
 };
 
 const ProtectedBookingRoute = ({ children }) => {
-  const user = JSON.parse(localStorage.getItem("user"));
-  return user ? children : <Navigate to="/login" replace />;
+  const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
+  return isLoggedIn ? children : <Navigate to="/login" replace />;
 };
+
+/* ================= APP ================= */
 
 function App() {
   return (
@@ -104,41 +113,38 @@ function App() {
         <Routes>
           {/* ================= PUBLIC ROUTES ================= */}
           <Route path="/" element={<Home />} />
-
-          <Route path="/findMypg" element={<FindMyPg />} />
-          <Route path="/findMypg/:type" element={<FindMyPg />} />
-
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<SignUp />} />
           <Route path="/about" element={<About />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password/:token" element={<ResetPassword />} />
-          <Route path="/contact" element={<Contact />} />
           <Route path="/services" element={<Services />} />
+          <Route path="/contact" element={<Contact />} />
           <Route path="/faq" element={<FAQ />} />
           <Route path="/demoBook" element={<DemoBook />} />
+          <Route path="/findMypg" element={<FindMyPg />} />
+          <Route path="/findMypg/:type" element={<FindMyPg />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password/:token" element={<ResetPassword />} />
 
-          {/* ================= PG DETAILS (SINGLE PAGE) ================= */}
+          {/* ================= PG DETAILS ================= */}
           <Route path="/pg/:id" element={<PGFullDetails />} />
 
           {/* ================= BOOKING FLOW ================= */}
-          {/* ================= BOOKING FLOW ================= */}
-<Route 
-  path="/book/:id" 
-  element={
-    <ProtectedBookingRoute>
-      <BookingPage />
-    </ProtectedBookingRoute>
-  } 
-/>
-<Route 
-  path="/confirm/:id" 
-  element={
-    <ProtectedBookingRoute>
-      <ConfirmBooking />
-    </ProtectedBookingRoute>
-  } 
-/>
+          <Route
+            path="/book/:id"
+            element={
+              <ProtectedBookingRoute>
+                <BookingPage />
+              </ProtectedBookingRoute>
+            }
+          />
+          <Route
+            path="/confirm/:id"
+            element={
+              <ProtectedBookingRoute>
+                <ConfirmBooking />
+              </ProtectedBookingRoute>
+            }
+          />
 
           {/* ================= CANCELLATION ================= */}
           <Route
@@ -183,7 +189,7 @@ function App() {
             path="/user/dashboard/*"
             element={
               <UserProtectedRoute>
-                <UserDashboardLayout />
+                <UserSidebar />
               </UserProtectedRoute>
             }
           >
@@ -205,7 +211,7 @@ function App() {
             path="/owner/dashboard/*"
             element={
               <OwnerProtectedRoute>
-                <OwnerDashboardLayout />
+                <OwnerSidebar />
               </OwnerProtectedRoute>
             }
           >
@@ -213,19 +219,18 @@ function App() {
             <Route path="pgManagment" element={<PgManagement />} />
             <Route path="pgManagment/addProperty" element={<AddProperty />} />
             <Route path="pgManagment/addRooms" element={<AddRooms />} />
-            <Route path="pgs/rooms" element={<RoomManagement />} />
-            <Route path="tenantManagement" element={<TenantManagement />} />
-            <Route path="agreements" element={<OAgreements />} />
-            <Route path="support" element={<OSupport />} />
-            <Route path="earnings" element={<Earnings />} />
-            <Route path="profileStatus" element={<OwnerProfile />} />
-            <Route path="pgManagment/submitApproval" element={<SubmitApproval />} />
             <Route path="pgManagment/roomManagement" element={<RoomManagement />} />
             <Route path="pgManagment/roomPrice" element={<SetRoomPrice />} />
+            <Route path="pgManagment/submitApproval" element={<SubmitApproval />} />
+            <Route path="tenantManagement" element={<TenantManagement />} />
+            <Route path="oBookings" element={<BookingManagement />} />
+            <Route path="oAgreements" element={<OAgreements />} />
+            <Route path="oSupport" element={<OSupport />} />
+            <Route path="totalEarnings" element={<Earnings />} />
+            <Route path="profileStatus" element={<OwnerProfile />} />
             <Route path="profileStatus/profileCard" element={<ProfileCard />} />
             <Route path="profileStatus/statCard" element={<StatsCard />} />
             <Route path="profileStatus/extraCardinfo" element={<ExtraInfoCard />} />
-            <Route path="oBookings" element={<BookingManagement />} />
           </Route>
 
           {/* ================= FALLBACK ================= */}
