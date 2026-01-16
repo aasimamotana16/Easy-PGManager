@@ -1,28 +1,110 @@
 const PG = require('../models/pgModel');
 
-// 1. Existing Search Logic
-exports.searchPGs = async (req, res) => {
+// 1. Create a New PG Listing
+exports.createPG = async (req, res) => {
   try {
-    const { city, type } = req.query; 
-    const results = await PG.find({ city, type });
-    res.status(200).json(results);
+    const newPg = await PG.create(req.body);
+    res.status(201).json({
+      success: true,
+      message: "PG Listing created successfully!",
+      data: newPg
+    });
   } catch (error) {
-    res.status(500).json({ message: "Error searching listings", error });
+    res.status(400).json({
+      success: false,
+      message: "Failed to create PG listing",
+      error: error.message
+    });
   }
 };
 
-// 2. NEW: All-in-One API for "Available PGs" [cite: 2026-01-11]
-// This sends images, price, and 2nd-page details in one go
-exports.getAllPgs = async (req, res) => {
+// 2. Search Logic (Keep your existing filters)
+exports.searchPGs = async (req, res) => {
   try {
-    // We only fetch 'live' PGs to show on the home page [cite: 2026-01-06]
-    const allPgs = await PG.find({ status: 'live' });
-    
-    res.status(200).json({
-      success: true,
-      data: allPgs // Frontend uses this for both Page 1 and Page 2 [cite: 2026-01-11]
+    const { 
+      lookingFor, 
+      occupancy, 
+      minBudget, 
+      maxBudget, 
+      rentCycle, 
+      amenities 
+    } = req.query;
+
+    let query = { status: 'live' }; 
+
+    if (lookingFor && lookingFor !== "Any") query.type = lookingFor;
+    if (occupancy && occupancy !== "Any") query.occupancy = occupancy;
+    if (rentCycle && rentCycle !== "Any") query.rentCycle = rentCycle;
+
+    if (minBudget || maxBudget) {
+      query.price = {};
+      if (minBudget) query.price.$gte = Number(minBudget);
+      if (maxBudget) query.price.$lte = Number(maxBudget);
+    }
+
+    if (amenities) {
+      const amenitiesList = amenities.split(",").map(item => item.trim());
+      query.amenities = { $all: amenitiesList };
+    }
+
+    const results = await PG.find(query);
+    // YOU NEED TO ADD THIS MAPPING HERE TOO [cite: 2026-01-06]
+    const mappedResults = results.map(pg => ({
+      ...pg._doc,
+      name: pg.pgName, // Fixes name in search results [cite: 2026-01-01]
+      rent: pg.price   // Fixes price in search results [cite: 2026-01-06]
+    }));
+    res.status(200).json({ 
+      success: true, 
+      count: results.length, 
+      data: mappedResults
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: "Error fetching PGs" });
+    res.status(500).json({ 
+      success: false, 
+      message: "Error searching listings", 
+      error: error.message 
+    });
+  }
+};
+
+// 3. New Function to stop the crash on route line 13 [cite: 2026-01-06]
+exports.getAllPgs = async (req, res) => {
+  try {
+    const allPgs = await PG.find({ status: 'live' });
+    // Map every PG in the list so titles and prices show up correctly [cite: 2026-01-06]
+    const mappedPgs = allPgs.map(pg => ({
+      ...pg._doc,
+      name: pg.pgName, // Fixes missing name on main cards [cite: 2026-01-01]
+      rent: pg.price   // Fixes 0 price on main cards [cite: 2026-01-06]
+    }));
+    res.status(200).json({
+      success: true,
+      data: mappedPgs
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error fetching all PGs",
+      error: error.message
+    });
+  }
+};
+// Get single PG details for booking page [cite: 2026-01-06]
+exports.getPgById = async (req, res) => {
+  try {
+    const pg = await PG.findById(req.params.id);
+    if (!pg) {
+      return res.status(404).json({ success: false, message: "PG not found" });
+    }
+    // Mapping fields to match frontend expectations [cite: 2026-01-06]
+    const responseData = {
+      ...pg._doc,
+      name: pg.pgName, // Fixes missing name on card [cite: 2026-01-01]
+      rent: pg.price   // Fixes 0 price if frontend looks for 'rent' [cite: 2026-01-06]
+    };
+    res.status(200).json({ success: true, data: responseData });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };

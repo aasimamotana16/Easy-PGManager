@@ -8,7 +8,7 @@ import Footer from "../../components/footer";
 import Filters from "./servicesFilter";
 import PGListings from "./pgListing";
 
-import { pgdetails } from "../../config/staticData";
+//import { pgdetails } from "../../config/staticData";
 
 export default function FindMyPG() {
   const locationObj = useLocation();

@@ -15,6 +15,26 @@ const pgSchema = new mongoose.Schema(
       type: String, 
       required: [true, "Please add a location"] 
     },
+
+    // --- ADD THE NEW SEARCH FIELDS HERE ---
+    price: { 
+      type: Number, 
+      required: [true, "Please add a base price for filtering"] 
+    },
+    type: { 
+      type: String, 
+      enum: ["Boys", "Girls", "Any"], 
+      default: "Any" 
+    },
+    occupancy: { 
+      type: String, 
+      enum: ["Single", "Double", "Triple", "Any"], 
+      default: "Any" 
+    },
+    rentCycle: { 
+      type: String, 
+      default: "Monthly" 
+    },
     // NEW: Fields for your "Available PGs" API [cite: 2026-01-11]
     mainImage: { 
       type: String, 

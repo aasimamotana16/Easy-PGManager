@@ -57,6 +57,9 @@ app.use('/api/reviews', reviewRoutes);
 // 2. Connect it to the /api/pg path [cite: 2026-01-06]
 app.use('/api/pg', pgRoutes);
 
+//3. booking
+app.use('/api/bookings', require('./routes/bookingRoutes'));
+
 // Health Check (To verify if backend is alive in browser)
 app.get('/', (req, res) => {
   res.send("EasyPGManager Backend is running successfully.");

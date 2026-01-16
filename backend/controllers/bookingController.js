@@ -1,0 +1,40 @@
+const Booking = require('../models/bookingModel');
+
+// Handle new booking submission [cite: 2026-01-06]
+exports.createBooking = async (req, res) => {
+  try {
+    // Generate a unique bookingId since it's required in your model [cite: 2026-01-01]
+    const customBookingId = "BK-" + Math.floor(1000 + Math.random() * 9000);
+
+    const newBooking = await Booking.create({
+      ...req.body,
+      bookingId: customBookingId,
+      status: 'Pending' // Matches your enum [cite: 2026-01-06]
+    });
+
+    res.status(201).json({
+      success: true,
+      message: "Booking successful!",
+      booking: newBooking
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: "Booking failed",
+      error: error.message
+    });
+  }
+};
+
+// Get booking details by ID for the confirmation page [cite: 2026-01-06]
+exports.getBookingDetails = async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id);
+    if (!booking) {
+      return res.status(404).json({ success: false, message: "Booking not found" });
+    }
+    res.status(200).json({ success: true, data: booking });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
