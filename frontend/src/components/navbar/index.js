@@ -97,7 +97,7 @@ const Navbar = () => {
           >
             <img src="/logos/logo1.png" className="h-8 mr-2" alt="logo" />
             <span className="text-text-light font-bold hidden sm:block">
-              EASYPGMANAGER
+              EasyPG Manager
             </span>
           </div>
         </div>

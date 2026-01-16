@@ -41,6 +41,7 @@ module.exports = {
 
      backgroundImage: {
         'dashboard-gradient': 'linear-gradient(to bottom, #D1FAE5, #FEF3C7, #FFFFFF)',
+        'background-gradient': 'linear-gradient(to top, #ffff, #b4b4b4 , #414141)',
         'card-gradient': 'linear-gradient(to bottom, #FEF3C7, #D97706)',
         'progress-gradient': 'linear-gradient(to right, #D1FAE5, #FEF3C7, #FFFFFF)'
      },

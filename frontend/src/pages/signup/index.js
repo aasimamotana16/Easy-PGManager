@@ -38,7 +38,8 @@ const SignUp = () => {
   const [otpMessage, setOtpMessage] = useState("");
 
   const validateEmail = (email) => {
-    const re = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@(([^<>()[\]\\.,;:\s@"]+\.)+[^<>()[\]\\.,;:\s@"]{2,})$/i;
+    const re =
+      /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@(([^<>()[\]\\.,;:\s@"]+\.)+[^<>()[\]\\.,;:\s@"]{2,})$/i;
     return re.test(String(email).toLowerCase());
   };
 
@@ -107,19 +108,22 @@ const SignUp = () => {
           localStorage.setItem("userId", userObj._id);
           localStorage.setItem("role", role);
           localStorage.setItem("isLoggedIn", "true");
-          if (response.data.token) localStorage.setItem("token", response.data.token);
+          if (response.data.token)
+            localStorage.setItem("token", response.data.token);
           window.dispatchEvent(new Event("storage"));
         }
 
         alert("Sign up successful!");
-        // ✅ Redirect to HOME page
         window.location.href = "/";
       } else {
         alert(response?.data?.message || "Sign up failed.");
       }
     } catch (error) {
       console.error("SignUp Error:", error);
-      alert(error.response?.data?.message || "Something went wrong. Please try again.");
+      alert(
+        error.response?.data?.message ||
+          "Something went wrong. Please try again."
+      );
     } finally {
       setLoading(false);
     }
@@ -141,23 +145,25 @@ const SignUp = () => {
           />
         ))}
 
-        <div className="relative z-10 w-full max-w-xs sm:w-4/5 md:max-w-lg lg:max-w-xl flex flex-col justify-center h-full mx-auto lg:mx-0">
-          <CFormCard className="bg-white border border-border rounded-xl shadow-lg p-5 sm:p-8 md:p-10 w-full">
+        {/* WIDTH INCREASED HERE */}
+        <div className="relative z-10 w-full max-w-sm sm:w-4/5 md:max-w-xl lg:max-w-2xl flex flex-col justify-center h-full mx-auto lg:mx-0">
+          {/* FONT SIZE REDUCED HERE */}
+          <CFormCard className="bg-white border border-border rounded-md shadow-lg p-5 sm:p-8 md:p-10 w-full text-sm">
             <div className="mb-2 flex justify-center">
               <img
                 src="/logos/logo1.png"
                 alt="EasyPG Manager Logo"
-                className="h-12 md:h-20 w-auto"
+                className="h-10 md:h-16 w-auto"
               />
             </div>
 
             {!otpStage ? (
               <>
-                <h1 className="text-md sm:text-2xl font-bold mb-4 text-primary text-center">
+                <h1 className="text-sm sm:text-lg font-semibold mb-3 text-primary text-center">
                   Create Your EasyPG Manager Account
                 </h1>
 
-                <div className="flex flex-col gap-2 overflow-hidden">
+                <div className="flex flex-col gap-3 overflow-hidden">
                   <div className="flex gap-2 mb-2">
                     <CButton
                       size="sm"
@@ -177,11 +183,43 @@ const SignUp = () => {
                     </CButton>
                   </div>
 
-                  <CInput label="Full Name" value={name} onChange={(e) => setName(e.target.value)} />
-                  <CInput label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-                  <CInput label="Phone Number" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
-                  <CInput label="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
-                  <CInput label="Confirm Password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+                  <CInput
+                    label="Full Name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                  />
+
+                  <div className="flex flex-col sm:flex-row gap-6">
+                    <CInput
+                      label="Email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                    />
+                    <CInput
+                      label="Phone Number"
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row gap-6">
+                    <CInput
+                      label="Password"
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                    />
+                    <CInput
+                      label="Confirm Password"
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) =>
+                        setConfirmPassword(e.target.value)
+                      }
+                    />
+                  </div>
 
                   <label className="flex items-start gap-2 text-xs text-gray-600 mt-2 cursor-pointer">
                     <input
@@ -192,8 +230,19 @@ const SignUp = () => {
                     />
                     <span>
                       I agree to the{" "}
-                      <span className="text-primary font-medium hover:underline" onClick={() => navigate("/terms")}>Terms & Conditions</span> and{" "}
-                      <span className="text-primary font-medium hover:underline" onClick={() => navigate("/privacy")}>Privacy Policy</span>
+                      <span
+                        className="text-primary font-medium hover:underline"
+                        onClick={() => navigate("/terms")}
+                      >
+                        Terms & Conditions
+                      </span>{" "}
+                      and{" "}
+                      <span
+                        className="text-primary font-medium hover:underline"
+                        onClick={() => navigate("/privacy")}
+                      >
+                        Privacy Policy
+                      </span>
                     </span>
                   </label>
 
@@ -201,7 +250,7 @@ const SignUp = () => {
                     type="button"
                     fullWidth
                     variant="contained"
-                    className="mt-2 py-2 text-base rounded-md font-medium"
+                    className="mt-2 py-2 text-sm rounded-md font-medium"
                     onClick={handleSendOtp}
                     disabled={loading}
                   >
@@ -211,14 +260,25 @@ const SignUp = () => {
               </>
             ) : (
               <>
-                <div className="flex items-center gap-2 mb-4 cursor-pointer" onClick={() => setOtpStage(false)}>
-                  <span className="text-xl font-bold">←</span>
-                  <span className="text-sm text-primary font-medium">Back</span>
+                <div
+                  className="flex items-center gap-2 mb-4 cursor-pointer"
+                  onClick={() => setOtpStage(false)}
+                >
+                  <span className="text-lg font-bold">←</span>
+                  <span className="text-xs text-primary font-medium">
+                    Back
+                  </span>
                 </div>
 
-                <h1 className="text-2xl font-bold mb-5 text-primary text-center">Verify OTP</h1>
+                <h1 className="text-lg font-semibold mb-4 text-primary text-center">
+                  Verify OTP
+                </h1>
 
-                {otpMessage && <p className="text-center text-sm mb-2">{otpMessage}</p>}
+                {otpMessage && (
+                  <p className="text-center text-xs mb-2">
+                    {otpMessage}
+                  </p>
+                )}
 
                 <CInput
                   label="Enter OTP"
@@ -230,7 +290,7 @@ const SignUp = () => {
                   type="button"
                   fullWidth
                   variant="contained"
-                  className="mt-2 py-2 text-base rounded-md font-medium"
+                  className="mt-2 py-2 text-sm rounded-md font-medium"
                   onClick={handleVerifyOtpAndSignup}
                   disabled={loading}
                 >
@@ -239,13 +299,23 @@ const SignUp = () => {
               </>
             )}
 
-            <p className="text-center mt-2 text-sm text-text-secondary">
+            <p className="text-center mt-2 text-xs text-text-secondary">
               Already have an account?{" "}
-              <span onClick={() => navigate("/login")} className="font-semibold text-primary cursor-pointer hover:underline">Login</span>
+              <span
+                onClick={() => navigate("/login")}
+                className="font-semibold text-primary cursor-pointer hover:underline"
+              >
+                Login
+              </span>
             </p>
 
             <div className="mt-3 text-center">
-              <span onClick={() => navigate("/")} className="text-sm text-gray-500 cursor-pointer hover:text-primary hover:underline">← Back to Home</span>
+              <span
+                onClick={() => navigate("/")}
+                className="text-xs text-gray-500 cursor-pointer hover:text-primary hover:underline"
+              >
+                ← Back to Home
+              </span>
             </div>
           </CFormCard>
         </div>

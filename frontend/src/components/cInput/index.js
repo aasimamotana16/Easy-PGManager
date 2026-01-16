@@ -9,12 +9,12 @@ const CInput = ({
   className = "",
   rows = 3,
   name,
-  options = [], // 👈 ADD THIS
+  options = [],
 }) => {
   return (
     <div className="flex flex-col gap-1">
       {label && (
-        <label className="text-sm font-medium text-text-secondary">
+        <label className="text-xs font-medium text-text-secondary">
           {label}
         </label>
       )}
@@ -25,9 +25,11 @@ const CInput = ({
           name={name}
           value={value}
           onChange={onChange}
-          className={`w-full px-3 py-2 border border-border bg-card text-text-secondary
-            focus:outline-none focus:ring-2 focus:ring-amber transition
-            rounded-sm ${className}`}
+          className={`w-full h-12 px-3 py-2 text-sm
+            border border-border bg-card text-text-secondary
+            rounded-md
+            focus:outline-none focus:ring-0 focus:border-primary
+            transition ${className}`}
         >
           {options.map((opt) => (
             <option key={opt.value} value={opt.value}>
@@ -42,9 +44,11 @@ const CInput = ({
           onChange={onChange}
           placeholder={placeholder}
           rows={rows}
-          className={`w-full px-3 py-2 border border-border bg-card text-text-secondary
-            focus:outline-none focus:ring-2 focus:ring-amber transition
-            rounded-sm ${className}`}
+          className={`w-full px-3 py-2 text-sm
+            border border-border bg-card text-text-secondary
+            rounded-md
+            focus:outline-none focus:ring-0 focus:border-primary
+            transition ${className}`}
         />
       ) : (
         <input
@@ -53,9 +57,11 @@ const CInput = ({
           value={value}
           onChange={onChange}
           placeholder={placeholder}
-          className={`w-full px-3 py-2 border border-border bg-card text-text-secondary
-            focus:outline-none focus:ring-2 focus:ring-amber transition
-            rounded-sm ${className}`}
+          className={`w-full h-10 px-12 py-2  text-sm
+            border border-border bg-card text-text-secondary
+            rounded-md
+            focus:outline-none focus:ring-0 focus:border-primary
+            transition ${className}`}
         />
       )}
     </div>
