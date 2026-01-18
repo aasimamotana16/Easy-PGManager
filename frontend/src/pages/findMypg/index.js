@@ -1,5 +1,5 @@
 // src/pages/findMypg/index.jsx
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 
 import Navbar from "../../components/navbar";
@@ -15,6 +15,19 @@ export default function FindMyPG() {
 
   // ✅ City from query param
   const city = new URLSearchParams(locationObj.search).get("city");
+  
+  // 👇 PASTE THE NEW CODE HERE (Line 18ish) [cite: 2026-01-06]
+  const [pgList, setPgList] = useState([]); 
+
+  useEffect(() => {
+    fetch("http://localhost:5000/api/pg/all")
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.success) setPgList(json.data);
+      })
+      .catch((err) => console.error("Error:", err));
+  }, []);
+  // 👆 END OF NEW CODE
 
   const [filters, setFilters] = useState({
     lookingFor: "Any",
@@ -102,7 +115,7 @@ export default function FindMyPG() {
   /* ================= SORT + FILTER ================= */
 
   const filteredPGs = useMemo(() => {
-    let list = applyFilters(pgdetails);
+    let list = applyFilters(pgList);
 
     if (filters.sortBy === "priceAsc") {
       list = [...list].sort((a, b) => a.rent - b.rent);
