@@ -1,3 +1,4 @@
+require('dotenv').config(); // MUST BE LINE 1 [cite: 2026-01-06]
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');

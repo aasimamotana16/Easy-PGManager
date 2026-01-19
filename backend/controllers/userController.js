@@ -25,8 +25,7 @@ const registerUser = async (req, res) => {
       fullName,
       email,
       password: hashedPassword,
-      profileCompletion: 20, // Initial status based on your model
-      // Initialize sub-objects to avoid frontend mapping errors
+      profileCompletion: 20,
       emergencyContact: {
         contactName: "",
         relationship: "",
@@ -50,23 +49,31 @@ const registerUser = async (req, res) => {
 // @desc    Authenticate user
 const loginUser = async (req, res) => {
   const { email, password } = req.body;
+
   try {
-    const user = await User.findOne({ email });
+    // 1. Find user and handle email case-sensitivity [cite: 2026-01-06]
+    const user = await User.findOne({ email: email.toLowerCase() });
+
+    // 2. Validate user existence and password [cite: 2026-01-06]
     if (user && (await bcrypt.compare(password, user.password))) {
+      
+      // 3. Return response with fallback for name/fullName
       res.json({
         _id: user._id,
-        fullName: user.fullName,
+        fullName: user.fullName || user.name || "User", 
         email: user.email,
         token: generateToken(user._id),
       });
     } else {
+      // 4. Return 401 instead of crashing with 500 [cite: 2026-01-06]
       res.status(401).json({ message: "Invalid email or password" });
     }
   } catch (error) {
+    // Log the actual error to your terminal to debug JWT or DB issues [cite: 2026-01-06]
+    console.error("Login Error:", error.message);
     res.status(500).json({ message: "Server error during login" });
   }
 };
-
 // @desc    Get Dynamic Dashboard Data [cite: 2026-01-06]
 const getUserDashboard = async (req, res) => {
   try {
@@ -74,7 +81,7 @@ const getUserDashboard = async (req, res) => {
     if (!user) return res.status(404).json({ message: "User not found" });
 
     const dashboardData = {
-      fullName: user.fullName,
+      fullName: user.fullName || user.name, // Support both keys
       profileCompletion: user.profileCompletion || 0,
       currentBooking: {
         pgName: user.bookedPgName || "No PG Booked",
@@ -95,7 +102,6 @@ const getUserDashboard = async (req, res) => {
 };
 
 // @desc    Get Full Profile Details [cite: 2026-01-06]
-// Updated to include City, State, and properly nested Emergency Contact
 const getUserProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select("-password");
@@ -104,14 +110,14 @@ const getUserProfile = async (req, res) => {
     res.status(200).json({ 
       success: true, 
       data: {
-        fullName: user.fullName,
+        fullName: user.fullName || user.name, // Fixed empty name issue
         email: user.email,
         phone: user.phone || "Not Set",
         city: user.city || "Not Set",
         state: user.state || "Not Set",
         role: user.role || "user",
+        profilePicture: user.profilePicture || "",
         profileCompletion: user.profileCompletion || 0,
-        // Map the nested object from your userModel [cite: 2026-01-01]
         emergencyContact: {
           contactName: user.emergencyContact?.contactName || "Not Set",
           relationship: user.emergencyContact?.relationship || "Not Set",
@@ -124,30 +130,59 @@ const getUserProfile = async (req, res) => {
   }
 };
 
-// @desc    Update User Profile [cite: 2026-01-07]
-// New function to handle the "Edit Info" buttons in your UI
+// @desc    Update User Profile (Edit Info Button) [cite: 2026-01-07]
 const updateUserProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    // Update basic info [cite: 2026-01-06]
     user.fullName = req.body.fullName || user.fullName;
     user.phone = req.body.phone || user.phone;
     user.city = req.body.city || user.city;
     user.state = req.body.state || user.state;
 
-    // Update nested emergency contact if provided [cite: 2026-01-01]
     if (req.body.emergencyContact) {
       user.emergencyContact.contactName = req.body.emergencyContact.contactName || user.emergencyContact.contactName;
       user.emergencyContact.relationship = req.body.emergencyContact.relationship || user.emergencyContact.relationship;
       user.emergencyContact.phoneNumber = req.body.emergencyContact.phoneNumber || user.emergencyContact.phoneNumber;
     }
 
+    // Dynamic Profile Completion Logic
+    const fields = [user.phone, user.city, user.state, user.emergencyContact.contactName];
+    const filledCount = fields.filter(f => f && f !== "Not Set").length;
+    user.profileCompletion = 20 + (filledCount * 20); // Base 20% + 20% per field
+
     const updatedUser = await user.save();
     res.status(200).json({ success: true, data: updatedUser });
   } catch (error) {
     res.status(500).json({ message: "Failed to update profile" });
+  }
+};
+
+// @desc    Upload Profile Picture [cite: 2026-01-07]
+const updateProfilePicture = async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ message: "No file uploaded" });
+    
+    const user = await User.findById(req.user._id);
+    user.profilePicture = `/uploads/profiles/${req.file.filename}`;
+    await user.save();
+
+    res.status(200).json({ success: true, profilePicture: user.profilePicture });
+  } catch (error) {
+    res.status(500).json({ message: "Error uploading picture" });
+  }
+};
+
+// @desc    Remove Profile Picture [cite: 2026-01-07]
+const removeProfilePicture = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    user.profilePicture = ""; 
+    await user.save();
+    res.status(200).json({ success: true, message: "Picture removed" });
+  } catch (error) {
+    res.status(500).json({ message: "Error removing picture" });
   }
 };
 
@@ -228,7 +263,9 @@ module.exports = {
   loginUser, 
   getUserDashboard,
   getUserProfile, 
-  updateUserProfile, // Added to exports
+  updateUserProfile,
+  updateProfilePicture, // Added for Upload Picture button
+  removeProfilePicture, // Added for Remove Picture button
   getMe,
   getMyAgreement,
   getMyDocuments,

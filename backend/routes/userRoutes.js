@@ -5,6 +5,8 @@ const {
   loginUser, 
   getUserProfile, 
   updateUserProfile,
+  updateProfilePicture, // Added for Upload Picture button [cite: 2026-01-07]
+  removeProfilePicture, // Added for Remove Picture button [cite: 2026-01-07]
   getUserDashboard, 
   getMe,
   getMyAgreement,
@@ -24,10 +26,21 @@ router.get("/dashboard-stats", protect, getUserDashboard);
 
 // Route for the profile page
 router.get("/profile", protect, getUserProfile);
+
 // PUT: Handles the "Edit Info" button clicks to save to DB [cite: 2026-01-07]
 router.put("/profile/update", protect, updateUserProfile);
+
+// Routes for Profile Picture management [cite: 2026-01-07]
+// Matches the "Upload Picture" button - uses Multer for the 'image' field
+router.post("/profile/picture", protect, upload.single("image"), updateProfilePicture);
+
+// Matches the "Remove Picture" button
+router.delete("/profile/picture", protect, removeProfilePicture);
+
 // This allows ANY logged-in user (Owner, Tenant, or Admin) to get their own data 
 router.get("/me", protect, getMe);
+
+router.get("/agreement", protect, getMe); // Fixed: ensure this matches your intent
 
 router.get("/agreement", protect, getMyAgreement);
 
@@ -36,4 +49,5 @@ router.get("/documents", protect, getMyDocuments);
 
 // In userRoutes.js
 router.post("/upload-doc", protect, upload.single("document"), uploadUserDocument);
+
 module.exports = router;
