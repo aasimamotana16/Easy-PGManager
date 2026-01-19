@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import CButton from "../../../components/cButton"; // default import
+import { FaFileContract } from "react-icons/fa";
+import CButton from "../../../components/cButton";
 
 const sampleAgreements = [
   {
@@ -47,105 +48,97 @@ const AgreementPage = () => {
   );
 
   return (
-    <div className="p-6 bg-dashboard-gradient min-h-screen rounded-2xl">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row items-center justify-between mb-6">
-        <h2 className="text-3xl font-bold text-primary mb-4 md:mb-0">
-          Agreements
-        </h2>
+    <div className="p-6 bg-gray-100 min-h-screen space-y-6">
+
+      {/* HEADER CARD */}
+      <div className="bg-white p-6 rounded-md shadow flex justify-between items-center">
+        <div className="flex items-center gap-3">
+          <FaFileContract className="text-orange-500 text-2xl" />
+          <div>
+            <h2 className="text-2xl font-bold text-gray-800">
+              Agreements
+            </h2>
+            <p className="text-gray-500 text-sm">
+              View and manage tenant rental agreements
+            </p>
+          </div>
+        </div>
+
         <CButton
-          className="bg-amber-500 text-white px-4 py-2 rounded-md hover:bg-amber-600"
+          className="bg-primary text-white px-4 py-2 rounded-md"
           onClick={() => navigate("/owner/dashboard")}
         >
           Add New Agreement
         </CButton>
       </div>
 
-      {/* Search / Filter */}
-      <div className="flex flex-col md:flex-row items-center gap-4 mb-6">
+      {/* SEARCH / FILTER CARD */}
+      <div className="bg-white p-4 rounded-md shadow flex flex-col md:flex-row gap-4">
         <input
           type="text"
           placeholder="Search by Tenant"
-          className="px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-amber-500 flex-1"
+          className="border rounded-md px-4 py-2 flex-1"
           value={tenantSearch}
           onChange={(e) => setTenantSearch(e.target.value)}
         />
         <input
           type="text"
-          placeholder="Search by Property/Room"
-          className="px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-amber-500 flex-1"
+          placeholder="Search by Property / Room"
+          className="border rounded-md px-4 py-2 flex-1"
           value={propertySearch}
           onChange={(e) => setPropertySearch(e.target.value)}
         />
-        <CButton
-          className="bg-amber-500 text-white px-5 py-2 rounded-md hover:bg-amber-600"
-          onClick={() => {}}
-        >
+        <CButton className="bg-orange-500 text-white px-5 py-2">
           Search
         </CButton>
       </div>
 
-      {/* Agreements Table */}
-      <div className="overflow-x-auto bg-white rounded-lg shadow-md">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-100">
+      {/* AGREEMENTS TABLE */}
+      <div className="bg-white rounded-md shadow overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="bg-gray-50 border-b">
             <tr>
-              <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700">
-                ID
-              </th>
-              <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700">
-                Tenant
-              </th>
-              <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700">
-                Property / Room
-              </th>
-              <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700">
-                Start Date
-              </th>
-              <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700">
-                End Date
-              </th>
-              <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700">
-                Rent
-              </th>
-              <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700">
-                Status
-              </th>
-              <th className="px-4 py-2 text-center text-sm font-semibold text-gray-700">
-                Actions
-              </th>
+              <th className="p-4 text-left font-semibold">ID</th>
+              <th className="p-4 text-left font-semibold">Tenant</th>
+              <th className="p-4 text-left font-semibold">Property / Room</th>
+              <th className="p-4 text-left font-semibold">Start Date</th>
+              <th className="p-4 text-left font-semibold">End Date</th>
+              <th className="p-4 text-left font-semibold">Rent</th>
+              <th className="p-4 text-center font-semibold">Status</th>
+              <th className="p-4 text-center font-semibold">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200">
+
+          <tbody>
             {filteredAgreements.length > 0 ? (
               filteredAgreements.map((ag) => (
-                <tr key={ag.id}>
-                  <td className="px-4 py-2 text-sm text-gray-800">{ag.id}</td>
-                  <td className="px-4 py-2 text-sm text-gray-800">{ag.tenant}</td>
-                  <td className="px-4 py-2 text-sm text-gray-800">
+                <tr key={ag.id} className="border-b last:border-none">
+                  <td className="p-4">{ag.id}</td>
+                  <td className="p-4">{ag.tenant}</td>
+                  <td className="p-4">
                     {ag.property} / {ag.room}
                   </td>
-                  <td className="px-4 py-2 text-sm text-gray-800">{ag.startDate}</td>
-                  <td className="px-4 py-2 text-sm text-gray-800">{ag.endDate}</td>
-                  <td className="px-4 py-2 text-sm text-gray-800">₹{ag.rent}</td>
-                  <td
-                    className={`px-4 py-2 text-sm font-semibold ${
-                      ag.status === "Active" ? "text-green-600" : "text-red-600"
-                    }`}
-                  >
-                    {ag.status}
+                  <td className="p-4">{ag.startDate}</td>
+                  <td className="p-4">{ag.endDate}</td>
+                  <td className="p-4 font-semibold">
+                    ₹{ag.rent}
                   </td>
-                  <td className="px-4 py-2 text-center space-x-2">
-                    <CButton
-                      className="bg-blue-500 text-white px-3 py-1 rounded-md hover:bg-blue-600"
-                      onClick={() => navigate("/owner/dashboard")}
+                  <td className="p-4 text-center">
+                    <span
+                      className={`px-3 py-1 rounded-md text-xs font-semibold ${
+                        ag.status === "Active"
+                          ? "bg-green-100 text-green-700"
+                          : "bg-red-100 text-red-700"
+                      }`}
                     >
+                      {ag.status}
+                    </span>
+                  </td>
+                  <td className="p-4 flex justify-center gap-2">
+                    <CButton className="px-3 py-1">
                       View
                     </CButton>
-                    <CButton
-                      className="bg-gray-500 text-white px-3 py-1 rounded-md hover:bg-gray-600"
-                      onClick={() => navigate("/owner/dashboard")}
-                    >
+                    <CButton className="px-3 py-1">
                       Download
                     </CButton>
                   </td>
@@ -153,10 +146,7 @@ const AgreementPage = () => {
               ))
             ) : (
               <tr>
-                <td
-                  colSpan={8}
-                  className="px-4 py-6 text-center text-gray-500 text-sm"
-                >
+                <td colSpan={8} className="text-center py-10 text-gray-500">
                   No agreements found.
                 </td>
               </tr>

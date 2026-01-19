@@ -1,181 +1,214 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { FaEye, FaReply, FaLifeRing } from "react-icons/fa";
 import CButton from "../../../components/cButton";
-import { FaEye, FaReply } from "react-icons/fa"; // Icons for View and Reply
 
-// Sample support tickets
+/* Sample support tickets with tracking */
 const sampleTickets = [
   {
     id: 1,
     subject: "PG listing issue",
     status: "Open",
     date: "2026-01-10",
+    description: "PG approved but not visible in search.",
   },
   {
     id: 2,
     subject: "Payment not updating",
     status: "Closed",
     date: "2026-01-08",
+    description: "Tenant paid but earnings not updated.",
   },
   {
     id: 3,
     subject: "Tenant information error",
-    status: "Open",
+    status: "In Progress",
     date: "2026-01-12",
+    description: "Tenant details showing incorrect data.",
   },
 ];
 
 const SupportPage = () => {
-  const navigate = useNavigate();
   const [tickets, setTickets] = useState(sampleTickets);
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
   const [search, setSearch] = useState("");
+  const [selectedTicket, setSelectedTicket] = useState(null);
 
-  // Filter tickets dynamically based on search input
   const filteredTickets = tickets.filter((t) =>
     t.subject.toLowerCase().includes(search.toLowerCase())
   );
 
-  // Handle ticket creation
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!subject || !message) return;
+
     const newTicket = {
       id: tickets.length + 1,
       subject,
       status: "Open",
       date: new Date().toISOString().split("T")[0],
+      description: message,
     };
+
     setTickets([newTicket, ...tickets]);
     setSubject("");
     setMessage("");
   };
 
   return (
-    <div className="p-6 bg-dashboard-gradient min-h-screen rounded-2xl">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row items-center justify-between mb-6">
-        <h2 className="text-3xl font-bold text-primary mb-4 md:mb-0">Support</h2>
-        <CButton
-          className="bg-amber-500 text-white px-4 py-2 rounded-md hover:bg-amber-600"
-          onClick={() => navigate("/owner/dashboard")}
-        >
-          Add New Ticket
-        </CButton>
+    <div className="p-6 bg-gray-100 min-h-screen space-y-6">
+
+      {/* HEADER */}
+      <div className="bg-white p-6 rounded-md shadow flex items-center gap-3">
+        <FaLifeRing className="text-primary text-2xl" />
+        <div>
+          <h1 className="text-2xl font-bold text-primary">Support</h1>
+          <p className="text-gray-500 text-sm">
+            Raise and track your support tickets
+          </p>
+        </div>
       </div>
 
-      {/* Create Ticket Form */}
-      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-        <h3 className="text-xl font-semibold mb-4">Create a Support Ticket</h3>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      {/* CREATE TICKET */}
+      <div className="bg-white rounded-md shadow p-6">
+        <h2 className="text-lg font-semibold mb-4 text-dark">Ask for Help</h2>
+
+        <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <input
             type="text"
-            placeholder="Subject"
-            className="px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500"
+            placeholder="Ticket Subject"
+            className="border rounded-md px-4 py-2 focus:ring-2 focus:ring-orange-400 outline-none"
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
           />
+
           <textarea
             placeholder="Describe your issue..."
-            className="px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500"
             rows={4}
+            className="border rounded-md px-4 py-2 focus:ring-2 focus:ring-orange-400 outline-none md:col-span-2"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
           />
-          <CButton
-            type="submit"
-            className="bg-amber-500 text-white px-5 py-2 rounded-md hover:bg-amber-600 w-max"
-          >
-            Submit Ticket
+
+          <CButton className="bg-primary text-white px-6 py-2 rounded-md w-max">
+            Submit Request
           </CButton>
         </form>
       </div>
 
-      {/* Search Bar */}
-      <div className="flex flex-col md:flex-row items-center gap-4 mb-4">
+      {/* SEARCH */}
+      <div className="bg-white rounded-md shadow p-4 flex gap-4">
         <input
           type="text"
           placeholder="Search tickets by subject"
-          className="px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 flex-1"
+          className="border rounded-md px-4 py-2 flex-1 focus:ring-2 focus:ring-orange-400 outline-none"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        <CButton
-          className="bg-amber-500 text-white px-4 py-2 rounded-md hover:bg-amber-600"
-          onClick={() => {}}
-        >
-          Search
-        </CButton>
+        <CButton className="bg-primary text-white px-6 py-2">Search</CButton>
       </div>
 
-      {/* Tickets Table */}
-      <div className="overflow-x-auto bg-white rounded-lg shadow-md">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-100">
+      {/* TICKETS TABLE */}
+      <div className="bg-white rounded-md shadow overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="bg-gray-50 border-b">
             <tr>
-              <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700">
-                ID
-              </th>
-              <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700">
-                Subject
-              </th>
-              <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700">
-                Status
-              </th>
-              <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700">
-                Date
-              </th>
-              <th className="px-4 py-2 text-center text-sm font-semibold text-gray-700">
-                Actions
-              </th>
+              <th className="px-5 py-3 text-left">ID</th>
+              <th className="px-5 py-3 text-left">Subject</th>
+              <th className="px-5 py-3 text-left">Status</th>
+              <th className="px-5 py-3 text-left">Date</th>
+              <th className="px-5 py-3 text-center">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200">
-            {filteredTickets.length > 0 ? (
-              filteredTickets.map((t) => (
-                <tr key={t.id}>
-                  <td className="px-4 py-2 text-sm text-gray-800">{t.id}</td>
-                  <td className="px-4 py-2 text-sm text-gray-800">{t.subject}</td>
-                  <td
-                    className={`px-4 py-2 text-sm font-semibold ${
-                      t.status === "Open" ? "text-green-600" : "text-red-600"
-                    }`}
+
+          <tbody>
+            {filteredTickets.map((t) => (
+              <tr key={t.id} className="border-b">
+                <td className="px-5 py-4">{t.id}</td>
+                <td className="px-5 py-4">{t.subject}</td>
+                <td className="px-5 py-4">
+                  <StatusBadge status={t.status} />
+                </td>
+                <td className="px-5 py-4">{t.date}</td>
+                <td className="px-5 py-4 text-center">
+                  <CButton
+                    className="bg-dark text-white px-3 py-1 rounded-md flex items-center gap-1 mx-auto"
+                    onClick={() => setSelectedTicket(t)}
                   >
-                    {t.status}
-                  </td>
-                  <td className="px-4 py-2 text-sm text-gray-800">{t.date}</td>
-                  <td className="px-4 py-2 text-center space-x-2">
-                    <CButton
-                      className="bg-blue-500 text-white px-3 py-1 rounded-md hover:bg-blue-600 flex items-center gap-1"
-                      onClick={() => navigate("/owner/dashboard")}
-                    >
-                      <FaEye /> View
-                    </CButton>
-                    <CButton
-                      className="bg-gray-500 text-white px-3 py-1 rounded-md hover:bg-gray-600 flex items-center gap-1"
-                      onClick={() => navigate("/owner/dashboard")}
-                    >
-                      <FaReply /> Reply
-                    </CButton>
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td
-                  colSpan={5}
-                  className="px-4 py-6 text-center text-gray-500 text-sm"
-                >
-                  No tickets found.
+                    <FaEye /> View
+                  </CButton>
                 </td>
               </tr>
-            )}
+            ))}
           </tbody>
         </table>
       </div>
+
+      {/* TRACKING MODAL */}
+      {selectedTicket && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-md p-6 w-full max-w-lg">
+            <h2 className="text-xl font-bold text-primary mb-2">
+              Ticket #{selectedTicket.id}
+            </h2>
+            <p className="text-gray-600 mb-4">{selectedTicket.subject}</p>
+
+            <p className="text-sm mb-4">{selectedTicket.description}</p>
+
+            {/* STATUS TRACKING */}
+            <div className="flex justify-between items-center mb-6">
+              <StatusStep label="Open" active />
+              <Divider />
+              <StatusStep label="In Progress" active={selectedTicket.status !== "Open"} />
+              <Divider />
+              <StatusStep label="Closed" active={selectedTicket.status === "Closed"} />
+            </div>
+
+            <CButton
+              className="bg-primary text-white px-4 py-2 rounded-md w-full"
+              onClick={() => setSelectedTicket(null)}
+            >
+              Close
+            </CButton>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
+
+/* --------- COMPONENTS --------- */
+
+const StatusBadge = ({ status }) => (
+  <span
+    className={`px-3 py-1 rounded-md text-xs font-semibold ${
+      status === "Open"
+        ? "bg-green-100 text-green-700"
+        : status === "In Progress"
+        ? "bg-yellow-100 text-yellow-700"
+        : "bg-red-100 text-red-700"
+    }`}
+  >
+    {status}
+  </span>
+);
+
+const StatusStep = ({ label, active }) => (
+  <div className="flex flex-col items-center">
+    <div
+      className={`w-8 h-8 rounded-md flex items-center justify-center text-sm font-bold ${
+        active ? "bg-primary text-white" : "bg-gray-300 text-gray-600"
+      }`}
+    >
+      ✓
+    </div>
+    <span className="text-xs mt-1">{label}</span>
+  </div>
+);
+
+const Divider = () => (
+  <div className="flex-1 h-1 bg-gray-300 mx-2 rounded-md" />
+);
 
 export default SupportPage;
