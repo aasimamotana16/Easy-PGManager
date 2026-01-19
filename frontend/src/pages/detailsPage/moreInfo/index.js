@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { pgdetails, hosteldetails } from "../../../config/staticData";
+import { pgdetails } from "../../../config/staticData";
 import Navbar from "../../../components/navbar";
 import Footer from "../../../components/footer";
 import CButton from "../../../components/cButton";
@@ -18,7 +18,7 @@ const PGFullDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const pg = [...pgdetails, ...hosteldetails].find(
+  const pg = [...pgdetails].find(
     (item) => item.id === Number(id)
   );
 

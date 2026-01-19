@@ -4,7 +4,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import Navbar from "../../../components/navbar";
 import Footer from "../../../components/footer";
 import CButton from "../../../components/cButton";
-import { pgdetails, hosteldetails } from "../../../config/staticData";
+import { pgdetails } from "../../../config/staticData";
 
 const Agreement = ({ user }) => {
   const { id } = useParams();
@@ -17,7 +17,7 @@ const Agreement = ({ user }) => {
   }
 
   // Find property by ID
-  const property = [...pgdetails, ...hosteldetails].find(
+  const property = [...pgdetails].find(
     (item) => item.id === parseInt(id)
   );
 

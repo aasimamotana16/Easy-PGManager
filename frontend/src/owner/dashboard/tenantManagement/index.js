@@ -8,7 +8,6 @@ const PG_LIST = [
   { id: 1, name: "Green Villa" },
   { id: 2, name: "Sunshine Residency" },
   { id: 3, name: "Metro Living" },
-  { id: 4, name: "Girly hostel" },
 ];
 
 const Tenants = () => {
@@ -124,7 +123,7 @@ const Tenants = () => {
             <tr>
               <th className="p-4 text-left font-semibold">Name</th>
               <th className="p-4 text-left font-semibold">Phone</th>
-              <th className="p-4 text-left font-semibold">PG / Hostel</th>
+              <th className="p-4 text-left font-semibold">PG </th>
               <th className="p-4 text-left font-semibold">Room</th>
               <th className="p-4 text-center font-semibold">Persons</th>
               <th className="p-4 text-center font-semibold">Status</th>
