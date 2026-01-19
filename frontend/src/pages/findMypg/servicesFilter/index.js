@@ -11,6 +11,7 @@ export default function Filters({
   filters,
   handleFilterChange,
   toggleAmenity,
+  applyFilters, // 👈 new prop
 }) {
   return (
     <div className="bg-white p-8 sm:p-10 rounded-2xl shadow-xl space-y-12 mb-24">
@@ -93,13 +94,25 @@ export default function Filters({
         </div>
       </div>
 
-      {/* Sort & Reset */}
-             <CButton
+      {/* Submit & Reset */}
+      <div className="flex flex-col sm:flex-row gap-4 pt-4">
+        <CButton
           variant="contained"
+          onClick={applyFilters}
+          className="w-full sm:w-auto"
+        >
+          Apply Filters
+        </CButton>
+
+        <CButton
+          variant="outlined"
           onClick={() => handleFilterChange("reset")}
+          className="w-full sm:w-auto"
         >
           Reset Filters
         </CButton>
       </div>
+
+    </div>
   );
 }
