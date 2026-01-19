@@ -6,13 +6,14 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: [true, "Please add a full name"],
     },
-    // Adding name as a virtual or alias if your DB uses it interchangeably
+    // Supporting existing Atlas data that uses "name"
     name: { type: String },
 
     email: {
       type: String,
       required: [true, "Please add an email"],
       unique: true,
+      lowercase: true, // Ensures login works regardless of case [cite: 2026-01-06]
     },
     password: {
       type: String,
@@ -20,11 +21,12 @@ const userSchema = new mongoose.Schema(
     },
     phone: {
       type: String,
-      required: [true, "Please add a phone number"],
+      // Removed "required: true" for now so existing users without phone 
+      // can still login to update it
+      default: "Not Set",
     },
-    // Matches "City" and "State" fields in UI
-    city: { type: String, default: "" },
-    state: { type: String, default: "" },
+    city: { type: String, default: "Not Set" },
+    state: { type: String, default: "Not Set" },
     address: { type: String },
     role: {
       type: String,
@@ -34,14 +36,12 @@ const userSchema = new mongoose.Schema(
       lowercase: true,
     },
 
-    // Matches the "Profile Completion" UI
     profileCompletion: {
       type: Number,
       default: 20, 
     },
 
-    // Matches the "Emergency Contact" section
-    // Note: I kept these in camelCase as requested [cite: 2026-01-01]
+    // Kept in camelCase as requested [cite: 2026-01-01]
     emergencyContact: {
       contactName: { type: String, default: "" },
       relationship: { type: String, default: "" },
@@ -52,11 +52,14 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    // Social Links
     facebook: { type: String, default: "#" },
     instagram: { type: String, default: "#" },
     linkedin: { type: String, default: "#" },
     twitter: { type: String, default: "#" },
-    profileImage: { type: String, default: "/images/profileImages/profile1.jpg" },
+
+    // FIX: Renamed to profilePicture to match Controller [cite: 2026-01-07]
+    profilePicture: { type: String, default: "" },
 
     // --- DOCUMENT FIELDS FOR DASHBOARD ---
     idDocument: {
@@ -68,7 +71,7 @@ const userSchema = new mongoose.Schema(
       fileUrl: { type: String, default: "" },
     },
     rentalAgreementCopy: {
-      status: { type: String, enum: ["Pending", "Uploaded"], default: "Uploaded" }, 
+      status: { type: String, enum: ["Pending", "Uploaded"], default: "Pending" }, 
       fileUrl: { type: String, default: "" },
       uploadedAt: { type: Date, default: Date.now },
     }
