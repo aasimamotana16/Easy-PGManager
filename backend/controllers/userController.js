@@ -1,6 +1,8 @@
 const User = require("../models/userModel");
+const Agreement = require("../models/agreementModel");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
+const mongoose = require("mongoose");
 
 // Helper: Generate JWT [cite: 2026-01-06]
 const generateToken = (id) => {
@@ -23,7 +25,13 @@ const registerUser = async (req, res) => {
       fullName,
       email,
       password: hashedPassword,
-      profileCompletion: 20, // Initial status
+      profileCompletion: 20, // Initial status based on your model
+      // Initialize sub-objects to avoid frontend mapping errors
+      emergencyContact: {
+        contactName: "",
+        relationship: "",
+        phoneNumber: ""
+      }
     });
 
     if (user) {
@@ -60,27 +68,23 @@ const loginUser = async (req, res) => {
 };
 
 // @desc    Get Dynamic Dashboard Data [cite: 2026-01-06]
-// This connects the Dashboard UI cards to your actual DB
 const getUserDashboard = async (req, res) => {
   try {
-    // Populate allows us to fetch the PG details linked to the user [cite: 2026-01-06]
     const user = await User.findById(req.user._id).select("-password");
-
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    // We structure this to match your UI cards exactly
     const dashboardData = {
       fullName: user.fullName,
-      profileCompletion: user.profileCompletion || 80, // Circular progress
+      profileCompletion: user.profileCompletion || 0,
       currentBooking: {
-        pgName: user.bookedPgName || "No PG Booked", // Replace "Shree Residency" [cite: 2026-01-06]
+        pgName: user.bookedPgName || "No PG Booked",
         roomNo: user.roomNo || "N/A",
         status: user.bookingStatus || "Inactive",
         monthlyRent: user.monthlyRent || 0,
       },
       nextPayment: {
         amount: user.monthlyRent || 0,
-        dueDate: user.paymentDueDate || "05 Jan 2026", // Dynamic due date
+        dueDate: user.paymentDueDate || "05 Jan 2026",
       }
     };
 
@@ -91,30 +95,62 @@ const getUserDashboard = async (req, res) => {
 };
 
 // @desc    Get Full Profile Details [cite: 2026-01-06]
-// This fills in the "Not Set" fields in your Profile UI
+// Updated to include City, State, and properly nested Emergency Contact
 const getUserProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select("-password");
-    if (user) {
-      res.status(200).json({ 
-        success: true, 
-        data: {
-          fullName: user.fullName,
-          email: user.email,
-          phone: user.phone || "Not Set",
-          state: user.state || "Not Set",
-          emergencyContact: user.emergencyContact || "Not Set"
-        } 
-      });
-    } else {
-      res.status(404).json({ message: "User not found" });
-    }
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    res.status(200).json({ 
+      success: true, 
+      data: {
+        fullName: user.fullName,
+        email: user.email,
+        phone: user.phone || "Not Set",
+        city: user.city || "Not Set",
+        state: user.state || "Not Set",
+        role: user.role || "user",
+        profileCompletion: user.profileCompletion || 0,
+        // Map the nested object from your userModel [cite: 2026-01-01]
+        emergencyContact: {
+          contactName: user.emergencyContact?.contactName || "Not Set",
+          relationship: user.emergencyContact?.relationship || "Not Set",
+          phoneNumber: user.emergencyContact?.phoneNumber || "Not Set"
+        }
+      } 
+    });
   } catch (error) {
     res.status(500).json({ message: "Error fetching profile" });
   }
 };
 
-// Add this function if you want a separate 'me' endpoint
+// @desc    Update User Profile [cite: 2026-01-07]
+// New function to handle the "Edit Info" buttons in your UI
+const updateUserProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    // Update basic info [cite: 2026-01-06]
+    user.fullName = req.body.fullName || user.fullName;
+    user.phone = req.body.phone || user.phone;
+    user.city = req.body.city || user.city;
+    user.state = req.body.state || user.state;
+
+    // Update nested emergency contact if provided [cite: 2026-01-01]
+    if (req.body.emergencyContact) {
+      user.emergencyContact.contactName = req.body.emergencyContact.contactName || user.emergencyContact.contactName;
+      user.emergencyContact.relationship = req.body.emergencyContact.relationship || user.emergencyContact.relationship;
+      user.emergencyContact.phoneNumber = req.body.emergencyContact.phoneNumber || user.emergencyContact.phoneNumber;
+    }
+
+    const updatedUser = await user.save();
+    res.status(200).json({ success: true, data: updatedUser });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to update profile" });
+  }
+};
+
 const getMe = async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select("-password");
@@ -124,10 +160,77 @@ const getMe = async (req, res) => {
   }
 };
 
+const getMyAgreement = async (req, res) => {
+  try {
+    const userId = new mongoose.Types.ObjectId(req.user._id);
+    const agreement = await Agreement.findOne({ userId: userId });
+    const user = await User.findById(userId);
+
+    if (!agreement) return res.status(404).json({ success: false, message: "No agreement found" });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        pgName: agreement.pgName || (user ? user.bookedPgName : "N/A"),
+        roomNo: agreement.roomNo || (user ? user.roomNo : "N/A"),
+        tenantName: user ? (user.name || user.fullName) : "N/A",
+        rentAmount: agreement.rentAmount,
+        securityDeposit: agreement.securityDeposit,
+        agreementId: agreement.agreementId,
+        startDate: agreement.startDate,
+        endDate: agreement.endDate,
+        status: agreement.signed ? "Active" : "Pending Signature"
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Error fetching agreement data" });
+  }
+};
+
+const getMyDocuments = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    res.status(200).json({
+      success: true,
+      data: {
+        idDocument: user.idDocument || { status: "Pending" },
+        aadharCard: user.aadharCard || { status: "Pending" },
+        rentalAgreementCopy: user.rentalAgreementCopy || { status: "Uploaded" }
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Error fetching documents" });
+  }
+};
+
+const uploadUserDocument = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    const fieldName = req.body.documentType; 
+
+    if (!req.file) return res.status(400).json({ message: "No file uploaded" });
+
+    user[fieldName] = {
+      status: "Uploaded",
+      fileUrl: `/uploads/documents/${req.file.filename}`,
+      uploadedAt: Date.now()
+    };
+
+    await user.save();
+    res.status(200).json({ success: true, data: user[fieldName] });
+  } catch (error) {
+    res.status(500).json({ message: "Upload failed" });
+  }
+};
+
 module.exports = { 
   registerUser, 
   loginUser, 
   getUserDashboard,
   getUserProfile, 
-  getMe
+  updateUserProfile, // Added to exports
+  getMe,
+  getMyAgreement,
+  getMyDocuments,
+  uploadUserDocument 
 };

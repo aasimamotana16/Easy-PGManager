@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { FaFileContract, FaUpload, FaHeadset } from "react-icons/fa";
 import CButton from "../../../components/cButton";
 import { getUserProfile } from "../../../api/api"; 
+import axios from "axios";
 
 const DashboardHome = () => {
   const navigate = useNavigate();
@@ -14,7 +15,7 @@ const DashboardHome = () => {
       try {
         const res = await getUserProfile(); 
         if (res.data.success) {
-          setUser(res.data.data); // Contains your live Unity Girls Residency data
+          setUser(res.data.data); 
         }
       } catch (err) {
         console.error("Using fallback mock name", err);
@@ -25,9 +26,39 @@ const DashboardHome = () => {
     loadData();
   }, []);
 
+  // --- Button Logic Handlers ---
+
+  const handleViewAgreement = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      // Connect to backend to get the live rentalAgreement URL [cite: 2026-01-06]
+      const { data } = await axios.get("http://localhost:5000/api/users/documents", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      // Using camelCase for variable names as requested [cite: 2026-01-01]
+      if (data.success && data.data.rentalAgreement?.fileUrl) {
+        window.open(`http://localhost:5000${data.data.rentalAgreement.fileUrl}`, "_blank");
+      } else {
+        alert("Agreement file not found. Please upload it in the Documents section.");
+      }
+    } catch (err) {
+      console.error("Error fetching agreement", err);
+      alert("Failed to connect to server.");
+    }
+  };
+
+  const handleUploadNavigation = () => {
+    navigate("/user/dashboard/documents"); // Navigates to your document management UI
+  };
+
+  const handleSupportNavigation = () => {
+    navigate("/user/dashboard/owner-contact");
+   // navigate("/user/owner-contact"); // Navigates to contact/support page
+  };
+
   if (loading) return <div className="p-10 text-center">Loading...</div>;
 
-  // Map Backend Data to UI Variables (Falling back to mock if data is missing) [cite: 2026-01-01]
   const pgName = user?.bookedPgName || "No PG Booked"; 
   const roomNo = user?.roomNo || "N/A";
   const monthlyRent = user?.monthlyRent ? user.monthlyRent.toLocaleString() : "0";
@@ -54,7 +85,6 @@ const DashboardHome = () => {
           )}
         </div>
 
-        {/* Profile Completion Circle - Now Dynamic */}
         <div className="bg-white p-6 rounded-2xl shadow-lg border flex flex-col items-center justify-center">
           <h3 className="text-sm font-semibold mb-2">Profile Completion</h3>
           <div className="relative w-20 h-20">
@@ -68,7 +98,7 @@ const DashboardHome = () => {
         </div>
       </div>
 
-      {/* Booking Cards - UI preserved, Data connected */}
+      {/* Booking Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <div className="bg-white rounded-2xl shadow-lg p-5 border">
           <div className="flex items-center gap-2 font-semibold mb-4">🏠 Current Booking</div>
@@ -87,7 +117,7 @@ const DashboardHome = () => {
         </div>
       </div>
 
-      {/* Stats Cards - Now Dynamic */}
+      {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard title="PG Name" value={pgName} />
         <StatCard title="Room No" value={roomNo} />
@@ -95,13 +125,31 @@ const DashboardHome = () => {
         <StatCard title="Status" value={bookingStatus} highlight />
       </div>
 
-      {/* Quick Actions */}
+      {/* Quick Actions - Updated with onClick handlers */}
       <div className="bg-white p-6 rounded-2xl shadow-lg border">
         <h2 className="text-lg font-semibold text-primaryDark mb-4">Quick Actions</h2>
         <div className="flex flex-wrap gap-4">
-          <CButton className="bg-orange-500 text-white" icon={<FaFileContract className="mr-2" />}>View Agreement</CButton>
-          <CButton className="bg-orange-500 text-white" icon={<FaUpload className="mr-2" />}>Upload Documents</CButton>
-          <CButton className="bg-orange-500 text-white" icon={<FaHeadset className="mr-2" />}>Contact Support</CButton>
+          <CButton 
+            className="bg-orange-500 text-white" 
+            icon={<FaFileContract className="mr-2" />}
+            onClick={handleViewAgreement}
+          >
+            View Agreement
+          </CButton>
+          <CButton 
+            className="bg-orange-500 text-white" 
+            icon={<FaUpload className="mr-2" />}
+            onClick={handleUploadNavigation}
+          >
+            Upload Documents
+          </CButton>
+          <CButton 
+            className="bg-orange-500 text-white" 
+            icon={<FaHeadset className="mr-2" />}
+            onClick={handleSupportNavigation}
+          >
+            Contact Support
+          </CButton>
         </div>
       </div>
     </div>

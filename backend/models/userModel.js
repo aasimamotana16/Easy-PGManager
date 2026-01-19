@@ -6,6 +6,9 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: [true, "Please add a full name"],
     },
+    // Adding name as a virtual or alias if your DB uses it interchangeably
+    name: { type: String },
+
     email: {
       type: String,
       required: [true, "Please add an email"],
@@ -17,14 +20,12 @@ const userSchema = new mongoose.Schema(
     },
     phone: {
       type: String,
-      required: [true, "Please add a phone number"], // Updated to be required for Signup
+      required: [true, "Please add a phone number"],
     },
     // Matches "City" and "State" fields in UI
     city: { type: String, default: "" },
     state: { type: String, default: "" },
-    address: {
-      type: String,
-    },
+    address: { type: String },
     role: {
       type: String,
       required: true,
@@ -33,20 +34,20 @@ const userSchema = new mongoose.Schema(
       lowercase: true,
     },
 
-    // NEW: Matches the "Profile Completion" 80% circle
+    // Matches the "Profile Completion" UI
     profileCompletion: {
       type: Number,
-      default: 20, // Starts low after signup
+      default: 20, 
     },
 
-    // NEW: Matches the "Emergency Contact" section
+    // Matches the "Emergency Contact" section
+    // Note: I kept these in camelCase as requested [cite: 2026-01-01]
     emergencyContact: {
       contactName: { type: String, default: "" },
       relationship: { type: String, default: "" },
       phoneNumber: { type: String, default: "" },
     },
     
-    // ADDED: Logic to track if OTP was successful
     isVerified: {
       type: Boolean,
       default: false,
@@ -55,10 +56,25 @@ const userSchema = new mongoose.Schema(
     instagram: { type: String, default: "#" },
     linkedin: { type: String, default: "#" },
     twitter: { type: String, default: "#" },
-    profileImage: { type: String, default: "/images/profileImages/profile1.jpg" }
+    profileImage: { type: String, default: "/images/profileImages/profile1.jpg" },
+
+    // --- DOCUMENT FIELDS FOR DASHBOARD ---
+    idDocument: {
+      status: { type: String, enum: ["Pending", "Uploaded"], default: "Pending" },
+      fileUrl: { type: String, default: "" },
+    },
+    aadharCard: {
+      status: { type: String, enum: ["Pending", "Uploaded"], default: "Pending" },
+      fileUrl: { type: String, default: "" },
+    },
+    rentalAgreementCopy: {
+      status: { type: String, enum: ["Pending", "Uploaded"], default: "Uploaded" }, 
+      fileUrl: { type: String, default: "" },
+      uploadedAt: { type: Date, default: Date.now },
+    }
   },
   {
-    timestamps: true, 
+    timestamps: true,
   }
 );
 

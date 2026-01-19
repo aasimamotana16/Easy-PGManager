@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const nodemailer = require('nodemailer'); // Added for real email
+const path = require("path");
 require('dotenv').config();
 
 // IMPORT ROUTES
@@ -59,6 +60,8 @@ app.use('/api/pg', pgRoutes);
 
 //3. booking
 app.use('/api/bookings', require('./routes/bookingRoutes'));
+
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));// documents
 
 // Health Check (To verify if backend is alive in browser)
 app.get('/', (req, res) => {
