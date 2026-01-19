@@ -17,7 +17,8 @@ const HomeSearch = () => {
         let cities = [];
 
         if (Array.isArray(response?.data)) cities = response.data;
-        else if (Array.isArray(response?.data?.cities)) cities = response.data.cities;
+        else if (Array.isArray(response?.data?.cities))
+          cities = response.data.cities;
 
         const formattedCities = cities.map((item) => {
           if (typeof item === "string") return { label: item, value: item };
@@ -41,28 +42,30 @@ const HomeSearch = () => {
     fetchCityData();
   }, []);
 
-  const handleSearch = (type) => {
+  const handleSearch = () => {
     if (!city) {
       alert("Please select a city first!");
       return;
     }
-    navigate(`/findMypg/${type}?city=${encodeURIComponent(city)}`);
+    navigate(`/findMypg/pgListing?city=${encodeURIComponent(city)}`);
   };
 
   return (
-    <div className="bg-white p-8 rounded-xl shadow-lg max-w-4xl mx-auto -mt-30 relative z-10 border border-border">
+    <div className="bg-white p-8 rounded-2xl shadow-md max-w-4xl mx-auto relative z-10 border border-border">
+      {/* Heading */}
       <div className="text-center mb-6">
-        <h2 className="text-3xl font-bold text-text-primary mb-2">
-          Find PGs & Hostels Near You
+        <h2 className="text-2xl md:text-3xl font-semibold text-text-primary mb-2">
+          Find Paying Guest Accommodation
         </h2>
-        <p className="text-text-secondary">
-          Choose your city and accommodation type to get started.
+        <p className="text-text-secondary text-sm md:text-base">
+          Select your city to explore available PGs near you
         </p>
       </div>
 
+      {/* City Selection */}
       <div className="max-w-md mx-auto mb-6">
         <CSelect
-          label="Select City"
+          label="City"
           value={city}
           onChange={(e) => {
             if (e?.target?.value !== undefined) setCity(e.target.value);
@@ -75,18 +78,15 @@ const HomeSearch = () => {
         />
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-4">
+      <div className="w-full h-px bg-gray-200 mb-6" />
+
+      {/* Action */}
+      <div className="flex justify-center">
         <CButton
-          onClick={() => handleSearch("pgListing")}
-          text="Paying Guest"
+          onClick={handleSearch}
+          text="Search PGs"
           variant="contained"
-          className="flex-1 py-3 rounded-md text-base font-semibold"
-        />
-        <CButton
-          onClick={() => handleSearch("hostelListing")}
-          text="Hostel Stay"
-          variant="contained"
-          className="flex-1 py-3 rounded-md text-base font-semibold"
+          className="px-10 py-3 rounded-lg text-base font-medium"
         />
       </div>
     </div>

@@ -18,7 +18,7 @@ export default function Services() {
         </h1>
 
         <p className="text-lg sm:text-xl text-center max-w-3xl mx-auto mb-20">
-          EasyPG Manager provides verified PGs, hostels, smart booking, and
+          EasyPG Manager provides verified PGs, smart booking, and
           seamless property management.
         </p>
 
@@ -43,7 +43,7 @@ export default function Services() {
           </h2>
 
           <p className="text-lg sm:text-xl mb-6">
-            Start your search instantly and discover verified PGs & hostels
+            Start your search instantly and discover verified PGs
             that match your preferences.
           </p>
 

@@ -38,7 +38,7 @@ const Footer = () => {
               </h2>
 
               <p className="text-sm leading-7 mb-4">
-                Smart PG & Hostel management platform to simplify bookings,
+                Smart PG management platform to simplify bookings,
                 payments, tenant records, and daily operations.
               </p>
 

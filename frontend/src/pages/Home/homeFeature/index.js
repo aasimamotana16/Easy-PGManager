@@ -93,8 +93,7 @@ const HomeFeatures = () => {
           </h2>
 
           <p className="text-base sm:text-lg text-text-secondary leading-relaxed">
-            Powerful features designed to simplify daily operations for PG and
-            hostel owners.
+            Powerful features designed to simplify daily operations for PG owners.
           </p>
         </motion.div>
 
@@ -137,7 +136,7 @@ const HomeFeatures = () => {
             </h2>
 
             <p className="mt-6 text-base sm:text-lg text-text-secondary max-w-xl">
-              Manage PGs, hostels, bookings, payments, and tenants from a single
+              Manage PGs,  bookings, payments, and tenants from a single
               dashboard designed for scale.
             </p>
 

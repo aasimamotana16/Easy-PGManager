@@ -38,7 +38,7 @@ const HomeBanner = () => {
               animate="visible"
               custom={2}
             >
-              Hassle-free Hostel & PG Management System for Owners and Tenants.
+              Hassle-free  PG Management System for Owners and Tenants.
               Manage check-ins, payments, maintenance, and more—all in one platform.
             </motion.p>
 

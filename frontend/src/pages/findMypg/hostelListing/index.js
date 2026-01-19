@@ -1,10 +1,10 @@
-import React, { useRef, useEffect } from "react";
+//import React, { useRef, useEffect } from "react";
 import ListingCard from "../../../components/listingCard";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import CButton from "../../../components/cButton";
 import { useNavigate } from "react-router-dom";
 
-export default function HostelListings({ list = [] }) {
+{/*export default function HostelListings({ list = [] }) {
   const containerRef = useRef(null);
   const scrollInterval = useRef(null);
   const navigate = useNavigate();
@@ -65,7 +65,7 @@ export default function HostelListings({ list = [] }) {
         Available Hostels
       </h2>
 
-      {/* Carousel Arrows */}
+       Carousel Arrows 
       <button
         onClick={scrollLeft}
         className="absolute left-0 top-1/2 -translate-y-1/2 z-10 p-3 bg-white rounded-full hover:bg-amber-50 transition"
@@ -80,7 +80,7 @@ export default function HostelListings({ list = [] }) {
         <FaChevronRight size={20} className="text-amber-600" />
       </button>
 
-      {/* Scroll Container */}
+       Scroll Container 
       <div
         ref={containerRef}
         onMouseEnter={handleMouseEnter}
@@ -109,4 +109,4 @@ export default function HostelListings({ list = [] }) {
       </div>
     </div>
   );
-}
+}*/}

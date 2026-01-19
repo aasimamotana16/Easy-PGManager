@@ -3,7 +3,7 @@ import { useParams, useLocation, useNavigate } from "react-router-dom";
 import Navbar from "../../../components/navbar";
 import Footer from "../../../components/footer";
 import CButton from "../../../components/cButton";
-import { pgdetails, hosteldetails } from "../../../config/staticData";
+import { pgdetails } from "../../../config/staticData";
 
 const ConfirmBooking = () => {
   const { id } = useParams();
@@ -11,7 +11,7 @@ const ConfirmBooking = () => {
   const navigate = useNavigate();
 
   // Find the property
-  const property = [...pgdetails, ...hosteldetails].find(
+  const property = [...pgdetails].find(
     (item) => item.id === parseInt(id)
   );
 

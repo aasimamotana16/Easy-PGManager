@@ -249,7 +249,7 @@ export const genderOptions = [
 ];
 export const propertyTypes = [
   { label: "PG", value: "PG" },
-  { label: "Hostel", value: "Hostel" },
+  //{ label: "Hostel", value: "Hostel" },
   { label: "Flat", value: "Flat" },
 ];
 
@@ -606,7 +606,7 @@ export const pgdetails = [
   },
 ];
 
-
+{/*
 export const hosteldetails = [
   {
     id: 102,
@@ -743,7 +743,7 @@ roomImages: [
 ],
 
   },
-];
+];*/}
 
 
 // =====================
