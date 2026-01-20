@@ -32,8 +32,7 @@ const Login = () => {
       /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@(([^<>()[\]\\.,;:\s@"]+\.)+[^<>()[\]\\.,;:\s@"]{2,})$/i;
     return re.test(String(email).toLowerCase());
   };
-
-  const handleSubmit = async (e) => {
+const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!email || !password) {
@@ -49,27 +48,30 @@ const Login = () => {
 
     try {
       const response = await loginUser({ email, password, role });
+      // Your backend returns the user object directly
       const data = response.data;
 
-      if (data && data.success) {
-        const userObj = data.user;
-        if (!userObj) throw new Error("User data missing from server response");
-
-        // ✅ Save user info for Navbar/Profile dropdown
-        localStorage.setItem("user", JSON.stringify(userObj));
-        localStorage.setItem("userName", userObj.fullName);
-        localStorage.setItem("userId", userObj._id);
+      // REMOVED 'data.success' check as your backend doesn't send it
+      if (data && data.token) {
+        // Your backend sends fields like fullName/email at the top level
+        localStorage.setItem("user", JSON.stringify(data));
+        localStorage.setItem("userName", data.fullName || data.name);
+        localStorage.setItem("userId", data._id);
         localStorage.setItem("role", role);
         localStorage.setItem("isLoggedIn", "true");
-        if (data.token) localStorage.setItem("token", data.token);
+        localStorage.setItem("token", data.token);
+        
         if (rememberMe) localStorage.setItem("rememberMe", "true");
 
         window.dispatchEvent(new Event("storage"));
 
-        // ✅ Redirect to HOME page
+        // Redirect to HOME page
         window.location.href = "/";
+      } else {
+        alert("Login failed: Invalid response from server");
       }
     } catch (error) {
+      // This catches the 401 "Invalid credentials" from your backend
       alert(error.response?.data?.message || "Login failed. Check credentials.");
     } finally {
       setLoading(false);

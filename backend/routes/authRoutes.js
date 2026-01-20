@@ -7,7 +7,7 @@ const {
     loginUser, 
     forgotPassword, 
     resetPassword 
-} = require('../controllers/authController');
+} = require('../controllers/userController');
 
 // --- 1. SEND OTP ROUTE ---
 // NEW: Call this when the user clicks "Send OTP" in the signup form

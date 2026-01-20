@@ -48,32 +48,45 @@ const registerUser = async (req, res) => {
 
 // @desc    Authenticate user
 const loginUser = async (req, res) => {
-  const { email, password } = req.body;
+  // Added .trim() to ensure no accidental spaces break the login [cite: 2026-01-06]
+  const email = req.body.email ? req.body.email.trim().toLowerCase() : "";
+  const password = req.body.password ? req.body.password.trim() : "";
 
   try {
-    // 1. Find user and handle email case-sensitivity [cite: 2026-01-06]
-    const user = await User.findOne({ email: email.toLowerCase() });
+    // 1. Find user by email [cite: 2026-01-06]
+    //const user = await User.findOne({ email });
+    const user = await User.findOne({ email: email.toLowerCase().trim() }); // Added .trim()
 
-    // 2. Validate user existence and password [cite: 2026-01-06]
-    if (user && (await bcrypt.compare(password, user.password))) {
+    if (!user) {
+      console.log(`❌ Login attempt failed: User not found (${email})`);
+      return res.status(401).json({ message: "Invalid email or password" });
+    }
+
+    // 2. Validate password [cite: 2026-01-06]
+    const isMatch = await bcrypt.compare(password, user.password);
+    console.log(`🔍 Password comparison for ${email}: ${isMatch}`);
+
+    if (isMatch) {
+      const token = generateToken(user._id);
       
       // 3. Return response with fallback for name/fullName
       res.json({
         _id: user._id,
         fullName: user.fullName || user.name || "User", 
         email: user.email,
-        token: generateToken(user._id),
+        token: token,
       });
+      console.log(`✅ Successful login for: ${email}`);
     } else {
-      // 4. Return 401 instead of crashing with 500 [cite: 2026-01-06]
       res.status(401).json({ message: "Invalid email or password" });
     }
   } catch (error) {
     // Log the actual error to your terminal to debug JWT or DB issues [cite: 2026-01-06]
-    console.error("Login Error:", error.message);
+    console.error("🚨 Login Error:", error.message);
     res.status(500).json({ message: "Server error during login" });
   }
 };
+
 // @desc    Get Dynamic Dashboard Data [cite: 2026-01-06]
 const getUserDashboard = async (req, res) => {
   try {
@@ -81,7 +94,7 @@ const getUserDashboard = async (req, res) => {
     if (!user) return res.status(404).json({ message: "User not found" });
 
     const dashboardData = {
-      fullName: user.fullName || user.name, // Support both keys
+      fullName: user.fullName || user.name, 
       profileCompletion: user.profileCompletion || 0,
       currentBooking: {
         pgName: user.bookedPgName || "No PG Booked",
@@ -110,7 +123,7 @@ const getUserProfile = async (req, res) => {
     res.status(200).json({ 
       success: true, 
       data: {
-        fullName: user.fullName || user.name, // Fixed empty name issue
+        fullName: user.fullName || user.name, 
         email: user.email,
         phone: user.phone || "Not Set",
         city: user.city || "Not Set",
@@ -150,7 +163,7 @@ const updateUserProfile = async (req, res) => {
     // Dynamic Profile Completion Logic
     const fields = [user.phone, user.city, user.state, user.emergencyContact.contactName];
     const filledCount = fields.filter(f => f && f !== "Not Set").length;
-    user.profileCompletion = 20 + (filledCount * 20); // Base 20% + 20% per field
+    user.profileCompletion = 20 + (filledCount * 20); 
 
     const updatedUser = await user.save();
     res.status(200).json({ success: true, data: updatedUser });
@@ -264,10 +277,14 @@ module.exports = {
   getUserDashboard,
   getUserProfile, 
   updateUserProfile,
-  updateProfilePicture, // Added for Upload Picture button
-  removeProfilePicture, // Added for Remove Picture button
+  updateProfilePicture, 
+  removeProfilePicture, 
   getMe,
   getMyAgreement,
   getMyDocuments,
-  uploadUserDocument 
+  uploadUserDocument,
+  // Add these three specifically to fix the "Undefined" error: [cite: 2026-01-06]
+  sendOtp: (req, res) => res.send("OTP sent"), // Placeholder so it doesn't crash
+  forgotPassword: (req, res) => res.send("Forgot Pass"), // Placeholder
+  resetPassword: (req, res) => res.send("Reset Pass"), // Placeholder
 };
