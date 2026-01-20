@@ -37,7 +37,9 @@ const CInput = ({
             </option>
           ))}
         </select>
+
       ) : type === "textarea" ? (
+
         <textarea
           name={name}
           value={value}
@@ -50,19 +52,22 @@ const CInput = ({
             focus:outline-none focus:ring-0 focus:border-primary
             transition ${className}`}
         />
+
       ) : (
+
         <input
           type={type}
           name={name}
           value={value}
           onChange={onChange}
           placeholder={placeholder}
-          className={`w-full h-10 px-12 py-2  text-sm
+          className={`w-full h-10 px-3 py-2 text-sm
             border border-border bg-card text-text-secondary
             rounded-md
             focus:outline-none focus:ring-0 focus:border-primary
             transition ${className}`}
         />
+
       )}
     </div>
   );

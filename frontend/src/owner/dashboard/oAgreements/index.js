@@ -50,15 +50,15 @@ const AgreementPage = () => {
   return (
     <div className="p-6 bg-gray-100 min-h-screen space-y-6">
 
-      {/* HEADER CARD */}
-      <div className="bg-white p-6 rounded-md shadow flex justify-between items-center">
+      {/* PAGE HEADER (LIKE OTHER DASHBOARD PAGES) */}
+      <div className="flex justify-between items-center">
         <div className="flex items-center gap-3">
-          <FaFileContract className="text-orange-500 text-2xl" />
+          <FaFileContract className="text-orange-500 text-3xl" />
           <div>
-            <h2 className="text-2xl font-bold text-gray-800">
+            <h1 className="text-3xl font-bold text-primary">
               Agreements
-            </h2>
-            <p className="text-gray-500 text-sm">
+            </h1>
+            <p className="text-gray-500">
               View and manage tenant rental agreements
             </p>
           </div>
@@ -96,7 +96,7 @@ const AgreementPage = () => {
       {/* AGREEMENTS TABLE */}
       <div className="bg-white rounded-md shadow overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b">
+          <thead className="bg-black text-white border-b">
             <tr>
               <th className="p-4 text-left font-semibold">ID</th>
               <th className="p-4 text-left font-semibold">Tenant</th>

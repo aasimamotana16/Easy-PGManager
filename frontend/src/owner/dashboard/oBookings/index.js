@@ -68,7 +68,7 @@ const BookingManagement = () => {
     }
   };
 
-  /* ---------- FILTER LOGIC (FRONTEND ONLY) ---------- */
+  /* ---------- FILTER LOGIC (UNCHANGED) ---------- */
   const filteredBookings = bookings.filter((b) => {
     const statusMatch =
       statusFilter === "all" ? true : b.status === statusFilter;
@@ -88,11 +88,11 @@ const BookingManagement = () => {
   return (
     <div className="p-6 bg-gray-100 min-h-screen space-y-6">
 
-      {/* 1️⃣ HEADER CARD */}
-      <div className="bg-white p-6 rounded-md shadow flex items-center gap-3">
-        <FaClipboardList className="text-orange-500 text-2xl" />
+      {/* PAGE HEADER (LIKE OTHER DASHBOARD PAGES) */}
+      <div className="flex items-center gap-3">
+        <FaClipboardList className="text-orange-500 text-3xl" />
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">
+          <h1 className="text-3xl font-bold text-primary">
             Bookings
           </h1>
           <p className="text-gray-500">
@@ -101,75 +101,77 @@ const BookingManagement = () => {
         </div>
       </div>
 
+      {/* FILTERS */}
       <div className="bg-white p-4 rounded-md shadow grid grid-cols-1 md:grid-cols-4 gap-4">
 
-  {/* Status Filter */}
-  <div>
-    <label className="block text-sm font-medium text-gray-600 mb-1">
-      Status
-    </label>
-    <select
-      value={statusFilter}
-      onChange={(e) => setStatusFilter(e.target.value)}
-      className="border rounded-md px-3 py-2 w-full"
-    >
-      <option value="all">All</option>
-      <option value="Pending">Pending</option>
-      <option value="Confirmed">Confirmed</option>
-      <option value="Cancelled">Cancelled</option>
-    </select>
-  </div>
+        {/* Status Filter */}
+        <div>
+          <label className="block text-sm font-medium text-gray-600 mb-1">
+            Status
+          </label>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="border rounded-md px-3 py-2 w-full"
+          >
+            <option value="all">All</option>
+            <option value="Pending">Pending</option>
+            <option value="Confirmed">Confirmed</option>
+            <option value="Cancelled">Cancelled</option>
+          </select>
+        </div>
 
-  {/* PG Filter */}
-  <div>
-    <label className="block text-sm font-medium text-gray-600 mb-1">
-      PG Name
-    </label>
-    <select
-      value={pgFilter}
-      onChange={(e) => setPgFilter(e.target.value)}
-      className="border rounded-md px-3 py-2 w-full"
-    >
-      <option value="all">All PGs</option>
-      {uniquePGs.map((pg) => (
-        <option key={pg} value={pg}>{pg}</option>
-      ))}
-    </select>
-  </div>
+        {/* PG Filter */}
+        <div>
+          <label className="block text-sm font-medium text-gray-600 mb-1">
+            PG Name
+          </label>
+          <select
+            value={pgFilter}
+            onChange={(e) => setPgFilter(e.target.value)}
+            className="border rounded-md px-3 py-2 w-full"
+          >
+            <option value="all">All PGs</option>
+            {uniquePGs.map((pg) => (
+              <option key={pg} value={pg}>
+                {pg}
+              </option>
+            ))}
+          </select>
+        </div>
 
-  {/* Check-in Date */}
-  <div>
-    <label className="block text-sm font-medium text-gray-600 mb-1">
-      Check-in Date
-    </label>
-    <input
-      type="date"
-      value={fromDate}
-      onChange={(e) => setFromDate(e.target.value)}
-      className="border rounded-md px-3 py-2 w-full"
-    />
-  </div>
+        {/* Check-in Date */}
+        <div>
+          <label className="block text-sm font-medium text-gray-600 mb-1">
+            Check-in Date
+          </label>
+          <input
+            type="date"
+            value={fromDate}
+            onChange={(e) => setFromDate(e.target.value)}
+            className="border rounded-md px-3 py-2 w-full"
+          />
+        </div>
 
-  {/* Check-out Date */}
-  <div>
-    <label className="block text-sm font-medium text-gray-600 mb-1">
-      Check-out Date
-    </label>
-    <input
-      type="date"
-      value={toDate}
-      onChange={(e) => setToDate(e.target.value)}
-      className="border rounded-md px-3 py-2 w-full"
-    />
-  </div>
+        {/* Check-out Date */}
+        <div>
+          <label className="block text-sm font-medium text-gray-600 mb-1">
+            Check-out Date
+          </label>
+          <input
+            type="date"
+            value={toDate}
+            onChange={(e) => setToDate(e.target.value)}
+            className="border rounded-md px-3 py-2 w-full"
+          />
+        </div>
 
-</div>
+      </div>
 
-
-      {/* 3️⃣ TABLE */}
+      {/* TABLE */}
       <div className="bg-white rounded-md shadow overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b">
+          <thead className="bg-black text-white border-b">
             <tr>
               <th className="p-4 text-left">Booking ID</th>
               <th className="p-4 text-left">PG Name</th>
@@ -208,14 +210,15 @@ const BookingManagement = () => {
                     </span>
                   </td>
 
-                  {/* 4️⃣ ACTIONS */}
                   <td className="p-4 flex justify-center gap-2">
                     <CButton onClick={() => setViewBooking(b)} title="View">
                       <FaEye />
                     </CButton>
 
                     <CButton
-                      onClick={() => alert("Agreement download coming soon")}
+                      onClick={() =>
+                        alert("Agreement download coming soon")
+                      }
                       title="Download Agreement"
                     >
                       <FaFileDownload />
@@ -235,7 +238,6 @@ const BookingManagement = () => {
                 </tr>
               ))
             ) : (
-              /* 3️⃣ EMPTY STATE */
               <tr>
                 <td
                   colSpan={9}

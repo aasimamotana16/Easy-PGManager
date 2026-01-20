@@ -8,9 +8,11 @@ import { FaTrash, FaEye } from "react-icons/fa";
 const AddRooms = () => {
   const navigate = useNavigate();
 
+  /* TEMP PG CONTEXT (FRONTEND ONLY) */
+  const pgName = "Green View PG";
+
   const [roomData, setRoomData] = useState({
-    roomType: "",
-    totalRooms: "",
+        totalRooms: "",
     bedsPerRoom: "",
     description: "",
     images: [],
@@ -21,10 +23,11 @@ const AddRooms = () => {
     setRoomData((prev) => ({ ...prev, [name]: value }));
   };
 
-  /* ===== IMAGE HANDLERS ===== */
+  /* IMAGE HANDLERS */
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
     if (!files.length) return;
+
     setRoomData((prev) => ({
       ...prev,
       images: [...prev.images, ...files],
@@ -47,29 +50,32 @@ const AddRooms = () => {
   const handleSaveRoom = () => {
     console.log("ROOM DATA 👉", roomData);
     alert("Room saved successfully (frontend)");
-    // Navigate to Room Price page
     navigate("/owner/dashboard/pgManagment/roomPrice");
   };
 
   return (
-    <div className="max-w-5xl mx-auto my-6 px-2">
-      <h2 className="text-3xl font-bold text-center text-amber-600 mb-6">
-        Add Rooms
-      </h2>
+    <div className="p-6 bg-gray-100 min-h-screen">
 
-      <CFormCard className="border border-gray-400 relative">
-        <span className="absolute -top-3 left-4 bg-white px-2 font-semibold text-gray-700">
+      {/* PAGE HEADER */}
+      <div className="max-w-5xl mx-auto mb-6">
+        <h1 className="text-3xl font-bold text-primary">
+          Add Rooms
+        </h1>
+        <p className="text-gray-500 mt-1">
+          Adding rooms for <span className="font-semibold">{pgName}</span>
+        </p>
+      </div>
+
+      {/* FORM CARD */}
+      <CFormCard className="max-w-5xl mx-auto border border-gray-300">
+
+        <h2 className="text-lg font-semibold text-gray-800 mb-6">
           Room Details
-        </span>
+        </h2>
 
-        <div className="space-y-4 mt-4">
-          <CInput
-            label="Room Type"
-            name="roomType"
-            value={roomData.roomType}
-            onChange={handleChange}
-            placeholder="Single / Double / Triple"
-          />
+        <div className="space-y-5">
+
+          
 
           <CInput
             label="Total Rooms"
@@ -87,24 +93,19 @@ const AddRooms = () => {
             onChange={handleChange}
           />
 
-          {/* Description */}
-          <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-gray-700">
-              Room Description
-            </label>
-            <textarea
-              name="description"
-              rows="4"
-              value={roomData.description}
-              onChange={handleChange}
-              placeholder="Facilities, rules, room details"
-              className="w-full border border-gray-300 p-2 rounded focus:outline-none focus:ring-2 focus:ring-amber"
-            />
-          </div>
+          {/* TEXTAREA USING CINPUT */}
+          <CInput
+            label="Room Description"
+            type="textarea"
+            name="description"
+            value={roomData.description}
+            onChange={handleChange}
+            placeholder="Room facilities, furniture, special notes"
+          />
 
-          {/* Image Upload */}
+          {/* IMAGE UPLOAD */}
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-bold text-gray-700">
+            <label className="text-sm font-medium text-gray-700">
               Upload Room Images
             </label>
             <input
@@ -115,15 +116,15 @@ const AddRooms = () => {
             />
           </div>
 
-          {/* Image List */}
+          {/* IMAGE LIST */}
           {roomData.images.length > 0 && (
             <div className="space-y-2 mt-4">
               {roomData.images.map((file, index) => (
                 <div
                   key={index}
-                  className="flex items-center gap-4 border p-2 rounded"
+                  className="flex items-center gap-4 border p-2 rounded-md bg-gray-50"
                 >
-                  <span className="flex-1 text-gray-700 text-sm">
+                  <span className="flex-1 text-gray-700 text-sm truncate">
                     {file.name}
                   </span>
 
@@ -147,12 +148,13 @@ const AddRooms = () => {
             </div>
           )}
 
-          {/* Action */}
-          <div className="text-center mt-6">
-            <CButton onClick={handleSaveRoom}>
+          {/* ACTION */}
+          <div className="text-center mt-8">
+            <CButton size="lg" onClick={handleSaveRoom}>
               Save Room & Continue
             </CButton>
           </div>
+
         </div>
       </CFormCard>
     </div>

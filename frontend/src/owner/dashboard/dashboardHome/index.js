@@ -68,9 +68,9 @@ const DashboardHome = () => {
   return (
     <div className="p-6 bg-gray-100 min-h-screen space-y-6">
 
-      {/* HEADER (Same style as Earnings & Support) */}
-      <div className="bg-white p-6 rounded-md shadow">
-        <h1 className="text-2xl font-bold text-primary">
+      {/* PAGE HEADER (LIKE OTHER DASHBOARD PAGES) */}
+      <div>
+        <h1 className="text-3xl font-bold text-primary">
           Owner Dashboard
         </h1>
         <p className="text-gray-500">
@@ -80,10 +80,27 @@ const DashboardHome = () => {
 
       {/* STATS CARDS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard title="Total PGs" value={stats.totalPGs} icon={<FaBuilding size={22} />} />
-        <StatCard title="Total Rooms" value={stats.totalRooms} icon={<FaBed size={22} />} />
-        <StatCard title="Live Listings" value={stats.liveListings} icon={<FaChartLine size={22} />} live />
-        <StatCard title="Total Earnings" value={`₹${stats.totalEarnings.toLocaleString()}`} icon={<FaMoneyBillWave size={22} />} />
+        <StatCard
+          title="Total PGs"
+          value={stats.totalPGs}
+          icon={<FaBuilding size={22} />}
+        />
+        <StatCard
+          title="Total Rooms"
+          value={stats.totalRooms}
+          icon={<FaBed size={22} />}
+        />
+        <StatCard
+          title="Live Listings"
+          value={stats.liveListings}
+          icon={<FaChartLine size={22} />}
+          live
+        />
+        <StatCard
+          title="Total Earnings"
+          value={`₹${stats.totalEarnings.toLocaleString()}`}
+          icon={<FaMoneyBillWave size={22} />}
+        />
       </div>
 
       {/* QUICK ACTIONS */}
@@ -136,7 +153,6 @@ const DashboardHome = () => {
           </div>
         </div>
       </div>
-
     </div>
   );
 };
@@ -148,9 +164,17 @@ const StatCard = ({ title, value, icon, live }) => (
       <p className="text-sm text-gray-300">{title}</p>
       <p className="text-2xl font-bold">{value}</p>
     </div>
-    <div className={`text-orange-500 ${live ? "bg-green-500 px-2 py-1 rounded-full text-xs" : ""}`}>
+    <div
+      className={`text-orange-500 ${
+        live ? "bg-green-500 px-2 py-1 rounded-full text-xs" : ""
+      }`}
+    >
       {icon}
-      {live && <span className="ml-1 text-white text-xs font-semibold">Live</span>}
+      {live && (
+        <span className="ml-1 text-white text-xs font-semibold">
+          Live
+        </span>
+      )}
     </div>
   </div>
 );
