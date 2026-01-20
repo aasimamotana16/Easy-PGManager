@@ -58,12 +58,12 @@ const SupportPage = () => {
   return (
     <div className="p-6 bg-gray-100 min-h-screen space-y-6">
 
-      {/* HEADER */}
-      <div className="bg-white p-6 rounded-md shadow flex items-center gap-3">
-        <FaLifeRing className="text-primary text-2xl" />
+      {/* PAGE HEADER (LIKE OTHER DASHBOARD PAGES) */}
+      <div className="flex items-center gap-3">
+        <FaLifeRing className="text-orange-500 text-3xl" />
         <div>
-          <h1 className="text-2xl font-bold text-primary">Support</h1>
-          <p className="text-gray-500 text-sm">
+          <h1 className="text-3xl font-bold text-primary">Support</h1>
+          <p className="text-gray-500">
             Raise and track your support tickets
           </p>
         </div>
@@ -71,9 +71,14 @@ const SupportPage = () => {
 
       {/* CREATE TICKET */}
       <div className="bg-white rounded-md shadow p-6">
-        <h2 className="text-lg font-semibold mb-4 text-dark">Ask for Help</h2>
+        <h2 className="text-lg font-semibold mb-4 text-dark">
+          Ask for Help
+        </h2>
 
-        <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <form
+          onSubmit={handleSubmit}
+          className="grid grid-cols-1 md:grid-cols-2 gap-4"
+        >
           <input
             type="text"
             placeholder="Ticket Subject"
@@ -105,13 +110,15 @@ const SupportPage = () => {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        <CButton className="bg-primary text-white px-6 py-2">Search</CButton>
+        <CButton className="bg-primary text-white px-6 py-2">
+          Search
+        </CButton>
       </div>
 
       {/* TICKETS TABLE */}
       <div className="bg-white rounded-md shadow overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b">
+          <thead className="bg-black text-white border-b">
             <tr>
               <th className="px-5 py-3 text-left">ID</th>
               <th className="px-5 py-3 text-left">Subject</th>
@@ -151,17 +158,27 @@ const SupportPage = () => {
             <h2 className="text-xl font-bold text-primary mb-2">
               Ticket #{selectedTicket.id}
             </h2>
-            <p className="text-gray-600 mb-4">{selectedTicket.subject}</p>
+            <p className="text-gray-600 mb-4">
+              {selectedTicket.subject}
+            </p>
 
-            <p className="text-sm mb-4">{selectedTicket.description}</p>
+            <p className="text-sm mb-4">
+              {selectedTicket.description}
+            </p>
 
             {/* STATUS TRACKING */}
             <div className="flex justify-between items-center mb-6">
               <StatusStep label="Open" active />
               <Divider />
-              <StatusStep label="In Progress" active={selectedTicket.status !== "Open"} />
+              <StatusStep
+                label="In Progress"
+                active={selectedTicket.status !== "Open"}
+              />
               <Divider />
-              <StatusStep label="Closed" active={selectedTicket.status === "Closed"} />
+              <StatusStep
+                label="Closed"
+                active={selectedTicket.status === "Closed"}
+              />
             </div>
 
             <CButton
@@ -173,7 +190,6 @@ const SupportPage = () => {
           </div>
         </div>
       )}
-
     </div>
   );
 };

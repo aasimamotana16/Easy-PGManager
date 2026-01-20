@@ -66,13 +66,13 @@ const AddTenant = ({ onClose, onSave }) => {
 
         {/* PG SELECT */}
         <div className="mb-2">
-          <label className="block text-sm font-medium mb-1">PG / Hostel</label>
+          <label className="block text-sm font-medium mb-1">PGs</label>
           <select
             className="w-full border p-2 rounded"
             value={form.pgId}
             onChange={(e) => setForm({ ...form, pgId: parseInt(e.target.value) })}
           >
-            <option value="">Select PG / Hostel</option>
+            <option value="">Select Best PGs</option>
             {PG_LIST.map((pg) => (
               <option key={pg.id} value={pg.id}>
                 {pg.name}

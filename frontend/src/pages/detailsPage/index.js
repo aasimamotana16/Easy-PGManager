@@ -131,7 +131,7 @@ const PGDetails = () => {
             {/* MAIN INFO CARD */}
             <div className="bg-white p-8 rounded-3xl shadow-md relative overflow-hidden">
               <div className="absolute top-0 right-0 w-24 h-24 bg-amber-50 rounded-bl-full -mr-10 -mt-10" />
-              <h1 className="text-3xl font-extrabold text-gray-900 leading-tight">{pg.name || "Hostel Name"}</h1>
+              <h1 className="text-3xl font-extrabold text-gray-900 leading-tight">{pg.name }</h1>
               <p className="text-lg text-gray-600 mt-2 flex items-center gap-2">
                 <span className="text-red-500">📍</span> {pg.location}
               </p>

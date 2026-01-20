@@ -11,8 +11,6 @@ const SetRoomPrice = () => {
       pricePerMonth: "",
       pricePerYear: "",
       advancePayment: "",
-      optional2Beds: "",
-      optional3Beds: "",
     },
   ]);
 
@@ -36,18 +34,19 @@ const SetRoomPrice = () => {
 
   const handleSubmit = async () => {
     try {
-      // 1. Get the token you received during login
-      const token = localStorage.getItem('token'); 
+      const token = localStorage.getItem("token");
 
-      // 2. Send data to the backend route we just verified
-      const response = await fetch('http://localhost:5000/api/owner/update-room-prices', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}` // Verified in Postman
-        },
-        body: JSON.stringify({ roomPrices }) // Uses the camelCase variable [cite: 2026-01-01]
-      });
+      const response = await fetch(
+        "http://localhost:5000/api/owner/update-room-prices",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ roomPrices }),
+        }
+      );
 
       const result = await response.json();
 
@@ -62,71 +61,94 @@ const SetRoomPrice = () => {
       alert("Could not connect to the server.");
     }
   };
-  
+
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
-      <h2 className="text-2xl font-semibold mb-4">Set Room Prices</h2>
-      <p className="text-gray-600 mb-6">
-        Set pricing details for each room type. Optional fields can be left blank.
-      </p>
+    <div className="p-6 bg-gray-100 min-h-screen">
 
-      {roomPrices.map((room, index) => (
-        <div key={index} className="border p-4 rounded-lg space-y-3">
-          <h3 className="font-medium text-lg">Room Type {index + 1}</h3>
+      {/* PAGE HEADER */}
+      <div className="max-w-4xl mx-auto mb-2">
+        <h1 className="text-3xl font-bold text-primary">
+          Set Room Prices
+        </h1>
+        <p className="text-gray-500 mt-1">
+          Define pricing for each room category (Single / Double / Triple).
+          These prices apply to all rooms of that type.
+        </p>
+      </div>
 
-          <input
-            type="text"
-            placeholder="Room Type (e.g., Single, Double)"
-            value={room.roomType}
-            onChange={(e) =>
-              handleChange(index, "roomType", e.target.value)
-            }
-            className="border p-2 w-full rounded"
-          />
-          <input
-            type="text"
-            placeholder="Price per Month"
-            value={room.pricePerMonth}
-            onChange={(e) =>
-              handleChange(index, "pricePerMonth", e.target.value)
-            }
-            className="border p-2 w-full rounded"
-          />
-          <input
-            type="text"
-            placeholder="Price per Year"
-            value={room.pricePerYear}
-            onChange={(e) =>
-              handleChange(index, "pricePerYear", e.target.value)
-            }
-            className="border p-2 w-full rounded"
-          />
-          <input
-            type="text"
-            placeholder="Advance Payment"
-            value={room.advancePayment}
-            onChange={(e) =>
-              handleChange(index, "advancePayment", e.target.value)
-            }
-            className="border p-2 w-full rounded"
-          />
+      {/* ROOM PRICE CARDS */}
+      <div className="max-w-4xl mx-auto space-y-6 mt-6">
+        {roomPrices.map((room, index) => (
+          <div
+            key={index}
+            className="bg-white rounded-md shadow p-6 space-y-4"
+          >
+            <h3 className="text-lg font-semibold text-gray-800">
+              Room Category {index + 1}
+            </h3>
+
+            <p className="text-sm text-gray-500">
+              Example: Single, Double, Triple, AC
+            </p>
+
+            <input
+              type="text"
+              placeholder="Room Category (e.g., Single, Double)"
+              value={room.roomType}
+              onChange={(e) =>
+                handleChange(index, "roomType", e.target.value)
+              }
+              className="border rounded-md px-4 py-2 w-full"
+            />
+
+            <input
+              type="number"
+              placeholder="Price per Month"
+              value={room.pricePerMonth}
+              onChange={(e) =>
+                handleChange(index, "pricePerMonth", e.target.value)
+              }
+              className="border rounded-md px-4 py-2 w-full"
+            />
+
+            <input
+              type="number"
+              placeholder="Price per Year (optional)"
+              value={room.pricePerYear}
+              onChange={(e) =>
+                handleChange(index, "pricePerYear", e.target.value)
+              }
+              className="border rounded-md px-4 py-2 w-full"
+            />
+
+            <input
+              type="number"
+              placeholder="Advance Payment (optional)"
+              value={room.advancePayment}
+              onChange={(e) =>
+                handleChange(index, "advancePayment", e.target.value)
+              }
+              className="border rounded-md px-4 py-2 w-full"
+            />
+          </div>
+        ))}
+
+        {/* ACTION BUTTONS */}
+        <div className="flex justify-between items-center pt-4">
+          <CButton
+            variant="outlined"
+            onClick={addRoomType}
+          >
+            + Add Another Room Category
+          </CButton>
+
+          <CButton
+            variant="contained"
+            onClick={handleSubmit}
+          >
+            Save & Continue
+          </CButton>
         </div>
-      ))}
-
-      <div className="flex justify-between items-center">
-        <CButton
-          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
-          onClick={addRoomType}
-        >
-          + Add Another Room Type
-        </CButton>
-
-        <CButton
-          className="bg-amber text-white px-4 py-2 rounded-md hover:bg-amber-600"
-          onClick={handleSubmit}
-        >
-          Save & Continue
-        </CButton>
       </div>
     </div>
   );

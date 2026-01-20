@@ -8,7 +8,6 @@ const PG_LIST = [
   { id: 1, name: "Green Villa" },
   { id: 2, name: "Sunshine Residency" },
   { id: 3, name: "Metro Living" },
-  { id: 4, name: "Girly hostel" },
 ];
 
 const Tenants = () => {
@@ -56,15 +55,19 @@ const Tenants = () => {
 
   const getPGName = (id) => PG_LIST.find((p) => p.id === id)?.name || "";
 
-  /* -------- FILTERING (UNCHANGED LOGIC) -------- */
+  /* -------- FILTERING (UPDATED SEARCH ONLY) -------- */
   const filteredTenants =
     selectedPG === "all"
       ? tenants
       : tenants.filter((t) => t.pgId === parseInt(selectedPG));
 
-  const searchedTenants = filteredTenants.filter((t) =>
-    t.name.toLowerCase().includes(search.toLowerCase())
-  );
+  const searchedTenants = filteredTenants.filter((t) => {
+    const pgName = getPGName(t.pgId).toLowerCase();
+    return (
+      t.name.toLowerCase().includes(search.toLowerCase()) ||
+      pgName.includes(search.toLowerCase())
+    );
+  });
 
   const groupedRooms = Object.values(
     searchedTenants.reduce((acc, t) => {
@@ -78,11 +81,16 @@ const Tenants = () => {
   return (
     <div className="p-6 bg-gray-100 min-h-screen relative space-y-6">
 
-      {/* HEADER */}
-      <div className="bg-white p-6 rounded-md shadow flex justify-between items-center">
+      {/* PAGE HEADER (LIKE OTHER PAGES) */}
+      <div className="flex justify-between items-center">
         <div className="flex items-center gap-3">
-          <FaUsers className="text-orange-500 text-2xl" />
-          <h1 className="text-2xl font-bold text-gray-800">Tenants</h1>
+          <FaUsers className="text-orange-500 text-3xl" />
+          <div>
+            <h1 className="text-3xl font-bold text-primary">Tenants</h1>
+            <p className="text-gray-500">
+              Manage tenants across all your PG properties
+            </p>
+          </div>
         </div>
 
         <CButton
@@ -97,7 +105,7 @@ const Tenants = () => {
       <div className="bg-white p-4 rounded-md shadow flex flex-col md:flex-row gap-4">
         <input
           type="text"
-          placeholder="Search tenant by name..."
+          placeholder="Search by tenant name or PG name..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="border rounded-md px-4 py-2 flex-1"
@@ -120,11 +128,11 @@ const Tenants = () => {
       {/* TABLE */}
       <div className="bg-white rounded-md shadow overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b">
+          <thead className="bg-black text-white border-b">
             <tr>
               <th className="p-4 text-left font-semibold">Name</th>
               <th className="p-4 text-left font-semibold">Phone</th>
-              <th className="p-4 text-left font-semibold">PG / Hostel</th>
+              <th className="p-4 text-left font-semibold">PG</th>
               <th className="p-4 text-left font-semibold">Room</th>
               <th className="p-4 text-center font-semibold">Persons</th>
               <th className="p-4 text-center font-semibold">Status</th>
@@ -174,7 +182,9 @@ const Tenants = () => {
 
                       <CButton
                         className="px-3 py-1"
-                        onClick={() => alert("Edit functionality coming soon")}
+                        onClick={() =>
+                          alert("Edit functionality coming soon")
+                        }
                         title="Edit Tenant"
                       >
                         <FaEdit />

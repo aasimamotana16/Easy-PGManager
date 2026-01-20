@@ -8,16 +8,23 @@ import Footer from "../../components/footer";
 import Filters from "./servicesFilter";
 import PGListings from "./pgListing";
 
-//import { pgdetails } from "../../config/staticData";
+const DEFAULT_FILTERS = {
+  lookingFor: "Any",
+  occupancy: "Any",
+  minPrice: "",
+  maxPrice: "",
+  rentCycle: "Any",
+  amenities: [],
+  sortBy: "",
+};
 
 export default function FindMyPG() {
   const locationObj = useLocation();
-
-  // ✅ City from query param
   const city = new URLSearchParams(locationObj.search).get("city");
-  
-  // 👇 PASTE THE NEW CODE HERE (Line 18ish) [cite: 2026-01-06]
-  const [pgList, setPgList] = useState([]); 
+
+  const [pgList, setPgList] = useState([]);
+
+  /* ================= FETCH PGs ================= */
 
   useEffect(() => {
     fetch("http://localhost:5000/api/pg/all")
@@ -27,17 +34,14 @@ export default function FindMyPG() {
       })
       .catch((err) => console.error("Error:", err));
   }, []);
-  // 👆 END OF NEW CODE
 
-  const [filters, setFilters] = useState({
-    lookingFor: "Any",
-    occupancy: "Any",
-    minPrice: "",
-    maxPrice: "",
-    rentCycle: "Any",
-    amenities: [],
-    sortBy: "",
-  });
+  /* ================= FILTER STATES ================= */
+
+  // What user is editing
+  const [tempFilters, setTempFilters] = useState(DEFAULT_FILTERS);
+
+  // What is actually applied
+  const [filters, setFilters] = useState(DEFAULT_FILTERS);
 
   /* ================= FILTER HANDLERS ================= */
 
@@ -46,11 +50,11 @@ export default function FindMyPG() {
       resetFilters();
       return;
     }
-    setFilters((prev) => ({ ...prev, [key]: value }));
+    setTempFilters((prev) => ({ ...prev, [key]: value }));
   };
 
   const toggleAmenity = (amenity) => {
-    setFilters((prev) => ({
+    setTempFilters((prev) => ({
       ...prev,
       amenities: prev.amenities.includes(amenity)
         ? prev.amenities.filter((a) => a !== amenity)
@@ -59,25 +63,23 @@ export default function FindMyPG() {
   };
 
   const resetFilters = () => {
-    setFilters({
-      lookingFor: "Any",
-      occupancy: "Any",
-      minPrice: "",
-      maxPrice: "",
-      rentCycle: "Any",
-      amenities: [],
-      sortBy: "",
-    });
+    setTempFilters(DEFAULT_FILTERS);
+    setFilters(DEFAULT_FILTERS);
   };
 
-  /* ================= APPLY FILTERS ================= */
+  /* ================= APPLY FILTERS (BUTTON) ================= */
+
+  const applyFiltersClick = () => {
+    setFilters(tempFilters);
+  };
+
+  /* ================= FILTER LOGIC ================= */
 
   const applyFilters = useCallback(
     (list) => {
       if (!Array.isArray(list)) return [];
 
       return list.filter((item) => {
-        // 📍 Location filter
         if (
           city &&
           item.location &&
@@ -126,7 +128,7 @@ export default function FindMyPG() {
     }
 
     return list;
-  }, [applyFilters, filters.sortBy]);
+  }, [applyFilters, filters.sortBy, pgList]);
 
   /* ================= RENDER ================= */
 
@@ -135,22 +137,19 @@ export default function FindMyPG() {
       <Navbar />
 
       <div className="max-w-7xl mx-auto px-6 py-16">
-        {/* ================= HEADING ================= */}
         <h1 className="text-4xl font-extrabold text-center mb-6">
           {city ? `PGs in ${city}` : "Find My Perfect PG"}
         </h1>
 
-        {/* ================= FILTERS ================= */}
         <Filters
-          filters={filters}
+          filters={tempFilters}          // 👈 inputs use tempFilters
           handleFilterChange={handleFilterChange}
           toggleAmenity={toggleAmenity}
+          applyFilters={applyFiltersClick}
         />
 
-        {/* ================= PG LISTINGS ================= */}
         <PGListings list={filteredPGs} />
 
-        {/* ================= NO DATA ================= */}
         {filteredPGs.length === 0 && (
           <p className="text-center text-gray-500 mt-12">
             No PGs found for selected filters
