@@ -18,10 +18,7 @@ const PGFullDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const pg = [...pgdetails].find(
-    (item) => item.id === Number(id)
-  );
-
+  const pg = [...pgdetails].find((item) => item.id === Number(id));
   const [currentIndex, setCurrentIndex] = useState(0);
 
   if (!pg) return null;
@@ -29,19 +26,19 @@ const PGFullDetails = () => {
   const gallery = pg.roomImages || [];
 
   return (
-    <div className="min-h-screen flex flex-col bg-background font-roboto">
+    <div className="min-h-screen flex flex-col bg-gray-50 font-roboto">
       <Navbar />
 
-      <div className="flex-1 w-full py-12">
-        <div className="flex justify-center">
-          <div className="max-w-7xl w-full lg:flex lg:gap-40 px-4 sm:px-6">
+      <div className="flex-1 py-12">
+        <div className="max-w-7xl mx-auto px-4 lg:px-6 lg:flex lg:gap-16">
 
-            {/* LEFT SECTION */}
-            <div className="lg:w-2/3 flex flex-col gap-8">
+          {/* LEFT SECTION */}
+          <div className="lg:w-2/3 flex flex-col gap-10">
 
-              {/* IMAGE CAROUSEL */}
+            {/* IMAGE CAROUSEL */}
+            <div className="relative h-80 sm:h-[450px] rounded-2xl overflow-hidden shadow-md bg-white">
               {gallery.length > 0 ? (
-                <div className="relative h-80 sm:h-[450px] rounded-xl overflow-hidden shadow-lg">
+                <>
                   <img
                     src={
                       gallery[currentIndex].startsWith("http")
@@ -58,9 +55,9 @@ const PGFullDetails = () => {
                         prev === 0 ? gallery.length - 1 : prev - 1
                       )
                     }
-                    className="absolute left-3 top-1/2 -translate-y-1/2 bg-white p-2 rounded-full shadow"
+                    className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 p-2 rounded-full shadow"
                   >
-                    <ChevronLeftIcon className="h-6 w-6" />
+                    <ChevronLeftIcon className="h-5 w-5" />
                   </button>
 
                   <button
@@ -69,148 +66,147 @@ const PGFullDetails = () => {
                         prev === gallery.length - 1 ? 0 : prev + 1
                       )
                     }
-                    className="absolute right-3 top-1/2 -translate-y-1/2 bg-white p-2 rounded-full shadow"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 p-2 rounded-full shadow"
                   >
-                    <ChevronRightIcon className="h-6 w-6" />
+                    <ChevronRightIcon className="h-5 w-5" />
                   </button>
-                </div>
+                </>
               ) : (
-                <div className="h-80 sm:h-[450px] bg-surface rounded-xl flex items-center justify-center">
+                <div className="h-full flex items-center justify-center text-gray-400">
                   No Images Available
                 </div>
               )}
+            </div>
 
-              {/* ✅ MAP SECTION (FIXED) */}
-              {(pg.address || pg.location) && (
-                <div className="w-full rounded-xl overflow-hidden shadow-lg bg-card">
-                  <iframe
-                    title="PG Location"
-                    src={`https://www.google.com/maps?q=${encodeURIComponent(
+            {/* MAP */}
+            {(pg.address || pg.location) && (
+              <div className="bg-white rounded-2xl shadow-md overflow-hidden">
+                <iframe
+                  title="PG Location"
+                  src={`https://www.google.com/maps?q=${encodeURIComponent(
+                    `${pg.address || ""} ${pg.location || ""}`
+                  )}&output=embed`}
+                  className="w-full h-[300px]"
+                  loading="lazy"
+                />
+
+                <div className="py-4 flex justify-center">
+                  <a
+                    href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
                       `${pg.address || ""} ${pg.location || ""}`
-                    )}&output=embed`}
-                    className="w-full h-[300px]"
-                    loading="lazy"
-                    referrerPolicy="no-referrer-when-downgrade"
-                  ></iframe>
+                    )}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-primary text-white px-6 py-2 rounded-full text-sm font-medium hover:bg-primary-dark transition"
+                  >
+                    Open in Google Maps
+                  </a>
+                </div>
+              </div>
+            )}
 
-                  <div className="flex justify-center py-4">
-                    <a
-                      href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
-                        `${pg.address || ""} ${pg.location || ""}`
-                      )}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="bg-primary text-white px-6 py-2 rounded-full hover:bg-primary-dark transition"
+            {/* BOOK NOW CTA (CLEAN, NO BORDER) */}
+            <div className="flex justify-center pt-2">
+              <CButton
+                size="lg"
+                className="px-12 py-3 text-lg"
+                onClick={() => navigate(`/book/${pg.id}`)}
+              >
+                Book Now
+              </CButton>
+            </div>
+          </div>
+
+          {/* RIGHT SECTION */}
+          <div className="lg:w-1/3 flex flex-col gap-6 mt-10 lg:mt-0">
+
+            {/* BASIC INFO */}
+            <div className="bg-white rounded-2xl shadow-md p-5 space-y-2">
+              <h1 className="text-2xl font-bold">{pg.name}</h1>
+              <p className="text-gray-600">{pg.location}</p>
+
+              {pg.address && (
+                <p className="text-sm text-gray-500">{pg.address}</p>
+              )}
+
+              <div className="pt-2 text-sm space-y-1">
+                {pg.ownerName && <p><span className="font-medium">Owner:</span> {pg.ownerName}</p>}
+                {pg.ownerContact && <p><span className="font-medium">Contact:</span> {pg.ownerContact}</p>}
+              </div>
+
+              {pg.startingPrice && (
+                <div className="pt-3 text-lg font-semibold text-primary">
+                  Starting from ₹{pg.startingPrice}/month
+                </div>
+              )}
+            </div>
+
+            {/* ROOM SHARING */}
+            {pg.sharing?.length > 0 && (
+              <div className="bg-white rounded-2xl shadow-md p-5">
+                <h2 className="text-lg font-semibold mb-3">Room Categories</h2>
+                <div className="grid grid-cols-2 gap-3">
+                  {pg.sharing.map((room, i) => (
+                    <div
+                      key={i}
+                      className="bg-orange-50 rounded-lg p-3 text-center"
                     >
-                      Start Location
-                    </a>
-                  </div>
+                      <p className="text-sm">{room.type}</p>
+                      <p className="font-semibold">₹{room.price}/month</p>
+                    </div>
+                  ))}
                 </div>
-              )}
-
-              {/* BOOK NOW */}
-              <div className="flex justify-center">
-                <CButton
-                  size="lg"
-                  className="text-lg px-8 py-3"
-                  onClick={() => navigate(`/book/${pg.id}`)}
-                >
-                  Book Now
-                </CButton>
               </div>
-            </div>
+            )}
 
-            {/* RIGHT SECTION */}
-            <div className="lg:w-1/2 flex flex-col gap-4 mt-6 lg:mt-0">
-
-              {/* PG INFO */}
-              <div className="bg-card p-4 rounded-lg shadow-sm space-y-1">
-                <h1 className="text-3xl font-bold">{pg.name}</h1>
-                <p className="text-lg text-text-secondary">{pg.location}</p>
-                {pg.address && <p className="text-sm">{pg.address}</p>}
-                {pg.ownerName && <p className="text-sm">Owner: {pg.ownerName}</p>}
-                {pg.ownerContact && (
-                  <p className="text-sm">Contact: {pg.ownerContact}</p>
-                )}
-                {pg.startingPrice && (
-                  <p className="text-sm">{pg.startingPrice}</p>
-                )}
-                {pg.rating && (
-                  <p className="text-warning">Rating: {pg.rating} ★</p>
-                )}
+            {/* AMENITIES */}
+            {pg.amenities?.length > 0 && (
+              <div className="bg-white rounded-2xl shadow-md p-5">
+                <h2 className="text-lg font-semibold mb-3">Amenities</h2>
+                <div className="flex flex-wrap gap-2">
+                  {pg.amenities.map((a, i) => (
+                    <span
+                      key={i}
+                      className="px-3 py-1 text-sm bg-gray-100 rounded-full"
+                    >
+                      {a}
+                    </span>
+                  ))}
+                </div>
               </div>
+            )}
 
-              {/* ROOM SHARING */}
-              {pg.sharing?.length > 0 && (
-                <div className="bg-card p-3 rounded-lg shadow-sm">
-                  <h2 className="text-xl font-semibold mb-2">
-                    Room Sharing & Prices
-                  </h2>
-                  <div className="flex gap-3">
-                    {pg.sharing.map((room, i) => (
-                      <div
-                        key={i}
-                        className="flex-1 bg-warning-light rounded-lg p-2 text-center"
-                      >
-                        <p>{room.type}</p>
-                        <p className="font-semibold">
-                          {room.price}/month
-                        </p>
-                      </div>
-                    ))}
-                  </div>
+            {/* FACILITIES */}
+            {pg.facilities?.length > 0 && (
+              <div className="bg-white rounded-2xl shadow-md p-5">
+                <h2 className="text-lg font-semibold mb-3">Facilities</h2>
+                <div className="flex flex-wrap gap-2">
+                  {pg.facilities.map((f, i) => (
+                    <span
+                      key={i}
+                      className="px-3 py-1 text-sm bg-gray-100 rounded-full"
+                    >
+                      {f}
+                    </span>
+                  ))}
                 </div>
-              )}
+              </div>
+            )}
 
-              {/* AMENITIES */}
-              {pg.amenities?.length > 0 && (
-                <div className="bg-card p-3 rounded-lg shadow-sm">
-                  <h2 className="text-xl font-semibold mb-2">Amenities</h2>
-                  <div className="flex flex-wrap gap-2">
-                    {pg.amenities.map((a, i) => (
-                      <span
-                        key={i}
-                        className="px-3 py-1 border rounded-full text-sm"
-                      >
-                        {a}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* FACILITIES */}
-              {pg.facilities?.length > 0 && (
-                <div className="bg-card p-3 rounded-lg shadow-sm">
-                  <h2 className="text-xl font-semibold mb-2">Facilities</h2>
-                  <div className="flex flex-wrap gap-2">
-                    {pg.facilities.map((f, i) => (
-                      <span
-                        key={i}
-                        className="px-3 py-1 border rounded-full text-sm"
-                      >
-                        {f}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* HOUSE RULES */}
-              {pg.rulesList?.length > 0 && (
-                <div className="bg-warning-light p-3 rounded-lg shadow-sm">
-                  <h2 className="text-xl font-semibold mb-2">House Rules</h2>
-                  <ul className="space-y-2">
-                    {pg.rulesList.map((rule, i) => (
-                      <li key={i} className="flex gap-2">
-                        <span>{ruleIcons[rule.icon]}</span>
-                        <span>{rule.text}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
+            {/* HOUSE RULES */}
+            {pg.rulesList?.length > 0 && (
+              <div className="bg-orange-50 rounded-2xl shadow-md p-5">
+                <h2 className="text-lg font-semibold mb-3">House Rules</h2>
+                <ul className="space-y-2 text-sm">
+                  {pg.rulesList.map((rule, i) => (
+                    <li key={i} className="flex items-center gap-2">
+                      <span>{ruleIcons[rule.icon]}</span>
+                      <span>{rule.text}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         </div>
       </div>
