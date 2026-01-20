@@ -68,4 +68,21 @@ export const getAllPayments = () => API.get("/payments/all");
 export const getAgreement = (bookingId) => API.get(`/agreements/${bookingId}`);
 export const createAgreement = (agreementData) => API.post("/agreements/create", agreementData);
 
+// Add these to your api.js file [cite: 2026-01-01, 2026-01-06]
+
+// 1. Function to upload profile picture
+export const updateProfilePicture = (formData) => 
+  API.post("/users/profile/picture", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+
+// 2. Function to remove profile picture
+export const removeProfilePicture = () => 
+  API.delete("/users/profile/picture");
+
+// Add this to your existing api.js file [cite: 2026-01-06]
+export const getOwnerContactData = () => API.get("/users/my-owner-contact");
+
+// Add this to your api/api.js [cite: 2026-01-01]
+export const updateUserProfile = (userData) => API.put("/users/profile/update", userData);
 export default API;

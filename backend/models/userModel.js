@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const bcrypt = require("bcryptjs"); // ✅ ADD THIS LINE AT THE TOP
 
 const userSchema = new mongoose.Schema(
   {
@@ -74,11 +75,26 @@ const userSchema = new mongoose.Schema(
       status: { type: String, enum: ["Pending", "Uploaded"], default: "Pending" }, 
       fileUrl: { type: String, default: "" },
       uploadedAt: { type: Date, default: Date.now },
+    },
+    // --- ADD THIS HERE ---
+    assignedPg: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "PG", // Links to the property [cite: 2026-01-06]
+    },
+    ownerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User", // Links to the owner's User document [cite: 2026-01-07]
     }
   },
   {
     timestamps: true,
   }
 );
+// ✅ REMOVE the pre("save") hook. 
+// ✅ KEEP only this method for the login check:
+userSchema.methods.matchPassword = async function (enteredPassword) {
+  return await bcrypt.compare(enteredPassword, this.password);
+};
 
-module.exports = mongoose.models.User || mongoose.model("User", userSchema);
+//module.exports = mongoose.models.User || mongoose.model("User", userSchema);
+module.exports = mongoose.model("User", userSchema);

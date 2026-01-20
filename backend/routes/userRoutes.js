@@ -11,7 +11,11 @@ const {
   getMe,
   getMyAgreement,
   getMyDocuments,
-  uploadUserDocument
+  uploadUserDocument,
+  getMyOwnerContact,
+  getMyTimeline,
+  sendOtp,              // <--- ADD THIS
+  verifyOtpAndRegister // <--- ADD THIS HERE [cite: 2026-01-07]
 } = require("../controllers/userController");
 const { protect } = require("../middleware/authMiddleware");
 const upload = require("../middleware/uploadMiddleware"); // Your Multer config [cite: 2026-01-06]
@@ -19,6 +23,9 @@ const upload = require("../middleware/uploadMiddleware"); // Your Multer config 
 // --- Public Routes (No token needed) ---
 router.post("/register", registerUser);
 router.post("/login", loginUser);
+// In userRoutes.js
+router.post("/send-otp", sendOtp);
+router.post("/verify-otp-register", verifyOtpAndRegister);
 
 // --- Protected Routes (Token required) ---
 // Route for the main dashboard data
@@ -50,4 +57,9 @@ router.get("/documents", protect, getMyDocuments);
 // In userRoutes.js
 router.post("/upload-doc", protect, upload.single("document"), uploadUserDocument);
 
+// 3. New Route for Owner Contact Page [cite: 2026-01-07]
+router.get("/my-owner-contact", protect, getMyOwnerContact);
+
+// routes/userRoutes.js
+router.get("/timeline", protect, getMyTimeline);
 module.exports = router;

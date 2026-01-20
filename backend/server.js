@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const nodemailer = require('nodemailer'); // Added for real email
 const path = require("path");
-require('dotenv').config();
+
 
 // IMPORT ROUTES
 // 1. Add this at the top with other imports
@@ -32,6 +32,11 @@ app.use(express.json()); // Essential for processing Login/Signup data
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("Connected to MongoDB Atlas"))
   .catch(err => console.error("Database connection error:", err));
+
+  // --- CRITICAL: REGISTER MODELS BEFORE ROUTES ---
+require('./models/pgModel');   // <--- ADD THIS [cite: 2026-01-01]
+require('./models/userModel'); // <--- ADD THIS
+require('./models/timelineModel'); // <--- Add this line here! [cite: 2026-01-06]
 
 // --- ROUTES (Standardized with /api prefix) ---
 
