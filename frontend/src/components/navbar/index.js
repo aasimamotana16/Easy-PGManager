@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { FaBars, FaUserCircle } from "react-icons/fa";
+import axios from "axios";
 import CButton from "../../components/cButton";
 
 // Import sidebars
@@ -15,6 +16,8 @@ const Navbar = () => {
   const [userName, setUserName] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isLogoutSuccessful, setIsLogoutSuccessful] = useState(false);
 
   // Check login + username
   const checkLoginStatus = () => {
@@ -44,13 +47,38 @@ const Navbar = () => {
 
   const role = localStorage.getItem("role");
 
-  // Logout function
-  const handleLogout = () => {
-    localStorage.clear();
-    setProfileOpen(false);
-    setSidebarOpen(false);
-    navigate("/");
-    window.dispatchEvent(new Event("storage"));
+ // Updated Logout logic with Modal and Success Check [cite: 2026-01-01]
+  const handleLogout = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      
+      // 1. Backend acknowledgment [cite: 2026-01-06]
+      if (token) {
+        await axios.post("http://localhost:5000/api/users/logout", {}, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      }
+
+      // 2. Show success checkmark [cite: 2026-01-01]
+      setIsLogoutSuccessful(true);
+
+      // 3. Wait 1.5s, then wipe data and redirect [cite: 2026-01-07]
+      setTimeout(() => {
+        localStorage.clear();
+        setProfileOpen(false);
+        setSidebarOpen(false);
+        setIsLogoutModalOpen(false);
+        setIsLogoutSuccessful(false); 
+        navigate("/");
+        window.dispatchEvent(new Event("storage"));
+      }, 1500);
+
+    } catch (error) {
+      // Fallback: Clear and exit [cite: 2026-01-06]
+      localStorage.clear();
+      setProfileOpen(false);
+      navigate("/");
+    }
   };
 
   const navLinkClass = (path) =>
@@ -180,11 +208,14 @@ const Navbar = () => {
                   </button>
 
                   <button
-                    onClick={handleLogout}
-                    className="w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100"
-                  >
-                    Logout
-                  </button>
+                  onClick={() => {
+                  setProfileOpen(false); // Closes the small menu first [cite: 2026-01-01]
+                  setIsLogoutModalOpen(true); // Triggers the "Are you sure?" popup [cite: 2026-01-01]
+                    }}
+                   className="w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100"
+                   >
+                   Logout
+                 </button>
                 </div>
               )}
             </>
@@ -206,6 +237,41 @@ const Navbar = () => {
             className="flex-1 bg-black/40"
             onClick={() => setSidebarOpen(false)}
           />
+        </div>
+      )}
+      {/* --- LOGOUT POPUP WITH SUCCESS CHECKMARK --- */}
+      {isLogoutModalOpen && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-white p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center transition-all animate-in zoom-in duration-200">
+            {!isLogoutSuccessful ? (
+              <>
+                <h3 className="text-2xl font-bold text-gray-800">Confirm Logout</h3>
+                <p className="text-gray-500 my-4 font-medium">Are you sure you want to end your session?</p>
+                <div className="flex gap-3 mt-6">
+                  <button 
+                    onClick={() => setIsLogoutModalOpen(false)} 
+                    className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition-colors"
+                  >
+                    No, Stay
+                  </button>
+                  <button 
+                    onClick={handleLogout} 
+                    className="flex-1 py-3 bg-orange-500 text-white rounded-xl font-bold shadow-lg shadow-orange-200 hover:bg-orange-600 transition-all"
+                  >
+                    Yes, Logout
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="flex flex-col items-center py-4 animate-in zoom-in duration-300">
+                <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-4xl mb-4 border-2 border-green-200">
+                  ✓
+                </div>
+                <h3 className="text-2xl font-bold text-gray-800">Success!</h3>
+                <p className="text-gray-500 mt-2 font-medium">Logged out successfully.</p>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </>

@@ -2,7 +2,8 @@ const express = require("express");
 const router = express.Router();
 const { 
   registerUser, 
-  loginUser, 
+  loginUser,
+  logoutUser, 
   getUserProfile, 
   updateUserProfile,
   updateProfilePicture, // Added for Upload Picture button [cite: 2026-01-07]
@@ -70,4 +71,8 @@ router.get("/checkins", protect, getMyCheckIns);
 
 // POST: Triggered by the "Check In" button in UI [cite: 2026-01-06]
 router.post("/checkin-action", protect, createCheckIn);
+
+// Add this line
+router.post("/logout", protect, logoutUser);
+
 module.exports = router;

@@ -22,6 +22,7 @@ exports.createPG = async (req, res) => {
 exports.searchPGs = async (req, res) => {
   try {
     const { 
+      city,
       lookingFor, 
       occupancy, 
       minBudget, 
@@ -31,6 +32,11 @@ exports.searchPGs = async (req, res) => {
     } = req.query;
 
     let query = { status: 'live' }; 
+
+    // Professional Logic: Only filter by city if it's a valid selection [cite: 2026-01-06]
+    if (city && city !== "-- Select --" && city !== "Any") {
+      query.city = city; 
+    }
 
     if (lookingFor && lookingFor !== "Any") query.type = lookingFor;
     if (occupancy && occupancy !== "Any") query.occupancy = occupancy;
@@ -68,16 +74,29 @@ exports.searchPGs = async (req, res) => {
   }
 };
 
-// 3. New Function to stop the crash on route line 13 [cite: 2026-01-06]
+// 3. Updated Function to handle city filtering correctly [cite: 2026-01-06]
 exports.getAllPgs = async (req, res) => {
   try {
-    const allPgs = await PG.find({ status: 'live' });
-    // Map every PG in the list so titles and prices show up correctly [cite: 2026-01-06]
+    // 1. Capture city from the request query [cite: 2026-01-06]
+    const { city } = req.query; 
+    
+    // 2. Define the base query [cite: 2026-01-06]
+    let query = { status: 'live' };
+
+   // Professional matching: Trim spaces and ignore case [cite: 2026-01-06]
+    if (city && city.trim() !== "" && city !== "-- Select --" && city !== "Any") {
+      query.city = { $regex: new RegExp(`^${city.trim()}$`, 'i') }; 
+    }
+
+    // 4. Run the query with the filters included [cite: 2026-01-06]
+    const allPgs = await PG.find(query);
+
     const mappedPgs = allPgs.map(pg => ({
       ...pg._doc,
-      name: pg.pgName, // Fixes missing name on main cards [cite: 2026-01-01]
-      rent: pg.price   // Fixes 0 price on main cards [cite: 2026-01-06]
+      name: pg.pgName, // [cite: 2026-01-01]
+      rent: pg.price   // [cite: 2026-01-06]
     }));
+
     res.status(200).json({
       success: true,
       data: mappedPgs
@@ -85,7 +104,7 @@ exports.getAllPgs = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: "Error fetching all PGs",
+      message: "Error fetching filtered PGs",
       error: error.message
     });
   }

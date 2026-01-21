@@ -52,6 +52,7 @@ const loginUser = async (req, res) => {
   try {
     const email = req.body.email?.trim().toLowerCase();
     const password = req.body.password?.trim();
+    const selectedRole = req.body.role; // Capture the role from frontend button [cite: 2026-01-06]
 
     if (!email || !password) {
       return res.status(400).json({ message: "Email and password required" });
@@ -70,6 +71,14 @@ const loginUser = async (req, res) => {
     if (!isMatch && !isTesterManual) {
       console.log("❌ Password mismatch for:", email);
       return res.status(401).json({ message: "Invalid email or password" });
+    }
+
+    // --- NEW ROLE VALIDATION LOGIC --- [cite: 2026-01-06]
+    // Check if the role in database matches the role selected by the user on the login screen
+    if (selectedRole && user.role !== selectedRole) {
+      return res.status(401).json({ 
+        message: `This account is registered as an ${user.role}. Please use the correct login button.` 
+      });
     }
 
     // Generate Token
@@ -298,7 +307,7 @@ const getMyOwnerContact = async (req, res) => {
        // ✅ Match these keys with your PG Model fields in Atlas
         ownerName: pg.ownerName || "Unity Girls Management", 
         phone: pg.ownerContact || pg.phone || "9876543210", // Use the field name in your PG schema
-        email: pg.ownerEmail || "contact@unitygirls.com",
+        email: pg.ownerEmail || "s61429609@gmail.com",
         pgName: pg.pgName || "Unity Girls Residency", // Matches pgSchema field
         pgAddress: pg.location || "Nadiad, Gujarat"    // Matches pgSchema field
       
@@ -438,9 +447,27 @@ const createCheckIn = async (req, res) => {
     res.status(500).json({ success: false, message: "Failed to record check-in" });
   }
 };
+// @desc Logout user [cite: 2026-01-06]
+const logoutUser = async (req, res) => {
+  try {
+    // In JWT, logout is mostly handled by the frontend, 
+    // but we return success to confirm the action [cite: 2026-01-07]
+    res.status(200).json({ success: true, message: "Logged out successfully" });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Logout failed" });
+  }
+};
+
+// Update your module.exports at the bottom
+module.exports = {
+  // ... existing exports
+  logoutUser, 
+};
+
 module.exports = { 
   registerUser, 
   loginUser, 
+  logoutUser, // Added here
   getUserDashboard,
   getUserProfile, 
   updateUserProfile,
