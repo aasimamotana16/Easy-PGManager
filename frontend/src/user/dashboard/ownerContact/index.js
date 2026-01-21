@@ -47,27 +47,28 @@ const OwnerContact = () => {
         </span>
       </div>
 
-      {/* Action Buttons - Now using Dynamic Data [cite: 2026-01-06] */}
-      <div className="flex flex-wrap gap-4 w-full max-w-3xl">
-        <CButton
-          className="px-6 py-2"
-          onClick={() => {
-            if (ownerData.phone) window.location.href = `tel:${ownerData.phone}`;
-          }}
-        >
-          Call Owner
-        </CButton>
+    {/* Action Buttons - Pure Logic, No Alerts */}
+<div className="flex flex-wrap gap-4 w-full max-w-3xl">
+  <CButton
+    className="px-6 py-2"
+    onClick={() => {
+      // Directly opens the phone dialer [cite: 2026-01-01]
+      window.location.href = `tel:${ownerData.phone}`; 
+    }}
+  >
+    Call Owner
+  </CButton>
 
-        <CButton
-          className="px-6 py-2"
-          onClick={() => {
-            if (ownerData.email) window.location.href = `mailto:${ownerData.email}`;
-          }}
-        >
-          Email Owner
-        </CButton>
-      </div>
-
+  <CButton
+    className="px-6 py-2"
+    onClick={() => {
+      // Directly opens the default email client [cite: 2026-01-01]
+      window.location.href = `mailto:${ownerData.email}`;
+    }}
+  >
+    Email Owner
+  </CButton>
+</div>
       {/* Info Fields Card - Logic kept identical [cite: 2026-01-07] */}
       <div className="w-full max-w-3xl bg-white rounded-3xl shadow-lg p-8 space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-gray-700">

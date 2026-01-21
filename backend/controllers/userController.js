@@ -295,11 +295,15 @@ const getMyOwnerContact = async (req, res) => {
     res.status(200).json({
       success: true,
       data: {
-        ownerName: pg.ownerName || "Not Available", 
-        phone: pg.contact || "Not Available",
-        email: "contact@unitygirls.com",
-        pgName: pg.pgName || "Not Available",
-        pgAddress: pg.location || "Not Available"
+       // ✅ Match these keys with your PG Model fields in Atlas
+        ownerName: pg.ownerName || "Unity Girls Management", 
+        phone: pg.ownerContact || pg.phone || "9876543210", // Use the field name in your PG schema
+        email: pg.ownerEmail || "contact@unitygirls.com",
+        pgName: pg.pgName || "Unity Girls Residency", // Matches pgSchema field
+        pgAddress: pg.location || "Nadiad, Gujarat"    // Matches pgSchema field
+      
+        //pgName: pg.name || pg.pgName || user.bookedPgName,
+        //pgAddress: pg.location || pg.address || user.location
       }
     });
   } catch (error) {
@@ -391,6 +395,49 @@ const verifyOtpAndRegister = async (req, res) => {
   }
 };
 
+const CheckIn = require("../models/checkInModel");
+
+// @desc Get User Check-in History [cite: 2026-01-06]
+const getMyCheckIns = async (req, res) => {
+  try {
+    const history = await CheckIn.find({ userId: req.user._id }).sort({ checkInDate: -1 });
+    
+    // Map data for the calendar and activity list [cite: 2026-01-01]
+    const formattedHistory = history.map(item => ({
+      id: item._id,
+      checkIn: item.checkInDate.toISOString().split('T')[0],
+      checkOut: item.checkOutDate ? item.checkOutDate.toISOString().split('T')[0] : "Pending",
+      status: item.status
+    }));
+
+    res.status(200).json({
+      success: true,
+      data: formattedHistory
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Error fetching check-in data" });
+  }
+};
+// @desc Create a new Check-in entry
+const createCheckIn = async (req, res) => {
+  try {
+    // Check if a specific date was sent from the calendar, otherwise use now
+    const checkInDate = req.body.date ? new Date(req.body.date) : new Date();
+
+    const newCheckIn = await CheckIn.create({
+      userId: req.user._id,
+      checkInDate: checkInDate, // Use the selected date
+      status: "Present"
+    });
+
+    res.status(201).json({
+      success: true,
+      data: newCheckIn
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Failed to record check-in" });
+  }
+};
 module.exports = { 
   registerUser, 
   loginUser, 
@@ -408,6 +455,8 @@ module.exports = {
   // Add these three specifically to fix the "Undefined" error: [cite: 2026-01-06]
   sendOtp,
   verifyOtpAndRegister,
+  getMyCheckIns,
+  createCheckIn,
   forgotPassword: (req, res) => res.send("Forgot Pass"), // Placeholder
   resetPassword: (req, res) => res.send("Reset Pass"), // Placeholder
 };

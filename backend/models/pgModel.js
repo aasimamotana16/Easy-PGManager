@@ -66,4 +66,4 @@ const pgSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-module.exports = mongoose.models.Pg || mongoose.model("Pg", pgSchema);
+module.exports = mongoose.models.PG || mongoose.model("PG", pgSchema);

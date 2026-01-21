@@ -73,7 +73,7 @@ const DashboardHome = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-lg border">
           <h1 className="text-2xl font-semibold text-primary">
-            Welcome back, {user?.name || "user"} 👋
+            Welcome back, {user?.fullName || localStorage.getItem("userName") || "user"} 👋
           </h1>
           <p className="text-buttonDEFAULT mt-1">
             Manage your PG stay, payments, and support from one place.

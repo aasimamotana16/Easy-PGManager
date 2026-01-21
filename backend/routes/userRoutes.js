@@ -15,7 +15,9 @@ const {
   getMyOwnerContact,
   getMyTimeline,
   sendOtp,              // <--- ADD THIS
-  verifyOtpAndRegister // <--- ADD THIS HERE [cite: 2026-01-07]
+  verifyOtpAndRegister,
+  getMyCheckIns,   // To fetch past activities [cite: 2026-01-06]
+  createCheckIn // <--- ADD THIS HERE [cite: 2026-01-07]
 } = require("../controllers/userController");
 const { protect } = require("../middleware/authMiddleware");
 const upload = require("../middleware/uploadMiddleware"); // Your Multer config [cite: 2026-01-06]
@@ -62,4 +64,10 @@ router.get("/my-owner-contact", protect, getMyOwnerContact);
 
 // routes/userRoutes.js
 router.get("/timeline", protect, getMyTimeline);
+
+// GET: Fetch list for "Past Activities" and Calendar [cite: 2026-01-06]
+router.get("/checkins", protect, getMyCheckIns);
+
+// POST: Triggered by the "Check In" button in UI [cite: 2026-01-06]
+router.post("/checkin-action", protect, createCheckIn);
 module.exports = router;
