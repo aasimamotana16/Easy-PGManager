@@ -59,17 +59,8 @@ module.exports = {
         hover: "0 12px 32px rgba(28, 28, 28, 0.12)",
       },
 
-      fontSize: {
-        xs: ["0.875rem", { lineHeight: "1.4rem" }],
-        sm: ["1rem", { lineHeight: "1.6rem" }],
-        base: ["1.125rem", { lineHeight: "1.8rem" }],
-        lg: ["1.375rem", { lineHeight: "2rem" }],
-        xl: ["1.625rem", { lineHeight: "2.25rem" }],
-        "2xl": ["2rem", { lineHeight: "2.5rem" }],
-        "3xl": ["2.5rem", { lineHeight: "3rem" }],
-        "4xl": ["3rem", { lineHeight: "3.5rem" }],
-        "5xl": ["3.75rem", { lineHeight: "4rem" }],
-      },
+      
+
     },
   },
   plugins: [],
