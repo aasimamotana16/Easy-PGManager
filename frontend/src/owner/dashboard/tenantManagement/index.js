@@ -16,16 +16,14 @@ const Tenants = () => {
   const [showAddTenant, setShowAddTenant] = useState(false);
   const [search, setSearch] = useState("");
 
-  /* -------- FETCH DATA (UNCHANGED) -------- */
   const fetchTenants = async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.get("http://localhost:5000/api/owner/my-tenants", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.data.success) {
-        setTenants(res.data.data);
-      }
+      const res = await axios.get(
+        "http://localhost:5000/api/owner/my-tenants",
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (res.data.success) setTenants(res.data.data);
     } catch (err) {
       console.error("Error fetching tenants:", err);
     }
@@ -43,19 +41,17 @@ const Tenants = () => {
         tenantData,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-
       if (res.data.success) {
         setShowAddTenant(false);
         fetchTenants();
       }
-    } catch (err) {
-      alert("Failed to save tenant to database");
+    } catch {
+      alert("Failed to save tenant");
     }
   };
 
-  const getPGName = (id) => PG_LIST.find((p) => p.id === id)?.name || "";
+  const getPGName = (id) => PG_LIST.find((p) => p.id === id)?.name || "-";
 
-  /* -------- FILTERING (UPDATED SEARCH ONLY) -------- */
   const filteredTenants =
     selectedPG === "all"
       ? tenants
@@ -79,42 +75,41 @@ const Tenants = () => {
   );
 
   return (
-    <div className="p-6 bg-gray-100 min-h-screen relative space-y-6">
+    <div className="p-4 md:p-6 bg-gray-100 min-h-screen space-y-5">
 
-      {/* PAGE HEADER (LIKE OTHER PAGES) */}
+      {/* HEADER */}
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-3">
-          <FaUsers className="text-orange-500 text-3xl" />
+          <FaUsers className="text-gray-800 text-xl md:text-3xl lg:text-2xl" />
           <div>
-            <h1 className="text-3xl font-bold text-primary">Tenants</h1>
-            <p className="text-gray-500">
-              Manage tenants across all your PG properties
+            <h1 className="text-lg md:text-2xl lg:text-3xl font-semibold text-primary">
+              Tenants
+            </h1>
+            <p className="text-xs md:text-xl lg:text-2xl text-gray-500">
+              View and manage tenants across PGs
             </p>
           </div>
         </div>
 
-        <CButton
-          onClick={() => setShowAddTenant(true)}
-          className="flex items-center gap-2 bg-primary text-white"
-        >
-          <FaPlus /> Add Tenant
+        <CButton onClick={() => setShowAddTenant(true)}>
+          <FaPlus className="mr-2" /> Add Tenant
         </CButton>
       </div>
 
-      {/* SEARCH & FILTER */}
-      <div className="bg-white p-4 rounded-md shadow flex flex-col md:flex-row gap-4">
+      {/* FILTER BAR */}
+      <div className="bg-white p-3 md:p-4 rounded-md shadow flex flex-col md:flex-row gap-3">
         <input
           type="text"
-          placeholder="Search by tenant name or PG name..."
+          placeholder="Search tenant or PG name"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="border rounded-md px-4 py-2 flex-1"
+          className="border rounded-md px-3 py-2 w-full md:flex-1 text-sm"
         />
 
         <select
-          className="border rounded-md px-4 py-2 md:w-64"
           value={selectedPG}
           onChange={(e) => setSelectedPG(e.target.value)}
+          className="border rounded-md px-3 py-2 md:w-60 text-sm"
         >
           <option value="all">All PGs</option>
           {PG_LIST.map((pg) => (
@@ -127,76 +122,79 @@ const Tenants = () => {
 
       {/* TABLE */}
       <div className="bg-white rounded-md shadow overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="bg-black text-white border-b">
-            <tr>
-              <th className="p-4 text-left font-semibold">Name</th>
-              <th className="p-4 text-left font-semibold">Phone</th>
-              <th className="p-4 text-left font-semibold">PG</th>
-              <th className="p-4 text-left font-semibold">Room</th>
-              <th className="p-4 text-center font-semibold">Persons</th>
-              <th className="p-4 text-center font-semibold">Status</th>
-              <th className="p-4 text-center font-semibold">Actions</th>
+        <table className="w-full text-xs md:text-sm">
+          <thead className="bg-gray-50 border-b">
+            <tr className="text-gray-600">
+              <th className="p-3 text-left">Name</th>
+              <th className="p-3 text-left hidden md:table-cell">Phone</th>
+              <th className="p-3 text-left hidden md:table-cell">PG</th>
+              <th className="p-3 text-left">Room</th>
+              <th className="p-3 text-center hidden md:table-cell">Persons</th>
+              <th className="p-3 text-center">Status</th>
+              <th className="p-3 text-center">Actions</th>
             </tr>
           </thead>
 
           <tbody>
-            {groupedRooms.length > 0 ? (
+            {groupedRooms.length ? (
               groupedRooms.map((room, idx) => {
                 const firstTenant = room.persons[0];
                 return (
-                  <tr key={idx} className="border-b last:border-none">
-                    <td className="p-4">{firstTenant.name}</td>
-                    <td className="p-4">{firstTenant.phone}</td>
-                    <td className="p-4">{getPGName(firstTenant.pgId)}</td>
-                    <td className="p-4">{firstTenant.room}</td>
-                    <td className="p-4 text-center">{room.persons.length}</td>
-                    <td className="p-4 text-center">
-                      <span
-                        className={`px-3 py-1 rounded-md text-xs font-semibold ${
-                          firstTenant.status === "Active"
-                            ? "bg-green-100 text-green-700"
-                            : "bg-gray-200 text-gray-600"
-                        }`}
-                      >
+                  <tr key={idx} className="border-b hover:bg-gray-50">
+                    <td className="px-3 py-3">{firstTenant.name}</td>
+
+                    <td className="px-3 py-3 hidden md:table-cell">
+                      {firstTenant.phone}
+                    </td>
+
+                    <td className="px-3 py-3 hidden md:table-cell">
+                      {getPGName(firstTenant.pgId)}
+                    </td>
+
+                    <td className="px-3 py-3">{firstTenant.room}</td>
+
+                    <td className="px-3 py-3 text-center hidden md:table-cell">
+                      {room.persons.length}
+                    </td>
+
+                    <td className="px-3 py-3 text-center">
+                      <span className="text-xs md:text-sm text-green-700">
                         {firstTenant.status}
                       </span>
                     </td>
-                    <td className="p-4 flex justify-center gap-2">
-                      <CButton
-                        className="px-3 py-1"
-                        onClick={() =>
-                          alert(
-                            room.persons
-                              .map(
-                                (p) =>
-                                  `Name: ${p.name}\nPhone: ${p.phone}\nEmail: ${p.email}\nStatus: ${p.status}`
-                              )
-                              .join("\n\n")
-                          )
-                        }
-                        title="View All Persons"
-                      >
-                        <FaEye />
-                      </CButton>
 
-                      <CButton
-                        className="px-3 py-1"
-                        onClick={() =>
-                          alert("Edit functionality coming soon")
-                        }
-                        title="Edit Tenant"
-                      >
-                        <FaEdit />
-                      </CButton>
+                    <td className="px-3 py-3 text-center">
+                      <div className="flex justify-center gap-3">
+                        <FaEye
+                          className="cursor-pointer text-gray-600 hover:text-gray-800"
+                          title="View"
+                          size={22}
+                          onClick={() =>
+                            alert(
+                              room.persons
+                                .map(
+                                  (p) =>
+                                    `Name: ${p.name}\nPhone: ${p.phone}\nEmail: ${p.email}\nStatus: ${p.status}`
+                                )
+                                .join("\n\n")
+                            )
+                          }
+                        />
+                        <FaEdit
+                          className="cursor-pointer text-blue-600 hover:text-blue-800"
+                          title="Edit"
+                          size={22}
+                          onClick={() => alert("Edit coming soon")}
+                        />
+                      </div>
                     </td>
                   </tr>
                 );
               })
             ) : (
               <tr>
-                <td colSpan={7} className="text-center py-10 text-gray-500">
-                  No tenants found. Add your first tenant.
+                <td colSpan={7} className="py-10 text-center text-gray-400">
+                  No tenants found
                 </td>
               </tr>
             )}
@@ -204,7 +202,6 @@ const Tenants = () => {
         </table>
       </div>
 
-      {/* ADD TENANT MODAL */}
       {showAddTenant && (
         <AddTenant
           onClose={() => setShowAddTenant(false)}

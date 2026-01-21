@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios"; // Added import
+import axios from "axios";
 import CInput from "../../../../components/cInput";
 import CSelect from "../../../../components/cSelect";
 import CButton from "../../../../components/cButton";
@@ -54,8 +54,6 @@ const AddProperty = () => {
     if (!/^\d{6}$/.test(formData.pincode)) return "Enter valid 6 digit Pincode";
     if (formData.facilities.length === 0) return "Select at least one Facility";
     if (!formData.rules.curfew) return "Curfew Time is required";
-    
-    // Temporarily relaxed document validation for testing
     return null;
   };
 
@@ -114,8 +112,7 @@ const AddProperty = () => {
 
     try {
       const token = localStorage.getItem("token");
-      
-      // Sending JSON for testing until back-end Multer is ready
+
       const dataToSend = {
         pgName: formData.name,
         location: `${formData.area}, ${formData.city}`,
@@ -123,132 +120,116 @@ const AddProperty = () => {
         propertyType: formData.propertyType,
         forWhom: formData.forWhom,
         facilities: formData.facilities,
-        rules: formData.rules
+        rules: formData.rules,
       };
 
       const response = await axios.post(
         "http://localhost:5000/api/owner/add-pg",
         dataToSend,
-        { 
-          headers: { 
-            Authorization: `Bearer ${token}` 
-          } 
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
       if (response.data.success) {
         alert("Property saved successfully!");
-        // Passing pgId to addRooms to link them properly later
         navigate("/owner/dashBoard/pgManagment/addRooms", {
           state: { propertyData: formData, pgId: response.data.data._id },
         });
       }
     } catch (err) {
       console.error("Submission Error:", err);
-      alert("Failed to save property. Ensure backend is running and you are logged in.");
+      alert("Failed to save property.");
     }
   };
 
   return (
-    <div className="max-w-6xl mx-auto my-6 font-sans px-2">
-      <h2 className="text-center text-3xl font-bold text-amber-600 mb-8">
-        Add New Property
-      </h2>
+    <div className="p-6 bg-gray-100 min-h-screen">
+      <div className="max-w-6xl mx-auto">
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="flex flex-wrap gap-6 items-stretch">
-          <div className="flex-1 min-w-[350px]">
-            <CFormCard className="border border-gray-400 h-full relative">
-              <span className="absolute -top-3 left-4 bg-white px-2 font-semibold text-gray-700">
-                Basic Details
-              </span>
-              <div className="mt-4 space-y-3">
-                <CInput label="Property Name" name="name" value={formData.name} onChange={handleChange} placeholder="Enter property name" required />
-                <CSelect label="Property Type" name="propertyType" value={formData.propertyType} onChange={handleChange} options={propertyTypes} required />
-                <CSelect label="For" name="forWhom" value={formData.forWhom} onChange={handleChange} options={genderOptions} required />
-                <CInput label="Total Floors" type="number" name="totalFloors" value={formData.totalFloors} onChange={handleChange} />
-                <CInput type="textarea" label="Description" name="description" value={formData.description} onChange={handleChange} rows={6} placeholder="Enter property description" />
+        {/* PAGE HEADER */}
+        <h1 className="text-3xl font-bold text-primary mb-2">
+          Add New Property
+        </h1>
+        <p className="text-gray-500 mb-8">
+          Enter property details to list your PG
+        </p>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+
+          {/* BASIC DETAILS */}
+          <CFormCard className="p-6 shadow">
+            <h2 className="text-lg font-semibold mb-6">Basic Details</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <CInput label="Property Name" name="name" value={formData.name} onChange={handleChange} />
+              <CSelect label="Property Type" name="propertyType" value={formData.propertyType} onChange={handleChange} options={propertyTypes} />
+              <CSelect label="For" name="forWhom" value={formData.forWhom} onChange={handleChange} options={genderOptions} />
+              <CInput label="Total Floors" type="number" name="totalFloors" value={formData.totalFloors} onChange={handleChange} />
+              <div className="md:col-span-2">
+                <CInput type="textarea" label="Description" name="description" value={formData.description} onChange={handleChange} rows={4} />
               </div>
-            </CFormCard>
-          </div>
+            </div>
+          </CFormCard>
 
-          <div className="flex-1 min-w-[400px]">
-            <CFormCard className="border border-gray-400 h-full relative">
-              <span className="absolute -top-3 left-4 bg-white px-2 font-semibold text-gray-700">
-                Location
-              </span>
-              <div className="mt-4 space-y-3">
-                <CInput label="City" name="city" value={formData.city} onChange={handleChange} required />
-                <CInput label="Area" name="area" value={formData.area} onChange={handleChange} />
-                <CInput type="textarea" label="Full Address" name="address" value={formData.address} onChange={handleChange} rows={4} required />
-                <CInput label="Pincode" name="pincode" value={formData.pincode} onChange={handleChange} />
+          {/* LOCATION */}
+          <CFormCard className="p-6 shadow">
+            <h2 className="text-lg font-semibold mb-6">Location</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <CInput label="City" name="city" value={formData.city} onChange={handleChange} />
+              <CInput label="Area" name="area" value={formData.area} onChange={handleChange} />
+              <div className="md:col-span-2">
+                <CInput type="textarea" label="Full Address" name="address" value={formData.address} onChange={handleChange} rows={3} />
               </div>
-            </CFormCard>
-          </div>
-        </div>
+              <CInput label="Pincode" name="pincode" value={formData.pincode} onChange={handleChange} />
+            </div>
+          </CFormCard>
 
-        <div className="flex flex-wrap gap-6 items-stretch">
-          <div className="flex-1 min-w-[350px]">
-            <CFormCard className="border border-gray-400 h-full relative">
-              <span className="absolute -top-3 left-4 bg-white px-2 font-semibold text-gray-700">
-                Facilities
-              </span>
-              <div className="mt-4">
-                {facilitiesList.map((item) => (
-                  <label key={item} className="block mb-2">
-                    <input type="checkbox" className="mr-2" checked={formData.facilities.includes(item)} onChange={() => toggleFacility(item)} />
-                    {item}
-                  </label>
-                ))}
-              </div>
-            </CFormCard>
-          </div>
-
-          <div className="flex-1 min-w-[350px]">
-            <CFormCard className="border border-gray-400 h-full relative">
-              <span className="absolute -top-3 left-4 bg-white px-2 font-semibold text-gray-700">
-                Rules & Curfew
-              </span>
-              <div className="mt-4">
-                {rulesList.map((rule) => (
-                  <label key={rule.key} className="block mb-2">
-                    <input type="checkbox" className="mr-2" checked={formData.rules[rule.key]} onChange={(e) => updateRule(rule.key, e.target.checked)} />
-                    {rule.label}
-                  </label>
-                ))}
-                <CInput type="time" label="Curfew Time" value={formData.rules.curfew} onChange={(e) => updateRule("curfew", e.target.value)} />
-              </div>
-            </CFormCard>
-          </div>
-        </div>
-
-        <CFormCard className="border border-gray-400 relative">
-          <span className="absolute -top-3 left-4 bg-white px-2 font-semibold text-gray-700">
-            Proof of Property Documents
-          </span>
-          <div className="mt-4 space-y-4">
-            {["aadhaar", "electricityBill", "propertyTax"].map((key) => (
-              <div key={key} className="flex items-center gap-4">
-                <label className="font-bold">
-                  {key === "aadhaar" ? "Aadhaar Card" : key === "electricityBill" ? "Electricity Bill" : "Property Tax Document"}:
+          {/* FACILITIES */}
+          <CFormCard className="p-6 shadow">
+            <h2 className="text-lg font-semibold mb-4">Facilities</h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {facilitiesList.map((item) => (
+                <label key={item} className="flex items-center gap-2">
+                  <input type="checkbox" checked={formData.facilities.includes(item)} onChange={() => toggleFacility(item)} />
+                  {item}
                 </label>
-                <input type="file" accept=".jpg,.png,.pdf" disabled={!!formData.proofDocuments[key]} onChange={(e) => handleFileChange(e, key)} />
+              ))}
+            </div>
+          </CFormCard>
+
+          {/* RULES */}
+          <CFormCard className="p-6 shadow">
+            <h2 className="text-lg font-semibold mb-4">Rules & Curfew</h2>
+            <div className="space-y-3">
+              {rulesList.map((rule) => (
+                <label key={rule.key} className="flex items-center gap-2">
+                  <input type="checkbox" checked={formData.rules[rule.key]} onChange={(e) => updateRule(rule.key, e.target.checked)} />
+                  {rule.label}
+                </label>
+              ))}
+              <CInput type="time" label="Curfew Time" value={formData.rules.curfew} onChange={(e) => updateRule("curfew", e.target.value)} />
+            </div>
+          </CFormCard>
+
+          {/* DOCUMENTS */}
+          <CFormCard className="p-6 shadow">
+            <h2 className="text-lg font-semibold mb-4">Property Documents</h2>
+            {["aadhaar", "electricityBill", "propertyTax"].map((key) => (
+              <div key={key} className="flex items-center gap-4 mb-3">
+                <input type="file" onChange={(e) => handleFileChange(e, key)} disabled={!!formData.proofDocuments[key]} />
                 {formData.proofDocuments[key] && (
                   <>
-                    <span className="text-gray-700">{formData.proofDocuments[key].name}</span>
-                    <button type="button" onClick={() => viewFile(key)} className="text-blue-600 hover:text-blue-800"><FaEye /></button>
-                    <button type="button" onClick={() => removeFile(key)} className="text-red-600 hover:text-red-800"><FaTrash /></button>
+                    <button type="button" onClick={() => viewFile(key)}><FaEye /></button>
+                    <button type="button" onClick={() => removeFile(key)}><FaTrash /></button>
                   </>
                 )}
               </div>
             ))}
-          </div>
-        </CFormCard>
+          </CFormCard>
 
-        <div className="text-center mt-8">
-          <CButton type="submit">Save & Continue</CButton>
-        </div>
-      </form>
+          <div className="text-center pt-4">
+            <CButton size="lg" type="submit">Save & Continue</CButton>
+          </div>
+        </form>
+      </div>
     </div>
   );
 };
