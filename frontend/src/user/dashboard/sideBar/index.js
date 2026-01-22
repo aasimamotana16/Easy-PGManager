@@ -22,7 +22,6 @@ const UserSidebar = ({ closeSidebar }) => {
     { to: "/user/dashboard/documents", label: "Documents", icon: <FaFileAlt /> },
     { to: "/user/dashboard/timeline", label: "Timeline", icon: <FaBook /> },
     { to: "/user/dashboard/owner-contact", label: "Owner Contact", icon: <FaPhone /> },
-    { to: "/user/dashboard/userProfile", label: "Profile", icon: <FaUser /> },
   ];
 
   // Navigate to a route
@@ -59,7 +58,7 @@ const UserSidebar = ({ closeSidebar }) => {
         className="flex items-center gap-3 p-4 text-2xl font-bold cursor-pointer"
         onClick={() => handleNavClick("/user/dashboard")}
       >
-        EasyPG
+        EasyPG Manager 
       </div>
 
       {/* MENU */}

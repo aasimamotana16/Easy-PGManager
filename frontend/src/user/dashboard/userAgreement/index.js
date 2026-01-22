@@ -1,20 +1,29 @@
-import React, { useState, useEffect } from "react"; // Added useEffect
+import React, { useState, useEffect } from "react";
 import CButton from "../../../components/cButton";
 import jsPDF from "jspdf";
-import axios from "axios"; // Ensure axios is installed
+import axios from "axios";
+import Swal from "sweetalert2";
+import { 
+  FaFileContract, 
+  FaDownload, 
+  FaListUl, 
+  FaRegCheckCircle,
+  FaShieldAlt,
+  FaTimes
+} from "react-icons/fa";
 
 const stampImg = "/pg_stamp.png";
 
 const Agreements = () => {
   const [showRules, setShowRules] = useState(false);
-  const [agreementInfo, setAgreementInfo] = useState(null); // Changed to null initially
+  const [agreementInfo, setAgreementInfo] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // 1. Fetch live data from your new API [cite: 2026-01-06]
+  // Fetch live agreement data [cite: 2026-01-06]
   useEffect(() => {
     const fetchAgreement = async () => {
       try {
-        const token = localStorage.getItem("token"); // Assumes token is in localStorage
+        const token = localStorage.getItem("token");
         const res = await axios.get("http://localhost:5000/api/users/agreement", {
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -23,7 +32,13 @@ const Agreements = () => {
           setAgreementInfo(res.data.data);
         }
       } catch (err) {
-        console.error("Failed to fetch live agreement data", err);
+        console.error("Agreement fetch error:", err);
+        Swal.fire({
+          icon: 'error',
+          title: 'Connection Error',
+          text: 'Unable to load agreement details at this time.',
+          confirmButtonColor: '#000000'
+        });
       } finally {
         setLoading(false);
       }
@@ -44,8 +59,32 @@ const Agreements = () => {
   ];
 
   const handleDownloadPDF = () => {
-    if (!agreementInfo) return;
+    // Validation: Check if backend data is actually ready for PDF generation
+    const isDataValid = agreementInfo && agreementInfo.tenantName && agreementInfo.rentAmount;
 
+    if (!isDataValid) {
+      return Swal.fire({
+        icon: 'info',
+        title: 'Document Not Ready',
+        text: 'Your agreement details are being verified. Please try again in a few minutes.',
+        confirmButtonColor: '#000000'
+      });
+    }
+
+    Swal.fire({
+      title: 'Download Agreement?',
+      text: "This will generate a digital copy of your signed contract.",
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#f97316',
+      cancelButtonColor: '#000000',
+      confirmButtonText: 'Yes, Download'
+    }).then((result) => {
+      if (result.isConfirmed) generatePDF();
+    });
+  };
+
+  const generatePDF = () => {
     const doc = new jsPDF();
     doc.setFontSize(18);
     doc.setFont("helvetica", "bold");
@@ -54,14 +93,13 @@ const Agreements = () => {
     doc.setFontSize(11);
     doc.setFont("helvetica", "normal");
     let y = 30;
-    // Using camelCase names from your backend [cite: 2026-01-01]
-    doc.text(`Agreement ID: ${agreementInfo.agreementId}`, 14, y); y += 7;
-    doc.text(`Tenant Name: ${agreementInfo.tenantName}`, 14, y); y += 7;
-    doc.text(`PG Name: ${agreementInfo.pgName}`, 14, y); y += 7;
-    doc.text(`Room / Bed: ${agreementInfo.roomNo}`, 14, y); y += 7;
-    doc.text(`Agreement Period: ${agreementInfo.startDate} - ${agreementInfo.endDate}`, 14, y); y += 7;
-    doc.text(`Monthly Rent: Rs ${agreementInfo.rentAmount}`, 14, y); y += 7;
-    doc.text(`Security Deposit: Rs ${agreementInfo.securityDeposit}`, 14, y); y += 10;
+    doc.text(`Agreement ID: ${agreementInfo.agreementId || 'N/A'}`, 14, y); y += 7;
+    doc.text(`Tenant Name: ${agreementInfo.tenantName || 'N/A'}`, 14, y); y += 7;
+    doc.text(`PG Name: ${agreementInfo.pgName || 'N/A'}`, 14, y); y += 7;
+    doc.text(`Room: ${agreementInfo.roomNo || 'N/A'}`, 14, y); y += 7;
+    doc.text(`Period: ${agreementInfo.startDate || ''} - ${agreementInfo.endDate || ''}`, 14, y); y += 7;
+    doc.text(`Monthly Rent: Rs ${agreementInfo.rentAmount || '0'}`, 14, y); y += 7;
+    doc.text(`Security Deposit: Rs ${agreementInfo.securityDeposit || '0'}`, 14, y); y += 10;
 
     doc.setDrawColor(0);
     doc.setLineWidth(0.5);
@@ -74,67 +112,127 @@ const Agreements = () => {
 
     y += 10;
     doc.text("Tenant Signature: ____________________", 14, y);
-    doc.text("PG Owner Signature / Stamp: ____________________", 130, y);
+    doc.text("Owner Signature / Stamp: ____________________", 130, y);
 
     const img = new Image();
     img.src = stampImg;
     img.onload = function () { 
       doc.addImage(img, "PNG", 150, y - 8, 40, 20); 
       doc.save(`Rental_Agreement_${agreementInfo.tenantName}.pdf`); 
+      Swal.fire('Success', 'Agreement downloaded.', 'success');
     };
     img.onerror = function () { 
       doc.save(`Rental_Agreement_${agreementInfo.tenantName}.pdf`); 
+      Swal.fire('Success', 'Agreement downloaded (Stamp image error).', 'info');
     };
   };
 
-  if (loading) return <div className="p-10 text-center text-primary">Loading live agreement...</div>;
-  if (!agreementInfo) return <div className="p-10 text-center text-red-500">No active agreement found in database.</div>;
+  if (loading) return (
+    <div className="flex justify-center items-center min-h-[60vh]">
+      <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-orange-500"></div>
+    </div>
+  );
 
   return (
-    <div className="space-y-8">
-      <div className="bg-dashboard-gradient rounded-3xl p-6 space-y-6">
-        <h2 className="text-2xl font-semibold text-primary mt-4">Rental Agreement</h2>
-
-        <div className="bg-white rounded-2xl shadow p-6 space-y-5">
-          <div className="flex items-center justify-between">
-            <span className={`px-3 py-1 text-xs font-medium rounded-full ${agreementInfo.status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-              {agreementInfo.status}
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Displaying live data from Postman */}
-            <Info label="PG Name" value={agreementInfo.pgName} />
-            <Info label="Room / Bed" value={agreementInfo.roomNo} />
-            <Info label="Agreement Period" value={`${agreementInfo.startDate} – ${agreementInfo.endDate}`} />
-            <Info label="Rent Amount" value={`Rs ${agreementInfo.rentAmount} / month`} />
-            <Info label="Security Deposit" value={`Rs ${agreementInfo.securityDeposit}`} />
-            <Info label="Agreement ID" value={agreementInfo.agreementId} />
-            <Info label="Tenant Name" value={agreementInfo.tenantName} />
-          </div>
-
-          <div className="flex flex-wrap gap-3 pt-2">
-            <CButton className="bg-primary px-5 py-2 text-sm" onClick={() => setShowRules(true)}>
-              View Rules
-            </CButton>
-            <CButton className="border px-5 py-2 text-sm" onClick={handleDownloadPDF}>
-              Download Agreement
-            </CButton>
-          </div>
+    <div className="p-4 sm:p-6 lg:p-8 bg-gray-50 min-h-screen space-y-6">
+      
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-1">
+        <div>
+        <h1 className="text-xl sm:text-3xl md:text-5xl lg:text-4xl font-bold text-gray-800"> Digital Agreement
+          </h1>
+        <p className="text-xs sm:text-lg md:text-3xl lg:text-xl text-gray-500">
+            Verified Legal Document • E-Signed
+          </p>
+        </div>
+        
+        <div className={`self-start md:self-center px-4 py-1.5 rounded-full text-[10px] md:text-sm font-black uppercase tracking-tighter shadow-sm border ${
+          agreementInfo?.status === 'Active' 
+            ? 'bg-green-50 text-green-700 border-green-200' 
+            : 'bg-orange-50 text-orange-700 border-orange-200'
+        }`}>
+          <span className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-md bg-current animate-pulse"></span>
+            {agreementInfo?.status || "Pending"}
+          </span>
         </div>
       </div>
 
-      {/* RULES MODAL stays the same */}
+      {/* Details Card */}
+      <div className="bg-white rounded-md shadow-sm border border-gray-200 overflow-hidden max-w-5xl ">
+        <div className="p-5 md:p-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-5 mb-8">
+            <Info label="PG Name" value={agreementInfo?.pgName} />
+            <Info label="Room Details" value={agreementInfo?.roomNo} />
+            <Info label="Validity" 
+                value={agreementInfo?.startDate && agreementInfo?.endDate 
+                ? `${agreementInfo.startDate} – ${agreementInfo.endDate}` 
+                : undefined} 
+            />
+            <Info label="Monthly Rent" value={agreementInfo?.rentAmount ? `₹${agreementInfo.rentAmount}` : undefined} />
+            <Info label="Deposit" value={agreementInfo?.securityDeposit ? `₹${agreementInfo.securityDeposit}` : undefined} />
+            <Info label="Agreement ID" value={agreementInfo?.agreementId} />
+            <div className="sm:col-span-2 lg:col-span-1">
+              <Info label="Tenant Name" value={agreementInfo?.tenantName} />
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t border-gray-100">
+            <CButton 
+              className=" text-xs md:text-sm font-bold flex items-center justify-center gap-2 w-full sm:w-auto  transition-all" 
+              onClick={() => setShowRules(true)}
+            >
+              <FaListUl className="text-white" /> View House Rules
+            </CButton>
+            <CButton 
+              className="  text-xs md:text-sm font-bold flex items-center justify-center gap-2 w-full sm:w-auto  shadow-md transition-all" 
+              onClick={handleDownloadPDF}
+            >
+              <FaDownload /> Get PDF Copy
+            </CButton>
+          </div>
+        </div>
+        
+        <div className="bg-gray-50 px-5 py-3 border-t border-gray-100 flex items-center gap-2">
+          <FaShieldAlt className="text-green-600 text-[10px]" />
+          <span className="text-[9px] text-gray-400 font-bold uppercase tracking-tight">
+            Encrypted & Tamper-Proof Digital Document
+          </span>
+        </div>
+      </div>
+
+      {/* Rules Modal */}
       {showRules && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
-          <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl p-6 relative">
-            <button onClick={() => setShowRules(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 font-bold text-xl">×</button>
-            <h2 className="text-xl font-semibold mb-4 text-primary text-center">Agreement Rules</h2>
-            <ul className="list-disc list-inside space-y-2 text-sm text-gray-700 px-2">
-              {agreementRules.map((rule, index) => (
-                <li key={index}>{rule}</li>
-              ))}
-            </ul>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4">
+          <div className="bg-white w-full max-w-lg rounded-md shadow-2xl relative overflow-hidden">
+            <div className="h-1.5 bg-orange-500 w-full" />
+            <div className="p-6 md:p-8">
+              <button 
+                onClick={() => setShowRules(false)} 
+                className="absolute top-4 right-4 text-gray-400 hover:text-black transition-colors"
+              >
+                <FaTimes className="w-5 h-5" />
+              </button>
+              <h2 className="text-lg md:text-xl font-black mb-5 text-black uppercase tracking-tight">
+                PG Occupancy Rules
+              </h2>
+              <div className="max-h-[50vh] overflow-y-auto pr-2 custom-scrollbar">
+                <ul className="space-y-3">
+                  {agreementRules.map((rule, index) => (
+                    <li key={index} className="flex gap-3 text-xs md:text-sm text-gray-600 border-b border-gray-50 pb-2 leading-relaxed">
+                      <span className="text-orange-500 font-black">{index + 1}.</span> {rule}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <CButton 
+                className="mt-6 bg-black text-white w-full py-3 text-xs md:text-sm font-bold uppercase tracking-widest"
+                onClick={() => setShowRules(false)}
+              >
+                Acknowledge Rules
+              </CButton>
+            </div>
           </div>
         </div>
       )}
@@ -142,11 +240,18 @@ const Agreements = () => {
   );
 };
 
-const Info = ({ label, value }) => (
-  <div className="bg-gray-50 rounded-xl p-4">
-    <p className="text-gray-400 text-xs mb-1">{label}</p>
-    <p className="text-sm font-medium">{value}</p>
-  </div>
-);
+// Sub-component for info displays
+const Info = ({ label, value }) => {
+  const isPending = !value || value.includes("undefined") || value === "₹undefined";
+  
+  return (
+    <div className="bg-white rounded-md p-3.5 border border-gray-100 shadow-sm">
+      <p className="text-[9px] md:text-[10px] text-gray-400 uppercase font-black tracking-widest mb-1">{label}</p>
+      <p className={`text-xs md:text-sm font-black truncate ${isPending ? "text-gray-300 italic" : "text-black"}`}>
+        {isPending ? "Pending Update" : value}
+      </p>
+    </div>
+  );
+};
 
 export default Agreements;
