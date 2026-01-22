@@ -69,9 +69,31 @@ export default function FindMyPG() {
 
   /* ================= APPLY FILTERS (BUTTON) ================= */
 
-  const applyFiltersClick = () => {
-    setFilters(tempFilters);
-  };
+ /* ================= APPLY FILTERS (BACKEND CONNECTED) ================= */
+
+const applyFiltersClick = async () => {
+  try {
+    const queryParams = new URLSearchParams({
+      city: city || "Any",
+      lookingFor: tempFilters.lookingFor,
+      occupancy: tempFilters.occupancy,
+      minBudget: tempFilters.minPrice,
+      maxBudget: tempFilters.maxPrice,
+      rentCycle: tempFilters.rentCycle,
+      amenities: tempFilters.amenities.join(","), 
+    }).toString();
+
+    const response = await fetch(`http://localhost:5000/api/pg/search?${queryParams}`);
+    const json = await response.json();
+
+    if (json.success) {
+      setPgList(json.data); 
+      setFilters(tempFilters);
+    }
+  } catch (err) {
+    console.error("Filter request failed:", err);
+  }
+};
 
   /* ================= FILTER LOGIC ================= */
 
@@ -117,7 +139,9 @@ export default function FindMyPG() {
   /* ================= SORT + FILTER ================= */
 
   const filteredPGs = useMemo(() => {
-    let list = applyFilters(pgList);
+    // Change this line 👇 to use pgList directly
+     let list = [...pgList];
+    //let list = applyFilters(pgList);
 
     if (filters.sortBy === "priceAsc") {
       list = [...list].sort((a, b) => a.rent - b.rent);
@@ -128,7 +152,7 @@ export default function FindMyPG() {
     }
 
     return list;
-  }, [applyFilters, filters.sortBy, pgList]);
+  }, [ filters.sortBy, pgList]);
 
   /* ================= RENDER ================= */
 

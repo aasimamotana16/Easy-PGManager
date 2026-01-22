@@ -33,68 +33,71 @@ exports.searchPGs = async (req, res) => {
 
     let query = { status: 'live' }; 
 
-    // Professional Logic: Only filter by city if it's a valid selection [cite: 2026-01-06]
-    if (city && city !== "-- Select --" && city !== "Any") {
+    // 1. City Check
+    if (city && city !== "Any") {
       query.city = city; 
     }
 
-    if (lookingFor && lookingFor !== "Any") query.type = lookingFor;
+    // 2. Fix the field name! Is it 'gender' or 'type' in your Atlas? [cite: 2026-01-06]
+    if (lookingFor && lookingFor !== "Any") {
+      query.gender = lookingFor; // Changed from query.type to query.gender
+    }
+
     if (occupancy && occupancy !== "Any") query.occupancy = occupancy;
     if (rentCycle && rentCycle !== "Any") query.rentCycle = rentCycle;
 
+    // 3. Price Check
     if (minBudget || maxBudget) {
       query.price = {};
       if (minBudget) query.price.$gte = Number(minBudget);
       if (maxBudget) query.price.$lte = Number(maxBudget);
     }
 
-    if (amenities) {
+    // 4. Amenities Check
+    if (amenities && amenities.length > 0) {
       const amenitiesList = amenities.split(",").map(item => item.trim());
       query.amenities = { $all: amenitiesList };
     }
 
     const results = await PG.find(query);
-    // YOU NEED TO ADD THIS MAPPING HERE TOO [cite: 2026-01-06]
+
+    // 5. CamelCase Mapping for frontend consistency [cite: 2026-01-01]
     const mappedResults = results.map(pg => ({
       ...pg._doc,
-      name: pg.pgName, // Fixes name in search results [cite: 2026-01-01]
-      rent: pg.price   // Fixes price in search results [cite: 2026-01-06]
+      name: pg.pgName,
+      rent: pg.price
     }));
+
     res.status(200).json({ 
       success: true, 
       count: results.length, 
       data: mappedResults
     });
   } catch (error) {
-    res.status(500).json({ 
-      success: false, 
-      message: "Error searching listings", 
-      error: error.message 
-    });
+    res.status(500).json({ success: false, error: error.message });
   }
 };
 
-// 3. Updated Function to handle city filtering correctly [cite: 2026-01-06]
+// backend/controllers/pgController.js
+
+// backend/controllers/pgController.js
+
 exports.getAllPgs = async (req, res) => {
   try {
-    // 1. Capture city from the request query [cite: 2026-01-06]
     const { city } = req.query; 
-    
-    // 2. Define the base query [cite: 2026-01-06]
-    let query = { status: 'live' };
+    let query = { status: 'live' }; // This matches your Atlas data
 
-   // Professional matching: Trim spaces and ignore case [cite: 2026-01-06]
     if (city && city.trim() !== "" && city !== "-- Select --" && city !== "Any") {
-      query.city = { $regex: new RegExp(`^${city.trim()}$`, 'i') }; 
-    }
+      // 👈 Update this line to use 'location' instead of 'city'
+     // query.location = { $regex: city.trim(), $options: 'i' }; 
+     query.city = city.trim();    }
 
-    // 4. Run the query with the filters included [cite: 2026-01-06]
     const allPgs = await PG.find(query);
 
     const mappedPgs = allPgs.map(pg => ({
       ...pg._doc,
-      name: pg.pgName, // [cite: 2026-01-01]
-      rent: pg.price   // [cite: 2026-01-06]
+      name: pg.pgName, // CamelCase mapping [cite: 2026-01-01]
+      rent: pg.price   // Correctly maps 5000 from Atlas
     }));
 
     res.status(200).json({
@@ -102,13 +105,10 @@ exports.getAllPgs = async (req, res) => {
       data: mappedPgs
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Error fetching filtered PGs",
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
+
 // Get single PG details for booking page [cite: 2026-01-06]
 exports.getPgById = async (req, res) => {
   try {
