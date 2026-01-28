@@ -9,10 +9,10 @@ import Filters from "./servicesFilter";
 import PGListings from "./pgListing";
 
 const DEFAULT_FILTERS = {
-  lookingFor: "Any",
+  forCategory: "Any",
   occupancy: "Any",
-  minPrice: "",
-  maxPrice: "",
+  minBudget: "",
+  maxBudget: "",
   rentCycle: "Any",
   amenities: [],
   sortBy: "",

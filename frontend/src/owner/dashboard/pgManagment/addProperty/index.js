@@ -7,6 +7,7 @@ import CButton from "../../../../components/cButton";
 import CFormCard from "../../../../components/cFormCard";
 import { genderOptions, propertyTypes } from "../../../../config/staticData";
 import { FaTrash, FaEye } from "react-icons/fa";
+import Swal from "sweetalert2";
 
 const facilitiesList = ["WiFi", "Food", "Laundry", "Parking", "Power Backup", "AC"];
 const rulesList = [
@@ -87,20 +88,68 @@ const AddProperty = () => {
     }
   };
 
-  const removeFile = (key) => {
-    setFormData((prev) => ({
-      ...prev,
-      proofDocuments: { ...prev.proofDocuments, [key]: null },
-    }));
+ // const removeFile = (key) => {
+   // setFormData((prev) => ({
+     // ...prev,
+     // proofDocuments: { ...prev.proofDocuments, [key]: null },
+ //   }));
+ // };
+ const removeFile = (key) => {
+    // 1. The SweetAlert Pop-up starts here
+    Swal.fire({
+      title: "Are you sure?",
+      text: `Do you want to remove the ${key} document?`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Yes, remove it!",
+    }).then((result) => {
+      // 2. Only if the user clicks "Yes, remove it!"...
+      if (result.isConfirmed) {
+        
+        // 3. THIS is your original code that clears the file
+        setFormData((prev) => ({
+          ...prev,
+          proofDocuments: { ...prev.proofDocuments, [key]: null },
+        }));
+
+        // 4. Success message
+        Swal.fire({
+          title: "Deleted!",
+          text: "The document has been removed.",
+          icon: "success",
+          timer: 1500,
+          showConfirmButton: false,
+        });
+      }
+    });
   };
 
-  const viewFile = (key) => {
-    if (formData.proofDocuments[key]) {
-      const fileURL = URL.createObjectURL(formData.proofDocuments[key]);
-      window.open(fileURL);
-    }
-  };
+ // const viewFile = (key) => {
+    //if (formData.proofDocuments[key]) {
+      //const fileURL = URL.createObjectURL(formData.proofDocuments[key]);
+    //  window.open(fileURL);
+   // }
+ // };
 
+ const viewFile = (key) => {
+  const file = formData.proofDocuments[key];
+  if (!file) return;
+
+  const fileURL = URL.createObjectURL(file);
+
+  // Directly opens the viewer
+  Swal.fire({
+    title: `Viewing: ${file.name}`,
+    html: file.type.startsWith("image/") 
+      ? `<img src="${fileURL}" style="width:100%; border-radius:8px;" />`
+      : `<iframe src="${fileURL}" width="100%" height="500px" style="border:none;"></iframe>`,
+    width: '800px',
+    showConfirmButton: false, // Removes the 'OK' button for a cleaner look
+    showCloseButton: true,
+  });
+};
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -116,6 +165,7 @@ const AddProperty = () => {
       const dataToSend = {
         pgName: formData.name,
         location: `${formData.area}, ${formData.city}`,
+        price: 0, // 👈 ADD THIS LINE HERE
         totalRooms: 0,
         propertyType: formData.propertyType,
         forWhom: formData.forWhom,
@@ -210,20 +260,47 @@ const AddProperty = () => {
           </CFormCard>
 
           {/* DOCUMENTS */}
-          <CFormCard className="p-6 shadow">
-            <h2 className="text-lg font-semibold mb-4">Property Documents</h2>
-            {["aadhaar", "electricityBill", "propertyTax"].map((key) => (
-              <div key={key} className="flex items-center gap-4 mb-3">
-                <input type="file" onChange={(e) => handleFileChange(e, key)} disabled={!!formData.proofDocuments[key]} />
-                {formData.proofDocuments[key] && (
-                  <>
-                    <button type="button" onClick={() => viewFile(key)}><FaEye /></button>
-                    <button type="button" onClick={() => removeFile(key)}><FaTrash /></button>
-                  </>
-                )}
-              </div>
-            ))}
-          </CFormCard>
+         {/* DOCUMENTS */}
+<CFormCard className="p-6 shadow">
+  <h2 className="text-lg font-semibold mb-4">Property Documents</h2>
+  {["aadhaar", "electricityBill", "propertyTax"].map((key) => (
+    <div key={key} className="flex items-center gap-4 mb-3">
+      {/* 1. We hide the input ONLY when a file is already selected */}
+      <input
+        type="file"
+        accept=".pdf, .jpg, .jpeg, .png" // 👈 ADD THIS LINE HERE
+        key={formData.proofDocuments[key] ? "uploaded" : "empty"}
+        onChange={(e) => handleFileChange(e, key)}
+        className={formData.proofDocuments[key] ? "hidden" : "block"}
+      />
+
+      {/* 2. Custom UI to show the filename from state */}
+      {formData.proofDocuments[key] && (
+        <div className="flex items-center gap-3 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200">
+          <span className="text-sm font-medium text-gray-700">
+            {formData.proofDocuments[key].name}
+          </span>
+          <button
+            type="button"
+            className="text-primary hover:text-blue-700 transition-colors"
+            onClick={() => viewFile(key)}
+            title="View Document"
+          >
+            <FaEye />
+          </button>
+          <button
+            type="button"
+            className="text-red-500 hover:text-red-700 transition-colors"
+            onClick={() => removeFile(key)}
+            title="Remove Document"
+          >
+            <FaTrash />
+          </button>
+        </div>
+      )}
+    </div>
+  ))}
+</CFormCard>
 
           <div className="text-center pt-4">
             <CButton size="lg" type="submit">Save & Continue</CButton>

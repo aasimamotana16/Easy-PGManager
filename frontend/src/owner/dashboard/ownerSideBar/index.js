@@ -1,4 +1,5 @@
 import React from "react";
+import Swal from "sweetalert2"; // Add this line
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   FaHome,
@@ -23,12 +24,43 @@ const OwnerSidebar = ({ isOpen, closeSidebar }) => {
     { to: "/owner/dashboard/oAgreements", label: "Agreements", icon: <FaFileContract /> },
     { to: "/owner/dashboard/oSupport", label: "Support", icon: <FaQuestionCircle /> },
   ];
+const handleLogout = () => {
+  Swal.fire({
+    title: "Confirm Logout",
+    text: "Are you sure you want to end your session?",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#f97316", // Primary Orange
+    cancelButtonColor: "#64748b", // Visible Slate Gray (replaces the dull gray)
+    confirmButtonText: "Yes, Logout",
+    cancelButtonText: "No, Stay",
+    reverseButtons: true,
+    // This adds the rounded corners you see in your screenshots
+    customClass: {
+      popup: 'rounded-3xl', 
+      confirmButton: 'rounded-lg px-6 py-2',
+      cancelButton: 'rounded-lg px-6 py-2'
+    }
+  }).then((result) => {
+    if (result.isConfirmed) {
+      localStorage.clear();
+      
+      Swal.fire({
+        title: "Success!",
+        text: "Logged out successfully.",
+        icon: "success",
+        showConfirmButton: false,
+        timer: 1500,
+        customClass: {
+          popup: 'rounded-3xl' // Keeps the success modal rounded too
+        }
+      });
 
-  const handleLogout = () => {
-    localStorage.clear();
-    navigate("/owner/login");
-    closeSidebar?.();
-  };
+      navigate("/owner/login");
+      closeSidebar?.();
+    }
+  });
+};
 
   return (
     <>

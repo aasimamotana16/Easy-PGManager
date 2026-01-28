@@ -11,7 +11,7 @@ export default function Filters({
   filters,
   handleFilterChange,
   toggleAmenity,
-  applyFilters, // 👈 new prop
+  applyFilters, //  new prop
 }) {
   return (
     <div className="bg-white p-8 sm:p-10 rounded-2xl shadow-xl space-y-12 mb-24">
@@ -24,7 +24,8 @@ export default function Filters({
           value={filters.lookingFor}
           options={genderOptions}
           onChange={(e) =>
-            handleFilterChange("lookingFor", e.target.value)
+            //handleFilterChange("lookingFor", e.target.value)
+            handleFilterChange("forCategory", e.target.value) // Changed from "lookingFor"
           }
         />
 
@@ -46,7 +47,8 @@ export default function Filters({
           label="Min Budget (₹)"
           value={filters.minPrice}
           onChange={(e) =>
-            handleFilterChange("minPrice", e.target.value)
+            //handleFilterChange("minPrice", e.target.value)
+            handleFilterChange("minBudget", e.target.value) // Changed from "minPrice"
           }
         />
 
@@ -55,7 +57,8 @@ export default function Filters({
           label="Max Budget (₹)"
           value={filters.maxPrice}
           onChange={(e) =>
-            handleFilterChange("maxPrice", e.target.value)
+            //handleFilterChange("maxPrice", e.target.value)
+            handleFilterChange("maxBudget", e.target.value) // Changed from "maxPrice"
           }
         />
       </div>

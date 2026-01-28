@@ -3,35 +3,37 @@ import axios from 'axios';
 
 export const BackendContext = createContext();
 export const BackendProvider = ({ children }) => {
-  const [pgList, setPgList] = useState([]); // camelCase state variable [cite: 2026-01-01]
+  const [pgList, setPgList] = useState([]); // camelCase [cite: 2026-01-01]
+
+  // Change 'city = ""' to 'filters = {}' to handle all filter data
+  const fetchLivePgs = async (filters = {}) => {
+    try {
+      // 1. Get the current city from the URL automatically
+      const urlParams = new URLSearchParams(window.location.search);
+      const currentCity = urlParams.get("city") || "";
+
+      // 2. Combine the city with all filter data (Budget, Gender, etc.)
+      const response = await axios.get('http://localhost:5000/api/pg/all', {
+        params: { 
+          city: currentCity, 
+          ...filters // This spreads all your filter inputs into the request [cite: 2026-01-06]
+        }
+      });
+
+      if (response.data.success) {
+        setPgList(response.data.data); 
+      }
+    } catch (error) {
+      console.error("Connection to backend failed:", error);
+    }
+  };
 
   useEffect(() => {
-    const fetchLivePgs = async () => {
-      try {
-        // 1. Grab city from URL using standard JS (Safest for today) [cite: 2026-01-06]
-        const urlParams = new URLSearchParams(window.location.search);
-        const selectedCity = urlParams.get("city");
-
-        // 2. Pass city to your backend so console.log shows the city name [cite: 2026-01-06]
-        const response = await axios.get('http://localhost:5000/api/pg/all', {
-          params: { city: selectedCity } 
-        });
-
-        if (response.data.success) {
-          setPgList(response.data.data); 
-        }
-      } catch (error) {
-        console.error("Connection to backend failed:", error);
-      }
-    };
-
     fetchLivePgs();
-    
-    // 3. This tells React to refresh the list whenever the URL city changes [cite: 2026-01-06]
-  }, [window.location.search]); 
+  }, []);
 
   return (
-    <BackendContext.Provider value={{ pgList }}>
+    <BackendContext.Provider value={{ pgList, fetchLivePgs }}>
       {children}
     </BackendContext.Provider>
   );

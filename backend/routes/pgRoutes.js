@@ -2,15 +2,18 @@ const express = require('express');
 const router = express.Router();
 const pgController = require('../controllers/pgController');
 
-// FIXED: Added pgController prefix to match your import style [cite: 2026-01-06]
-router.post('/create', pgController.createPG);
+// 1. FIXED: Changed from '/create' to '/add-pg' to match your frontend Axios call
+router.post('/add-pg', pgController.createPG);
 
-// Existing Search: Matches frontend API.get("/pgs/search")
+// 2. FIXED: Search and All routes for your tenant flow [cite: 2026-01-06]
 router.get('/search', pgController.searchPGs);
-
-// NEW: All-in-One API for Available PGs (images + 2nd page details) [cite: 2026-01-11]
-// This is what you will show your guide tomorrow
 router.get('/all', pgController.getAllPgs);
+
+// 3. NEW: Added a features route to stop the 404 "Failed to load resource" error
+router.get('/features', (req, res) => {
+  // Sending an empty array for now so the frontend doesn't crash
+  res.json({ success: true, data: [] }); 
+});
 
 router.get('/:id', pgController.getPgById);
 

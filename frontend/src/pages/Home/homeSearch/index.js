@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import CButton from "../../../components/cButton";
 import CSelect from "../../../components/cSelect";
 import { getCities } from "../../../api/api";
+import { BackendContext } from "../../../context/backendContext"; // 2. Import your Context
 
 const HomeSearch = () => {
   const navigate = useNavigate();
+  const { fetchLivePgs } = useContext(BackendContext); // 3. Grab the fetch function
   const [city, setCity] = useState("");
   const [cityOptions, setCityOptions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -48,6 +50,9 @@ const HomeSearch = () => {
       return;
     }
     navigate(`/findMypg/pgListing?city=${encodeURIComponent(city)}`);
+    // 5. THIS IS THE FIX: Call the context function immediately!
+    // This updates the global state without needing a refresh.
+    fetchLivePgs(city);
   };
 
   return (
