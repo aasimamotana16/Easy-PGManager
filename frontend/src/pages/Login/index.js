@@ -59,7 +59,7 @@ const handleSubmit = async (e) => {
         localStorage.setItem("userId", data._id);
         localStorage.setItem("role", role);
         localStorage.setItem("isLoggedIn", "true");
-        localStorage.setItem("token", data.token);
+        localStorage.setItem("userToken", data.token);
         
         if (rememberMe) localStorage.setItem("rememberMe", "true");
 

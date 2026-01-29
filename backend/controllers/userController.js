@@ -458,11 +458,11 @@ const logoutUser = async (req, res) => {
   }
 };
 
-// Update your module.exports at the bottom
+/*// Update your module.exports at the bottom
 module.exports = {
   // ... existing exports
   logoutUser, 
-};
+};*/
 
 module.exports = { 
   registerUser, 

@@ -10,7 +10,7 @@ import {
 import CButton from "../../../components/cButton";
 import Swal from "sweetalert2";
 
-const PayRent = ({ amount, month, dueDate, onPay, onClose }) => {
+const PayRent = ({ amount, month, dueDate, onPay, onClose, pgId }) => {
   const [selectedMethod, setSelectedMethod] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -36,36 +36,99 @@ const PayRent = ({ amount, month, dueDate, onPay, onClose }) => {
   ];
 
   const handlePayment = async () => {
+    // 1. Get the token - Must match the key used in Login.js [cite: 2026-01-06]
+    const token = localStorage.getItem("userToken");
+  
+    // Check for missing or "junk" token strings to prevent malformed JWT errors [cite: 2026-01-06]
+    if (!token || token === "null" || token === "undefined") {
+      return Swal.fire({
+        title: "Session Expired",
+        text: "Please log in again to continue.",
+        icon: "warning",
+        confirmButtonColor: "#f97316",
+      });
+    }
+
     setIsProcessing(true);
-    setTimeout(async () => {
-      try {
-        await onPay(selectedMethod);
-        setIsProcessing(false);
-        Swal.fire({
-          title: "Payment Successful!",
-          text: `Rent for ${month} has been received.`,
-          icon: "success",
-          confirmButtonColor: "#f97316",
-          background: "#ffffff",
-        });
-        onClose();
-      } catch (error) {
-        setIsProcessing(false);
-        Swal.fire({
-          title: "Payment Failed",
-          text: "Something went wrong. Please try again.",
-          icon: "error",
-          confirmButtonColor: "#000000",
-        });
+    
+    try {
+      // Step 1: Create Order on Backend [cite: 2026-01-06]
+      const orderResponse = await fetch("http://localhost:5000/api/payments/create-order", {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json", 
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ 
+          amount: 8500,
+          pgId: pgId|| "64b1234567890" }), // Using camelCase [cite: 2026-01-01]
+      });
+
+      if (!orderResponse.ok) {
+        throw new Error("Failed to create order");
       }
-    }, 1500);
+
+      const { order } = await orderResponse.json();
+
+      // Step 2: Open Razorpay Modal
+      const options = {
+        key: "rzp_test_S9ZmF0zUNli8eT", 
+        amount: 8500,
+        currency: "INR",
+        name: "EasyPG Manager",
+        description: `Rent for ${month}`,
+        order_id: order.id,
+        handler: async (response) => {
+          // Step 3: Verify and Save to DB [cite: 2026-01-06]
+          const verifyRes = await fetch("http://localhost:5000/api/payments/verify", {
+            method: "POST",
+            headers: { 
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${token}` 
+            },
+            body: JSON.stringify({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              amountPaid: amount,
+              pgId, // camelCase [cite: 2026-01-01]
+              month: month,
+            }),
+          });
+          
+          const result = await verifyRes.json();
+          if (result.success) {
+            setIsProcessing(false);
+            Swal.fire({
+              title: "Payment Successful!",
+              text: `Rent for ${month} has been received.`,
+              icon: "success",
+              confirmButtonColor: "#f97316",
+            });
+            onPay(result.data); // Update history table immediately [cite: 2026-01-07]
+            onClose();
+          }
+        },
+        theme: { color: "#f97316" },
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+      
+    } catch (error) {
+      setIsProcessing(false);
+      console.error("Payment Error:", error);
+      Swal.fire({
+        title: "Payment Failed",
+        text: "Could not initiate transaction. Check your connection.",
+        icon: "error",
+      });
+    }
   };
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4">
-      {/* Reduced max-width from md-2xl to md-lg for a slimmer look */}
       <div className="bg-white w-full max-w-md md:max-w-lg rounded-md shadow-2xl relative overflow-hidden">
-        
         <div className="h-1.5 bg-orange-500 w-full" />
 
         <button
@@ -75,9 +138,7 @@ const PayRent = ({ amount, month, dueDate, onPay, onClose }) => {
           <XMarkIcon className="w-5 h-5 md:w-6 md:h-6" />
         </button>
 
-        {/* Reduced padding from p-10 to p-6/p-8 */}
         <div className="p-5 md:p-8">
-          {/* Header - Scaled down font sizes */}
           <div className="mb-5">
             <h2 className="text-xl md:text-2xl font-black text-black uppercase tracking-tight">
               Secure Checkout
@@ -87,7 +148,6 @@ const PayRent = ({ amount, month, dueDate, onPay, onClose }) => {
             </p>
           </div>
 
-          {/* Rent Summary Card - More compact padding */}
           <div className="bg-black text-white rounded-md p-4 md:p-5 mb-5 flex justify-between items-center shadow-lg">
             <div>
               <p className="text-[9px] md:text-[10px] text-orange-500 font-bold uppercase tracking-widest">Amount to Pay</p>
@@ -104,7 +164,6 @@ const PayRent = ({ amount, month, dueDate, onPay, onClose }) => {
             Select Payment Method
           </h3>
 
-          {/* Payment Methods - Reduced gap and padding */}
           <div className="space-y-2 mb-6">
             {paymentMethods.map((method) => {
               const Icon = method.icon;
@@ -142,7 +201,6 @@ const PayRent = ({ amount, month, dueDate, onPay, onClose }) => {
             })}
           </div>
 
-          {/* Footer Actions - Compacted buttons */}
           <div className="space-y-3">
             <CButton
               disabled={!selectedMethod || isProcessing}

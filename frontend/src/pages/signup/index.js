@@ -109,7 +109,7 @@ const SignUp = () => {
           localStorage.setItem("role", role);
           localStorage.setItem("isLoggedIn", "true");
           if (response.data.token)
-            localStorage.setItem("token", response.data.token);
+            localStorage.setItem("userToken", response.data.token);
           window.dispatchEvent(new Event("storage"));
         }
 

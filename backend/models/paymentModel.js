@@ -6,9 +6,19 @@ const paymentSchema = mongoose.Schema({
     ref: "User", 
     required: true 
   },
+  pgId: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: "PG", 
+    required: true 
+  },
   amountPaid: { 
     type: Number, 
     required: true 
+  },
+  // ADDED THIS: Crucial for your Payment History table
+  month: {
+    type: String,
+    required: true
   },
   paymentDate: { 
     type: Date, 
@@ -16,7 +26,7 @@ const paymentSchema = mongoose.Schema({
   },
   paymentMethod: { 
     type: String, 
-    enum: ["UPI", "Card", "Cash", "Net Banking"], 
+   // enum: ["UPI", "Card", "Cash", "Net Banking"], 
     default: "UPI" 
   },
   paymentStatus: { 

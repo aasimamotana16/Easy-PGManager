@@ -22,6 +22,7 @@ const Navbar = () => {
   // Check login + username
   const checkLoginStatus = () => {
     const loggedIn = localStorage.getItem("isLoggedIn") === "true";
+    const token = localStorage.getItem("userToken"); // Add this check [cite: 2026-01-06]
     const name = localStorage.getItem("userName") || "User";
     setIsLoggedIn(loggedIn);
     setUserName(name);
@@ -50,7 +51,7 @@ const Navbar = () => {
  // Updated Logout logic with Modal and Success Check [cite: 2026-01-01]
   const handleLogout = async () => {
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("userToken");
       
       // 1. Backend acknowledgment [cite: 2026-01-06]
       if (token) {

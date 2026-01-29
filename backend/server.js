@@ -37,6 +37,7 @@ mongoose.connect(process.env.MONGO_URI)
 require('./models/pgModel');   // <--- ADD THIS [cite: 2026-01-01]
 require('./models/userModel'); // <--- ADD THIS
 require('./models/timelineModel'); // <--- Add this line here! [cite: 2026-01-06]
+require('./models/paymentModel'); // <--- CRITICAL for tonight's payment flow [cite: 2026-01-01]
 
 // --- ROUTES (Standardized with /api prefix) ---
 

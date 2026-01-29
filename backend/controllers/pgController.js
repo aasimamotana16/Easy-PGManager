@@ -2,8 +2,20 @@ const PG = require('../models/pgModel');
 
 // 1. Create a New PG Listing
 exports.createPG = async (req, res) => {
+
   try {
-    const newPg = await PG.create(req.body);
+    // DATA MAPPING: Ensuring frontend 'rent' or 'name' matches backend 'price' or 'pgName'
+    const pgData = {
+      ...req.body,
+      // 1. FIXED: Added a valid MongoDB ID format for ownerId (Required by your Schema)
+      ownerId: req.body.ownerId || "65a123456789012345678901",
+      pgName: req.body.pgName || req.body.name, // Support both for now [cite: 2026-01-01]
+      // 3. FIXED: Mapping 'city' to 'location' to match your pgSchema
+      location: req.body.location || req.body.city,
+      price: req.body.price || req.body.rent,   // Support both [cite: 2026-01-06]
+      status: 'live' // Ensures it appears in search results
+    };
+    const newPg = await PG.create(pgData);
     res.status(201).json({
       success: true,
       message: "PG Listing created successfully!",
@@ -82,7 +94,7 @@ exports.searchPGs = async (req, res) => {
 
 // backend/controllers/pgController.js
 
-exports.getAllPgs = async (req, res) => {
+/* exports.getAllPgs = async (req, res) => {
   try {
     const { city } = req.query; 
     let query = { status: 'live' }; // This matches your Atlas data
@@ -108,7 +120,60 @@ exports.getAllPgs = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+*/
 
+exports.getAllPgs = async (req, res) => {
+  try {
+    // 1. Destructure all possible filters from the frontend [cite: 2026-01-01]
+    const { city, propertyType, occupancy, forCategory } = req.query; 
+    
+    // Start with a base query (showing only live PGs) [cite: 2026-01-06]
+    let query = { status: 'live' }; 
+
+    // 2. Filter by City (mapping to 'location' as per your createPG logic) [cite: 2026-01-06]
+    if (city && city.trim() !== "" && city !== "-- Select --" && city !== "Any") {
+      // Use regex for a case-insensitive match so "anand" matches "Anand" [cite: 2026-01-06]
+      query.location = { $regex: city.trim(), $options: 'i' }; 
+    }
+
+    // 3. Filter by Property Type (Independent/Flat/etc.) [cite: 2026-01-07]
+    if (propertyType && propertyType !== "Any") {
+      query.propertyType = propertyType;
+    }
+
+    // 4. Filter by Category (Boys/Girls/Combined) [cite: 2026-01-06]
+    if (forCategory && forCategory !== "Any") {
+      query.gender = forCategory; // Ensure this matches your searchPGs 'gender' field [cite: 2026-01-06]
+    }
+
+    // 5. Filter by Occupancy (Single/Double/etc.) [cite: 2026-01-07]
+    if (occupancy && occupancy !== "Any") {
+      query.occupancy = occupancy;
+    }
+
+    const allPgs = await PG.find(query);
+
+    // 6. Map results to camelCase to stay consistent with frontend [cite: 2026-01-01]
+    const mappedPgs = allPgs.map(pg => ({
+      ...pg._doc,
+      name: pg.pgName, 
+      rent: pg.price,
+      city: pg.location // Send back as 'city' for the frontend dropdowns to update [cite: 2026-01-06]
+    }));
+
+    res.status(200).json({
+      success: true,
+      count: mappedPgs.length,
+      data: mappedPgs
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      message: "Back-end filter error", 
+      error: error.message 
+    });
+  }
+};
 // Get single PG details for booking page [cite: 2026-01-06]
 exports.getPgById = async (req, res) => {
   try {

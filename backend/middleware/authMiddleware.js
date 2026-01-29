@@ -7,14 +7,25 @@ const protect = async (req, res, next) => {
   if (req.headers.authorization && req.headers.authorization.startsWith("Bearer")) {
     try {
       userToken = req.headers.authorization.split(" ")[1];
+
+      // FIX: Prevents "jwt malformed" if frontend sends the string "null" or "undefined"
+      if (!userToken || userToken === "null" || userToken === "undefined") {
+        return res.status(401).json({ message: "Not authorized, invalid token format" });
+      }
+
       const decodedToken = jwt.verify(userToken, process.env.JWT_SECRET);
       
       // Select all fields needed for the profile [cite: 2026-01-01]
       req.user = await User.findById(decodedToken.id).select("-password");
       
+      if (!req.user) {
+        return res.status(401).json({ message: "User not found" });
+      }
+
       return next(); // Use return to stop execution here after calling next()
     } catch (error) {
-      console.error("Auth Error:", error);
+      // Cleaner logging for your terminal [cite: 2026-01-06]
+      console.error("Auth Error:", error.message);
       return res.status(401).json({ message: "Not authorized, token failed" });
     }
   }
