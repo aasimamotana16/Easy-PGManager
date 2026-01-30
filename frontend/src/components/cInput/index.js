@@ -6,13 +6,14 @@ const CInput = ({
   onChange,
   type = "text",
   placeholder = "",
-  className = "",
+  className = "", // This will now control the wrapper width
   rows = 3,
   name,
   options = [],
 }) => {
   return (
-    <div className="flex flex-col gap-1">
+    /* Apply className here so flex-1 or w-full works on the whole component */
+    <div className={`flex flex-col gap-1 ${className}`}>
       {label && (
         <label className="text-xs font-medium text-text-secondary">
           {label}
@@ -29,7 +30,7 @@ const CInput = ({
             border border-border bg-card text-text-secondary
             rounded-md
             focus:outline-none focus:ring-0 focus:border-primary
-            transition ${className}`}
+            transition`} // Removed className from here
         >
           {options.map((opt) => (
             <option key={opt.value} value={opt.value}>
@@ -37,9 +38,7 @@ const CInput = ({
             </option>
           ))}
         </select>
-
       ) : type === "textarea" ? (
-
         <textarea
           name={name}
           value={value}
@@ -50,24 +49,22 @@ const CInput = ({
             border border-border bg-card text-text-secondary
             rounded-md
             focus:outline-none focus:ring-0 focus:border-primary
-            transition ${className}`}
+            transition`} // Removed className from here
         />
-
       ) : (
-
         <input
           type={type}
           name={name}
           value={value}
           onChange={onChange}
           placeholder={placeholder}
+          /* w-full ensures the input fills the div width defined by className */
           className={`w-full h-10 px-3 py-2 text-sm
             border border-border bg-card text-text-secondary
             rounded-md
             focus:outline-none focus:ring-0 focus:border-primary
-            transition ${className}`}
+            transition`} 
         />
-
       )}
     </div>
   );
