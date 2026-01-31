@@ -1,5 +1,4 @@
-import React from "react";
-import Swal from "sweetalert2"; // Add this line
+import React, { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   FaHome,
@@ -14,6 +13,8 @@ import {
 
 const OwnerSidebar = ({ isOpen, closeSidebar }) => {
   const navigate = useNavigate();
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isLogoutSuccessful, setIsLogoutSuccessful] = useState(false);
 
   const menuItems = [
     { to: "/owner/dashboard/dashboardHome", label: "Dashboard", icon: <FaHome /> },
@@ -24,43 +25,28 @@ const OwnerSidebar = ({ isOpen, closeSidebar }) => {
     { to: "/owner/dashboard/oAgreements", label: "Agreements", icon: <FaFileContract /> },
     { to: "/owner/dashboard/oSupport", label: "Support", icon: <FaQuestionCircle /> },
   ];
-const handleLogout = () => {
-  Swal.fire({
-    title: "Confirm Logout",
-    text: "Are you sure you want to end your session?",
-    icon: "warning",
-    showCancelButton: true,
-    confirmButtonColor: "#f97316", // Primary Orange
-    cancelButtonColor: "#64748b", // Visible Slate Gray (replaces the dull gray)
-    confirmButtonText: "Yes, Logout",
-    cancelButtonText: "No, Stay",
-    reverseButtons: true,
-    // This adds the rounded corners you see in your screenshots
-    customClass: {
-      popup: 'rounded-3xl', 
-      confirmButton: 'rounded-lg px-6 py-2',
-      cancelButton: 'rounded-lg px-6 py-2'
-    }
-  }).then((result) => {
-    if (result.isConfirmed) {
-      localStorage.clear();
-      
-      Swal.fire({
-        title: "Success!",
-        text: "Logged out successfully.",
-        icon: "success",
-        showConfirmButton: false,
-        timer: 1500,
-        customClass: {
-          popup: 'rounded-3xl' // Keeps the success modal rounded too
-        }
-      });
 
-      navigate("/owner/login");
-      closeSidebar?.();
+  const handleLogout = async () => {
+    try {
+      // Show success checkmark
+      setIsLogoutSuccessful(true);
+
+      // Wait 1.5s, then wipe data and redirect
+      setTimeout(() => {
+        localStorage.clear();
+        setIsLogoutModalOpen(false);
+        setIsLogoutSuccessful(false); 
+        navigate("/");
+        closeSidebar?.();
+      }, 1500);
+
+    } catch (error) {
+      // Fallback: Clear and exit
+      localStorage.clear();
+      setIsLogoutModalOpen(false);
+      navigate("/");
     }
-  });
-};
+  };
 
   return (
     <>
@@ -141,12 +127,48 @@ const handleLogout = () => {
 
         {/* LOGOUT */}
         <button
-          onClick={handleLogout}
+          onClick={() => setIsLogoutModalOpen(true)}
           className="px-4 py-2 rounded-lg text-red-500 hover:text-red-600 font-semibold text-left"
         >
           Logout
         </button>
       </aside>
+
+      {/* --- LOGOUT POPUP WITH SUCCESS CHECKMARK (MATCHES NAVBAR) --- */}
+      {isLogoutModalOpen && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-white p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center transition-all animate-in zoom-in duration-200">
+            {!isLogoutSuccessful ? (
+              <>
+                <h3 className="text-2xl font-bold text-gray-800">Confirm Logout</h3>
+                <p className="text-gray-500 my-4 font-medium">Are you sure you want to end your session?</p>
+                <div className="flex gap-3 mt-6">
+                  <button 
+                    onClick={() => setIsLogoutModalOpen(false)} 
+                    className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition-colors"
+                  >
+                    No, Stay
+                  </button>
+                  <button 
+                    onClick={handleLogout} 
+                    className="flex-1 py-3 bg-orange-500 text-white rounded-xl font-bold shadow-lg shadow-orange-200 hover:bg-orange-600 transition-all"
+                  >
+                    Yes, Logout
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="flex flex-col items-center py-4 animate-in zoom-in duration-300">
+                <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-4xl mb-4 border-2 border-green-200">
+                  ✓
+                </div>
+                <h3 className="text-2xl font-bold text-gray-800">Success!</h3>
+                <p className="text-gray-500 mt-2 font-medium">Logged out successfully.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </>
   );
 };

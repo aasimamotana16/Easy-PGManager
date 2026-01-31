@@ -3,22 +3,46 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
 
+// --- ADDED: Helper to verify reCAPTCHA ---
+const verifyRecaptcha = async (recaptchaToken) => {
+  const secretKey = process.env.RECAPTCHA_SECRET_KEY;
+  const verificationUrl = `https://www.google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${recaptchaToken}`;
+
+  try {
+    const response = await fetch(verificationUrl, { method: "POST" });
+    const data = await response.json();
+    return data.success;
+  } catch (error) {
+    console.error("reCAPTCHA Verification Error:", error);
+    return false;
+  }
+};
+
 // Temporary in-memory store for OTPs
 const otpCache = {};
 
-// 1. SEND OTP
+// 1. SEND OTP (Updated with reCAPTCHA logic)
 exports.sendOtp = async (req, res) => {
   try {
-    const { email } = req.body;
+    const { email, recaptchaToken } = req.body; // Expect recaptchaToken from front-end
     if (!email) return res.status(400).json({ success: false, message: "Email is required" });
+
+    // --- VERIFY RECAPTCHA FIRST ---
+    if (!recaptchaToken) {
+      return res.status(400).json({ success: false, message: "Captcha token is missing" });
+    }
+
+    const isCaptchaValid = await verifyRecaptcha(recaptchaToken);
+    if (!isCaptchaValid) {
+      return res.status(400).json({ success: false, message: "Invalid Captcha. Please try again." });
+    }
+    // -------------------------------
 
     const finalEmail = email.toLowerCase().trim();
     const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
 
-    // FIXED: Debug line must be INSIDE the function to access finalEmail and generatedOtp
     console.log(`\n--- [DEBUG] OTP for ${finalEmail}: ${generatedOtp} ---\n`);
 
-    // Store OTP for 5 minutes
     otpCache[finalEmail] = {
       otp: generatedOtp,
       expires: Date.now() + 300000,
@@ -28,7 +52,7 @@ exports.sendOtp = async (req, res) => {
       service: "gmail",
       auth: {
         user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS, // Ensure spaces are removed in .env
+        pass: process.env.EMAIL_PASS,
       },
     });
 
@@ -42,10 +66,10 @@ exports.sendOtp = async (req, res) => {
     res.status(200).json({ success: true, message: "OTP sent to email" });
   } catch (error) {
     console.error("OTP ERROR:", error.message);
-    // Even if email fails, the console.log above still works for your test!
     res.status(500).json({ success: false, message: "Error sending OTP" });
   }
 };
+
 
 // 2. REGISTER (Includes phone and verified status)
 exports.registerUser = async (req, res) => {

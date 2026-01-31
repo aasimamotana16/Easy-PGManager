@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   FaHome,
@@ -12,6 +12,8 @@ import {
 const UserSidebar = ({ closeSidebar }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isLogoutSuccessful, setIsLogoutSuccessful] = useState(false);
 
   // Menu links
   const menuItems = [
@@ -36,11 +38,27 @@ const UserSidebar = ({ closeSidebar }) => {
   };
 
   // Logout
-  const handleLogout = () => {
-    localStorage.clear();
-    if (closeSidebar) closeSidebar();
-    navigate("/login");
-    window.dispatchEvent(new Event("storage"));
+  const handleLogout = async () => {
+    try {
+      // Show success checkmark
+      setIsLogoutSuccessful(true);
+
+      // Wait 1.5s, then wipe data and redirect
+      setTimeout(() => {
+        localStorage.clear();
+        setIsLogoutModalOpen(false);
+        setIsLogoutSuccessful(false); 
+        navigate("/");
+        closeSidebar?.();
+        window.dispatchEvent(new Event("storage"));
+      }, 1500);
+
+    } catch (error) {
+      // Fallback: Clear and exit
+      localStorage.clear();
+      setIsLogoutModalOpen(false);
+      navigate("/");
+    }
   };
 
   // Check if menu item is active
@@ -52,38 +70,76 @@ const UserSidebar = ({ closeSidebar }) => {
   };
 
   return (
-    <div className="h-full flex flex-col bg-black text-white w-64">
-      {/* LOGO */}
-      <div
-        className="flex items-center gap-3 p-4 text-2xl font-bold cursor-pointer"
-        onClick={() => handleNavClick("/user/dashboard")}
-      >
-        EasyPG Manager 
+    <>
+      <div className="h-full flex flex-col bg-black text-white w-64">
+        {/* LOGO */}
+        <div
+          className="flex items-center gap-3 p-4 text-2xl font-bold cursor-pointer"
+          onClick={() => handleNavClick("/user/dashboard")}
+        >
+          EasyPG Manager 
+        </div>
+
+        {/* MENU */}
+        <nav className="flex-1 flex flex-col gap-2 p-2">
+          {menuItems.map((item) => (
+            <button
+              key={item.to}
+              onClick={() => handleNavClick(item.to)}
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm w-full transition-colors
+                ${isActive(item.to) ? "bg-primary text-white" : "hover:bg-gray-800"}`}
+            >
+              <span className="text-lg">{item.icon}</span>
+              <span>{item.label}</span>
+            </button>
+          ))}
+        </nav>
+
+        {/* LOGOUT */}
+        <button
+          onClick={() => setIsLogoutModalOpen(true)}
+          className="mt-6 text-left px-4 py-2 rounded-lg text-red-500 hover:text-red-600 font-semibold"
+        >
+          Logout
+        </button>
       </div>
 
-      {/* MENU */}
-      <nav className="flex-1 flex flex-col gap-2 p-2">
-        {menuItems.map((item) => (
-          <button
-            key={item.to}
-            onClick={() => handleNavClick(item.to)}
-            className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm w-full transition-colors
-              ${isActive(item.to) ? "bg-primary text-white" : "hover:bg-gray-800"}`}
-          >
-            <span className="text-lg">{item.icon}</span>
-            <span>{item.label}</span>
-          </button>
-        ))}
-      </nav>
-
-      {/* LOGOUT */}
-      <button
-        onClick={handleLogout}
-        className="mt-6 text-left px-4 py-2 rounded-lg text-red-500 hover:text-red-600 font-semibold"
-      >
-        Logout
-      </button>
-    </div>
+      {/* --- LOGOUT POPUP WITH SUCCESS CHECKMARK (MATCHES NAVBAR & OWNER) --- */}
+      {isLogoutModalOpen && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-white p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center transition-all animate-in zoom-in duration-200">
+            {!isLogoutSuccessful ? (
+              <>
+                <h3 className="text-2xl font-bold text-gray-800">Confirm Logout</h3>
+                <p className="text-gray-500 my-4 font-medium">Are you sure you want to end your session?</p>
+                <div className="flex gap-3 mt-6">
+                  <button 
+                    onClick={() => setIsLogoutModalOpen(false)} 
+                    className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition-colors"
+                  >
+                    No, Stay
+                  </button>
+                  <button 
+                    onClick={handleLogout} 
+                    className="flex-1 py-3 bg-orange-500 text-white rounded-xl font-bold shadow-lg shadow-orange-200 hover:bg-orange-600 transition-all"
+                  >
+                    Yes, Logout
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="flex flex-col items-center py-4 animate-in zoom-in duration-300">
+                <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-4xl mb-4 border-2 border-green-200">
+                  ✓
+                </div>
+                <h3 className="text-2xl font-bold text-gray-800">Success!</h3>
+                <p className="text-gray-500 mt-2 font-medium">Logged out successfully.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 

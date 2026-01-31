@@ -60,8 +60,7 @@ const userSchema = new mongoose.Schema(
     twitter: { type: String, default: "#" },
 
     // FIX: Renamed to profilePicture to match Controller [cite: 2026-01-07]
-    profilePicture: { type: String, default: "" },
-
+    profilePicture: { type: String, default: null },
     // --- DOCUMENT FIELDS FOR DASHBOARD ---
     idDocument: {
       status: { type: String, enum: ["Pending", "Uploaded"], default: "Pending" },

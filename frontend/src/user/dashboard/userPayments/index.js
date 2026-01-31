@@ -9,14 +9,15 @@ const paymentData = {
   nextPayment: {
     month: "January 2026",
     amount: "8,500",
-    dueDate: "05 Jan 2026",
+    dueDate: "29 Jan 2026",
     status: "Pending",
   },
-  totalPaid: "18,500",
+  totalPaid: "27,000",
   history: [
-    { id: 1, month: "December 2025", amount: "8,500", status: "Paid", date: "02 Dec" },
-    { id: 2, month: "November 2025", amount: "8,500", status: "Paid", date: "05 Nov" },
-    { id: 3, month: "October 2025", amount: "8,500", status: "Paid", date: "03 Oct" },
+        { id: 1, month: "January 2026", amount: "8,500", status: "Paid", date: "29 Jan" },
+    { id: 2, month: "December 2025", amount: "8,500", status: "Paid", date: "02 Dec" },
+    { id: 3, month: "November 2025", amount: "8,500", status: "Paid", date: "05 Nov" },
+    { id: 4, month: "October 2025", amount: "8,500", status: "Paid", date: "03 Oct" },
   ],
 };
 
@@ -30,7 +31,7 @@ const Payments = () => {
     setIsPayModalOpen(false);
   };
 
-  const handleDownloadReceipt = (month) => {
+  /*const handleDownloadReceipt = (month) => {
     Swal.fire({
       title: 'Downloading...',
       text: `Preparing receipt for ${month}`,
@@ -38,7 +39,54 @@ const Payments = () => {
       showConfirmButton: false,
       didOpen: () => { Swal.showLoading(); }
     });
+  };*/
+
+  // --- ADD THE FUNCTION HERE ---
+  const handleDownloadReceipt = (payment) => {
+    const printWindow = window.open('', '_blank', 'width=800,height=900');
+    const receiptHtml = `
+      <html>
+        <head>
+          <title>Receipt - ${payment.month}</title>
+          <style>
+            body { font-family: sans-serif; padding: 40px; color: #333; }
+            .header { border-bottom: 2px solid #f97316; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; }
+            .logo { font-size: 24px; font-weight: bold; color: #000; }
+            .status { color: #15803d; font-weight: bold; text-transform: uppercase; border: 2px solid #15803d; padding: 5px 10px; }
+            .details { margin-bottom: 40px; }
+            .row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; }
+            .total { font-size: 20px; font-weight: bold; margin-top: 20px; border-top: 2px solid #000; padding-top: 10px; }
+            .footer { margin-top: 50px; font-size: 12px; color: #666; text-align: center; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div class="logo">EasyPG Manager</div>
+            <div class="status">Official Receipt: PAID</div>
+          </div>
+          <div class="details">
+            <div class="row"><span>Recipient:</span> <span>Valued Resident</span></div>
+            <div class="row"><span>Payment Month:</span> <span>${payment.month}</span></div>
+            <div class="row"><span>Transaction Date:</span> <span>${payment.date} 2026</span></div>
+            <div class="row"><span>Payment Method:</span> <span>Online (Razorpay)</span></div>
+          </div>
+          <div class="total">
+            <div class="row"><span>Total Amount Paid:</span> <span>₹${payment.amount}</span></div>
+          </div>
+          <div class="footer">
+            <p>Thank you for your payment!</p>
+            <p>This is a computer-generated receipt and does not require a physical signature.</p>
+          </div>
+          <script>
+            window.onload = function() { window.print(); window.close(); }
+          </script>
+        </body>
+      </html>
+    `;
+    printWindow.document.write(receiptHtml);
+    printWindow.document.close();
   };
+  // ------------------------------
 
   return (
     <div className="p-3 sm:p-6 lg:p-8 bg-gray-50 min-h-screen space-y-6 sm:space-y-10">
@@ -122,7 +170,7 @@ const Payments = () => {
                   </td>
                   <td className="py-5 px-2 text-right">
                     <button 
-                      onClick={() => handleDownloadReceipt(pay.month)}
+                      onClick={() => handleDownloadReceipt(pay)}
                       className="text-orange-500 hover:text-orange-700 p-2 md:p-4 rounded-full hover:bg-orange-50 transition-all"
                     >
                       <FaDownload className="md:text-3xl lg:text-lg" />
@@ -152,6 +200,7 @@ const Payments = () => {
 /* ---------- Reusable Sub-Components ---------- */
 
 const StatusBadge = ({ status }) => {
+  const displayStatus = status || "Pending";
   const isPaid = status.toLowerCase() === "paid";
   return (
     <span

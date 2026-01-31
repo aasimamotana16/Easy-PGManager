@@ -8,7 +8,7 @@ const API = axios.create({
 });
 
 API.interceptors.request.use((req) => {
-  const userToken = localStorage.getItem("token");
+  const userToken = localStorage.getItem("userToken");
   if (userToken) {
     req.headers.Authorization = `Bearer ${userToken}`;
   }
@@ -27,6 +27,7 @@ export const resetPassword = (token, password) => API.post(`/auth/reset-password
 // ONLY ONE DECLARATION HERE
 
 export const getUserProfile = () => API.get("/users/me"); 
+export const getUserDashboard = () => API.get("/users/dashboard-stats");
 export const getDashboardStats = () => API.get("/users/dashboard-stats");
 
 /* =========================
@@ -83,6 +84,18 @@ export const removeProfilePicture = () =>
 // Add this to your existing api.js file [cite: 2026-01-06]
 export const getOwnerContactData = () => API.get("/users/my-owner-contact");
 
+// Add missing dashboard APIs
+export const getMyDocuments = () => API.get("/users/documents");
+export const getMyAgreement = () => API.get("/users/agreement");
+export const getMyTimeline = () => API.get("/users/timeline");
+export const getMyCheckIns = () => API.get("/users/checkins");
+export const createCheckIn = (data) => API.post("/users/checkin-action", data);
+export const uploadUserDocument = (formData) => 
+  API.post("/users/upload-doc", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+
 // Add this to your api/api.js [cite: 2026-01-01]
 export const updateUserProfile = (userData) => API.put("/users/profile/update", userData);
+
 export default API;

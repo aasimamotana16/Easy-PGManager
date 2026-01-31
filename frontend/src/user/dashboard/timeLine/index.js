@@ -118,7 +118,7 @@ autoTable(doc, {
               </h3>
               <div className="flex items-center gap-2">
                 <FaCircle className="text-green-500 animate-pulse" size={8} />
-                <span className="text-[9px] md:text-xl lg:text-sm font-bold text-gray-700 uppercase">Live Tracking</span>
+                <span className="text-[9px] md:text-xl lg:text-xs font-bold uppercase text-gray-400">Payments</span>
               </div>
             </div>
 
@@ -165,7 +165,7 @@ autoTable(doc, {
                 </div>
               </div>
             </div>
-            
+
             <div className="h-[300px] md:h-[500px] lg:h-[400px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={activityData}>

@@ -5,10 +5,7 @@ const cors = require('cors');
 const nodemailer = require('nodemailer'); // Added for real email
 const path = require("path");
 
-
 // IMPORT ROUTES
-// 1. Add this at the top with other imports
-const adminRoutes = require('./routes/adminRoutes'); // Add this line
 const authRoutes = require('./routes/authRoutes');
 const cityRoutes = require('./routes/cityRoutes');
 const featuresRoutes = require("./routes/featuresRoutes");
@@ -55,8 +52,6 @@ app.use("/api/payments", paymentRoutes);
 // Owner Specific Logic
 app.use('/api/owner', ownerRoutes);
 
-//2. Add this in the ROUTES section (around line 45)
-app.use('/api/admin', adminRoutes); // This connects the Add/Edit/Delete logic
 // Dynamic Reviews (About Page & Admin Management)
 
 // Matches your requirement to let admin edit data themselves [cite: 2026-01-06]

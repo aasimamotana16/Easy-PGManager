@@ -9,10 +9,10 @@ import Filters from "./servicesFilter";
 import PGListings from "./pgListing";
 
 const DEFAULT_FILTERS = {
-  forCategory: "Any",
+  lookingFor: "Any",
   occupancy: "Any",
-  minBudget: "",
-  maxBudget: "",
+  minPrice: "",
+  maxPrice: "",
   rentCycle: "Any",
   amenities: [],
   sortBy: "",
@@ -77,8 +77,8 @@ const applyFiltersClick = async () => {
       city: city || "Any",
       lookingFor: tempFilters.lookingFor,
       occupancy: tempFilters.occupancy,
-      minBudget: tempFilters.minPrice,
-      maxBudget: tempFilters.maxPrice,
+      minPrice: tempFilters.minPrice,
+      maxPrice: tempFilters.maxPrice,
       rentCycle: tempFilters.rentCycle,
       amenities: tempFilters.amenities.join(","), 
     }).toString();

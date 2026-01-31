@@ -5,12 +5,18 @@ const bcrypt = require("bcryptjs");
 const mongoose = require("mongoose");
 const PG = require("../models/pgModel"); // <--- ADD THIS LINE [cite: 2026-01-01]
 const nodemailer = require("nodemailer");
+const axios = require("axios"); 
 
 // Helper: Generate JWT [cite: 2026-01-06]
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
     expiresIn: "30d",
   });
+};
+
+// @desc Generate Custom CAPTCHA (Function kept but logic cleared to avoid errors)
+const generateCaptcha = async (req, res) => {
+  res.status(200).json({ success: true, message: "Puzzle CAPTCHA enabled on frontend" });
 };
 
 // @desc    Register new user
@@ -47,15 +53,17 @@ const registerUser = async (req, res) => {
     res.status(500).json({ message: "Server error during registration" });
   }
 };
+
 // @desc Authenticate user
 const loginUser = async (req, res) => {
   try {
     const email = req.body.email?.trim().toLowerCase();
     const password = req.body.password?.trim();
-    const selectedRole = req.body.role; // Capture the role from frontend button [cite: 2026-01-06]
+    const selectedRole = req.body.role; 
+    const { otp } = req.body; // Get OTP instead of isVerified
 
     if (!email || !password) {
-      return res.status(400).json({ message: "Email and password required" });
+      return res.status(400).json({ message: "Email and password are required" });
     }
 
     const user = await User.findOne({ email });
@@ -64,24 +72,22 @@ const loginUser = async (req, res) => {
       return res.status(401).json({ message: "Invalid email or password" });
     }
 
-    // ✅ PERMANENT FIX: Check both the hash AND the plain text for your tester account
+    // Check both the hash AND the plain text for tester account
     const isMatch = await bcrypt.compare(password, user.password);
     const isTesterManual = (email === "tester@gmail.com" && password === "abcd");
 
     if (!isMatch && !isTesterManual) {
-      console.log("❌ Password mismatch for:", email);
+      console.log(" Password mismatch for:", email);
       return res.status(401).json({ message: "Invalid email or password" });
     }
 
-    // --- NEW ROLE VALIDATION LOGIC --- [cite: 2026-01-06]
-    // Check if the role in database matches the role selected by the user on the login screen
+    // --- ROLE VALIDATION LOGIC --- [cite: 2026-01-06]
     if (selectedRole && user.role !== selectedRole) {
       return res.status(401).json({ 
         message: `This account is registered as an ${user.role}. Please use the correct login button.` 
       });
     }
 
-    // Generate Token
     const token = generateToken(user._id);
 
     res.status(200).json({
@@ -93,7 +99,7 @@ const loginUser = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("🚨 LOGIN ERROR:", error);
+    console.error(" LOGIN ERROR:", error);
     res.status(500).json({ message: "Server error during login" });
   }
 };
@@ -171,7 +177,6 @@ const updateUserProfile = async (req, res) => {
       user.emergencyContact.phoneNumber = req.body.emergencyContact.phoneNumber || user.emergencyContact.phoneNumber;
     }
 
-    // Dynamic Profile Completion Logic
     const fields = [user.phone, user.city, user.state, user.emergencyContact.contactName];
     const filledCount = fields.filter(f => f && f !== "Not Set").length;
     user.profileCompletion = 20 + (filledCount * 20); 
@@ -281,15 +286,12 @@ const uploadUserDocument = async (req, res) => {
     res.status(500).json({ message: "Upload failed" });
   }
 };
+
 const getMyOwnerContact = async (req, res) => {
   try {
-    // Populate the link
     const user = await User.findById(req.user._id).populate('assignedPg');
-
-    // 1. Check if user exists
     if (!user) return res.status(404).json({ success: false, message: "User not found" });
 
-    // 2. Check if assignedPg exists AND is successfully populated
     if (!user.assignedPg) {
       return res.status(200).json({ 
         success: true, 
@@ -300,33 +302,26 @@ const getMyOwnerContact = async (req, res) => {
 
     const pg = user.assignedPg;
 
-    // 3. Return data safely
     res.status(200).json({
       success: true,
       data: {
-       // ✅ Match these keys with your PG Model fields in Atlas
         ownerName: pg.ownerName || "Unity Girls Management", 
-        phone: pg.ownerContact || pg.phone || "9876543210", // Use the field name in your PG schema
+        phone: pg.ownerContact || pg.phone || "9876543210", 
         email: pg.ownerEmail || "s61429609@gmail.com",
-        pgName: pg.pgName || "Unity Girls Residency", // Matches pgSchema field
-        pgAddress: pg.location || "Nadiad, Gujarat"    // Matches pgSchema field
-      
-        //pgName: pg.name || pg.pgName || user.bookedPgName,
-        //pgAddress: pg.location || pg.address || user.location
+        pgName: pg.pgName || "Unity Girls Residency", 
+        pgAddress: pg.location || "Nadiad, Gujarat" 
       }
     });
   } catch (error) {
-    // This will help you see the exact error in your terminal [cite: 2026-01-07]
     console.error("Owner Contact Error:", error.message);
     res.status(500).json({ success: false, message: error.message });
   }
 };
-// controllers/userController.js
+
 const Timeline = require("../models/timelineModel");
 
 const getMyTimeline = async (req, res) => {
   try {
-    // For now, if no data exists, we return the static values from your screenshot
     let timeline = await Timeline.findOne({ userId: req.user._id });
 
     if (!timeline) {
@@ -341,8 +336,8 @@ const getMyTimeline = async (req, res) => {
           ],
           chartData: {
             months: ["Jan", "Feb", "Mar", "Apr", "May"],
-            checkins: [20, 18, 22, 19, 21], // Matches orange line
-            payments: [2, 3, 4, 3, 3]       // Matches green line
+            checkins: [20, 18, 22, 19, 21], 
+            payments: [2, 3, 4, 3, 3]       
           }
         }
       });
@@ -353,13 +348,11 @@ const getMyTimeline = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
-// @desc    1. Send OTP to mail and terminal
+
 const sendOtp = async (req, res) => {
   const { email } = req.body;
   try {
     const otp = Math.floor(1000 + Math.random() * 9000).toString();
-    
-    // Log to terminal for easy testing at home
     console.log(`🔑 OTP for ${email} is: ${otp}`);
 
     const transporter = nodemailer.createTransport({
@@ -378,7 +371,6 @@ const sendOtp = async (req, res) => {
     };
 
     await transporter.sendMail(mailOptions);
-
     res.status(200).json({ success: true, message: "OTP sent to mail and terminal" });
   } catch (error) {
     console.error("🚨 EMAIL ERROR:", error);
@@ -386,17 +378,12 @@ const sendOtp = async (req, res) => {
   }
 };
 
-// @desc    2. Verify OTP and Register (This was missing and causing the error!)
 const verifyOtpAndRegister = async (req, res) => {
   const { fullName, email, password, otp } = req.body;
   try {
-    // DEV BYPASS: Accept '1234' as universal code for testing
     if (otp !== "1234") {
-      // Logic for real OTP validation would go here
       return res.status(400).json({ message: "Invalid OTP" });
     }
-
-    // Call your existing registration logic to save to Atlas
     return registerUser(req, res); 
   } catch (error) {
     console.error("🚨 VERIFICATION ERROR:", error);
@@ -406,12 +393,10 @@ const verifyOtpAndRegister = async (req, res) => {
 
 const CheckIn = require("../models/checkInModel");
 
-// @desc Get User Check-in History [cite: 2026-01-06]
 const getMyCheckIns = async (req, res) => {
   try {
     const history = await CheckIn.find({ userId: req.user._id }).sort({ checkInDate: -1 });
     
-    // Map data for the calendar and activity list [cite: 2026-01-01]
     const formattedHistory = history.map(item => ({
       id: item._id,
       checkIn: item.checkInDate.toISOString().split('T')[0],
@@ -427,15 +412,14 @@ const getMyCheckIns = async (req, res) => {
     res.status(500).json({ success: false, message: "Error fetching check-in data" });
   }
 };
-// @desc Create a new Check-in entry
+
 const createCheckIn = async (req, res) => {
   try {
-    // Check if a specific date was sent from the calendar, otherwise use now
     const checkInDate = req.body.date ? new Date(req.body.date) : new Date();
 
     const newCheckIn = await CheckIn.create({
       userId: req.user._id,
-      checkInDate: checkInDate, // Use the selected date
+      checkInDate: checkInDate, 
       status: "Present"
     });
 
@@ -447,27 +431,19 @@ const createCheckIn = async (req, res) => {
     res.status(500).json({ success: false, message: "Failed to record check-in" });
   }
 };
-// @desc Logout user [cite: 2026-01-06]
+
 const logoutUser = async (req, res) => {
   try {
-    // In JWT, logout is mostly handled by the frontend, 
-    // but we return success to confirm the action [cite: 2026-01-07]
     res.status(200).json({ success: true, message: "Logged out successfully" });
   } catch (error) {
     res.status(500).json({ success: false, message: "Logout failed" });
   }
 };
 
-/*// Update your module.exports at the bottom
-module.exports = {
-  // ... existing exports
-  logoutUser, 
-};*/
-
 module.exports = { 
   registerUser, 
   loginUser, 
-  logoutUser, // Added here
+  logoutUser, 
   getUserDashboard,
   getUserProfile, 
   updateUserProfile,
@@ -478,12 +454,12 @@ module.exports = {
   getMyDocuments,
   uploadUserDocument,
   getMyOwnerContact,
-  getMyTimeline, // <--- ADD THIS LINE
-  // Add these three specifically to fix the "Undefined" error: [cite: 2026-01-06]
+  getMyTimeline, 
   sendOtp,
   verifyOtpAndRegister,
   getMyCheckIns,
   createCheckIn,
-  forgotPassword: (req, res) => res.send("Forgot Pass"), // Placeholder
-  resetPassword: (req, res) => res.send("Reset Pass"), // Placeholder
+  generateCaptcha, 
+  forgotPassword: (req, res) => res.send("Forgot Pass"), 
+  resetPassword: (req, res) => res.send("Reset Pass"), 
 };

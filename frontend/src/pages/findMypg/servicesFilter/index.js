@@ -24,8 +24,7 @@ export default function Filters({
           value={filters.lookingFor}
           options={genderOptions}
           onChange={(e) =>
-            //handleFilterChange("lookingFor", e.target.value)
-            handleFilterChange("forCategory", e.target.value) // Changed from "lookingFor"
+            handleFilterChange("lookingFor", e.target.value)
           }
         />
 
@@ -47,8 +46,7 @@ export default function Filters({
           label="Min Budget (₹)"
           value={filters.minPrice}
           onChange={(e) =>
-            //handleFilterChange("minPrice", e.target.value)
-            handleFilterChange("minBudget", e.target.value) // Changed from "minPrice"
+            handleFilterChange("minPrice", e.target.value)
           }
         />
 
@@ -57,8 +55,7 @@ export default function Filters({
           label="Max Budget (₹)"
           value={filters.maxPrice}
           onChange={(e) =>
-            //handleFilterChange("maxPrice", e.target.value)
-            handleFilterChange("maxBudget", e.target.value) // Changed from "maxPrice"
+            handleFilterChange("maxPrice", e.target.value)
           }
         />
       </div>

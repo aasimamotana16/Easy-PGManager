@@ -12,29 +12,38 @@ import {
   FaDownload
 } from "react-icons/fa";
 import CButton from "../../../components/cButton";
-import { getUserProfile } from "../../../api/api";
+import { getUserProfile, getUserDashboard, getMyAgreement } from "../../../api/api";
 import axios from "axios";
 
 const DashboardHome = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
+  const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
 
   // Mock data for the Recent Payments table
   const recentPayments = [
-    { id: 1, month: "December 2025", amount: 8500, status: "Paid", date: "02 Dec" },
-    { id: 2, month: "November 2025", amount: 8500, status: "Paid", date: "05 Nov" },
+    { id: 1, month: "january 2026", amount: 8500, status: "Paid", date: "29 jan" },
+    { id: 2, month: "December 2025", amount: 8500, status: "Paid", date: "02 Dec" },
+    { id: 3, month: "November 2025", amount: 8500, status: "Paid", date: "05 Nov" },
   ];
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const res = await getUserProfile();
-        if (res.data.success) {
-          setUser(res.data.data);
+        // Get user profile data
+        const profileRes = await getUserProfile();
+        if (profileRes.data.success) {
+          setUser(profileRes.data.data);
+        }
+
+        // Get dashboard-specific data
+        const dashboardRes = await getUserDashboard();
+        if (dashboardRes.data.success) {
+          setDashboardData(dashboardRes.data.data);
         }
       } catch (err) {
-        console.error("Error fetching profile", err);
+        console.error("Error fetching dashboard data", err);
       } finally {
         setLoading(false);
       }
@@ -44,18 +53,21 @@ const DashboardHome = () => {
 
   const handleViewAgreement = async () => {
     try {
-      const token = localStorage.getItem("token");
-      const { data } = await axios.get(
-        "http://localhost:5000/api/users/documents",
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      if (data.success && data.data.rentalAgreement?.fileUrl) {
-        window.open(`http://localhost:5000${data.data.rentalAgreement.fileUrl}`, "_blank");
+      const res = await getMyAgreement();
+      if (res.data.success && res.data.data) {
+        // If there's a file URL, open it
+        if (res.data.data.fileUrl) {
+          window.open(`http://localhost:5000${res.data.data.fileUrl}`, "_blank");
+        } else {
+          // Show agreement details in a modal or alert
+          alert(`Agreement Details:\nPG: ${res.data.data.pgName}\nRoom: ${res.data.data.roomNo}\nStatus: ${res.data.data.status}`);
+        }
       } else {
         alert("Agreement not found");
       }
-    } catch {
-      alert("Server error");
+    } catch (err) {
+      console.error("Error fetching agreement:", err);
+      alert("Failed to load agreement");
     }
   };
 
@@ -67,12 +79,12 @@ const DashboardHome = () => {
     );
   }
 
-  const pgName = user?.bookedPgName || "No PG Booked";
-  const roomNo = user?.roomNo || "N/A";
-  const monthlyRent = user?.monthlyRent ? user.monthlyRent.toLocaleString() : "0";
-  const bookingStatus = user?.bookingStatus || "Inactive";
-  const nextPaymentDate = user?.paymentDueDate || "05 Jan 2026";
-  const completionPercentage = user?.profileCompletion || 0;
+  const pgName = dashboardData?.currentBooking?.pgName || user?.bookedPgName || "No PG Booked";
+  const roomNo = dashboardData?.currentBooking?.roomNo || user?.roomNo || "N/A";
+  const monthlyRent = dashboardData?.currentBooking?.monthlyRent || user?.monthlyRent || 0;
+  const bookingStatus = dashboardData?.currentBooking?.status || user?.bookingStatus || "Inactive";
+  const nextPaymentDate = dashboardData?.nextPayment?.dueDate || user?.paymentDueDate || "29 feb 2026";
+  const completionPercentage = dashboardData?.profileCompletion || user?.profileCompletion || 0;
 
   return (
     <div className="p-3 sm:p-6 lg:p-8 bg-gray-50 min-h-screen space-y-5 sm:space-y-8">
@@ -92,7 +104,7 @@ const DashboardHome = () => {
         <StatCard title="PG Name" value={pgName} icon={<FaHome />} />
         <StatCard title="Room No" value={roomNo} icon={<FaBed />} />
         <StatCard title="Status" value={bookingStatus} icon={<FaUserCheck />} live={bookingStatus === "Active"} />
-        <StatCard title="Rent" value={`₹${monthlyRent}`} icon={<FaWallet />} />
+        <StatCard title="Rent" value={`₹${monthlyRent.toLocaleString()}`} icon={<FaWallet />} />
       </div>
 
       {/* QUICK ACTIONS */}
@@ -165,7 +177,7 @@ const DashboardHome = () => {
           
           <div className="bg-black text-white p-4 sm:p-6 rounded-md shadow-md">
             <p className="text-[10px] sm:text-xs md:text-2xl lg:text-sm text-gray-300 uppercase font-bold mb-1">Rent Due</p>
-            <p className="text-2xl sm:text-3xl md:text-5xl lg:text-3xl font-black text-orange-500 mb-4">₹{monthlyRent}</p>
+            <p className="text-2xl sm:text-3xl md:text-5xl lg:text-3xl font-black text-orange-500 mb-4">₹{monthlyRent.toLocaleString()}</p>
             <CButton className="bg-primary  text-white w-full py-3 md:py-6 md:text-3xl lg:py-3 lg:text-base font-bold">
               PAY NOW
             </CButton>
