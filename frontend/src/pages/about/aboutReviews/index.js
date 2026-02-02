@@ -27,7 +27,7 @@ const AboutReviews = () => {
 
   return (
     <section className="py-12 px-6 sm:px-12 md:px-16 lg:px-24 bg-gray-50 snap-start">
-      <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-4xl font-semibold text-primary mb-8 text-center md:text-left">
+      <h2 className="text-2xl sm:text-3xl md:text-5xl lg:text-4xl font-semibold text-primary mb-8 text-center md:text-left">
         What Our Users Say
       </h2>
 
@@ -41,10 +41,10 @@ const AboutReviews = () => {
             viewport={{ once: true }}
             className="bg-white border border-border rounded-xl shadow-lg p-6 flex flex-col justify-between"
           >
-            <p className="italic text-text-secondary text-sm sm:text-base md:text-lg lg:text-md">
+            <p className="italic text-text-secondary text-sm sm:text-base md:text-xl lg:text-md">
               "{review.comment}" {/* Backend variable [cite: 2026-01-01] */}
             </p>
-            <p className="font-bold text-primary mt-4 text-sm sm:text-base md:text-lg">
+            <p className="font-bold text-primary mt-4 text-sm sm:text-base md:text-xl">
               – {review.userRole} {/* Backend variable [cite: 2026-01-01] */}
             </p>
           </motion.div>

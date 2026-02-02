@@ -19,7 +19,7 @@ import FindMyPg from "./pages/findMypg";
 import DemoBook from "./pages/Home/demoBook";
 
 /* ================= PG DETAILS ================= */
-import PGFullDetails from "./pages/detailsPage";
+import PGDetails from "./pages/detailsPage";
 
 /* ================= BOOKING ================= */
 import BookingPage from "./pages/booking/bookNowPage";
@@ -112,7 +112,7 @@ function App() {
           <Route path="/reset-password/:token" element={<ResetPassword />} />
 
           {/* ===== PG DETAILS ===== */}
-          <Route path="/pg/:id" element={<PGFullDetails />} />
+          <Route path="/pg/:id" element={<PGDetails />} />
 
           {/* ===== BOOKING ===== */}
           <Route path="/book/:id" element={<ProtectedBookingRoute><BookingPage /></ProtectedBookingRoute>} />

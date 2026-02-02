@@ -5,7 +5,7 @@ import { aboutWhoWeServe } from "../../../config/staticData";
 const AboutWhoWeServe = () => {
   return (
     <section className="py-12 px-6 sm:px-12 md:px-16 lg:px-24 snap-start">
-      <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-4xl font-semibold text-primary mb-6 text-center md:text-left">
+      <h2 className="text-2xl sm:text-3xl md:text-5xl lg:text-4xl font-semibold text-primary mb-6 text-center md:text-left">
         Who We Serve
       </h2>
 
@@ -17,7 +17,7 @@ const AboutWhoWeServe = () => {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: i * 0.1 }}
             viewport={{ once: true }}
-            className="text-text-secondary text-sm sm:text-base md:text-lg lg:text-md"
+            className="text-text-secondary text-sm sm:text-base md:text-2xl lg:text-md"
           >
             <span className="font-semibold">{item.role}:</span> {item.desc}
           </motion.li>

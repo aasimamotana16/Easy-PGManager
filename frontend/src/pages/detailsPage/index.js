@@ -1,11 +1,19 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect, useContext, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { BackendContext } from "../../context/backendContext"; 
 import Navbar from "../../components/navbar";
 import Footer from "../../components/footer";
 import CButton from "../../components/cButton";
-import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/solid";
+import { 
+  ChevronLeftIcon, 
+  ChevronRightIcon, 
+  StarIcon, 
+  MapPinIcon,
+  PaperAirplaneIcon,
+  XMarkIcon
+} from "@heroicons/react/24/solid";
 
+/* ================= CONSTANTS ================= */
 const ruleIcons = {
   nosmoke: "🚭",
   nopet: "🐾",
@@ -14,7 +22,6 @@ const ruleIcons = {
   noguest: "🙅‍♂️",
 };
 
-// Professional placeholders to ensure a full gallery of 3-4 images
 const placeholders = [
   "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af",
   "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688",
@@ -22,167 +29,319 @@ const placeholders = [
   "https://images.unsplash.com/photo-1554995207-c18c203602cb"
 ];
 
+/* ================= MAIN COMPONENT ================= */
 const PGDetails = () => {
+  // 1. ALL HOOKS AT THE TOP
   const { id } = useParams();
   const navigate = useNavigate();
-  const [currentIndex, setCurrentIndex] = useState(0);
   const { pgList } = useContext(BackendContext);
 
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+  const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState("");
+
+  const reviewsRef = useRef(null);
+
+  // 2. DATA CALCULATION
+  const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
   const pg = pgList.find((item) => item._id === id);
 
-  // 1. UNIVERSAL GALLERY LOGIC: Combines Atlas fields and adds padding if < 4
+  // 3. EFFECT DECLARED BEFORE CONDITIONAL RETURN
+  useEffect(() => {
+    // Gallery check inside the effect to prevent errors if pg is missing
+    const rawGallery = [
+      pg?.mainImage, 
+      ...(pg?.images || []), 
+      ...(pg?.roomImages || [])
+    ].filter(Boolean);
+
+    const galleryLength = rawGallery.length >= 4 ? rawGallery.length : 4;
+
+    if (!pg || galleryLength <= 1) return;
+
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) =>
+        prev === galleryLength - 1 ? 0 : prev + 1
+      );
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, [pg]);
+
+  // 4. CONDITIONAL RETURN AFTER ALL HOOKS
+  if (!pg) return <NotFoundState />;
+
+  /* ================= DATA PREPARATION ================= */
   const rawGallery = [
     pg?.mainImage, 
     ...(pg?.images || []), 
     ...(pg?.roomImages || [])
   ].filter(Boolean);
 
-  const gallery = rawGallery.length >= 4 
-    ? rawGallery 
-    : [...rawGallery, ...placeholders.slice(0, 4 - rawGallery.length)];
+  const gallery =
+    rawGallery.length >= 4
+      ? rawGallery
+      : [...rawGallery, ...placeholders.slice(0, 4 - rawGallery.length)];
 
-  // 2. PRICE LOGIC: Matches your Atlas "roomPrices" or "price" fields
   const priceData = pg?.roomPrices || pg?.price || {};
-  const hasPrices = Object.keys(priceData).length > 0;
-  const displayStartingPrice = pg?.startingPrice || (hasPrices ? Math.min(...Object.values(priceData).map(v => Number(v))) : "5,000");
+  const displayStartingPrice =
+    pg?.startingPrice ||
+    (Object.keys(priceData).length > 0
+      ? Math.min(...Object.values(priceData).map(v => Number(v)))
+      : "5,000");
 
-  // 3. AMENITIES/FACILITIES FALLBACKS: Keeps UI full even if Atlas fields are missing
-  const displayAmenities = pg?.amenities?.length > 0 ? pg.amenities : ["Wifi", "CCTV Security", "RO Water", "Power Backup"];
-  const displayFacilities = pg?.facilities?.length > 0 ? pg.facilities : ["Common Kitchen", "Housekeeping", "Laundry Area"];
+  const reviews = pg?.reviews?.length
+    ? pg.reviews
+    : [
+        { user: "ABCD", rating: 5, comment: "Clean rooms and very safe environment." },
+        { user: "XYZ", rating: 4, comment: "Good facilities, food quality can be improved." },
+      ];
 
-  useEffect(() => {
-    if (gallery.length <= 1) return; 
-    const interval = setInterval(() => {
-      setCurrentIndex((prev) => (prev === gallery.length - 1 ? 0 : prev + 1));
-    }, 4000); 
-    return () => clearInterval(interval);
-  }, [gallery.length]);
+  const averageRating = (
+    reviews.reduce((sum, r) => sum + Number(r.rating), 0) / reviews.length
+  ).toFixed(1);
 
-  if (pgList.length === 0) return <LoadingState />; 
-  if (!pg) return <NotFoundState />;
+  /* ================= HANDLERS ================= */
+  const scrollToReviews = () => {
+    reviewsRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
+  const handleSubmitFeedback = () => {
+    if (!isLoggedIn) {
+      navigate("/login");
+      return;
+    }
+
+    console.log({
+      pgId: pg._id,
+      rating,
+      comment,
+    });
+
+    setIsFeedbackOpen(false);
+    setRating(0);
+    setComment("");
+  };
+
+  /* ================= UI ================= */
   return (
-    <div className="min-h-screen flex flex-col bg-background font-roboto">
+    <div className="min-h-screen bg-gray-50 font-roboto">
       <Navbar />
 
-      <div className="flex-1 w-full py-12 px-4 sm:px-6">
-        <div className="max-w-7xl mx-auto lg:flex lg:gap-10">
+      <div className="max-w-7xl mx-auto px-4 py-6 flex flex-col lg:flex-row lg:gap-10">
 
-          {/* LEFT SECTION (60% width) */}
-          <div className="lg:w-[60%] flex flex-col gap-6">
-            
-            {/* IMAGE CAROUSEL */}
-            <div className="relative h-[450px] rounded-2xl overflow-hidden shadow-xl bg-gray-200 group">
-              <img
-                src={gallery[currentIndex].startsWith("http") ? gallery[currentIndex] : process.env.PUBLIC_URL + gallery[currentIndex]}
-                alt={pg.name}
-                className="w-full h-full object-cover transition-transform duration-500"
-              />
-              {gallery.length > 1 && (
-                <>
-                  <button onClick={() => setCurrentIndex((prev) => prev === 0 ? gallery.length - 1 : prev - 1)} className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 p-3 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white"><ChevronLeftIcon className="h-6 w-6 text-gray-800" /></button>
-                  <button onClick={() => setCurrentIndex((prev) => prev === gallery.length - 1 ? 0 : prev + 1)} className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 p-3 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white"><ChevronRightIcon className="h-6 w-6 text-gray-800" /></button>
-                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-                    {gallery.map((_, i) => (
-                      <div key={i} className={`h-1.5 rounded-full transition-all ${i === currentIndex ? "w-6 bg-white" : "w-2 bg-white/50"}`} />
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
+        {/* ================= LEFT MAIN CONTENT ================= */}
+        <div className="w-full lg:w-[60%] flex flex-col gap-6 order-1">
 
-            {/* BOOKING BAR */}
-            <div className="flex justify-between items-center bg-white rounded-2xl p-6 shadow-md border-b-4 border-amber-500">
-              <div>
-                <p className="text-sm text-gray-500 font-medium uppercase tracking-wider">Starting Price</p>
-                <p className="text-2xl sm:text-3xl font-bold text-gray-900">
-                  ₹{displayStartingPrice}
-                  <span className="text-lg font-normal text-gray-500 ml-1">/ month</span>
-                </p>
-              </div>
-              <CButton size="lg" className="px-10 h-14 text-lg shadow-lg" onClick={() => navigate(`/book/${pg._id}`)}>
-                Book Now
-              </CButton>
-            </div>
-
-            {/* DYNAMIC MAP SECTION */}
-            <div className="rounded-2xl overflow-hidden shadow-lg bg-white">
-              <div className="p-4 border-b">
-                <h3 className="font-semibold text-gray-800">Location & Area</h3>
-                <p className="text-sm text-gray-500">{pg.location || "Address on Request"}</p>
-              </div>
-              <iframe
-                title="PG Location"
-                src={`https://maps.google.com/maps?q=${encodeURIComponent(`${pg.name} ${pg.location}`)}&t=&z=14&ie=UTF8&iwloc=&output=embed`}
-                className="w-full h-80 border-0"
-                loading="lazy"
-              ></iframe>
-              <div className="flex justify-center p-4 bg-gray-50">
-                <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${pg.name} ${pg.location}`)}`} target="_blank" rel="noopener noreferrer" className="bg-primary text-white px-8 py-2.5 rounded-full hover:bg-primary-dark transition font-semibold flex items-center gap-2">
-                  <span>📍</span> Open in Google Maps
-                </a>
-              </div>
-            </div>
+          {/* IMAGE */}
+          <div className="order-1 relative h-64 md:h-[450px] rounded-3xl overflow-hidden bg-gray-200 shadow">
+            <img
+              src={gallery[currentIndex]}
+              alt={pg.name}
+              className="w-full h-full object-cover"
+            />
+            <button
+              onClick={() =>
+                setCurrentIndex(currentIndex === 0 ? gallery.length - 1 : currentIndex - 1)
+              }
+              className="absolute left-3 top-1/2 bg-white p-2 rounded-full shadow"
+            >
+              <ChevronLeftIcon className="h-5 w-5" />
+            </button>
+            <button
+              onClick={() =>
+                setCurrentIndex(currentIndex === gallery.length - 1 ? 0 : currentIndex + 1)
+              }
+              className="absolute right-3 top-1/2 bg-white p-2 rounded-full shadow"
+            >
+              <ChevronRightIcon className="h-5 w-5" />
+            </button>
           </div>
 
-          {/* RIGHT SECTION (40% width) */}
-          <div className="lg:w-[40%] flex flex-col gap-6">
-            
-            {/* MAIN INFO CARD */}
-            <div className="bg-white p-8 rounded-3xl shadow-md relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-24 h-24 bg-amber-50 rounded-bl-full -mr-10 -mt-10" />
-              <h1 className="text-3xl font-extrabold text-gray-900 leading-tight">{pg.name }</h1>
-              <p className="text-lg text-gray-600 mt-2 flex items-center gap-2">
-                <span className="text-red-500">📍</span> {pg.location}
-              </p>
-              <div className="mt-6 pt-6 border-t border-gray-100 space-y-3">
-                <div className="flex justify-between"><span className="text-gray-500">Owner</span><span className="font-semibold text-gray-800">{pg.ownerName || "Contact Owner"}</span></div>
-                <div className="flex justify-between"><span className="text-gray-500">Status</span><span className="font-bold text-green-600 uppercase text-sm">{pg.status || "Active"}</span></div>
-                {pg.rating && <div className="flex justify-between"><span className="text-gray-500">Rating</span><span className="text-yellow-500 font-bold">★ {pg.rating}</span></div>}
+          {/* ⭐ ALL PG DETAILS (MOBILE AFTER IMAGE) */}
+          <div className="order-2 lg:hidden flex flex-col gap-5">
+
+            <div className="bg-white p-6 rounded-2xl shadow">
+              <h1 className="text-2xl font-black">{pg.name}</h1>
+              <p className="text-gray-500 font-semibold">📍 {pg.location}</p>
+
+              <div className="mt-4 flex items-center gap-3 bg-gray-50 p-4 rounded-xl">
+                <StarIcon className="h-6 w-6 text-amber-500" />
+                <span className="font-black">{averageRating}</span>
+                <button
+                  onClick={scrollToReviews}
+                  className="text-xs text-blue-600 font-bold underline"
+                >
+                  ({reviews.length} reviews)
+                </button>
+              </div>
+
+              <div className="mt-4 text-xl font-black text-primary">
+                ₹{displayStartingPrice}/month
               </div>
             </div>
 
-            {/* ROOM OPTIONS - Grid Layout matching your Atlas 'roomPrices' */}
-            <div className="bg-white p-6 rounded-3xl shadow-md">
-              <h2 className="text-xl font-bold mb-5 text-gray-800 flex items-center gap-2">🏠 Room Categories</h2>
-              {hasPrices ? (
-                <div className="grid grid-cols-2 gap-4">
-                  {Object.entries(priceData).map(([type, amount], i) => (
-                    <div key={i} className="border border-amber-100 rounded-2xl p-4 text-center bg-amber-50/30">
-                      <p className="text-xs text-gray-500 font-bold uppercase mb-1">{type.replace(/([A-Z])/g, ' $1')}</p>
-                      <p className="font-extrabold text-amber-700 text-lg">₹{amount}/mo</p>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="bg-amber-50 rounded-2xl p-6 text-center border border-dashed border-amber-200">
-                   <p className="text-amber-800 font-semibold">Multiple Sharing Options</p>
-                   <p className="text-xs text-amber-600 mt-1">Starting from ₹5,000</p>
-                </div>
-              )}
-            </div>
-
-            {/* AMENITIES & FACILITIES - Using display fallbacks */}
-            <FeatureList title="Amenities" items={displayAmenities} icon="⭐" />
-            <FeatureList title="Facilities" items={displayFacilities} icon="🛠️" />
-
-            {/* HOUSE RULES */}
+            <FeatureList
+              title="Amenities"
+              items={pg?.amenities?.length ? pg.amenities : ["Wifi", "CCTV Security", "RO Water", "Power Backup"]}
+              icon="⭐"
+            />
+            <FeatureList
+              title="Facilities"
+              items={pg?.facilities?.length ? pg.facilities : ["Common Kitchen", "Housekeeping", "Laundry Area"]}
+              icon="🛠️"
+            />
             <HouseRules pg={pg} ruleIcons={ruleIcons} />
           </div>
+
+          {/* MAP */}
+          <div className="order-3 bg-white rounded-2xl overflow-hidden shadow">
+            <div className="flex justify-between items-center p-4 border-b">
+              <div className="flex items-center gap-2 font-bold">
+                <MapPinIcon className="h-5 w-5 text-red-500" />
+                Location
+              </div>
+              <button
+                onClick={() =>
+                  window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(pg.name + " " + pg.location)}`, "_blank")
+                }
+                className="text-xs bg-blue-600 text-white px-3 py-2 rounded-xl font-bold"
+              >
+                <PaperAirplaneIcon className="h-4 w-4 inline mr-1 -rotate-45" />
+                Start
+              </button>
+            </div>
+            <iframe
+              title="map"
+              className="w-full h-64"
+              src={`https://maps.google.com/maps?q=${encodeURIComponent(pg.name + " " + pg.location)}&t=&z=13&ie=UTF8&iwloc=&output=embed`}
+            />
+          </div>
+
+          {/* REVIEWS */}
+          <div ref={reviewsRef} className="order-4 bg-white rounded-2xl p-6 shadow">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="font-black">
+                ⭐ {averageRating} ({reviews.length} Reviews)
+              </h2>
+              <button
+                onClick={() => setIsFeedbackOpen(true)}
+                className="text-blue-600 text-sm font-bold"
+              >
+                Write Review
+              </button>
+            </div>
+
+            {reviews.map((r, i) => (
+              <div key={i} className="border-b pb-3 mb-3">
+                <div className="flex justify-between">
+                  <span className="font-bold">{r.user}</span>
+                  <span className="text-amber-500">★ {r.rating}</span>
+                </div>
+                <p className="text-sm text-gray-600">{r.comment}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ================= RIGHT SIDE (DESKTOP ONLY) ================= */}
+        <div className="hidden lg:flex w-[40%] flex-col gap-6 order-2">
+
+          <div className="bg-white p-6 rounded-2xl shadow">
+            <h1 className="text-2xl font-black">{pg.name}</h1>
+            <p className="text-gray-500">{pg.location}</p>
+
+            <div className="mt-4 flex items-center gap-3 bg-gray-50 p-4 rounded-xl">
+              <StarIcon className="h-6 w-6 text-amber-500" />
+              <span className="font-black">{averageRating}</span>
+            </div>
+
+            <div className="mt-4 text-xl font-black text-primary">
+              ₹{displayStartingPrice}/month
+            </div>
+          </div>
+
+          <FeatureList
+            title="Amenities"
+            items={pg?.amenities?.length ? pg.amenities : ["Wifi", "CCTV Security", "RO Water", "Power Backup"]}
+            icon="⭐"
+          />
+          <FeatureList
+            title="Facilities"
+            items={pg?.facilities?.length ? pg.facilities : ["Common Kitchen", "Housekeeping", "Laundry Area"]}
+            icon="🛠️"
+          />
+          <HouseRules pg={pg} ruleIcons={ruleIcons} />
         </div>
       </div>
+
+      {/* ================= FEEDBACK MODAL ================= */}
+      {isFeedbackOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center">
+          <div className="bg-white w-full max-w-md rounded-2xl p-6 relative">
+            <button
+              onClick={() => setIsFeedbackOpen(false)}
+              className="absolute top-4 right-4"
+            >
+              <XMarkIcon className="h-5 w-5" />
+            </button>
+
+            <h2 className="font-black mb-4">Write a Review</h2>
+
+            <div className="flex gap-2 mb-4">
+              {[1, 2, 3, 4, 5].map((n) => (
+                <button
+                  key={n}
+                  onClick={() => setRating(n)}
+                  className={`text-2xl ${
+                    n <= rating ? "text-amber-500" : "text-gray-300"
+                  }`}
+                >
+                  ★
+                </button>
+              ))}
+            </div>
+
+            <textarea
+              rows={4}
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              className="w-full border rounded-xl p-3 text-sm"
+              placeholder="Write your feedback..."
+            />
+
+            <div className="flex gap-3 mt-4">
+              <button
+                onClick={() => setIsFeedbackOpen(false)}
+                className="flex-1 bg-gray-100 py-2 rounded-xl font-bold"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSubmitFeedback}
+                className="flex-1 bg-primary text-white py-2 rounded-xl font-bold"
+              >
+                Submit
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <Footer />
     </div>
   );
 };
 
-// Reusable Feature List
+/* ================= REUSABLE COMPONENTS ================= */
+
 const FeatureList = ({ title, items, icon }) => (
-  <div className="bg-white p-6 rounded-3xl shadow-md border border-gray-50 mb-2">
-    <h2 className="text-xl font-bold mb-4 text-gray-800 flex items-center gap-2">{icon} {title}</h2>
+  <div className="bg-white p-6 rounded-2xl shadow">
+    <h2 className="font-black mb-4">{icon} {title}</h2>
     <div className="flex flex-wrap gap-2">
       {items.map((item, i) => (
-        <span key={i} className="px-4 py-2 bg-amber-50 border border-amber-100 rounded-xl text-sm text-amber-900 font-semibold shadow-sm">
+        <span key={i} className="px-4 py-2 bg-amber-50 rounded-xl text-xs font-black uppercase">
           {item}
         </span>
       ))}
@@ -192,32 +351,27 @@ const FeatureList = ({ title, items, icon }) => (
 
 const HouseRules = ({ pg, ruleIcons }) => {
   const rules = pg?.houseRules || pg?.rulesList || pg?.rules || [];
-  
   return (
-    <div className="bg-white p-6 rounded-3xl shadow-md">
-      <h2 className="text-xl font-bold mb-4 text-gray-800 flex items-center gap-2">📜 House Rules</h2>
-      <ul className="space-y-3">
-        {rules.length > 0 ? (
-          rules.map((rule, i) => (
-            <li key={i} className="flex gap-4 items-center bg-gray-50 p-3 rounded-2xl border border-gray-100">
-              <span className="text-2xl">{ruleIcons[rule.icon?.toLowerCase()] || "✅"}</span>
-              <span className="text-sm text-gray-700 font-bold uppercase tracking-tight">
-                {typeof rule === 'object' ? rule.text : rule}
-              </span>
-            </li>
-          ))
-        ) : (
-          <li className="flex gap-4 items-center bg-gray-50 p-3 rounded-2xl border border-gray-100">
-             <span className="text-2xl">🚭</span>
-             <span className="text-sm text-gray-700 font-bold uppercase tracking-tight">No Smoking Inside</span>
-          </li>
-        )}
-      </ul>
+    <div className="bg-white p-6 rounded-2xl shadow">
+      <h2 className="font-black mb-4">📜 House Rules</h2>
+      <div className="space-y-3">
+        {rules.map((rule, i) => (
+          <div key={i} className="flex gap-3 items-center bg-gray-50 p-3 rounded-xl">
+            <span className="text-xl">{ruleIcons[rule.icon?.toLowerCase()] || "✅"}</span>
+            <span className="text-xs font-black uppercase text-gray-600">
+              {typeof rule === "object" ? rule.text : rule}
+            </span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
 
-const LoadingState = () => <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50"><Navbar /><div className="w-16 h-16 border-4 border-amber-500 border-t-transparent rounded-full animate-spin mt-10" /><p className="text-xl text-gray-600 font-medium mt-6">Fetching Property Details...</p></div>;
-const NotFoundState = () => <div className="min-h-screen flex flex-col items-center justify-center"><Navbar /><p className="text-3xl font-bold text-red-500 mt-10">Property Not Found</p><CButton className="mt-4" onClick={() => window.history.back()}>Go Back</CButton></div>;
+const NotFoundState = () => (
+  <div className="min-h-screen flex items-center justify-center font-black text-red-500">
+    Property Not Found
+  </div>
+);
 
 export default PGDetails;

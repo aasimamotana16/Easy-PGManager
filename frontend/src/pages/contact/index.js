@@ -100,77 +100,112 @@ const Contact = () => {
       <main className="flex-1 flex flex-col lg:flex-row gap-10 px-4 lg:px-12 mb-10">
         {/* LEFT FORM */}
         <div className="flex-1 flex justify-center">
-          <div className="w-full max-w-2xl">
-            <div className="bg-white border rounded-xl p-10 shadow-lg">
-              <h2 className="text-center font-bold mb-6 text-3xl text-primary">
+          <div className="w-full max-w-2xl  md:max-w-3xl mx-auto ">
+            <div className="bg-white border rounded-md p-10 shadow-lg">
+              <h2 className="text-center font-bold mb-6 text-3xl sm:text-4xl text-primary">
                 Contact our Sales Team
               </h2>
 
-              <form className="flex flex-col gap-6" onSubmit={handleSubmit}>
-                {/* FULL NAME */}
-                <CInput
-                  label={
-                    <span className={errors.fullName ? "text-red-600 font-semibold" : ""}>
-                      Full Name
-                      {errors.fullName && <span className="text-red-600 ml-1">*</span>}
-                    </span>
-                  }
-                  value={form.fullName}
-                  onChange={handleChange("fullName")}
-                  disabled={loading} // Prevent typing while sending
-                />
+             <form
+  className="flex flex-col gap-4 sm:gap-5 lg:gap-6"
+  onSubmit={handleSubmit}
+>
+  {/* FULL NAME */}
+  <CInput
+    label={
+      <span
+        className={`
+          block
+          text-base sm:text-lg lg:text-base
+          ${errors.fullName ? "text-red-600 font-semibold" : "text-gray-800"}
+        `}
+      >
+        Full Name
+        {errors.fullName && <span className="text-red-600 ml-1">*</span>}
+      </span>
+    }
+    value={form.fullName}
+    onChange={handleChange("fullName")}
+    disabled={loading}
+  />
 
-                {/* EMAIL */}
-                <CInput
-                  label={
-                    <span className={errors.email ? "text-red-600 font-semibold" : ""}>
-                      Email Address
-                      {errors.email && <span className="text-red-600 ml-1">*</span>}
-                    </span>
-                  }
-                  type="email"
-                  value={form.email}
-                  onChange={handleChange("email")}
-                  disabled={loading}
-                />
+  {/* EMAIL */}
+  <CInput
+    label={
+      <span
+        className={`
+          block
+          text-base sm:text-lg lg:text-base
+          ${errors.email ? "text-red-600 font-semibold" : "text-gray-800"}
+        `}
+      >
+        Email Address
+        {errors.email && <span className="text-red-600 ml-1">*</span>}
+      </span>
+    }
+    type="email"
+    value={form.email}
+    onChange={handleChange("email")}
+    disabled={loading}
+  />
 
-                {/* PHONE */}
-                <CInput
-                  label={
-                    <span className={errors.mobile ? "text-red-600 font-semibold" : ""}>
-                      Phone Number
-                      {errors.mobile && <span className="text-red-600 ml-1">*</span>}
-                    </span>
-                  }
-                  type="tel"
-                  value={form.mobile}
-                  onChange={handleChange("mobile")}
-                  disabled={loading}
-                />
+  {/* PHONE */}
+  <CInput
+    label={
+      <span
+        className={`
+          block
+          text-base sm:text-lg lg:text-base
+          ${errors.mobile ? "text-red-600 font-semibold" : "text-gray-800"}
+        `}
+      >
+        Phone Number
+        {errors.mobile && <span className="text-red-600 ml-1">*</span>}
+      </span>
+    }
+    type="tel"
+    value={form.mobile}
+    onChange={handleChange("mobile")}
+    disabled={loading}
+  />
 
-                {/* MESSAGE */}
-                <CInput
-                  label={
-                    <span className={errors.message ? "text-red-600 font-semibold" : ""}>
-                      Your Message
-                      {errors.message && <span className="text-red-600 ml-1">*</span>}
-                    </span>
-                  }
-                  multiline
-                  rows={6}
-                  value={form.message}
-                  onChange={handleChange("message")}
-                  disabled={loading}
-                />
+  {/* MESSAGE */}
+  <CInput
+    label={
+      <span
+        className={`
+          block
+          text-base sm:text-lg lg:text-base
+          ${errors.message ? "text-red-600 font-semibold" : "text-gray-800"}
+        `}
+      >
+        Your Message
+        {errors.message && <span className="text-red-600 ml-1">*</span>}
+      </span>
+    }
+    multiline
+    rows={6}
+    value={form.message}
+    onChange={handleChange("message")}
+    disabled={loading}
+  />
 
-                <CButton
-                  type="submit"
-                  text={loading ? "Sending..." : "Send Message"}
-                  disabled={loading}
-                  variant="contained"
-                  className="mt-3 w-full py-3 font-semibold text-lg"
-                />
-              </form>
+  {/* SUBMIT BUTTON */}
+  <CButton
+    type="submit"
+    text={loading ? "Sending..." : "Send Message"}
+    disabled={loading}
+    variant="contained"
+    className="
+      mt-2
+      w-full
+      py-3 sm:py-3 lg:py-3
+      text-lg sm:text-lg lg:text-lg
+      font-semibold
+    "
+  />
+</form>
+
             </div>
           </div>
         </div>
@@ -178,18 +213,18 @@ const Contact = () => {
         {/* RIGHT INFO */}
         <div className="flex-1 flex flex-col gap-6">
           <div className="bg-white p-8 rounded-xl shadow-lg">
-            <h3 className="text-2xl font-bold text-gray-900 mb-4">
+            <h3 className="text-2xl md:text-4xl lg:text-2xl font-bold text-gray-900 mb-4">
               How can We Help?
             </h3>
 
-            <p className="text-gray-600 mb-4">
+            <p className="text-gray-600 mb-4 md:text-2xl lg:text-xl">
               Get in touch with our sales and support teams for demos,
               onboarding support, or product questions.
             </p>
 
-            <ul className="space-y-3">
+            <ul className="space-y-3 md:text-2xl lg:text-xl">
               <li className="flex items-center gap-2 font-semibold">
-                <span className="text-green-500">✔</span> Request a demo
+                <span className="text-green-500 ">✔</span> Request a demo
               </li>
               <li className="flex items-center gap-2 font-semibold">
                 <span className="text-green-500">✔</span> Choose the right plan
@@ -201,25 +236,25 @@ const Contact = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-6">
               <div className="bg-gray-50 p-6 rounded-xl shadow">
-                <h4 className="font-bold text-gray-900 mb-2">
+                <h4 className="font-bold text-gray-900 mb-2 md:text-2xl lg:text-xl">
                   General Communication
                 </h4>
-                <p className="text-sm text-gray-700 mb-2">Email us at:</p>
-                <p className="font-medium text-indigo-600 break-all">
+                <p className="text-sm text-gray-700 mb-2 md:text-2xl lg:text-xl">Email us at:</p>
+                <p className="font-medium text-indigo-600 break-all md:text-2xl lg:text-xl">
                   support@easyPGmanager.com
                 </p>
               </div>
 
               <div className="bg-gray-50 p-6 rounded-xl shadow">
-                <h4 className="font-bold text-gray-900 mb-2">
+                <h4 className="font-bold text-gray-900 mb-2 md:text-2xl lg:text-xl">
                   About EasyPG Manager
                 </h4>
-                <p className="text-sm text-gray-700 mb-2">
+                <p className="text-sm text-gray-700 mb-2 md:text-2xl lg:text-xl">
                   Learn more about our mission and product.
                 </p>
                 <button
                   onClick={() => navigate("/about")}
-                  className="font-medium text-indigo-600 hover:underline"
+                  className="font-medium text-indigo-600 hover:underline md:text-2xl lg:text-xl "
                 >
                   About Us →
                 </button>

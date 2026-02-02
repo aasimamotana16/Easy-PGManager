@@ -5,7 +5,7 @@ import { aboutFeatures } from "../../../config/staticData";
 const AboutFeatures = () => {
   return (
     <section className="py-12 px-6 sm:px-12 md:px-16 lg:px-24 snap-start">
-      <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-4xl font-semibold text-primary mb-8 text-center md:text-left">
+      <h2 className="text-2xl sm:text-3xl md:text-5xl lg:text-4xl font-semibold text-primary mb-8 text-center md:text-left">
         Our Key Features
       </h2>
 
@@ -22,7 +22,7 @@ const AboutFeatures = () => {
             <h3 className="text-xl sm:text-2xl md:text-3xl lg:text-2xl font-semibold text-primary mb-2">
               {feature.title}
             </h3>
-            <p className="text-text-secondary text-sm sm:text-base md:text-md lg:text-sm">
+            <p className="text-text-secondary text-sm sm:text-base md:text-lg lg:text-sm">
               {feature.desc}
             </p>
           </motion.div>
