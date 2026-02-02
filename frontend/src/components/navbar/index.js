@@ -23,7 +23,7 @@ const Navbar = () => {
   const checkLoginStatus = () => {
     const loggedIn = localStorage.getItem("isLoggedIn") === "true";
     const token = localStorage.getItem("userToken"); // Add this check [cite: 2026-01-06]
-    const name = localStorage.getItem("userName") || "User";
+    const name = localStorage.getItem("userName") || "Owner";
     setIsLoggedIn(loggedIn);
     setUserName(name);
   };

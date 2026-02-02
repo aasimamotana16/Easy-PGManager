@@ -23,7 +23,7 @@ const Agreements = () => {
   useEffect(() => {
     const fetchAgreement = async () => {
       try {
-        const token = localStorage.getItem("token");
+        const token = localStorage.getItem("userToken");
         const res = await axios.get("http://localhost:5000/api/users/agreement", {
           headers: { Authorization: `Bearer ${token}` }
         });
