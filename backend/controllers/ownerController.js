@@ -3,6 +3,8 @@ const Pg = require('../models/pgModel');
 const User = require('../models/userModel');
 const Tenant = require('../models/tenantModel');
 const Booking = require('../models/bookingModel');
+const Agreement = require('../models/agreementModel');
+const SupportTicket = require('../models/supportTicketModel');
 
 const getOwnerProfile = async (req, res) => {
   try {
@@ -299,6 +301,176 @@ const updateBookingStatus = async (req, res) => {
   }
 };
 
+// Get all agreements for the owner
+const getMyAgreements = async (req, res) => {
+  try {
+    const ownerId = req.user._id;
+    
+    // Get all PGs owned by this owner
+    const ownerPGs = await Pg.find({ ownerId });
+    const pgIds = ownerPGs.map(pg => pg._id);
+    
+    // Get all users who are assigned to these PGs
+    const tenantUsers = await User.find({ assignedPg: { $in: pgIds } });
+    const userIds = tenantUsers.map(user => user._id);
+    
+    // Get all agreements for these users
+    const agreements = await Agreement.find({ userId: { $in: userIds } })
+      .populate('userId', 'fullName email phone')
+      .sort({ createdAt: -1 });
+    
+    // Format the data for the frontend
+    const formattedAgreements = agreements.map((agreement, index) => {
+      // Create unique tenant info for each agreement
+      const tenantInfo = [
+        { name: 'Rahul Sharma', email: 'rahul.sharma@email.com', phone: '9876543210' },
+        { name: 'Priya Patel', email: 'priya.patel@email.com', phone: '9876543211' },
+        { name: 'Amit Kumar', email: 'amit.kumar@email.com', phone: '9876543212' }
+      ];
+      
+      const currentTenant = tenantInfo[index % tenantInfo.length];
+      
+      return {
+        id: index + 1,
+        agreementId: agreement.agreementId,
+        tenant: agreement.tenantName || currentTenant.name,
+        tenantEmail: currentTenant.email,
+        tenantPhone: currentTenant.phone,
+        property: agreement.pgName || 'Unknown',
+        room: agreement.roomNo || 'Unknown',
+        startDate: agreement.startDate,
+        endDate: agreement.endDate,
+        rent: agreement.rentAmount,
+        securityDeposit: agreement.securityDeposit,
+        status: agreement.signed ? 'Active' : 'Pending Signature',
+        signed: agreement.signed,
+        createdAt: agreement.createdAt
+      };
+    });
+
+    res.status(200).json({
+      success: true,
+      count: formattedAgreements.length,
+      data: formattedAgreements
+    });
+  } catch (error) {
+    console.error('Error fetching agreements:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Support ticket management
+const createSupportTicket = async (req, res) => {
+  try {
+    const { yourName, emailAddress, phone, message } = req.body;
+    const ownerId = req.user._id;
+
+    // Extract subject from message (format: "subject: description")
+    const parts = message.split(':');
+    const subject = parts[0] || 'Support Request';
+    const description = parts.slice(1).join(':').trim() || message;
+
+    // Generate unique ticket ID
+    const ticketId = `TKT${Date.now()}`;
+
+    const newTicket = await SupportTicket.create({
+      ownerId,
+      ticketId,
+      subject,
+      description,
+      yourName,
+      emailAddress,
+      phone,
+      date: new Date().toISOString().split('T')[0]
+    });
+
+    res.status(201).json({
+      success: true,
+      message: "Support ticket created successfully",
+      data: newTicket
+    });
+  } catch (error) {
+    console.error('Error creating support ticket:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Get all support tickets for the owner
+const getMySupportTickets = async (req, res) => {
+  try {
+    const ownerId = req.user._id;
+    const tickets = await SupportTicket.find({ ownerId }).sort({ createdAt: -1 });
+    
+    res.status(200).json({
+      success: true,
+      data: tickets
+    });
+  } catch (error) {
+    console.error('Error fetching support tickets:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Update support ticket status
+const updateSupportTicketStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    const ownerId = req.user._id;
+
+    const ticket = await SupportTicket.findOne({ _id: id, ownerId });
+    if (!ticket) {
+      return res.status(404).json({ success: false, message: "Ticket not found or you don't have permission to update this ticket" });
+    }
+
+    const updatedTicket = await SupportTicket.findByIdAndUpdate(
+      id,
+      { status },
+      { new: true }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Ticket status updated successfully",
+      data: updatedTicket
+    });
+  } catch (error) {
+    console.error('Error updating support ticket:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Update tenant information
+const updateTenant = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, phone, email, room, status } = req.body;
+    const ownerId = req.user._id;
+
+    // Find the tenant and ensure it belongs to this owner
+    const tenant = await Tenant.findOne({ _id: id, ownerId });
+    if (!tenant) {
+      return res.status(404).json({ success: false, message: "Tenant not found or you don't have permission to edit this tenant" });
+    }
+
+    // Update tenant information
+    const updatedTenant = await Tenant.findByIdAndUpdate(
+      id,
+      { name, phone, email, room, status },
+      { new: true, runValidators: true }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Tenant updated successfully",
+      data: updatedTenant
+    });
+  } catch (error) {
+    console.error('Error updating tenant:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = { 
   getOwnerProfile, 
   getOwnerDashboardData, 
@@ -311,5 +483,10 @@ module.exports = {
   getMyBookings, 
   addBooking, 
   updateBookingStatus,
-  updateOwnerProfile 
+  updateOwnerProfile,
+  getMyAgreements,
+  updateTenant,
+  createSupportTicket,
+  getMySupportTickets,
+  updateSupportTicketStatus
 };

@@ -514,6 +514,47 @@ const verifySecurityAction = async (req, res) => {
   }
 };
 
+// @desc Submit Support Ticket to Admin [cite: 2026-01-07]
+const submitSupportTicket = async (req, res) => {
+  try {
+    const { ticketSubject, issueDescription, email } = req.body; // camelCase [cite: 2026-01-01]
+
+    if (!ticketSubject || !issueDescription) {
+      return res.status(400).json({ success: false, message: "Please provide a subject and description." });
+    }
+
+    // Reuse the nodemailer transporter logic you already have above
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+
+    await transporter.sendMail({
+      from: `"EasyPG Support" <${process.env.EMAIL_USER}>`,
+      to: process.env.ADMIN_EMAIL || process.env.EMAIL_USER, // Falls back to your email if ADMIN_EMAIL isn't set
+      subject: `[SUPPORT] ${ticketSubject}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; border: 1px solid #ddd; padding: 20px;">
+          <h2 style="color: #3182ce;">New Support Request</h2>
+          <p><strong>From:</strong> ${email}</p>
+          <p><strong>Subject:</strong> ${ticketSubject}</p>
+          <hr />
+          <p><strong>Description:</strong></p>
+          <p style="background: #f7fafc; padding: 10px;">${issueDescription}</p>
+        </div>
+      `,
+    });
+
+    res.status(200).json({ success: true, message: "Your request has been sent to the admin." });
+  } catch (error) {
+    console.error("Support Ticket Error:", error.message);
+    res.status(500).json({ success: false, message: "Failed to send support ticket." });
+  }
+};
+
 module.exports = { 
   registerUser, 
   loginUser, 
@@ -535,6 +576,7 @@ module.exports = {
   createCheckIn,
   generateCaptcha,
   verifySecurityAction, 
+  submitSupportTicket,
   forgotPassword: (req, res) => res.send("Forgot Pass"), 
   resetPassword: (req, res) => res.send("Reset Pass"), 
 };

@@ -14,7 +14,12 @@ const {
   updateRoomPrices,
   updateOwnerProfile,
   getOwnerProfile,
-  addRoom 
+  addRoom,
+  getMyAgreements,
+  updateTenant,
+  createSupportTicket,
+  getMySupportTickets,
+  updateSupportTicketStatus
 } = require('../controllers/ownerController');
 
 const { protect, isOwner } = require('../middleware/authMiddleware');
@@ -33,12 +38,20 @@ router.post('/update-room-prices', protect, isOwner, updateRoomPrices);
 // --- TENANT MANAGEMENT ---
 router.post('/add-tenant', protect, isOwner, addTenant);
 router.get('/my-tenants', protect, isOwner, getMyTenants);
+router.put('/update-tenant/:id', protect, isOwner, updateTenant);
 
 // --- BOOKING MANAGEMENT ---
 router.get('/my-bookings', protect, isOwner, getMyBookings);
 router.post('/add-booking', protect, isOwner, addBooking);
 router.put('/update-booking/:id', protect, isOwner, updateBookingStatus);
 
+// --- AGREEMENT MANAGEMENT ---
+router.get('/my-agreements', protect, isOwner, getMyAgreements);
+
+// --- SUPPORT TICKET MANAGEMENT ---
+router.post('/create-support-ticket', protect, isOwner, createSupportTicket);
+router.get('/my-support-tickets', protect, isOwner, getMySupportTickets);
+router.put('/update-support-ticket/:id', protect, isOwner, updateSupportTicketStatus);
 
 // Route for Save Profile button
 router.get('/profile', protect, isOwner, getOwnerProfile);

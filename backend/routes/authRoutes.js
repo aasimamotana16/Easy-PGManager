@@ -15,24 +15,16 @@ const { protect } = require('../middleware/authMiddleware');
 const { 
 
     sendOtp, // ADDED: For the OTP email logic
-
     registerUser, 
-
     loginUser, 
-
     getUserDashboard,  // Added
-
     getUserProfile,    // Added
-
     getMyTimeline,     // ✅ Fixes the "nothing in network" issue
-
     getMyOwnerContact, // ✅ Fixes the "Owner Not Available" issue
-
     forgotPassword, 
-
     resetPassword,
-
     generateCaptcha,  // ADDED: Custom CAPTCHA generation
+    submitSupportTicket // 1. ADD THIS TO THE IMPORT LIST
 
 } = require('../controllers/userController');
 
@@ -57,11 +49,7 @@ router.post('/signup', registerUser);
 // --- 3. LOGIN ROUTE ---
 
 router.post('/login', loginUser);
-
-
-
 router.get('/timeline', protect, getMyTimeline);       // Now visible in Network tab
-
 router.get('/owner-contact', protect, getMyOwnerContact); // Now pulls PG details
 
 
@@ -76,6 +64,9 @@ router.post('/forgot-password', forgotPassword);
 
 router.post('/reset-password/:token', resetPassword);
 
+// --- 6. SUPPORT TICKET --- [cite: 2026-01-07]
+// 2. ADD THIS ROUTE HERE
+router.post('/support/submit', submitSupportTicket);
 
 
 module.exports = router;

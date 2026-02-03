@@ -102,7 +102,16 @@ app.post('/api/request-demo', async (req, res) => {
     });
     console.log("Demo request saved to Database");
 
-    // 2. Setup Email Transporter using your existing .env
+    // 2. Check if email is configured, otherwise skip email sending
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+      console.log("⚠️ Development mode: Email not configured, skipping email sending");
+      return res.status(201).json({ 
+        success: true, 
+        message: "Demo request submitted successfully! (Email not configured)" 
+      });
+    }
+
+    // 3. Setup Email Transporter using your existing .env
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {

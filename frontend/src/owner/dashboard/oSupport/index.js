@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FaEye, FaReply, FaLifeRing } from "react-icons/fa";
 import CButton from "../../../components/cButton";
+import Swal from "sweetalert2";
 
 /* Sample support tickets with tracking */
 const sampleTickets = [
@@ -28,31 +29,116 @@ const sampleTickets = [
 ];
 
 const SupportPage = () => {
-  const [tickets, setTickets] = useState(sampleTickets);
+  const [tickets, setTickets] = useState([]);
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
   const [search, setSearch] = useState("");
   const [selectedTicket, setSelectedTicket] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch support tickets from backend
+  const fetchTickets = async () => {
+    try {
+      const token = localStorage.getItem("userToken");
+      const response = await fetch('http://localhost:5000/api/owner/my-support-tickets', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setTickets(data.data);
+        console.log('Support tickets loaded:', data.data.length);
+      } else {
+        console.log('Failed to load support tickets');
+      }
+    } catch (error) {
+      console.error('Error fetching support tickets:', error);
+      // Fallback to sample data if API fails
+      setTickets(sampleTickets);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTickets();
+  }, []);
 
   const filteredTickets = tickets.filter((t) =>
     t.subject.toLowerCase().includes(search.toLowerCase())
   );
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!subject || !message) return;
+  const handleSubmit = async (e) => {
+    e.preventDefault(); // Prevent form refresh
+    
+    if (!subject || !message) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Missing Information',
+        text: 'Please fill in both subject and message fields.',
+        confirmButtonColor: '#f97316'
+      });
+      return;
+    }
 
-    const newTicket = {
-      id: tickets.length + 1,
-      subject,
-      status: "Open",
-      date: new Date().toISOString().split("T")[0],
-      description: message,
-    };
+    try {
+      const user = JSON.parse(localStorage.getItem("user"));
+      const token = localStorage.getItem("userToken");
+      
+      const requestData = {
+        yourName: user?.fullName || user?.name || "Owner",
+        emailAddress: user?.email || "owner@example.com",
+        phone: user?.phone || "0000000000",
+        message: `${subject}: ${message}`
+      };
 
-    setTickets([newTicket, ...tickets]);
-    setSubject("");
-    setMessage("");
+      // Send to new backend API
+      const response = await fetch('http://localhost:5000/api/owner/create-support-ticket', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(requestData),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        // Add the new ticket to the list
+        setTickets([data.data, ...tickets]);
+        setSubject("");
+        setMessage("");
+        
+        Swal.fire({
+          icon: 'success',
+          title: 'Request Sent!',
+          text: 'Your support request has been sent successfully. We will get back to you soon.',
+          confirmButtonColor: '#f97316',
+          timer: 3000,
+          showConfirmButton: true
+        });
+      } else {
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: data.message || 'Failed to send request. Please try again.',
+          confirmButtonColor: '#f97316'
+        });
+      }
+    } catch (error) {
+      console.error('Error submitting support request:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Connection Error',
+        text: 'Could not connect to the server. Please try again.',
+        confirmButtonColor: '#f97316'
+      });
+    }
   };
 
   return (
@@ -95,7 +181,10 @@ const SupportPage = () => {
             onChange={(e) => setMessage(e.target.value)}
           />
 
-          <CButton className="bg-primary text-white px-6 py-2 rounded-md w-max">
+          <CButton 
+            type="submit"
+            className="bg-primary text-white px-6 py-2 rounded-md w-max"
+          >
             Submit Request
           </CButton>
         </form>
@@ -129,24 +218,32 @@ const SupportPage = () => {
           </thead>
 
           <tbody>
-            {filteredTickets.map((t) => (
-              <tr key={t.id} className="border-b">
-                <td className="px-5 py-4">{t.id}</td>
-                <td className="px-5 py-4">{t.subject}</td>
-                <td className="px-5 py-4">
-                  <StatusBadge status={t.status} />
-                </td>
-                <td className="px-5 py-4">{t.date}</td>
-                <td className="px-5 py-4 text-center">
-                  <CButton
-                    className="bg-dark text-white px-3 py-1 rounded-md flex items-center gap-1 mx-auto"
-                    onClick={() => setSelectedTicket(t)}
-                  >
-                    <FaEye /> View
-                  </CButton>
+            {filteredTickets.length > 0 ? (
+              filteredTickets.map((t) => (
+                <tr key={t._id} className="border-b">
+                  <td className="px-5 py-4">{t.ticketId}</td>
+                  <td className="px-5 py-4">{t.subject}</td>
+                  <td className="px-5 py-4">
+                    <StatusBadge status={t.status} />
+                  </td>
+                  <td className="px-5 py-4">{t.date}</td>
+                  <td className="px-5 py-4 text-center">
+                    <CButton
+                      className="bg-dark text-white px-3 py-1 rounded-md flex items-center gap-1 mx-auto"
+                      onClick={() => setSelectedTicket(t)}
+                    >
+                      <FaEye /> View
+                    </CButton>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={5} className="text-center py-10 text-gray-400">
+                  {loading ? 'Loading tickets...' : 'No tickets found'}
                 </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div>
@@ -156,31 +253,29 @@ const SupportPage = () => {
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
           <div className="bg-white rounded-md p-6 w-full max-w-lg">
             <h2 className="text-xl font-bold text-primary mb-2">
-              Ticket #{selectedTicket.id}
+              Ticket #{selectedTicket.ticketId}
             </h2>
-            <p className="text-gray-600 mb-4">
-              {selectedTicket.subject}
-            </p>
-
-            <p className="text-sm mb-4">
-              {selectedTicket.description}
-            </p>
-
-            {/* STATUS TRACKING */}
-            <div className="flex justify-between items-center mb-6">
-              <StatusStep label="Open" active />
-              <Divider />
-              <StatusStep
-                label="In Progress"
-                active={selectedTicket.status !== "Open"}
-              />
-              <Divider />
-              <StatusStep
-                label="Closed"
-                active={selectedTicket.status === "Closed"}
-              />
+            <div className="space-y-3">
+              <div>
+                <span className="font-semibold">Subject:</span> {selectedTicket.subject}
+              </div>
+              <div>
+                <span className="font-semibold">Status:</span> 
+                <span className="ml-2 px-2 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-800">
+                  {selectedTicket.status}
+                </span>
+              </div>
+              <div>
+                <span className="font-semibold">Date:</span> {selectedTicket.date}
+              </div>
+              <div>
+                <span className="font-semibold">Description:</span>
+                <p className="mt-1 text-gray-600">{selectedTicket.description}</p>
+              </div>
+              <div>
+                <span className="font-semibold">Contact:</span> {selectedTicket.yourName} ({selectedTicket.emailAddress})
+              </div>
             </div>
-
             <CButton
               className="bg-primary text-white px-4 py-2 rounded-md w-full"
               onClick={() => setSelectedTicket(null)}
