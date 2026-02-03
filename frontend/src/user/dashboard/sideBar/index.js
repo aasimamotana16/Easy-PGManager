@@ -1,49 +1,35 @@
 import React, { useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import {
   FaHome,
-  FaUser,
-  FaBook,
   FaCalendarCheck,
   FaFileAlt,
   FaPhone,
+  FaTimes,
+  FaWallet,
+  FaHistory
 } from "react-icons/fa";
 
-const UserSidebar = ({ closeSidebar }) => {
+const UserSidebar = ({ isOpen, closeSidebar }) => {
   const navigate = useNavigate();
-  const location = useLocation();
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isLogoutSuccessful, setIsLogoutSuccessful] = useState(false);
 
-  // Menu links
+  // Menu items tailored for the Tenant/User
   const menuItems = [
     { to: "/user/dashboard/dashboardHome", label: "Dashboard", icon: <FaHome /> },
-    { to: "/user/dashboard/payments", label: "Payments", icon: <FaBook /> },
+    { to: "/user/dashboard/payments", label: "Payments", icon: <FaWallet /> },
     { to: "/user/dashboard/agreements", label: "Agreements", icon: <FaFileAlt /> },
     { to: "/user/dashboard/check-ins", label: "Check-ins", icon: <FaCalendarCheck /> },
     { to: "/user/dashboard/documents", label: "Documents", icon: <FaFileAlt /> },
-    { to: "/user/dashboard/timeline", label: "Timeline", icon: <FaBook /> },
+    { to: "/user/dashboard/timeline", label: "Timeline", icon: <FaHistory /> },
     { to: "/user/dashboard/owner-contact", label: "Owner Contact", icon: <FaPhone /> },
   ];
 
-  // Navigate to a route
-  const handleNavClick = (to) => {
-    const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
-    if (!isLoggedIn) {
-      navigate("/login");
-      return;
-    }
-    navigate(to);
-    if (closeSidebar) closeSidebar();
-  };
-
-  // Logout
   const handleLogout = async () => {
     try {
-      // Show success checkmark
       setIsLogoutSuccessful(true);
 
-      // Wait 1.5s, then wipe data and redirect
       setTimeout(() => {
         localStorage.clear();
         setIsLogoutModalOpen(false);
@@ -54,57 +40,112 @@ const UserSidebar = ({ closeSidebar }) => {
       }, 1500);
 
     } catch (error) {
-      // Fallback: Clear and exit
       localStorage.clear();
       setIsLogoutModalOpen(false);
       navigate("/");
     }
   };
 
-  // Check if menu item is active
-  const isActive = (to) => {
-    if (to === "/user/dashboard") {
-      return location.pathname === "/user/dashboard";
-    }
-    return location.pathname.startsWith(to);
-  };
-
   return (
     <>
-      <div className="h-full flex flex-col bg-black text-white w-64">
-        {/* LOGO */}
+      {/* MOBILE OVERLAY */}
+      {isOpen && (
         <div
-          className="flex items-center gap-3 p-4 text-2xl font-bold cursor-pointer"
-          onClick={() => handleNavClick("/user/dashboard")}
-        >
-          EasyPG Manager 
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={closeSidebar}
+        />
+      )}
+
+      {/* SIDEBAR */}
+      <aside
+        className={`
+          fixed top-0 left-0 z-50
+          h-screen w-2/3 sm:w-1/2 md:w-2/5 lg:w-64
+          bg-black text-white
+          flex flex-col
+          px-4 py-5
+          overflow-hidden
+          transform transition-transform duration-300
+          ${isOpen ? "translate-x-0" : "-translate-x-full"}
+          lg:translate-x-0 lg:static
+        `}
+      >
+        {/* LOGO / BRAND */}
+        <div className="flex items-center justify-between mb-14">
+          <div
+            className="flex items-center gap-1 cursor-pointer"
+            onClick={() => {
+              navigate("/user/dashboard/dashboardHome");
+              closeSidebar?.();
+            }}
+          >
+            <img
+              src="/logos/logo1.png"
+              alt="EasyPG"
+              className="w-15 h-14 object-contain"
+            />
+            <div className="leading-tight">
+              <div className="text-xl font-semibold">EasyPG</div>
+              <div className="text-xl font-semibold text-primary">Manager</div>
+            </div>
+          </div>
+
+          <button
+            className="lg:hidden text-gray-400 hover:text-white"
+            onClick={closeSidebar}
+          >
+            <FaTimes size={18} />
+          </button>
         </div>
 
         {/* MENU */}
-        <nav className="flex-1 flex flex-col gap-2 p-2">
+        <nav className="flex-1 flex flex-col gap-1">
           {menuItems.map((item) => (
-            <button
+            <NavLink
               key={item.to}
-              onClick={() => handleNavClick(item.to)}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm w-full transition-colors
-                ${isActive(item.to) ? "bg-primary text-white" : "hover:bg-gray-800"}`}
+              to={item.to}
+              end
+              onClick={closeSidebar}
+              className={({ isActive }) =>
+                `relative flex items-center gap-4 px-4 py-2.5 rounded-md text-base transition-all duration-300 group
+                ${isActive ? "bg-primary text-white" : " text-white"}`
+              }
             >
-              <span className="text-lg">{item.icon}</span>
-              <span>{item.label}</span>
-            </button>
+              <span className="text-base">{item.icon}</span>
+              <span className="relative">
+                {item.label}
+                <span className="absolute left-0 -bottom-1 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-full"></span>
+              </span>
+            </NavLink>
           ))}
         </nav>
 
-        {/* LOGOUT */}
-        <button
-          onClick={() => setIsLogoutModalOpen(true)}
-          className="mt-6 text-left px-4 py-2 rounded-lg text-red-500 hover:text-red-600 font-semibold"
-        >
-          Logout
-        </button>
-      </div>
+        {/* DIVIDER */}
+        <div className="border-t border-gray-800 my-4" />
 
-      {/* --- LOGOUT POPUP WITH SUCCESS CHECKMARK (MATCHES NAVBAR & OWNER) --- */}
+        {/* BOTTOM ACTIONS: HOME & LOGOUT */}
+        <div className="flex items-center justify-between px-2 mb-2">
+          <button
+            onClick={() => {
+              navigate("/");
+              closeSidebar?.();
+            }}
+            className="flex items-center gap-2 py-2 text-gray-400 hover:text-white font-semibold transition-colors"
+          >
+            <FaHome size={16} />
+            <span>Home</span>
+          </button>
+
+          <button
+            onClick={() => setIsLogoutModalOpen(true)}
+            className="py-2 text-red-500 hover:text-red-600 font-semibold transition-colors"
+          >
+            Logout
+          </button>
+        </div>
+      </aside>
+
+      {/* --- LOGOUT POPUP --- */}
       {isLogoutModalOpen && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div className="bg-white p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center transition-all animate-in zoom-in duration-200">
@@ -117,13 +158,13 @@ const UserSidebar = ({ closeSidebar }) => {
                     onClick={() => setIsLogoutModalOpen(false)} 
                     className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition-colors"
                   >
-                    No, Stay
+                    No
                   </button>
                   <button 
                     onClick={handleLogout} 
                     className="flex-1 py-3 bg-orange-500 text-white rounded-xl font-bold shadow-lg shadow-orange-200 hover:bg-orange-600 transition-all"
                   >
-                    Yes, Logout
+                    Yes
                   </button>
                 </div>
               </>
