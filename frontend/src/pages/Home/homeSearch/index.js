@@ -59,7 +59,7 @@ const HomeSearch = () => {
     <div
       className="
         bg-white
-        p-5 sm:p-6 md:p-8
+        p-6
         rounded-2xl
         shadow-md
         max-w-4xl
@@ -68,42 +68,33 @@ const HomeSearch = () => {
       "
     >
       {/* Heading */}
-      <div className="text-center mb-5 sm:mb-6">
-        <h2 className="text-lg sm:text-4xl md:text-4xl lg:text-3xl font-semibold text-text-primary mb-2">
+      <div className="text-center mb-6">
+        <h2 className="text-3xl font-semibold text-text-primary mb-2">
           Find Paying Guest Accommodation
         </h2>
-        <p className="text-xs sm:text-3xl md:text-3xl lg:text-base text-text-secondary">
+        <p className="text-lg text-text-secondary">
           Select your city to explore available PGs near you
         </p>
       </div>
 
-     {/* City Selection */}
-<div className="w-full max-w-md mx-auto mb-4 sm:mb-6 md:mb-14 px-1 sm:px-0">
-  <CSelect
-    label={
-      <span className="text-base sm:text-lg md:text-3xl lg:text-base font-medium">
-        City
-      </span>
-    }
-    value={city}
-    onChange={(e) => {
-      if (e?.target?.value !== undefined) setCity(e.target.value);
-      else if (e?.value !== undefined) setCity(e.value);
-      else setCity("");
-    }}
-    options={cityOptions}
-    disabled={loading}
-    placeholder={loading ? "Loading cities..." : "Select city"}
-    className="
-      w-full
-      h-12 sm:h-11 lg:h-11
-      text-base sm:text-3xl md:text-3xl lg:text-base
-    "
-  />
-</div>
+      {/* City Selection */}
+      <div className="w-full max-w-md mx-auto mb-6">
+        <CSelect
+          label={<span className="text-base font-medium">City</span>}
+          value={city}
+          onChange={(e) => {
+            if (e?.target?.value !== undefined) setCity(e.target.value);
+            else if (e?.value !== undefined) setCity(e.value);
+            else setCity("");
+          }}
+          options={cityOptions}
+          disabled={loading}
+          placeholder={loading ? "Loading cities..." : "Select city"}
+          className="w-full h-12 text-base"
+        />
+      </div>
 
-
-      <div className="w-full h-px bg-gray-200 mb-5 sm:mb-6" />
+      <div className="w-full h-px bg-gray-200 mb-6" />
 
       {/* Action */}
       <div className="flex justify-center">
@@ -113,10 +104,10 @@ const HomeSearch = () => {
           variant="contained"
           className="
             w-full sm:w-auto
-            px-6 sm:px-10
-            py-2.5 sm:py-3
+            px-8
+            py-3
             rounded-lg
-            text-sm sm:text-2xl md:text-3xl
+            text-sm
             font-medium
           "
         />

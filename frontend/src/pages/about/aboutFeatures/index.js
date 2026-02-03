@@ -4,12 +4,15 @@ import { aboutFeatures } from "../../../config/staticData";
 
 const AboutFeatures = () => {
   return (
-    <section className="py-12 px-6 sm:px-12 md:px-16 lg:px-24 snap-start">
-      <h2 className="text-2xl sm:text-3xl md:text-5xl lg:text-4xl font-semibold text-primary mb-8 text-center md:text-left">
+    <section className="py-12 px-6">
+      
+      {/* Section Heading */}
+      <h2 className="text-3xl font-semibold text-primary mb-8 text-left">
         Our Key Features
       </h2>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* Feature Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {aboutFeatures.map((feature, i) => (
           <motion.div
             key={i}
@@ -17,12 +20,15 @@ const AboutFeatures = () => {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: i * 0.1 }}
             viewport={{ once: true }}
-            className="bg-white border border-border rounded-xl shadow-lg hover:shadow-xl p-6 flex flex-col justify-between"
+            className="bg-white border border-border rounded-xl shadow-md hover:shadow-lg p-6 flex flex-col"
           >
-            <h3 className="text-xl sm:text-2xl md:text-3xl lg:text-2xl font-semibold text-primary mb-2">
+            {/* Card Title */}
+            <h3 className="text-xl font-semibold text-primary mb-3">
               {feature.title}
             </h3>
-            <p className="text-text-secondary text-sm sm:text-base md:text-lg lg:text-sm">
+
+            {/* Description */}
+            <p className="text-lg text-text-secondary">
               {feature.desc}
             </p>
           </motion.div>

@@ -4,12 +4,15 @@ import { aboutWhoWeServe } from "../../../config/staticData";
 
 const AboutWhoWeServe = () => {
   return (
-    <section className="py-12 px-6 sm:px-12 md:px-16 lg:px-24 snap-start">
-      <h2 className="text-2xl sm:text-3xl md:text-5xl lg:text-4xl font-semibold text-primary mb-6 text-center md:text-left">
+    <section className="py-12 px-6 snap-start">
+      
+      {/* Section Heading */}
+      <h2 className="text-3xl font-semibold text-primary mb-6 text-left">
         Who We Serve
       </h2>
 
-      <ul className="list-disc pl-6 sm:pl-8 md:pl-10 space-y-3">
+      {/* List */}
+      <ul className="list-disc pl-6 space-y-3">
         {aboutWhoWeServe.map((item, i) => (
           <motion.li
             key={i}
@@ -17,9 +20,12 @@ const AboutWhoWeServe = () => {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: i * 0.1 }}
             viewport={{ once: true }}
-            className="text-text-secondary text-sm sm:text-base md:text-2xl lg:text-md"
+            className="text-text-secondary text-lg"
           >
-            <span className="font-semibold">{item.role}:</span> {item.desc}
+            <span className="font-semibold">
+              {item.role}:
+            </span>{" "}
+            {item.desc}
           </motion.li>
         ))}
       </ul>

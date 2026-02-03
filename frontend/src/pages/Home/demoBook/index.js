@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import CInput from "../../../components/cInput";
 import CButton from "../../../components/cButton";
+import Swal from "sweetalert2"; // Import SweetAlert2
 
 const DemoBook = ({ isOpen, onClose }) => {
   const [formData, setFormData] = useState({
@@ -58,7 +59,8 @@ const DemoBook = ({ isOpen, onClose }) => {
       setErrors(validationErrors);
       return;
     }
-// ✅ Connect to Backend [cite: 2026-01-06]
+
+    // ✅ Connect to Backend [cite: 2026-01-06]
     try {
       const response = await fetch('http://localhost:5000/api/request-demo', {
         method: 'POST',
@@ -77,16 +79,32 @@ const DemoBook = ({ isOpen, onClose }) => {
       const data = await response.json();
 
       if (response.ok) {
-        alert("Demo request submitted successfully!");
+        // ✅ Updated to SweetAlert2
+        Swal.fire({
+          title: "Success!",
+          text: "Demo request submitted successfully!",
+          icon: "success",
+          confirmButtonColor: "#ed8936", // Matches your theme primary color
+        });
+
         onClose(); // Close modal after success
         // Reset form
         setFormData({ name: "", email: "", phone: "", message: "" });
       } else {
-        alert("Error: " + data.message);
+        // Optional: Also use Swal for errors for UI consistency
+        Swal.fire({
+          title: "Error",
+          text: data.message || "Something went wrong",
+          icon: "error",
+        });
       }
     } catch (error) {
       console.error("Submission failed:", error);
-      alert("Could not connect to the server. Please check if backend is running.");
+      Swal.fire({
+        title: "Connection Error",
+        text: "Could not connect to the server. Please check if backend is running.",
+        icon: "warning",
+      });
     }
   };
 

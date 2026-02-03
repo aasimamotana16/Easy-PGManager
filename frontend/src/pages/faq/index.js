@@ -77,16 +77,13 @@ export default function FAQ() {
                     />
                   </div>
 
-                  {/* Answer (SAME CARD) */}
+                  {/* Answer (SAME CARD - Line Removed) */}
                   {activeQuestionId === faq.id && (
-                    <>
-                      <div className="border-t border-gray-200 mx-6" />
-                      <div className="p-6 pt-4">
-                        <p className="text-gray-700 leading-relaxed">
-                          {faq.answer}
-                        </p>
-                      </div>
-                    </>
+                    <div className="p-6 pt-0"> {/* Reduced pt-4 to pt-0 since line is gone */}
+                      <p className="text-gray-700 leading-relaxed">
+                        {faq.answer}
+                      </p>
+                    </div>
                   )}
                 </div>
               ))}

@@ -1,12 +1,17 @@
 import React from "react";
 
-const ExtraInfoCard = ({ title, children }) => {
+const StatsCard = ({ stats }) => {
   return (
-    <div className="bg-white p-6 rounded-lg shadow">
-      <h3 className="font-semibold text-lg mb-2">{title}</h3>
-      <div className="text-gray-700 space-y-1">{children}</div>
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+      {/* Adding '?' here stops the 'undefined' error immediately */}
+      {stats?.map((item, i) => (
+        <div key={i} className="bg-blue-50 p-4 rounded-lg shadow text-center">
+          <h4 className="text-sm font-semibold text-blue-700">{item.label}</h4>
+          <p className="text-xl font-bold text-blue-900">{item.value}</p>
+        </div>
+      ))}
     </div>
   );
 };
 
-export default ExtraInfoCard;
+export default StatsCard;

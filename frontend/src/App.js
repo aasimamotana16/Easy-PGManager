@@ -10,7 +10,7 @@ import Home from "./pages/Home";
 import SignUp from "./pages/signup";
 import Login from "./pages/Login";
 import About from "./pages/about";
-import ForgotPassword from "./pages/Login/forgotPassword"
+import ForgotPassword from "./pages/Login/forgotPassword";
 import ResetPassword from "./pages/Login/resetPassword";
 import Contact from "./pages/contact";
 import Services from "./pages/services";
@@ -18,12 +18,13 @@ import FAQ from "./pages/faq";
 import FindMyPg from "./pages/findMypg";
 import DemoBook from "./pages/Home/demoBook";
 
-/* ================= PG DETAILS ================= */
-import PGDetails from "./pages/detailsPage";
-
 /* ================= BOOKING ================= */
 import BookingPage from "./pages/booking/bookNowPage";
 import ConfirmBooking from "./pages/booking/confirmBook";
+import UserAgreement from "./pages/booking/agreement";
+
+/* ================= PG DETAILS ================= */
+import PGDetails from "./pages/detailsPage";
 
 /* ================= CANCELLATION ================= */
 import {
@@ -70,19 +71,21 @@ import Earnings from "./owner/dashboard/totalEarnings";
 import OwnerProfile from "./owner/dashboard/profileStatus";
 
 /* ================= PROTECTED ROUTES ================= */
-// COMMENTED OUT TO FIX MODULE NOT FOUND ERROR
-// import AdminProtectedRoute from "./components/AdminProtectedRoute"; 
 
 const UserProtectedRoute = ({ children }) => {
   const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
   const role = localStorage.getItem("role");
-  return isLoggedIn && role === "user" ? children : <Navigate to="/login" replace />;
+  return isLoggedIn && role === "user"
+    ? children
+    : <Navigate to="/login" replace />;
 };
 
 const OwnerProtectedRoute = ({ children }) => {
   const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
   const role = localStorage.getItem("role");
-  return isLoggedIn && role === "owner" ? children : <Navigate to="/login" replace />;
+  return isLoggedIn && role === "owner"
+    ? children
+    : <Navigate to="/login" replace />;
 };
 
 const ProtectedBookingRoute = ({ children }) => {
@@ -91,12 +94,14 @@ const ProtectedBookingRoute = ({ children }) => {
 };
 
 /* ================= APP ================= */
+
 function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Router>
         <Routes>
+
           {/* ===== PUBLIC ===== */}
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
@@ -115,8 +120,21 @@ function App() {
           <Route path="/pg/:id" element={<PGDetails />} />
 
           {/* ===== BOOKING ===== */}
-          <Route path="/book/:id" element={<ProtectedBookingRoute><BookingPage /></ProtectedBookingRoute>} />
-          <Route path="/confirm/:id" element={<ProtectedBookingRoute><ConfirmBooking /></ProtectedBookingRoute>} />
+          <Route path="/book/:id" element={
+            <ProtectedBookingRoute>
+              <BookingPage />
+            </ProtectedBookingRoute>
+          } />
+          <Route path="/confirmBook/:id" element={
+            <ProtectedBookingRoute>
+              <ConfirmBooking />
+            </ProtectedBookingRoute>
+          } />
+          <Route path="/agreement/:id" element={
+            <ProtectedBookingRoute>
+              <UserAgreement />
+            </ProtectedBookingRoute>
+          } />
 
           {/* ===== CANCELLATION ===== */}
           <Route path="/cancel/:id" element={<ProtectedBookingRoute><CancelBooking /></ProtectedBookingRoute>} />
@@ -128,11 +146,27 @@ function App() {
           <Route path="/termsConditions" element={<TermsConditions />} />
           <Route path="/privacyPolicy" element={<PrivacyPolicy />} />
 
-          {/* ===== USER DASHBOARD ===== */}
-          <Route path="/user/dashboard" element={<UserProtectedRoute><DashboardLayout /></UserProtectedRoute>}>
+          {/* ===== USER PROFILE (NO SIDEBAR) ===== */}
+          <Route
+            path="/user/userProfile"
+            element={
+              <UserProtectedRoute>
+                <Profile />
+              </UserProtectedRoute>
+            }
+          />
+
+          {/* ===== USER DASHBOARD (WITH SIDEBAR) ===== */}
+          <Route
+            path="/user/dashboard"
+            element={
+              <UserProtectedRoute>
+                <DashboardLayout />
+              </UserProtectedRoute>
+            }
+          >
             <Route index element={<Navigate to="dashboardHome" replace />} />
             <Route path="dashboardHome" element={<DashboardHome />} />
-            <Route path="userProfile" element={<Profile />} />
             <Route path="payments" element={<Payments />} />
             <Route path="agreements" element={<Agreements />} />
             <Route path="check-ins" element={<CheckIns />} />
@@ -144,8 +178,25 @@ function App() {
             <Route path="explorePage" element={<ExplorePage />} />
           </Route>
 
-          {/* ===== OWNER DASHBOARD ===== */}
-          <Route path="/owner/dashboard" element={<OwnerProtectedRoute><OwnerLayout /></OwnerProtectedRoute>}>
+          {/* ===== OWNER PROFILE & EARNINGS (NO SIDEBAR) ===== */}
+          <Route
+            path="/owner/dashboard/profileStatus"
+            element={
+              <OwnerProtectedRoute>
+                <OwnerProfile />
+              </OwnerProtectedRoute>
+            }
+          />
+
+          {/* ===== OWNER DASHBOARD (WITH SIDEBAR) ===== */}
+          <Route
+            path="/owner/dashboard"
+            element={
+              <OwnerProtectedRoute>
+                <OwnerLayout />
+              </OwnerProtectedRoute>
+            }
+          >
             <Route index element={<Navigate to="dashboardHome" replace />} />
             <Route path="dashboardHome" element={<OwnerDashboardHome />} />
             <Route path="pgManagment" element={<PgManagement />} />
@@ -158,32 +209,12 @@ function App() {
             <Route path="oBookings" element={<BookingManagement />} />
             <Route path="oAgreements" element={<OAgreements />} />
             <Route path="oSupport" element={<OSupport />} />
-            <Route path="totalEarnings" element={<Earnings />} />
-            <Route path="profileStatus" element={<OwnerProfile />} />
+            <Route path="totalEarnings" element={<Earnings />}/>
           </Route>
-
-          {/* ===== ADMIN DASHBOARD (COMMENTED OUT TO FIX "NOT DEFINED" ERRORS) ===== */}
-          {/* <Route
-            path="/admin/dashboard"
-            element={
-              <AdminProtectedRoute>
-                <AdminLayout />
-              </AdminProtectedRoute>
-            }
-          >
-            <Route index element={<Navigate to="dashboardHome" replace />} />
-            <Route path="dashboardHome" element={<AdminDashboardHome />} />
-            <Route path="userManagement" element={<UserManagement />} />
-            <Route path="pgManagement" element={<PgManagement />} />
-            <Route path="bookingManagement" element={<BookingManagement />} />
-            <Route path="ownerManagement" element={<OwnerManagement />} />
-            <Route path="analytics" element={<Analytics />} />
-            <Route path="settings" element={<AdminSettings />} />
-          </Route> 
-          */}
 
           {/* ===== FALLBACK ===== */}
           <Route path="*" element={<Navigate to="/" replace />} />
+
         </Routes>
       </Router>
     </ThemeProvider>

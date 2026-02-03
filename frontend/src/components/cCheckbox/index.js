@@ -8,7 +8,7 @@ const CCheckbox = ({ label, checked, onChange, className = "" }) => {
         type="checkbox"
         checked={checked}
         onChange={onChange}
-        className="h-4 w-4 rounded border border-border text-button-DEFAULT focus:ring-button-DEFAULT"
+        className="h-3 w-4 rounded border border-border text-button-DEFAULT focus:ring-button-DEFAULT"
       />
       <span className="text-text-secondary text-sm">{label}</span>
     </label>

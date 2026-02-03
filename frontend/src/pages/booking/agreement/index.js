@@ -6,7 +6,7 @@ import Footer from "../../../components/footer";
 import CButton from "../../../components/cButton";
 import { pgdetails } from "../../../config/staticData";
 
-const Agreement = ({ user }) => {
+const UserAgreement = ({ user }) => {
   const { id } = useParams();
   const navigate = useNavigate();
 
@@ -68,4 +68,4 @@ const Agreement = ({ user }) => {
   );
 };
 
-export default Agreement;
+export default UserAgreement;
