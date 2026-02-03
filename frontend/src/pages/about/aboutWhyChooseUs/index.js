@@ -4,17 +4,20 @@ import { aboutWhyChooseUs } from "../../../config/staticData";
 
 const AboutWhyChooseUs = () => {
   return (
-    <section className="py-12 px-6 sm:px-12 md:px-16 lg:px-24 snap-start">
-      <h2 className="text-2xl sm:text-3xl md:text-5xl lg:text-4xl font-semibold text-primary mb-6 text-center md:text-left">
+    <section className="py-12 px-6 snap-start">
+      
+      {/* Section Heading */}
+      <h2 className="text-3xl font-semibold text-primary mb-6 text-left">
         Why Choose Us
       </h2>
 
+      {/* Description */}
       <motion.p
         initial={{ opacity: 0 }}
         whileInView={{ opacity: 1 }}
         transition={{ duration: 0.6 }}
         viewport={{ once: true }}
-        className="text-text-secondary leading-relaxed text-sm sm:text-base md:text-2xl lg:text-md"
+        className="text-text-secondary leading-relaxed text-lg"
       >
         {aboutWhyChooseUs}
       </motion.p>

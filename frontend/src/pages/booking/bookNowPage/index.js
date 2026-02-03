@@ -151,7 +151,7 @@ const BookingPage = () => {
       members: personsData,
     };
 
-    navigate(`/confirm/${pg._id}`, { state: { bookingData } });
+    navigate(`/confirmBook/${pg._id}`, { state: { bookingData } });
   };
 
   return (

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { FaFileContract } from "react-icons/fa";
+import { FaFileContract, FaEye, FaDownload } from "react-icons/fa"; // Reverted to react-icons
+import Swal from "sweetalert2"; 
 import CButton from "../../../components/cButton";
 import axios from "axios";
 import Swal from "sweetalert2";
@@ -593,10 +594,52 @@ const AgreementPage = () => {
     });
   };
 
+  /* ================= ACTION HANDLERS ================= */
+
+  const handleView = (agreement) => {
+    Swal.fire({
+      title: "Agreement Details",
+      html: `
+        <div style="text-align: left; font-size: 0.9rem; line-height: 1.6;">
+          <p><strong>Tenant:</strong> ${agreement.tenant}</p>
+          <p><strong>Property:</strong> ${agreement.property}</p>
+          <p><strong>Room:</strong> ${agreement.room}</p>
+          <p><strong>Monthly Rent:</strong> ₹${agreement.rent}</p>
+          <p><strong>Duration:</strong> ${agreement.startDate} to ${agreement.endDate}</p>
+          <p><strong>Status:</strong> ${agreement.status}</p>
+        </div>
+      `,
+      icon: "info",
+      confirmButtonColor: "#ed8936",
+    });
+  };
+
+  const handleDownload = (tenant) => {
+    Swal.fire({
+      title: "Download Confirmation",
+      text: `Prepare download for ${tenant}'s rental agreement?`,
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonColor: "#ed8936",
+      cancelButtonColor: "#718096",
+      confirmButtonText: "Download Now",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        Swal.fire({
+          title: "Downloading...",
+          text: "The file is being generated.",
+          icon: "success",
+          timer: 1500,
+          showConfirmButton: false,
+        });
+      }
+    });
+  };
+
   return (
     <div className="p-6 bg-gray-100 min-h-screen space-y-6">
 
-      {/* PAGE HEADER (LIKE OTHER DASHBOARD PAGES) */}
+      {/* PAGE HEADER */}
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-3">
           <FaFileContract className="text-orange-500 text-3xl" />
@@ -623,14 +666,14 @@ const AgreementPage = () => {
         <input
           type="text"
           placeholder="Search by Tenant"
-          className="border rounded-md px-4 py-2 flex-1"
+          className="border rounded-md px-4 py-2 flex-1 outline-none focus:ring-1 focus:ring-orange-400"
           value={tenantSearch}
           onChange={(e) => setTenantSearch(e.target.value)}
         />
         <input
           type="text"
           placeholder="Search by Property / Room"
-          className="border rounded-md px-4 py-2 flex-1"
+          className="border rounded-md px-4 py-2 flex-1 outline-none focus:ring-1 focus:ring-orange-400"
           value={propertySearch}
           onChange={(e) => setPropertySearch(e.target.value)}
         />
@@ -664,7 +707,7 @@ const AgreementPage = () => {
               </tr>
             ) : filteredAgreements.length > 0 ? (
               filteredAgreements.map((ag) => (
-                <tr key={ag.id} className="border-b last:border-none">
+                <tr key={ag.id} className="border-b last:border-none hover:bg-orange-50 transition">
                   <td className="p-4">{ag.id}</td>
                   <td className="p-4">
                     <div>
@@ -674,11 +717,13 @@ const AgreementPage = () => {
                     </div>
                   </td>
                   <td className="p-4">
+                  <td className="p-4 font-medium">{ag.tenant}</td>
+                  <td className="p-4 text-gray-600">
                     {ag.property} / {ag.room}
                   </td>
-                  <td className="p-4">{ag.startDate}</td>
-                  <td className="p-4">{ag.endDate}</td>
-                  <td className="p-4 font-semibold">
+                  <td className="p-4 text-gray-600">{ag.startDate}</td>
+                  <td className="p-4 text-gray-600">{ag.endDate}</td>
+                  <td className="p-4 font-semibold text-primary">
                     ₹{ag.rent}
                   </td>
                   <td className="p-4 text-center">
@@ -707,6 +752,24 @@ const AgreementPage = () => {
                     >
                       Download
                     </CButton>
+                  <td className="p-4">
+                    <div className="flex justify-center gap-5">
+                      {/* REPLACED WITH REACT-ICONS */}
+                      <button
+                        onClick={() => handleView(ag)}
+                        className="text-blue-500 hover:text-blue-700 transition-colors"
+                        title="View Details"
+                      >
+                        <FaEye size={20} />
+                      </button>
+                      <button
+                        onClick={() => handleDownload(ag.tenant)}
+                        className="text-orange-500 hover:text-orange-700 transition-colors"
+                        title="Download Agreement"
+                      >
+                        <FaDownload size={18} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))

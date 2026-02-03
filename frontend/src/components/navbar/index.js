@@ -4,7 +4,6 @@ import { FaBars, FaUserCircle, FaTimes } from "react-icons/fa";
 import axios from "axios";
 import CButton from "../../components/cButton";
 
-// Import sidebars
 import UserSidebar from "../../user/dashboard/dashboardLayout";
 import OwnerSidebar from "../../owner/dashboard/layout";
 
@@ -23,10 +22,8 @@ const Navbar = () => {
   const role = localStorage.getItem("role");
 
   const checkLoginStatus = () => {
-    const loggedIn = localStorage.getItem("isLoggedIn") === "true";
-    const name = localStorage.getItem("userName") || "User";
-    setIsLoggedIn(loggedIn);
-    setUserName(name);
+    setIsLoggedIn(localStorage.getItem("isLoggedIn") === "true");
+    setUserName(localStorage.getItem("userName") || "User");
   };
 
   useEffect(() => {
@@ -35,18 +32,13 @@ const Navbar = () => {
 
   useEffect(() => {
     window.addEventListener("storage", checkLoginStatus);
-    document.addEventListener("visibilitychange", checkLoginStatus);
-    return () => {
-      window.removeEventListener("storage", checkLoginStatus);
-      document.removeEventListener("visibilitychange", checkLoginStatus);
-    };
+    return () => window.removeEventListener("storage", checkLoginStatus);
   }, []);
 
   const isDashboard =
     location.pathname.startsWith("/user/dashboard") ||
     location.pathname.startsWith("/owner/dashboard");
-
-  const handleLogout = async () => {
+const handleLogout = async () => {
     try {
       const token = localStorage.getItem("userToken");
       if (token) {
@@ -76,10 +68,10 @@ const Navbar = () => {
   };
 
   const navLinkClass = (path) =>
-    `relative font-semibold text-sm transition-colors duration-300
+    `relative font-medium text-sm transition-colors
      ${
        location.pathname === path
-         ? "text-text-light border-b-2 border-primary"
+         ? "text-white border-b-2 border-primary"
          : "text-text-light/80 hover:text-text-light"
      }`;
 
@@ -95,8 +87,8 @@ const Navbar = () => {
   const goToProfile = () => {
     navigate(
       role === "owner"
-        ? "/owner/dashboard/profileStatus"
-        : "/user/dashboard/userProfile"
+        ? "/owner/profileStatus"
+        : "/user/userProfile"
     );
     setSidebarOpen(true);
   };
@@ -104,12 +96,12 @@ const Navbar = () => {
   return (
     <>
       {/* NAVBAR */}
-      <nav className="bg-background-dark border-b border-white/10 px-4 py-3 md:py-5 lg:py-2 flex justify-between items-center">
+      <nav className="bg-background-dark border-b border-white/10 px-4 py-3 flex justify-between items-center">
         {/* LEFT */}
         <div className="flex items-center gap-3">
           {isLoggedIn && isDashboard && (
             <button onClick={() => setSidebarOpen(true)}>
-              <FaBars className="text-2xl sm:text-xl text-text-light" />
+              <FaBars className="text-xl text-text-light" />
             </button>
           )}
 
@@ -117,38 +109,33 @@ const Navbar = () => {
             className="flex items-center cursor-pointer"
             onClick={() => navigate("/")}
           >
-            <img
-              src="/logos/logo1.png"
-              className="h-10  mr-2"
-              alt="logo"
-            />
-            <span className="text-text-light font-bold text-base text-xl hidden sm:block">
+            <img src="/logos/logo1.png" className="h-12 mr-2" alt="logo" />
+            <span className="text-text-light font-bold text-lg hidden sm:block">
               EasyPG Manager
             </span>
           </div>
         </div>
 
-        {/* CENTER (Desktop Only – UNCHANGED) */}
-        <div className="hidden md:flex gap-5  ">
-          <button className={navLinkClass("/")} onClick={() => navigate("/")}>
-            Home
-          </button>
-          <button className={navLinkClass("/about")} onClick={() => navigate("/about")}>
-            About
-          </button>
-          <button className={navLinkClass("/services")} onClick={() => navigate("/services")}>
-            Services
-          </button>
-          <button className={navLinkClass("/findmypg")} onClick={() => navigate("/findmypg")}>
-            FindMyPG
-          </button>
-          <button className={navLinkClass("/contact")} onClick={() => navigate("/contact")}>
-            Contact
-          </button>
-          <button className={navLinkClass("/faq")} onClick={() => navigate("/faq")}>
-            FAQ
-          </button>
+        {/* CENTER (DESKTOP) */}
+        <div className="hidden md:flex gap-5">
+          {[
+            ["/", "Home"],
+            ["/about", "About"],
+            ["/services", "Services"],
+            ["/findmypg", "FindMyPG"],
+            ["/contact", "Contact"],
+            ["/faq", "FAQ"],
+          ].map(([path, label]) => (
+            <button
+              key={path}
+              className={navLinkClass(path)}
+              onClick={() => navigate(path)}
+            >
+              {label}
+            </button>
+          ))}
         </div>
+
         {/* RIGHT */}
         <div className="flex items-center gap-3">
           {/* MOBILE MENU BUTTON */}
@@ -156,27 +143,27 @@ const Navbar = () => {
             className="md:hidden text-text-light"
             onClick={() => setMobileMenuOpen(true)}
           >
-            <FaBars className="text-2xl" />
+            <FaBars className="text-xl" />
           </button>
 
-          {/* DESKTOP AUTH (UNCHANGED) */}
+          {/* DESKTOP AUTH */}
           {!isLoggedIn ? (
             <div className="hidden md:flex gap-2">
-              <CButton text="Sign Up" onClick={() => navigate("/signup")} />
-              <CButton text="Login" onClick={() => navigate("/login")} />
+              <CButton className="h-9 text-lg" text="Sign Up" onClick={() => navigate("/signup")} />
+              <CButton className="h-9 text-lg" text="Login" onClick={() => navigate("/login")} />
             </div>
           ) : (
             <div className="relative hidden md:block">
               <button
-                className="flex items-center gap-2 text-text-light"
+                className="flex items-center gap-2 text-text-light text-sm"
                 onClick={() => setProfileOpen((p) => !p)}
               >
-                <FaUserCircle className="text-xl" />
+                <FaUserCircle className="text-lg" />
                 <span>{userName}</span>
               </button>
 
               {profileOpen && (
-                <div className="absolute right-0 top-10 w-44 bg-white rounded-md shadow-lg z-50">
+                <div className="absolute right-0 top-9 w-44 bg-white rounded-md shadow-lg z-50 text-sm">
                   <button onClick={goToDashboard} className="w-full px-4 py-2 hover:bg-gray-100 text-left">
                     Dashboard
                   </button>
@@ -199,46 +186,51 @@ const Navbar = () => {
       {/* MOBILE MENU */}
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-50 bg-black/40">
-          <div className="bg-background-dark w-full p-6 animate-in slide-in-from-top">
+          <div className="bg-background-dark w-full p-6">
             <div className="flex justify-between items-center mb-6">
-              <span className="text-text-light font-bold text-lg">Menu</span>
+              <span className="text-text-light font-bold text-base">Menu</span>
               <button onClick={() => setMobileMenuOpen(false)}>
-                <FaTimes className="text-text-light text-2xl" />
+                <FaTimes className="text-text-light text-xl" />
               </button>
             </div>
 
             <div className="flex flex-col gap-4">
-              {["/", "/about", "/services", "/findmypg", "/contact", "/faq"].map(
-                (path) => (
-                  <button
-                    key={path}
-                    onClick={() => {
-                      navigate(path);
-                      setMobileMenuOpen(false);
-                    }}
-                    className="text-text-light text-left font-semibold text-lg py-2"
-                  >
-                    {path === "/" ? "Home" : path.replace("/", "").toUpperCase()}
-                  </button>
-                )
-              )}
+              {[
+                ["/", "Home"],
+                ["/about", "About"],
+                ["/services", "Services"],
+                ["/findmypg", "FindMyPG"],
+                ["/contact", "Contact"],
+                ["/faq", "FAQ"],
+              ].map(([path, label]) => (
+                <button
+                  key={path}
+                  onClick={() => {
+                    navigate(path);
+                    setMobileMenuOpen(false);
+                  }}
+                  className="text-text-light text-left font-medium text-xl py-2"
+                >
+                  {label}
+                </button>
+              ))}
 
               {!isLoggedIn ? (
                 <>
-                  <CButton className="h-11 text-sm font-bold" text="Sign Up" onClick={() => navigate("/signup")} />
-                  <CButton className="h-11 text-sm font-bold" text="Login" onClick={() => navigate("/login")} />
+                  <CButton className="h-12 text-lg font-bold" text="Sign Up" onClick={() => navigate("/signup")} />
+                  <CButton className="h-12 text-lg font-bold" text="Login" onClick={() => navigate("/login")} />
                 </>
               ) : (
                 <>
-                  <button onClick={goToDashboard} className="text-text-light font-semibold text-base py-2">
+                  <button onClick={goToDashboard} className="text-text-light font-medium text-base py-2">
                     Dashboard
                   </button>
-                  <button onClick={goToProfile} className="text-text-light font-semibold text-base py-2">
+                  <button onClick={goToProfile} className="text-text-light font-medium text-base py-2">
                     Profile
                   </button>
                   <button
                     onClick={() => setIsLogoutModalOpen(true)}
-                    className="text-red-400 font-semibold text-base py-2"
+                    className="text-red-400 font-medium text-base py-2"
                   >
                     Logout
                   </button>

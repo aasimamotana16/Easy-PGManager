@@ -64,31 +64,6 @@ const OwnerContact = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10">
-        
-        {/* LEFT COLUMN: QUICK ACTIONS */}
-        <div className="lg:col-span-4 bg-white rounded-3xl border border-gray-100 shadow-sm p-6 md:p-8 space-y-4">
-          <h3 className="text-base md:text-3xl lg:text-xl font-black uppercase tracking-tight text-gray-800 mb-6">
-            Quick Connect
-          </h3>
-          
-          <CButton
-            className="w-full bg-orange-500 text-white py-4 rounded-2xl flex items-center justify-center gap-3 text-xs md:text-2xl lg:text-xs font-black uppercase tracking-widest hover:bg-orange-600 transition-all shadow-lg shadow-orange-500/20"
-            onClick={() => { window.location.href = `tel:${ownerData.phone}`; }}
-          >
-            <FaPhoneAlt /> Call Owner
-          </CButton>
-
-          <CButton
-            className="w-full bg-black text-white py-4 rounded-2xl flex items-center justify-center gap-3 text-xs  md:text-2xl lg:text-xs font-black uppercase tracking-widest hover:bg-gray-800 transition-all shadow-xl shadow-black/10"
-            onClick={() => { window.location.href = `mailto:${ownerData.email}`; }}
-          >
-            <FaEnvelope /> Email Owner
-          </CButton>
-
-          <p className="text-[9px] font-bold text-gray-400 text-center uppercase mt-6 tracking-widest">
-            Available for urgent queries
-          </p>
-        </div>
 
         {/* RIGHT COLUMN: DETAILS CARD - Matched to Timeline Data Style */}
         <div className="lg:col-span-8 md:text-4xl lg:text-lg bg-white rounded-md border border-gray-100 shadow-sm p-6 md:p-8 lg:p-12">

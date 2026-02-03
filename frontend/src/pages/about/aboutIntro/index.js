@@ -12,8 +12,8 @@ const AboutIntro = () => {
         className="w-full h-full object-cover"
       />
 
-      {/* DARK GRADIENT */}
-      <div className="absolute inset-0 bg-gradient-to-b md:bg-gradient-to-r from-black/70 via-black/40 to-transparent" />
+      {/* Dark Gradient Overlay */}
+      <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/40 to-transparent" />
 
       {/* TEXT WRAPPER */}
       <motion.div
@@ -22,22 +22,20 @@ const AboutIntro = () => {
         transition={{ duration: 0.4 }}
         className="
           absolute inset-0
-          flex items-start justify-center
-          pt-24
-          md:pt-0 md:items-center md:justify-start
+          flex items-center justify-start
+          pt-12 pl-6
         "
       >
-        <div className="px-6 md:px-12 max-w-xl text-center md:text-left">
+        <div className="max-w-xl text-left">
 
-          {/* SMALL LABEL */}
+          {/* LABEL */}
           <motion.p
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
             className="
-              text-white/80 tracking-widest uppercase mb-3
-              text-sm sm:text-xl
-              md:text-4xl lg:text-3xl
+              text-white/80 uppercase tracking-widest mb-2
+              text-3xl
             "
           >
             About
@@ -49,9 +47,8 @@ const AboutIntro = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.35 }}
             className="
-              font-bold text-white leading-tight mb-5
-              text-5xl sm:text-6xl
-              md:text-8xl lg:text-6xl
+              font-bold text-white leading-tight mb-4
+              text-5xl
             "
           >
             <span className="italic">
@@ -65,9 +62,8 @@ const AboutIntro = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
             className="
-              text-white/90 mb-3
-              text-base sm:text-lg
-              md:text-4xl lg:text-base
+              text-white/90 mb-2
+              text-3xl
             "
           >
             Simplifying PG management with seamless bookings and tenant tracking.
@@ -79,8 +75,7 @@ const AboutIntro = () => {
             transition={{ delay: 0.65 }}
             className="
               text-white/90
-              text-base sm:text-lg
-              md:text-4xl lg:text-base
+              text-3xl
             "
           >
             Manage your PG effortlessly with our intuitive platform.

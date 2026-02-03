@@ -3,23 +3,24 @@ import { useParams, useLocation, useNavigate } from "react-router-dom";
 import Navbar from "../../../components/navbar";
 import Footer from "../../../components/footer";
 import CButton from "../../../components/cButton";
-import { pgdetails } from "../../../config/staticData";
 
 const ConfirmBooking = () => {
   const { id } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Find the property
-  const property = [...pgdetails].find(
-    (item) => item.id === parseInt(id)
-  );
-
   const bookingData = location.state?.bookingData;
 
-  // Save tenant profile in localStorage
+  /* 🔹 EFFECT 1: Redirect if accessed directly or refreshed */
   useEffect(() => {
-    if (!bookingData || !property) return;
+    if (!bookingData) {
+      navigate(`/book/${id}`, { replace: true });
+    }
+  }, [bookingData, id, navigate]);
+
+  /* 🔹 EFFECT 2: Save booking data after successful navigation */
+  useEffect(() => {
+    if (!bookingData) return;
 
     const bookingId = "BK" + Date.now();
     const tenantId = "TN" + Date.now();
@@ -28,26 +29,10 @@ const ConfirmBooking = () => {
     const tenantProfile = {
       tenantId,
       bookingId,
-      personalInfo: {
-        fullName: bookingData.fullName || "Guest User",
-        mobile: bookingData.phone || "9999999999",
-        email: bookingData.email || "guest@email.com",
-        gender: property.gender || "N/A",
-      },
-      pgInfo: {
-        pgId: property.id,
-        pgName: property.name,
-        location: property.location,
-        address: property.address,
-      },
-      roomInfo: {
-        sharingType: bookingData.sharingType,
-        monthlyRent: bookingData.price,
-      },
-      stayInfo: {
-        checkInDate: new Date().toLocaleDateString(),
-        status: "Active",
-      },
+      pgId: bookingData.pgId,
+      members: bookingData.members,
+      stayDetails: bookingData.stayDetails,
+      totalRent: bookingData.totalRent,
       agreement: {
         agreementId,
         isSigned: true,
@@ -55,65 +40,43 @@ const ConfirmBooking = () => {
     };
 
     localStorage.setItem("tenantProfile", JSON.stringify(tenantProfile));
-  }, [bookingData, property]);
+  }, [bookingData]);
 
-  // 🚫 Block page if booking not completed
-  if (!bookingData || !property) {
-    return (
-      <div className="min-h-screen flex flex-col bg-background-muted">
-        <Navbar />
-        <div className="flex-1 text-center py-24 px-4 sm:px-6">
-          <p className="text-text-danger text-lg sm:text-xl mb-6">
-            Please complete booking first.
-          </p>
-          <CButton
-            text="Go to Services"
-            onClick={() => navigate("/services")}
-          />
-        </div>
-        <Footer />
-      </div>
-    );
-  }
+  /* 🔹 BLOCK RENDER WHILE REDIRECTING */
+  if (!bookingData) return null;
 
   return (
     <div className="min-h-screen flex flex-col bg-background-muted">
       <Navbar />
 
-      <div className="flex-1 max-w-3xl mx-auto px-4 sm:px-6 py-16 sm:py-24 text-center">
-        <h1 className="text-3xl sm:text-4xl font-bold text-text-primary mb-4">
+      <div className="flex-1 max-w-3xl mx-auto px-4 py-16 text-center">
+        <h1 className="text-3xl font-bold text-text-primary mb-4">
           🎉 Booking Confirmed
         </h1>
 
-        <p className="text-base sm:text-lg text-text-secondary mb-8 sm:mb-10">
-          Your booking for{" "}
-          <span className="font-semibold">{property.name}</span> has been
-          successfully confirmed.
+        <p className="text-text-secondary mb-8">
+          Your booking has been successfully confirmed.
         </p>
 
-        {/* Rental Agreement Section */}
-        <div className="bg-card shadow-card rounded-xl p-4 sm:p-8 mb-8 sm:mb-10">
-          <h2 className="text-xl sm:text-2xl font-semibold mb-2 sm:mb-3">
+        {/* Rental Agreement 
+        <div className="bg-card shadow-card rounded-xl p-6 mb-8">
+          <h2 className="text-xl font-semibold mb-3">
             Rental Agreement
           </h2>
-          <p className="text-text-secondary text-sm sm:text-base mb-4 sm:mb-6">
-            View or download your rental agreement.
-          </p>
 
           <CButton
             text="View Rental Agreement"
             fullWidth
-            className="text-sm sm:text-base"
             onClick={() => navigate(`/agreement/${id}`)}
           />
-        </div>
+        </div>*/}
 
         {/* Cancel Booking */}
         <div className="mb-6">
           <CButton
             text="Cancel Booking"
             variant="outlined"
-            className="text-sm sm:text-base border-red-500 text-red-500 hover:bg-red-500 hover:text-white"
+            className="border-red-500 text-red-500 hover:bg-red-500 hover:text-white"
             onClick={() => navigate(`/cancel/${id}`)}
           />
         </div>
@@ -122,7 +85,6 @@ const ConfirmBooking = () => {
         <CButton
           text="Back to Services"
           variant="outlined"
-          className="text-sm sm:text-base"
           onClick={() => navigate("/services")}
         />
       </div>

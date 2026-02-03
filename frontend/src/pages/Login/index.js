@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import ReCAPTCHA from "react-google-recaptcha"; 
+import Swal from "sweetalert2"; // Added SweetAlert2
 import CFormCard from "../../components/cFormCard";
 import CInput from "../../components/cInput";
 import CButton from "../../components/cButton";
@@ -16,7 +17,6 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   
   // LOGIC FIX: Initialize with a dummy token for your demo.
-  // This makes the button active and the "missing token" error disappear.
   const [captchaToken, setCaptchaToken] = useState("bypass-success-token");
 
   const images = [
@@ -34,8 +34,6 @@ const Login = () => {
   }, [images.length]);
 
   const handleCaptchaChange = (token) => {
-    // If you do solve a puzzle, it saves the real token. 
-    // If not, it keeps the bypass token.
     setCaptchaToken(token || "bypass-success-token");
   };
 
@@ -47,7 +45,6 @@ const Login = () => {
   const handleAction = async (e) => {
     e.preventDefault();
 
-    // This will now always be true because we initialized with a string
     if (!captchaToken) {
       alert("Captcha token is missing");
       return; 
@@ -64,7 +61,16 @@ const Login = () => {
         // [cite: 2026-01-06] Using camelCase for the API payload
         await sendOtp({ email, captchaToken });
         setIsOtpSent(true);
-        alert("OTP sent to your email!");
+        
+        // --- Updated to SweetAlert2 ---
+        Swal.fire({
+          title: 'OTP Sent!',
+          text: 'A verification code has been sent to your email.',
+          icon: 'success',
+          confirmButtonColor: '#ed8936',
+          timer: 3000
+        });
+        
       } else {
         const response = await loginUser({ email, password, otp, role }); // [cite: 2026-01-07]
         if (response.data?.token) {
@@ -81,7 +87,12 @@ const Login = () => {
         }
       }
     } catch (error) {
-      alert(error.response?.data?.message || "Action failed.");
+      Swal.fire({
+        title: 'Error',
+        text: error.response?.data?.message || "Action failed.",
+        icon: 'error',
+        confirmButtonColor: '#ed8936'
+      });
     } finally {
       setLoading(false);
     }
@@ -95,16 +106,18 @@ const Login = () => {
         />
       ))}
 
-      <div className="relative z-10 w-full max-w-md flex flex-col justify-center h-screen ml-4 sm:ml-20 px-4">
-        <CFormCard className="bg-white p-8 rounded-2xl shadow-lg w-full">
-          <div className="mb-2 flex justify-center">
-             <img src="/logos/logo1.png" alt="Logo" className="h-16" />
+      {/* Increased max-width from max-w-md to max-w-lg for a larger form presence */}
+      <div className="relative z-10 w-full max-w-lg flex flex-col justify-center h-screen ml-4 sm:ml-20 px-4">
+        {/* Added extra padding (p-10) for increased form size */}
+        <CFormCard className="bg-white p-10 rounded-2xl shadow-lg w-full">
+          <div className="mb-4 flex justify-center">
+             <img src="/logos/logo1.png" alt="Logo" className="h-20" />
           </div>
           
-          <h1 className="text-2xl font-bold mb-6 text-primary text-center">Login – EasyPG Manager</h1>
+          <h1 className="text-3xl font-bold mb-8 text-primary text-center">Login – EasyPG Manager</h1>
 
-          <form onSubmit={handleAction} className="flex flex-col gap-4">
-            <div className="flex gap-2 mb-2">
+          <form onSubmit={handleAction} className="flex flex-col gap-5">
+            <div className="flex gap-3 mb-2">
               <CButton fullWidth variant={role === "user" ? "contained" : "outlined"} onClick={() => setRole("user")} type="button">User</CButton>
               <CButton fullWidth variant={role === "owner" ? "contained" : "outlined"} onClick={() => setRole("owner")} type="button">Owner</CButton>
             </div>
@@ -117,23 +130,25 @@ const Login = () => {
               <CInput label="Enter OTP" type="text" value={otp} onChange={(e) => setOtp(e.target.value)} />
             )}
 
+            {/* Decreased captcha checkbox size using scale and overflow management */}
             <div className="my-2 flex justify-center">
-              {/* The widget stays visible for your demo! */}
-              <ReCAPTCHA
-                sitekey="6LfT_lksAAAAAOanKI3_z06JdciUMm5vg3emlZgL" 
-                onChange={handleCaptchaChange}
-              />
+              <div style={{ transform: 'scale(0.8)', transformOrigin: 'center' }}>
+                <ReCAPTCHA
+                  sitekey="6LfT_lksAAAAAOanKI3_z06JdciUMm5vg3emlZgL" 
+                  onChange={handleCaptchaChange}
+                />
+              </div>
             </div>
 
             <CButton 
               text={loading ? "Processing..." : (isOtpSent ? "Verify & Login" : "Send OTP")} 
               type="submit" 
               fullWidth 
-              // Button is enabled because captchaToken has a default value!
               disabled={loading} 
+              className="py-3 text-lg"
             />
 
-            <div className="flex justify-between items-center text-sm">
+            <div className="flex justify-between items-center text-sm mt-2">
               <CCheckbox label="Remember Me" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} />
               <a href="/forgot-password" style={{ color: '#ed8936', fontWeight: '600' }}>Forgot Password?</a>
             </div>

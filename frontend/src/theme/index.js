@@ -1,128 +1,106 @@
 // src/theme.js
-import { createTheme } from '@mui/material/styles';
+import { createTheme } from "@mui/material/styles";
 
 const theme = createTheme({
+  /* ================= MINIMAL PALETTE ================= */
   palette: {
-    mode: 'light',
+    mode: "light",
 
-    // Tailwind primary colors
     primary: {
-      main: '#D97706',        // Tailwind primary
-      dark: '#B45309',        // Tailwind primaryDark
-      light: '#FEF3C7',       // Tailwind primarySoft
-      contrastText: '#FFFFFF' // White text on primary buttons
+      main: "#D97706",
+      contrastText: "#FFFFFF",
     },
 
-    // Secondary can map to accent.warning or another semantic color
     secondary: {
-      main: '#4B4B4B',        // Tailwind text.secondary
-      contrastText: '#FFFFFF'
+      main: "#4B4B4B",
     },
 
-    // Backgrounds
     background: {
-      default: '#F9FAF7',     // Tailwind background.DEFAULT
-      paper: '#F5F3F1',       // Tailwind background.muted
+      default: "#F9FAF7",
+      paper: "#FFFFFF",
     },
 
-    // Text colors
     text: {
-      primary: '#1C1C1C',     // Tailwind text.primary
-      secondary: '#4B4B4B',   // Tailwind text.secondary
-      disabled: '#6B6B6B'     // Tailwind text.muted
+      primary: "#1C1C1C",
+      secondary: "#4B4B4B",
     },
 
-    // Cards
-    card: {
-      main: '#FFFFFF',        // Tailwind card
-      sky: '#E0F2FE'          // Tailwind cardSky
-    },
+    divider: "#E5E0D9",
 
-    // Borders
-    divider: '#E5E0D9',       // Tailwind border
-
-    // Buttons
-    button: {
-      main: '#D97706',        // Tailwind button.DEFAULT
-      hover: '#B45309',       // Tailwind button.hover
-      ghost: '#FEF3C7'        // Tailwind button.ghost
-    },
-
-    // Accents
-    success: {
-      main: '#16A34A'         // Tailwind accent.success
-    },
-    warning: {
-      main: '#D97706'         // Tailwind accent.warning
-    },
-    error: {
-      main: '#DC2626'         // Tailwind accent.danger
-    }
+    success: { main: "#16A34A" },
+    warning: { main: "#D97706" },
+    error: { main: "#DC2626" },
   },
 
+  /* ================= COMPONENT OVERRIDES ONLY ================= */
   components: {
+    MuiCssBaseline: {
+      styleOverrides: {
+        body: {
+          WebkitFontSmoothing: "antialiased",
+          MozOsxFontSmoothing: "grayscale",
+        },
+      },
+    },
+
     MuiAppBar: {
       styleOverrides: {
         root: {
-          backgroundColor: '#1F1F1F', // Tailwind background.dark
-          color: '#FFFFFF'
-        }
-      }
+          backgroundColor: "#1F1F1F",
+          color: "#FFFFFF",
+        },
+      },
     },
+
     MuiButton: {
       styleOverrides: {
         root: {
-          borderRadius: '10px',        // Tailwind borderRadius.md
-          textTransform: 'none',
+          borderRadius: "10px",
+          textTransform: "none",
           fontWeight: 700,
-          transition: '0.3s ease',
-          backgroundColor: '#D97706',  // Tailwind button.DEFAULT
-          color: '#FFFFFF',
-          '&:hover': {
-            backgroundColor: '#B45309', // Tailwind button.hover
-            color: '#FFFFFF'
-          }
-        }
-      }
+          backgroundColor: "#D97706",
+          color: "#FFFFFF",
+          "&:hover": {
+            backgroundColor: "#B45309",
+          },
+        },
+      },
     },
+
     MuiCard: {
       styleOverrides: {
         root: {
-          borderRadius: '14px',        // Tailwind borderRadius.lg
-          backgroundColor: '#FFFFFF',  // Tailwind card
-          color: '#1C1C1C'
-        }
-      }
+          borderRadius: "14px",
+          backgroundColor: "#FFFFFF",
+          color: "#1C1C1C",
+        },
+      },
     },
+
     MuiTextField: {
       styleOverrides: {
         root: {
-          '& .MuiInputBase-root': {
-            backgroundColor: '#FFFFFF',
-            borderRadius: '10px',      // Tailwind borderRadius.md
-            color: '#1C1C1C'
+          "& .MuiInputBase-root": {
+            backgroundColor: "#FFFFFF",
+            borderRadius: "10px",
           },
-          '& .MuiInputBase-input::placeholder': {
-            color: '#6B6B6B',          // Tailwind text.muted
-            opacity: 1
-          }
-        }
-      }
+        },
+      },
     },
+
     MuiLink: {
       styleOverrides: {
         root: {
-          color: '#4B4B4B',            // Tailwind text.secondary
-          textDecoration: 'none',
-          transition: '0.3s ease',
-          '&:hover': {
-            color: '#B45309',          // Tailwind primaryDark
-            borderBottom: '2px solid #B45309'
-          }
-        }
-      }
-    }
-  }
+          color: "#4B4B4B",
+          textDecoration: "none",
+          "&:hover": {
+            color: "#B45309",
+            borderBottom: "2px solid #B45309",
+          },
+        },
+      },
+    },
+  },
 });
 
 export default theme;

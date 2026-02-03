@@ -38,7 +38,7 @@ const Contact = () => {
 
     setLoading(true); // Start loading
 
-    // Prepare data to match your backend model [cite: 2026-01-01]
+    // Prepare data to match your backend model
     const contactData = {
       fullName: form.fullName,
       emailAddress: form.email,
@@ -106,106 +106,105 @@ const Contact = () => {
                 Contact our Sales Team
               </h2>
 
-             <form
-  className="flex flex-col gap-4 sm:gap-5 lg:gap-6"
-  onSubmit={handleSubmit}
->
-  {/* FULL NAME */}
-  <CInput
-    label={
-      <span
-        className={`
-          block
-          text-base sm:text-lg lg:text-base
-          ${errors.fullName ? "text-red-600 font-semibold" : "text-gray-800"}
-        `}
-      >
-        Full Name
-        {errors.fullName && <span className="text-red-600 ml-1">*</span>}
-      </span>
-    }
-    value={form.fullName}
-    onChange={handleChange("fullName")}
-    disabled={loading}
-  />
+              <form
+                className="flex flex-col gap-4 sm:gap-5 lg:gap-6"
+                onSubmit={handleSubmit}
+              >
+                {/* FULL NAME */}
+                <CInput
+                  label={
+                    <span
+                      className={`
+                        block
+                        text-base sm:text-lg lg:text-base
+                        ${errors.fullName ? "text-red-600 font-semibold" : "text-gray-800"}
+                      `}
+                    >
+                      Full Name
+                      {errors.fullName && <span className="text-red-600 ml-1">*</span>}
+                    </span>
+                  }
+                  value={form.fullName}
+                  onChange={handleChange("fullName")}
+                  disabled={loading}
+                />
 
-  {/* EMAIL */}
-  <CInput
-    label={
-      <span
-        className={`
-          block
-          text-base sm:text-lg lg:text-base
-          ${errors.email ? "text-red-600 font-semibold" : "text-gray-800"}
-        `}
-      >
-        Email Address
-        {errors.email && <span className="text-red-600 ml-1">*</span>}
-      </span>
-    }
-    type="email"
-    value={form.email}
-    onChange={handleChange("email")}
-    disabled={loading}
-  />
+                {/* EMAIL */}
+                <CInput
+                  label={
+                    <span
+                      className={`
+                        block
+                        text-base sm:text-lg lg:text-base
+                        ${errors.email ? "text-red-600 font-semibold" : "text-gray-800"}
+                      `}
+                    >
+                      Email Address
+                      {errors.email && <span className="text-red-600 ml-1">*</span>}
+                    </span>
+                  }
+                  type="email"
+                  value={form.email}
+                  onChange={handleChange("email")}
+                  disabled={loading}
+                />
 
-  {/* PHONE */}
-  <CInput
-    label={
-      <span
-        className={`
-          block
-          text-base sm:text-lg lg:text-base
-          ${errors.mobile ? "text-red-600 font-semibold" : "text-gray-800"}
-        `}
-      >
-        Phone Number
-        {errors.mobile && <span className="text-red-600 ml-1">*</span>}
-      </span>
-    }
-    type="tel"
-    value={form.mobile}
-    onChange={handleChange("mobile")}
-    disabled={loading}
-  />
+                {/* PHONE */}
+                <CInput
+                  label={
+                    <span
+                      className={`
+                        block
+                        text-base sm:text-lg lg:text-base
+                        ${errors.mobile ? "text-red-600 font-semibold" : "text-gray-800"}
+                      `}
+                    >
+                      Phone Number
+                      {errors.mobile && <span className="text-red-600 ml-1">*</span>}
+                    </span>
+                  }
+                  type="tel"
+                  value={form.mobile}
+                  onChange={handleChange("mobile")}
+                  disabled={loading}
+                />
 
-  {/* MESSAGE */}
-  <CInput
-    label={
-      <span
-        className={`
-          block
-          text-base sm:text-lg lg:text-base
-          ${errors.message ? "text-red-600 font-semibold" : "text-gray-800"}
-        `}
-      >
-        Your Message
-        {errors.message && <span className="text-red-600 ml-1">*</span>}
-      </span>
-    }
-    multiline
-    rows={6}
-    value={form.message}
-    onChange={handleChange("message")}
-    disabled={loading}
-  />
+                {/* MESSAGE */}
+                <CInput
+                  label={
+                    <span
+                      className={`
+                        block
+                        text-base sm:text-lg lg:text-base
+                        ${errors.message ? "text-red-600 font-semibold" : "text-gray-800"}
+                      `}
+                    >
+                      Your Message
+                      {errors.message && <span className="text-red-600 ml-1">*</span>}
+                    </span>
+                  }
+                  multiline
+                  rows={6}
+                  value={form.message}
+                  onChange={handleChange("message")}
+                  disabled={loading}
+                />
 
-  {/* SUBMIT BUTTON */}
-  <CButton
-    type="submit"
-    text={loading ? "Sending..." : "Send Message"}
-    disabled={loading}
-    variant="contained"
-    className="
-      mt-2
-      w-full
-      py-3 sm:py-3 lg:py-3
-      text-lg sm:text-lg lg:text-lg
-      font-semibold
-    "
-  />
-</form>
-
+                {/* SUBMIT BUTTON */}
+                <CButton
+                  type="submit"
+                  text={loading ? "Sending..." : "Send Message"}
+                  disabled={loading}
+                  variant="contained"
+                  className="
+                    mt-2
+                    w-full
+                    py-3 sm:py-3 lg:py-3
+                    text-lg sm:text-lg lg:text-lg
+                    font-semibold
+                  "
+                />
+              </form>
             </div>
           </div>
         </div>
@@ -234,30 +233,18 @@ const Contact = () => {
               </li>
             </ul>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-6">
-              <div className="bg-gray-50 p-6 rounded-xl shadow">
-                <h4 className="font-bold text-gray-900 mb-2 md:text-2xl lg:text-xl">
+            {/* UPDATED GENERAL COMMUNICATION SECTION */}
+            <div className="mt-8">
+              <div className="bg-gray-50 p-6 rounded-xl shadow border border-gray-100">
+                <h4 className="font-bold text-gray-900 mb-2 text-lg md:text-2xl lg:text-xl">
                   General Communication
                 </h4>
-                <p className="text-sm text-gray-700 mb-2 md:text-2xl lg:text-xl">Email us at:</p>
-                <p className="font-medium text-indigo-600 break-all md:text-2xl lg:text-xl">
+                <p className="text-sm md:text-xl lg:text-base text-gray-600 mb-1">
+                  Email us at:
+                </p>
+                <p className="font-semibold text-indigo-600 break-all text-base md:text-2xl lg:text-xl">
                   support@easyPGmanager.com
                 </p>
-              </div>
-
-              <div className="bg-gray-50 p-6 rounded-xl shadow">
-                <h4 className="font-bold text-gray-900 mb-2 md:text-2xl lg:text-xl">
-                  About EasyPG Manager
-                </h4>
-                <p className="text-sm text-gray-700 mb-2 md:text-2xl lg:text-xl">
-                  Learn more about our mission and product.
-                </p>
-                <button
-                  onClick={() => navigate("/about")}
-                  className="font-medium text-indigo-600 hover:underline md:text-2xl lg:text-xl "
-                >
-                  About Us →
-                </button>
               </div>
             </div>
           </div>
