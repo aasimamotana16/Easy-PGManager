@@ -18,7 +18,8 @@ const {
   sendOtp,              // <--- ADD THIS
   verifyOtpAndRegister,
   getMyCheckIns,   // To fetch past activities [cite: 2026-01-06]
-  createCheckIn // <--- ADD THIS HERE [cite: 2026-01-07]
+  createCheckIn,
+  verifySecurityAction // <--- ADD THIS HERE [cite: 2026-01-07]
 } = require("../controllers/userController");
 const { protect } = require("../middleware/authMiddleware");
 const upload = require("../middleware/uploadMiddleware"); // Your Multer config [cite: 2026-01-06]
@@ -27,7 +28,7 @@ const upload = require("../middleware/uploadMiddleware"); // Your Multer config 
 router.post("/register", registerUser);
 router.post("/login", loginUser);
 // In userRoutes.js
-router.post("/send-otp", sendOtp);
+router.post("/send-otp", protect, sendOtp);
 router.post("/verify-otp-register", verifyOtpAndRegister);
 
 // --- Protected Routes (Token required) ---
@@ -67,10 +68,14 @@ router.get("/my-owner-contact", protect, getMyOwnerContact);
 router.get("/timeline", protect, getMyTimeline);
 
 // GET: Fetch list for "Past Activities" and Calendar [cite: 2026-01-06]
-router.get("/checkins", protect, getMyCheckIns);
+router.get("/my-checkins", protect, getMyCheckIns);
 
 // POST: Triggered by the "Check In" button in UI [cite: 2026-01-06]
 router.post("/checkin-action", protect, createCheckIn);
+
+// 2. ADD THIS SPECIFIC ROUTE [cite: 2026-01-06]
+// This is what the "Verify" button on your Security Portal needs to talk to
+router.post("/verify-security", protect, verifySecurityAction);
 
 // Add this line
 router.post("/logout", protect, logoutUser);

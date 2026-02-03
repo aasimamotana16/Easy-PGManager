@@ -23,6 +23,7 @@ export const loginUser = (userData) => API.post("/auth/login", userData);
 export const sendOtp = (data) => API.post("/auth/send-otp", data);
 export const forgotPassword = (email) => API.post("/auth/forgot-password", { email });
 export const resetPassword = (token, password) => API.post(`/auth/reset-password/${token}`, { password });
+export const verifySecurityAction = (data) => API.post("/auth/verify-action", data);
 
 // ONLY ONE DECLARATION HERE
 
