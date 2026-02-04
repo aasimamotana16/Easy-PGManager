@@ -1,22 +1,23 @@
 import React, { useState, useEffect } from "react";
 import ReCAPTCHA from "react-google-recaptcha"; 
-import Swal from "sweetalert2"; // Added SweetAlert2
+import Swal from "sweetalert2"; 
 import CFormCard from "../../components/cFormCard";
 import CInput from "../../components/cInput";
 import CButton from "../../components/cButton";
 import CCheckbox from "../../components/cCheckbox";
-import { loginUser, sendOtp } from "../../api/api"; // [cite: 2026-01-06]
+import Loader from "../../components/loader"; // Added Loader import
+import { loginUser, sendOtp } from "../../api/api"; 
 
 const Login = () => {
   const [role, setRole] = useState("user");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [otp, setOtp] = useState(""); // [cite: 2026-01-01]
+  const [otp, setOtp] = useState(""); 
   const [isOtpSent, setIsOtpSent] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [pageLoading, setPageLoading] = useState(true); // Added for initial load
   
-  // LOGIC FIX: Initialize with a dummy token for your demo.
   const [captchaToken, setCaptchaToken] = useState("bypass-success-token");
 
   const images = [
@@ -25,6 +26,14 @@ const Login = () => {
     "/images/loginImages/loginImg2.jpg",
   ];
   const [currentImage, setCurrentImage] = useState(0);
+
+  // Branded Page Loader Effect
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setPageLoading(false);
+    }, 800);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -46,33 +55,41 @@ const Login = () => {
     e.preventDefault();
 
     if (!captchaToken) {
-      alert("Captcha token is missing");
+      Swal.fire({
+        icon: 'warning',
+        title: 'Captcha Required',
+        text: 'Please complete the captcha verification.',
+        confirmButtonColor: '#f97316'
+      });
       return; 
     }
 
     if (!validateEmail(email)) {
-      alert("Please enter a valid email address.");
+      Swal.fire({
+        icon: 'error',
+        title: 'Invalid Email',
+        text: 'Please enter a valid email address.',
+        confirmButtonColor: '#f97316'
+      });
       return;
     }
 
     setLoading(true);
     try {
       if (!isOtpSent) {
-        // [cite: 2026-01-06] Using camelCase for the API payload
         await sendOtp({ email, captchaToken });
         setIsOtpSent(true);
         
-        // --- Updated to SweetAlert2 ---
         Swal.fire({
           title: 'OTP Sent!',
           text: 'A verification code has been sent to your email.',
           icon: 'success',
-          confirmButtonColor: '#ed8936',
+          confirmButtonColor: '#f97316',
           timer: 3000
         });
         
       } else {
-        const response = await loginUser({ email, password, otp, role }); // [cite: 2026-01-07]
+        const response = await loginUser({ email, password, otp, role });
         if (response.data?.token) {
           localStorage.setItem("userToken", response.data.token);
           localStorage.setItem("isLoggedIn", "true");
@@ -91,12 +108,17 @@ const Login = () => {
         title: 'Error',
         text: error.response?.data?.message || "Action failed.",
         icon: 'error',
-        confirmButtonColor: '#ed8936'
+        confirmButtonColor: '#f97316'
       });
     } finally {
       setLoading(false);
     }
   };
+
+  // Render Loader if page is still loading
+  if (pageLoading) {
+    return <Loader />;
+  }
 
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden">
@@ -106,9 +128,7 @@ const Login = () => {
         />
       ))}
 
-      {/* Increased max-width from max-w-md to max-w-lg for a larger form presence */}
       <div className="relative z-10 w-full max-w-lg flex flex-col justify-center h-screen ml-4 sm:ml-20 px-4">
-        {/* Added extra padding (p-10) for increased form size */}
         <CFormCard className="bg-white p-10 rounded-2xl shadow-lg w-full">
           <div className="mb-4 flex justify-center">
              <img src="/logos/logo1.png" alt="Logo" className="h-20" />
@@ -130,7 +150,6 @@ const Login = () => {
               <CInput label="Enter OTP" type="text" value={otp} onChange={(e) => setOtp(e.target.value)} />
             )}
 
-            {/* Decreased captcha checkbox size using scale and overflow management */}
             <div className="my-2 flex justify-center">
               <div style={{ transform: 'scale(0.8)', transformOrigin: 'center' }}>
                 <ReCAPTCHA

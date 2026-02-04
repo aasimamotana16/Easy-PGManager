@@ -1,9 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Navbar from "../../components/navbar";
 import Footer from "../../components/footer";
 import CInput from "../../components/cInput";
 import CButton from "../../components/cButton";
+import Loader from "../../components/loader";
 import { useNavigate } from "react-router-dom";
+import Swal from "sweetalert2";
 
 const Contact = () => {
   const navigate = useNavigate();
@@ -16,15 +18,27 @@ const Contact = () => {
   });
 
   const [errors, setErrors] = useState({});
-  const [loading, setLoading] = useState(false); // New loading state
+  const [loading, setLoading] = useState(false);
+  const [pageLoading, setPageLoading] = useState(true);
 
-  /* ---------------- VALIDATION (NO MESSAGES) ---------------- */
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setPageLoading(false);
+    }, 800);
+    return () => clearTimeout(timer);
+  }, []);
+
+  /* ---------------- VALIDATION ---------------- */
   const validate = () => {
     const newErrors = {};
-
     if (!form.fullName.trim()) newErrors.fullName = true;
-    if (!form.email.trim()) newErrors.email = true;
-    if (!form.mobile.trim()) newErrors.mobile = true;
+    
+    const emailRegex = /^\S+@\S+\.\S+$/;
+    if (!form.email.trim() || !emailRegex.test(form.email)) newErrors.email = true;
+    
+    // Phone must be exactly 10 digits
+    if (!form.mobile.trim() || form.mobile.length !== 10) newErrors.mobile = true;
+    
     if (!form.message.trim()) newErrors.message = true;
 
     setErrors(newErrors);
@@ -34,11 +48,18 @@ const Contact = () => {
   /* ---------------- SUBMIT ---------------- */
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validate()) return;
+    if (!validate()) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Validation Error',
+        text: 'Please fill all required fields correctly.',
+        confirmButtonColor: "#f97316",
+      });
+      return;
+    }
 
-    setLoading(true); // Start loading
+    setLoading(true);
 
-    // Prepare data to match your backend model
     const contactData = {
       fullName: form.fullName,
       emailAddress: form.email,
@@ -49,202 +70,154 @@ const Contact = () => {
     try {
       const response = await fetch("http://localhost:5000/api/contact-us", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(contactData),
       });
 
       const data = await response.json();
 
       if (data.success) {
-        alert("Message sent successfully!");
-        setForm({
-          fullName: "",
-          email: "",
-          mobile: "",
-          message: "",
+        Swal.fire({
+          icon: 'success',
+          title: 'Message Sent!',
+          text: 'Our team will get back to you shortly.',
+          confirmButtonColor: "#f97316",
         });
+
+        setForm({ fullName: "", email: "", mobile: "", message: "" });
         setErrors({});
       } else {
-        alert("Failed to send message: " + data.message);
+        Swal.fire({
+          icon: 'error',
+          title: 'Submission Failed',
+          text: data.message || 'Something went wrong.',
+          confirmButtonColor: "#f97316",
+        });
       }
     } catch (error) {
       console.error("Connection Error:", error);
-      alert("Server is not responding. Please check your backend.");
+      Swal.fire({
+        icon: 'error',
+        title: 'Server Error',
+        text: 'The server is not responding. Please try again later.',
+        confirmButtonColor: "#f97316",
+      });
     } finally {
-      setLoading(false); // Stop loading regardless of outcome
+      setLoading(false);
     }
   };
 
   /* ---------------- CHANGE HANDLER ---------------- */
   const handleChange = (field) => (e) => {
-    setForm({ ...form, [field]: e.target.value });
+    let value = e.target.value;
+
+    if (field === "mobile") {
+      value = value.replace(/\D/g, ""); 
+      if (value.length > 10) return; 
+    }
+
+    setForm({ ...form, [field]: value });
 
     if (errors[field]) {
       setErrors({ ...errors, [field]: false });
     }
   };
 
+  if (pageLoading) {
+    return <Loader />;
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-default text-text-secondary">
       <Navbar />
 
-      {/* HEADER */}
       <div className="text-center mt-6 mb-6 px-4">
-        <h2 className="text-3xl sm:text-4xl font-bold text-black">
-          Contact Us
-        </h2>
+        <h2 className="text-3xl sm:text-4xl font-bold text-black">Contact Us</h2>
       </div>
 
       <main className="flex-1 flex flex-col lg:flex-row gap-10 px-4 lg:px-12 mb-10">
-        {/* LEFT FORM */}
         <div className="flex-1 flex justify-center">
-          <div className="w-full max-w-2xl  md:max-w-3xl mx-auto ">
+          <div className="w-full max-w-2xl md:max-w-3xl mx-auto ">
             <div className="bg-white border rounded-md p-10 shadow-lg">
               <h2 className="text-center font-bold mb-6 text-3xl sm:text-4xl text-primary">
-                Contact our Sales Team
+                Get in Touch
               </h2>
 
-              <form
-                className="flex flex-col gap-4 sm:gap-5 lg:gap-6"
-                onSubmit={handleSubmit}
-              >
-                {/* FULL NAME */}
+              <form className="flex flex-col gap-4 sm:gap-5 lg:gap-6" onSubmit={handleSubmit}>
                 <CInput
-                  label={
-                    <span
-                      className={`
-                        block
-                        text-base sm:text-lg lg:text-base
-                        ${errors.fullName ? "text-red-600 font-semibold" : "text-gray-800"}
-                      `}
-                    >
-                      Full Name
-                      {errors.fullName && <span className="text-red-600 ml-1">*</span>}
-                    </span>
-                  }
+                  label="Full Name"
+                  required
+                  error={errors.fullName}
                   value={form.fullName}
                   onChange={handleChange("fullName")}
                   disabled={loading}
+                  placeholder="Enter your full name"
                 />
 
-                {/* EMAIL */}
                 <CInput
-                  label={
-                    <span
-                      className={`
-                        block
-                        text-base sm:text-lg lg:text-base
-                        ${errors.email ? "text-red-600 font-semibold" : "text-gray-800"}
-                      `}
-                    >
-                      Email Address
-                      {errors.email && <span className="text-red-600 ml-1">*</span>}
-                    </span>
-                  }
+                  label="Email Address"
                   type="email"
+                  required
+                  error={errors.email}
                   value={form.email}
                   onChange={handleChange("email")}
                   disabled={loading}
+                  placeholder="example@mail.com"
                 />
 
-                {/* PHONE */}
                 <CInput
-                  label={
-                    <span
-                      className={`
-                        block
-                        text-base sm:text-lg lg:text-base
-                        ${errors.mobile ? "text-red-600 font-semibold" : "text-gray-800"}
-                      `}
-                    >
-                      Phone Number
-                      {errors.mobile && <span className="text-red-600 ml-1">*</span>}
-                    </span>
-                  }
-                  type="tel"
+                  label="Phone Number (10 Digits)"
+                  required
+                  error={errors.mobile}
                   value={form.mobile}
                   onChange={handleChange("mobile")}
                   disabled={loading}
+                  placeholder="Enter mobile number"
                 />
 
-                {/* MESSAGE */}
                 <CInput
-                  label={
-                    <span
-                      className={`
-                        block
-                        text-base sm:text-lg lg:text-base
-                        ${errors.message ? "text-red-600 font-semibold" : "text-gray-800"}
-                      `}
-                    >
-                      Your Message
-                      {errors.message && <span className="text-red-600 ml-1">*</span>}
-                    </span>
-                  }
-                  multiline
-                  rows={6}
+                  label="Your Message"
+                  type="textarea"
+                  required
+                  error={errors.message}
+                  rows={5}
                   value={form.message}
                   onChange={handleChange("message")}
                   disabled={loading}
+                  placeholder="How can we help you?"
                 />
 
-                {/* SUBMIT BUTTON */}
                 <CButton
                   type="submit"
                   text={loading ? "Sending..." : "Send Message"}
                   disabled={loading}
                   variant="contained"
-                  className="
-                    mt-2
-                    w-full
-                    py-3 sm:py-3 lg:py-3
-                    text-lg sm:text-lg lg:text-lg
-                    font-semibold
-                  "
+                  className="mt-2 w-full py-3 text-lg font-semibold"
                 />
               </form>
             </div>
           </div>
         </div>
 
-        {/* RIGHT INFO */}
         <div className="flex-1 flex flex-col gap-6">
           <div className="bg-white p-8 rounded-xl shadow-lg">
             <h3 className="text-2xl md:text-4xl lg:text-2xl font-bold text-gray-900 mb-4">
               How can We Help?
             </h3>
-
             <p className="text-gray-600 mb-4 md:text-2xl lg:text-xl">
-              Get in touch with our sales and support teams for demos,
-              onboarding support, or product questions.
+              Get in touch with our support team for demos,
+              onboarding help, or product questions.
             </p>
-
-            <ul className="space-y-3 md:text-2xl lg:text-xl">
-              <li className="flex items-center gap-2 font-semibold">
-                <span className="text-green-500 ">✔</span> Request a demo
-              </li>
-              <li className="flex items-center gap-2 font-semibold">
-                <span className="text-green-500">✔</span> Choose the right plan
-              </li>
-              <li className="flex items-center gap-2 font-semibold">
-                <span className="text-green-500">✔</span> Get onboarding help
-              </li>
+            <ul className="space-y-3 md:text-2xl lg:text-xl font-medium">
+              <li className="flex items-center gap-2"><span className="text-green-500 font-bold">✔</span> Request a demo</li>
+              <li className="flex items-center gap-2"><span className="text-green-500 font-bold">✔</span> Choose the right plan</li>
+              <li className="flex items-center gap-2"><span className="text-green-500 font-bold">✔</span> Get onboarding help</li>
             </ul>
-
-            {/* UPDATED GENERAL COMMUNICATION SECTION */}
             <div className="mt-8">
               <div className="bg-gray-50 p-6 rounded-xl shadow border border-gray-100">
-                <h4 className="font-bold text-gray-900 mb-2 text-lg md:text-2xl lg:text-xl">
-                  General Communication
-                </h4>
-                <p className="text-sm md:text-xl lg:text-base text-gray-600 mb-1">
-                  Email us at:
-                </p>
-                <p className="font-semibold text-indigo-600 break-all text-base md:text-2xl lg:text-xl">
-                  support@easyPGmanager.com
-                </p>
+                <h4 className="font-bold text-gray-900 mb-2 text-lg md:text-2xl lg:text-xl">General Communication</h4>
+                <p className="text-sm md:text-xl lg:text-base text-gray-600 mb-1">Email us at:</p>
+                <p className="font-semibold text-indigo-600 break-all text-base md:text-2xl lg:text-xl">support@easyPGmanager.com</p>
               </div>
             </div>
           </div>

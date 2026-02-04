@@ -1,12 +1,30 @@
+import React, { useState, useEffect } from "react";
 import Navbar from "../../components/navbar";
 import Footer from "../../components/footer";
 import ServiceCard from "../../components/sCard";
 import CButton from "../../components/cButton";
+import Loader from "../../components/loader"; // Using your component
 import { services } from "../../config/staticData";
 import { useNavigate } from "react-router-dom";
 
 export default function Services() {
   const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Syncing with today's date for any future date-based logic
+  const today = new Date().toISOString().split("T")[0];
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 800); // Matching the 800ms duration from your About page
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (isLoading) {
+    return <Loader />; // Using your specific Loader component
+  }
 
   return (
     <div className="bg-gray-50 min-h-screen flex flex-col">
@@ -20,7 +38,7 @@ export default function Services() {
             Our Services
           </h1>
 
-          <p className="text-sm md:text-2xl lg:text-xl text-center max-w-3xl mx-auto mb-12 sm:mb-16 lg:mb-20">
+          <p className="text-sm md:text-2xl lg:text-xl text-center max-w-3xl mx-auto mb-12 sm:mb-16 lg:mb-20 text-gray-600">
             EasyPG Manager provides verified PGs, smart booking, and
             seamless property management.
           </p>
@@ -32,11 +50,11 @@ export default function Services() {
             ))}
           </div>
 
-          {/* FIND YOUR PG */}
+          {/* FIND YOUR PG SECTION */}
           <div className="max-w-4xl mx-auto bg-white rounded-md shadow-xl p-5 sm:p-8 lg:p-10 text-center">
             <img
               src={`${process.env.PUBLIC_URL}/images/serviceImage/mapimage.png`}
-              alt="Map"
+              alt="Map View"
               className="w-full h-44 sm:h-52 lg:h-60 object-cover rounded-2xl mb-5 sm:mb-6"
             />
 
