@@ -2,33 +2,27 @@ const express = require('express');
 
 const router = express.Router();
 
-
-
 // ✅ FIX 1: Import the 'protect' middleware 
-
-// This is what was causing the "protect is not defined" crash.
-
 const { protect } = require('../middleware/authMiddleware');
 
-// Import the functions from your controller [cite: 2026-01-06]
-
+// Import the functions from authController for signup/login
 const { 
-
-    sendOtp, // ADDED: For the OTP email logic
+    sendOtp, 
     registerUser, 
     loginUser, 
-    getUserDashboard,  // Added
-    getUserProfile,    // Added
-    getMyTimeline,     // ✅ Fixes the "nothing in network" issue
-    getMyOwnerContact, // ✅ Fixes the "Owner Not Available" issue
     forgotPassword, 
-    resetPassword,
-    generateCaptcha,  // ADDED: Custom CAPTCHA generation
-    submitSupportTicket // 1. ADD THIS TO THE IMPORT LIST
+    resetPassword 
+} = require('../controllers/authController');
 
+// Import user functions from userController
+const { 
+    getUserDashboard,  
+    getUserProfile,    
+    getMyTimeline,     
+    getMyOwnerContact, 
+    generateCaptcha,  
+    submitSupportTicket 
 } = require('../controllers/userController');
-
-
 
 // --- 1. SEND OTP ROUTE ---
 

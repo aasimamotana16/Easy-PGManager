@@ -36,6 +36,7 @@ require('./models/userModel'); // <--- ADD THIS
 require('./models/agreementModel'); // <--- ADD THIS for agreement functionality
 require('./models/timelineModel'); // <--- Add this line here! [cite: 2026-01-06]
 require('./models/paymentModel'); // <--- CRITICAL for tonight's payment flow [cite: 2026-01-01]
+require('./models/featureModel'); // <--- ADD THIS for features functionality
 
 // --- ROUTES (Standardized with /api prefix) ---
 

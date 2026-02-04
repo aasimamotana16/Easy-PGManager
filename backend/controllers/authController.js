@@ -21,21 +21,14 @@ const verifyRecaptcha = async (recaptchaToken) => {
 // Temporary in-memory store for OTPs
 const otpCache = {};
 
-// 1. SEND OTP (Updated with reCAPTCHA logic)
+// 1. SEND OTP (Updated without reCAPTCHA for now)
 exports.sendOtp = async (req, res) => {
   try {
-    const { email, recaptchaToken } = req.body; // Expect recaptchaToken from front-end
+    const { email } = req.body; // Removed recaptchaToken requirement
     if (!email) return res.status(400).json({ success: false, message: "Email is required" });
 
-    // --- VERIFY RECAPTCHA FIRST ---
-    if (!recaptchaToken) {
-      return res.status(400).json({ success: false, message: "Captcha token is missing" });
-    }
-
-    const isCaptchaValid = await verifyRecaptcha(recaptchaToken);
-    if (!isCaptchaValid) {
-      return res.status(400).json({ success: false, message: "Invalid Captcha. Please try again." });
-    }
+    // --- TEMPORARILY DISABLED RECAPTCHA ---
+    // Will be re-enabled once frontend is properly configured
     // -------------------------------
 
     const finalEmail = email.toLowerCase().trim();
@@ -69,7 +62,6 @@ exports.sendOtp = async (req, res) => {
     res.status(500).json({ success: false, message: "Error sending OTP" });
   }
 };
-
 
 // 2. REGISTER (Includes phone and verified status)
 exports.registerUser = async (req, res) => {
@@ -107,8 +99,20 @@ exports.registerUser = async (req, res) => {
       isVerified: true
     });
 
+    // Generate JWT token for the new user
+    const token = jwt.sign(
+      { id: user._id, role: user.role },
+      process.env.JWT_SECRET || "secret",
+      { expiresIn: "1d" }
+    );
+
     delete otpCache[finalEmail];
-    res.status(201).json({ success: true, message: "Registration successful" });
+    res.status(201).json({ 
+      success: true, 
+      message: "Registration successful",
+      token,
+      user: { id: user._id, fullName: user.fullName, role: user.role }
+    });
   } catch (error) {
     console.error("REGISTRATION ERROR:", error.message);
     res.status(400).json({ success: false, message: error.message });

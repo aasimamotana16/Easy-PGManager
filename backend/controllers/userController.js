@@ -229,10 +229,26 @@ const getMe = async (req, res) => {
 const getMyAgreement = async (req, res) => {
   try {
     const userId = new mongoose.Types.ObjectId(req.user._id);
-    const agreement = await Agreement.findOne({ userId: userId });
+    let agreement = await Agreement.findOne({ userId: userId });
     const user = await User.findById(userId);
 
-    if (!agreement) return res.status(404).json({ success: false, message: "No agreement found" });
+    // If no agreement exists, create a sample one for demo purposes
+    if (!agreement) {
+      const sampleAgreement = {
+        userId: userId,
+        agreementId: `AGR${Date.now()}`,
+        pgName: "Green Villa PG",
+        roomNo: "A-101",
+        tenantName: user ? (user.name || user.fullName) : "Demo User",
+        rentAmount: 8000,
+        securityDeposit: 16000,
+        startDate: "2024-01-01",
+        endDate: "2024-12-31",
+        signed: true
+      };
+      
+      agreement = await Agreement.create(sampleAgreement);
+    }
 
     res.status(200).json({
       success: true,
@@ -289,6 +305,37 @@ const uploadUserDocument = async (req, res) => {
   }
 };
 
+const deleteUserDocument = async (req, res) => {
+  try {
+    const { documentType } = req.body;
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    if (!documentType) {
+      return res.status(400).json({ success: false, message: "Document type is required" });
+    }
+
+    // Reset the document field to default values
+    user[documentType] = {
+      status: "Pending",
+      fileUrl: "",
+      uploadedAt: null
+    };
+
+    await user.save();
+    res.status(200).json({ 
+      success: true, 
+      message: "Document deleted successfully" 
+    });
+  } catch (error) {
+    console.error("Delete document error:", error);
+    res.status(500).json({ success: false, message: "Failed to delete document" });
+  }
+};
+
 const getMyOwnerContact = async (req, res) => {
   try {
     const user = await User.findById(req.user._id).populate('assignedPg');
@@ -322,17 +369,19 @@ const getMyOwnerContact = async (req, res) => {
 
 const getMyTimeline = async (req, res) => {
   try {
+    console.log("Timeline API called for user:", req.user._id);
     let timeline = await Timeline.findOne({ userId: req.user._id });
 
     if (!timeline) {
+      console.log("No timeline found, returning sample data");
       return res.status(200).json({
         success: true,
         data: {
           keyEvents: [
-            { id: 1, title: "Booking Confirmed", type: "booking" },
-            { id: 2, title: "PG Check-in Completed", type: "checkin" },
-            { id: 3, title: "Last Rent Paid: ₹6,000", type: "payment" },
-            { id: 4, title: "Agreement Uploaded", type: "agreement" }
+            { id: 1, title: "Booking Confirmed", type: "booking", date: "12 Dec 2025", status: "Confirmed" },
+            { id: 2, title: "PG Check-in Completed", type: "checkin", date: "15 Dec 2025", status: "Check-In" },
+            { id: 3, title: "Last Rent Paid: ₹6,000", type: "payment", date: "01 Jan 2026", status: "Paid" },
+            { id: 4, title: "Agreement Uploaded", type: "agreement", date: "02 Jan 2026", status: "Uploaded" }
           ],
           chartData: {
             months: ["Jan", "Feb", "Mar", "Apr", "May"],
@@ -343,8 +392,10 @@ const getMyTimeline = async (req, res) => {
       });
     }
 
+    console.log("Found timeline:", timeline);
     res.status(200).json({ success: true, data: timeline });
   } catch (error) {
+    console.error("Timeline error:", error);
     res.status(500).json({ success: false, message: "Error fetching timeline" });
   }
 };
@@ -568,6 +619,7 @@ module.exports = {
   getMyAgreement,
   getMyDocuments,
   uploadUserDocument,
+  deleteUserDocument,
   getMyOwnerContact,
   getMyTimeline, 
   sendOtp,

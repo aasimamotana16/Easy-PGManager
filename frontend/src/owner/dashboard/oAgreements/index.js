@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaFileContract, FaEye, FaDownload } from "react-icons/fa"; // Reverted to react-icons
-import Swal from "sweetalert2"; 
+import Swal from "sweetalert2";
 import CButton from "../../../components/cButton";
 import axios from "axios";
-import Swal from "sweetalert2";
 
 const AgreementPage = () => {
   const navigate = useNavigate();
@@ -716,11 +715,7 @@ const AgreementPage = () => {
                       <div className="text-xs text-gray-500">{ag.tenantPhone}</div>
                     </div>
                   </td>
-                  <td className="p-4">
-                  <td className="p-4 font-medium">{ag.tenant}</td>
-                  <td className="p-4 text-gray-600">
-                    {ag.property} / {ag.room}
-                  </td>
+                  <td className="p-4 font-medium">{ag.property} / {ag.room}</td>
                   <td className="p-4 text-gray-600">{ag.startDate}</td>
                   <td className="p-4 text-gray-600">{ag.endDate}</td>
                   <td className="p-4 font-semibold text-primary">
@@ -752,24 +747,6 @@ const AgreementPage = () => {
                     >
                       Download
                     </CButton>
-                  <td className="p-4">
-                    <div className="flex justify-center gap-5">
-                      {/* REPLACED WITH REACT-ICONS */}
-                      <button
-                        onClick={() => handleView(ag)}
-                        className="text-blue-500 hover:text-blue-700 transition-colors"
-                        title="View Details"
-                      >
-                        <FaEye size={20} />
-                      </button>
-                      <button
-                        onClick={() => handleDownload(ag.tenant)}
-                        className="text-orange-500 hover:text-orange-700 transition-colors"
-                        title="Download Agreement"
-                      >
-                        <FaDownload size={18} />
-                      </button>
-                    </div>
                   </td>
                 </tr>
               ))

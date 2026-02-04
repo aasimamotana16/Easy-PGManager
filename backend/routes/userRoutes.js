@@ -13,6 +13,7 @@ const {
   getMyAgreement,
   getMyDocuments,
   uploadUserDocument,
+  deleteUserDocument, // Add this for delete functionality
   getMyOwnerContact,
   getMyTimeline,
   sendOtp,              // <--- ADD THIS
@@ -51,8 +52,7 @@ router.delete("/profile/picture", protect, removeProfilePicture);
 // This allows ANY logged-in user (Owner, Tenant, or Admin) to get their own data 
 router.get("/me", protect, getMe);
 
-router.get("/agreement", protect, getMe); // Fixed: ensure this matches your intent
-
+// Agreement route - properly pointing to getMyAgreement
 router.get("/agreement", protect, getMyAgreement);
 
 // In backend/routes/userRoutes.js
@@ -60,6 +60,9 @@ router.get("/documents", protect, getMyDocuments);
 
 // In userRoutes.js
 router.post("/upload-doc", protect, upload.single("document"), uploadUserDocument);
+
+// DELETE route for deleting documents
+router.delete("/delete-doc", protect, deleteUserDocument);
 
 // 3. New Route for Owner Contact Page [cite: 2026-01-07]
 router.get("/my-owner-contact", protect, getMyOwnerContact);
