@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate , Link} from "react-router-dom";
 
 import CFormCard from "../../components/cFormCard";
 import CInput from "../../components/cInput";
@@ -177,13 +177,27 @@ const SignUp = () => {
                     <CInput label="Confirm Password" type="password" value={confirmPassword} className="flex-1" onChange={(e) => setConfirmPassword(e.target.value)} error={errors.confirmPassword} />
                   </div>
 
-                  <div className="mt-1">
-                    <label className="flex items-start gap-2 text-xs text-gray-600 cursor-pointer">
-                      <input type="checkbox" checked={agreeTerms} onChange={(e) => setAgreeTerms(e.target.checked)} className="mt-1 accent-primary" />
-                      <span>I agree to the <span className="text-primary font-medium hover:underline">Terms</span> and <span className="text-primary font-medium hover:underline">Privacy Policy</span></span>
-                    </label>
-                    {errors.terms && <p className="text-red-500 text-[10px] mt-1">{errors.terms}</p>}
-                  </div>
+                 <div className="mt-1">
+  <label className="flex items-start gap-2 text-xs text-gray-600 cursor-pointer">
+    <input 
+      type="checkbox" 
+      checked={agreeTerms} 
+      onChange={(e) => setAgreeTerms(e.target.checked)} 
+      className="mt-1 accent-primary" 
+    />
+    <span>
+      I agree to the{" "}
+      <Link to="/termsConditions" className="text-primary font-medium hover:underline">
+        Terms
+      </Link>{" "}
+      and{" "}
+      <Link to="/privacyPolicy" className="text-primary font-medium hover:underline">
+        Privacy Policy
+      </Link>
+    </span>
+  </label>
+  {errors.terms && <p className="text-red-500 text-[10px] mt-1">{errors.terms}</p>}
+</div>
 
                   <CButton fullWidth variant="contained" className="mt-2 py-2" onClick={handleSendOtp} disabled={loading}>
                     {loading ? "Sending..." : "Send OTP"}

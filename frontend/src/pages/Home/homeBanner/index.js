@@ -29,14 +29,18 @@ const HomeBanner = () => {
           <div className="w-full lg:w-1/2 space-y-6 text-center lg:text-left order-2 lg:order-1">
             
             <motion.h1
-              className="text-4xl font-black text-primary leading-tight tracking-tight"
-              variants={fadeUp}
-              initial="hidden"
-              animate="visible"
-              custom={1}
-            >
-              Welcome to <span className="text-accent">EasyPG Manager</span>
-            </motion.h1>
+  className="text-5xl font-black leading-tight" // Added leading-tight for better spacing between lines
+  variants={fadeUp}
+  initial="hidden"
+  animate="visible"
+>
+  <span className="text-primary block mb-2">
+    Welcome to
+  </span>
+  <span className="text-accent">
+    EasyPG Manager
+  </span>
+</motion.h1>
 
             <motion.p
               className="text-lg text-text-secondary max-w-xl mx-auto lg:mx-0 leading-relaxed"

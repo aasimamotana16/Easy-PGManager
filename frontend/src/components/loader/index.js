@@ -18,9 +18,9 @@ const Loader = () => {
         </h2>
 
         <div className="mt-3 flex gap-1">
-          <span className="w-2 h-2 bg-amber-500 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
-          <span className="w-2 h-2 bg-amber-500 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
-          <span className="w-2 h-2 bg-amber-500 rounded-full animate-bounce"></span>
+          <span className="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+          <span className="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+          <span className="w-2 h-2 bg-primary rounded-full animate-bounce"></span>
         </div>
       </div>
     </div>

@@ -121,14 +121,14 @@ const Navbar = () => {
       {/* Login Button */}
       <CButton 
         variant="outline" // Assuming your CButton supports a variant or custom styling
-        className="h-9 px-6 text-sm border border-white/20 hover:border-orange-500 text-white" 
+        className=" text-base " 
         text="Login" 
         onClick={() => navigate("/login")} 
       />
       
       {/* Sign Up Button */}
       <CButton 
-        className="h-9 px-6 text-sm bg-orange-500 text-white" 
+        className=" text-base" 
         text="Sign Up" 
         onClick={() => navigate("/signup")} 
       />
