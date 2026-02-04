@@ -105,7 +105,6 @@ export default function PGListings() {
               <ListingCard {...pg} image={pg.mainImage}>
                 <CButton
                   text="View"
-                  className="w-full mt-2"
                   onClick={(e) => {
                     e.stopPropagation();
                     handleNavigate(pg._id);

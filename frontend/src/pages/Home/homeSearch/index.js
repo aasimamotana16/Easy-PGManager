@@ -4,6 +4,7 @@ import CButton from "../../../components/cButton";
 import CSelect from "../../../components/cSelect";
 import { getCities } from "../../../api/api";
 import { BackendContext } from "../../../context/backendContext";
+import Swal from "sweetalert2"; // Import SweetAlert2
 
 const HomeSearch = () => {
   const navigate = useNavigate();
@@ -32,6 +33,7 @@ const HomeSearch = () => {
         setCityOptions(formattedCities);
       } catch (error) {
         console.error("Error fetching cities:", error);
+        // Fallback cities
         setCityOptions([
           { label: "Ahmedabad", value: "Ahmedabad" },
           { label: "Surat", value: "Surat" },
@@ -48,7 +50,13 @@ const HomeSearch = () => {
 
   const handleSearch = () => {
     if (!city) {
-      alert("Please select a city first!");
+      // ✅ Replaced standard alert with SweetAlert2
+      Swal.fire({
+        icon: 'warning',
+        title: 'City Required',
+        text: 'Please select a city first to explore available PGs!',
+        confirmButtonColor: "#f97316", // Primary theme color
+      });
       return;
     }
     navigate(`/findMypg/pgListing?city=${encodeURIComponent(city)}`);
@@ -69,7 +77,7 @@ const HomeSearch = () => {
     >
       {/* Heading */}
       <div className="text-center mb-6">
-        <h2 className="text-3xl font-semibold text-text-primary mb-2">
+        <h2 className="text-3xl font-bold text-text-primary mb-2">
           Find Paying Guest Accommodation
         </h2>
         <p className="text-lg text-text-secondary">
@@ -80,7 +88,8 @@ const HomeSearch = () => {
       {/* City Selection */}
       <div className="w-full max-w-md mx-auto mb-6">
         <CSelect
-          label={<span className="text-base font-medium">City</span>}
+          label="City"
+          required
           value={city}
           onChange={(e) => {
             if (e?.target?.value !== undefined) setCity(e.target.value);
@@ -104,11 +113,11 @@ const HomeSearch = () => {
           variant="contained"
           className="
             w-full sm:w-auto
-            px-8
+            px-12
             py-3
             rounded-lg
-            text-sm
-            font-medium
+            text-lg
+            font-semibold
           "
         />
       </div>

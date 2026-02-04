@@ -6,17 +6,33 @@ const CInput = ({
   onChange,
   type = "text",
   placeholder = "",
-  className = "", // This will now control the wrapper width
+  className = "",
   rows = 3,
   name,
   options = [],
+  error = false, // New prop: boolean to trigger error state
+  required = false, // New prop: to show the red asterisk
+  disabled = false,
 }) => {
+  // Common classes for dynamic states
+  const baseInputClasses = `w-full px-3 py-2 text-sm border rounded-md transition focus:outline-none focus:ring-0
+    ${disabled ? "bg-gray-100 cursor-not-allowed opacity-70" : "bg-card"}
+    ${
+      error
+        ? "border-red-600 focus:border-red-600 text-red-600 placeholder-red-300"
+        : "border-border focus:border-primary text-text-secondary"
+    }`;
+
   return (
-    /* Apply className here so flex-1 or w-full works on the whole component */
     <div className={`flex flex-col gap-1 ${className}`}>
       {label && (
-        <label className="text-xs font-medium text-text-secondary">
+        <label
+          className={`text-xs font-medium transition-colors ${
+            error ? "text-red-600" : "text-text-secondary"
+          }`}
+        >
           {label}
+          {required && <span className="text-red-600 ml-1 font-bold">*</span>}
         </label>
       )}
 
@@ -26,11 +42,8 @@ const CInput = ({
           name={name}
           value={value}
           onChange={onChange}
-          className={`w-full h-12 px-3 py-2 text-sm
-            border border-border bg-card text-text-secondary
-            rounded-md
-            focus:outline-none focus:ring-0 focus:border-primary
-            transition`} // Removed className from here
+          disabled={disabled}
+          className={`${baseInputClasses} h-12`}
         >
           {options.map((opt) => (
             <option key={opt.value} value={opt.value}>
@@ -38,18 +51,15 @@ const CInput = ({
             </option>
           ))}
         </select>
-      ) : type === "textarea" ? (
+      ) : type === "textarea" || type === "multiline" ? (
         <textarea
           name={name}
           value={value}
           onChange={onChange}
           placeholder={placeholder}
           rows={rows}
-          className={`w-full px-3 py-2 text-sm
-            border border-border bg-card text-text-secondary
-            rounded-md
-            focus:outline-none focus:ring-0 focus:border-primary
-            transition`} // Removed className from here
+          disabled={disabled}
+          className={`${baseInputClasses}`}
         />
       ) : (
         <input
@@ -58,12 +68,8 @@ const CInput = ({
           value={value}
           onChange={onChange}
           placeholder={placeholder}
-          /* w-full ensures the input fills the div width defined by className */
-          className={`w-full h-10 px-3 py-2 text-sm
-            border border-border bg-card text-text-secondary
-            rounded-md
-            focus:outline-none focus:ring-0 focus:border-primary
-            transition`} 
+          disabled={disabled}
+          className={`${baseInputClasses} h-10`}
         />
       )}
     </div>

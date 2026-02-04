@@ -1,9 +1,12 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom"; // Added for navigation
 import CInput from "../../../components/cInput";
 import CButton from "../../../components/cButton";
-import Swal from "sweetalert2"; // Import SweetAlert2
+import Swal from "sweetalert2";
 
 const DemoBook = ({ isOpen, onClose }) => {
+  const navigate = useNavigate(); // Initialize navigate
+  
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -12,62 +15,62 @@ const DemoBook = ({ isOpen, onClose }) => {
   });
 
   const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!isOpen) return null;
 
   /* ================= HANDLERS ================= */
 
   const handleChange = (field, value) => {
-    setFormData({ ...formData, [field]: value });
+    let val = value;
 
-    // Clear error when user starts typing
-    setErrors({ ...errors, [field]: "" });
+    // Strict Phone logic: Numbers only and max 10 digits
+    if (field === "phone") {
+      val = val.replace(/\D/g, "");
+      if (val.length > 10) return;
+    }
+
+    setFormData({ ...formData, [field]: val });
+
+    // Clear error for this field
+    if (errors[field]) {
+      setErrors({ ...errors, [field]: false });
+    }
   };
 
   const validate = () => {
     let newErrors = {};
 
-    if (!formData.name.trim()) {
-      newErrors.name = "Name is required";
-    } else if (formData.name.length < 2) {
-      newErrors.name = "Name must be at least 2 characters";
-    }
+    if (!formData.name.trim() || formData.name.length < 2) newErrors.name = true;
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!formData.email.trim() || !emailRegex.test(formData.email)) newErrors.email = true;
 
-    if (!formData.email.trim()) {
-      newErrors.email = "Email is required";
-    } else if (
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)
-    ) {
-      newErrors.email = "Enter a valid email address";
-    }
+    if (!formData.phone.trim() || formData.phone.length !== 10) newErrors.phone = true;
 
-    if (!formData.phone.trim()) {
-      newErrors.phone = "Phone number is required";
-    } else if (!/^[6-9]\d{9}$/.test(formData.phone)) {
-      newErrors.phone = "Enter a valid 10-digit phone number";
-    }
-
-    return newErrors;
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const validationErrors = validate();
-
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
+    if (!validate()) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Validation Error',
+        text: 'Please fill all required fields correctly. Phone must be 10 digits.',
+        confirmButtonColor: "#f97316",
+      });
       return;
     }
 
-    // ✅ Connect to Backend [cite: 2026-01-06]
+    setIsSubmitting(true);
+
     try {
       const response = await fetch('http://localhost:5000/api/request-demo', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        // Mapping frontend fields to backend camelCase keys [cite: 2026-01-01]
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           yourName: formData.name,
           emailAddress: formData.email,
@@ -79,115 +82,119 @@ const DemoBook = ({ isOpen, onClose }) => {
       const data = await response.json();
 
       if (response.ok) {
-        // ✅ Updated to SweetAlert2
         Swal.fire({
           title: "Success!",
           text: "Demo request submitted successfully!",
           icon: "success",
-          confirmButtonColor: "#ed8936", // Matches your theme primary color
+          confirmButtonColor: "#f97316",
         });
 
-        onClose(); // Close modal after success
-        // Reset form
         setFormData({ name: "", email: "", phone: "", message: "" });
+        onClose(); 
       } else {
-        // Optional: Also use Swal for errors for UI consistency
         Swal.fire({
           title: "Error",
           text: data.message || "Something went wrong",
           icon: "error",
+          confirmButtonColor: "#f97316",
         });
       }
     } catch (error) {
       console.error("Submission failed:", error);
       Swal.fire({
         title: "Connection Error",
-        text: "Could not connect to the server. Please check if backend is running.",
+        text: "Could not connect to the server.",
         icon: "warning",
+        confirmButtonColor: "#f97316",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  /* ================= UI ================= */
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="relative w-full max-w-2xl bg-dashboard-gradient rounded-2xl p-8">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div className="relative w-full max-w-2xl bg-white rounded-2xl p-8 shadow-2xl mx-4">
 
-        {/* Close */}
+        {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-xl text-gray-500"
+          type="button"
+          className="absolute top-4 right-6 text-2xl text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
         >
           ✕
         </button>
 
-        <h2 className="text-2xl font-semibold text-center mb-2">
+        <h2 className="text-3xl font-bold text-center text-gray-800 mb-2">
           Schedule Demo
         </h2>
 
-        <p className="text-center text-gray-500 mb-6">
+        <p className="text-center text-gray-500 mb-8">
           Please submit your information and our team will reach out shortly.
         </p>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <CInput
-                label="Your Name"
-                placeholder="Enter your name"
-                value={formData.name}
-                onChange={(e) => handleChange("name", e.target.value)}
-              />
-              {errors.name && (
-                <p className="text-xs text-red-500 mt-1">{errors.name}</p>
-              )}
-            </div>
-
-            <div>
-              <CInput
-                label="Email Address"
-                placeholder="Enter email"
-                value={formData.email}
-                onChange={(e) => handleChange("email", e.target.value)}
-              />
-              {errors.email && (
-                <p className="text-xs text-red-500 mt-1">{errors.email}</p>
-              )}
-            </div>
-          </div>
-
-          <div>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <CInput
-              label="Phone"
-              placeholder="Enter phone number"
-              value={formData.phone}
-              onChange={(e) => handleChange("phone", e.target.value)}
+              label="Your Name"
+              required
+              error={errors.name}
+              placeholder="Enter your name"
+              value={formData.name}
+              onChange={(e) => handleChange("name", e.target.value)}
+              disabled={isSubmitting}
             />
-            {errors.phone && (
-              <p className="text-xs text-red-500 mt-1">{errors.phone}</p>
-            )}
+
+            <CInput
+              label="Email Address"
+              type="email"
+              required
+              error={errors.email}
+              placeholder="Enter email"
+              value={formData.email}
+              onChange={(e) => handleChange("email", e.target.value)}
+              disabled={isSubmitting}
+            />
           </div>
 
           <CInput
+            label="Phone"
+            required
+            error={errors.phone}
+            placeholder="Enter 10-digit phone number"
+            value={formData.phone}
+            onChange={(e) => handleChange("phone", e.target.value)}
+            disabled={isSubmitting}
+          />
+
+          <CInput
             label="Message"
+            type="textarea"
             placeholder="Have a message for us?"
-            textarea
+            rows={4}
             value={formData.message}
             onChange={(e) => handleChange("message", e.target.value)}
+            disabled={isSubmitting}
           />
 
           <CButton
-            text="REQUEST DEMO"
+            text={isSubmitting ? "REQUESTING..." : "REQUEST DEMO"}
             type="submit"
-            className="w-full"
+            variant="contained"
+            disabled={isSubmitting}
+            className="w-full py-4 text-lg font-bold tracking-wide"
           />
         </form>
 
-        <p className="text-xs text-center text-gray-400 mt-4">
-          By submitting this form, you agree to our{" "}
-          <span className="text-blue-600 cursor-pointer">
+        <p className="text-[11px] text-center text-gray-400 mt-6 uppercase tracking-widest">
+          By submitting, you agree to our{" "}
+          <span 
+            onClick={() => {
+                onClose(); // Optional: close modal before navigating
+                navigate("/privacyPolicy");
+            }}
+            className="text-blue-500 cursor-pointer hover:underline font-semibold"
+          >
             Privacy Policy
           </span>
         </p>

@@ -109,7 +109,7 @@ const PGDetails = () => {
 
           {/* 0. MOBILE ONLY NAME & RATING */}
           <div className="order-0 bg-white rounded-md shadow p-7 lg:hidden">
-            <h1 className="text-4xl font-black">{pg.name}</h1>
+            <h1 className="text-4xl sm:text-4xl font-black">{pg.name}</h1>
             <p className="text-gray-600 flex items-center gap-3 text-2xl">
               <MapPinIcon className="h-5 w-5 text-red-400" /> {pg.location}
             </p>
@@ -129,15 +129,15 @@ const PGDetails = () => {
           {/* 2. BOOK NOW */}
           <div className="order-2 bg-white rounded-md shadow p-6 flex justify-between items-center border border-primary">
             <div>
-              <p className="text-2xl font-bold text-gray-600 uppercase">Starting Price</p>
-              <p className="text-4xl font-black text-black">
+              <p className="sm:text-2xl lg:text-xl font-bold text-gray-600 uppercase">Starting Price</p>
+              <p className="sm:text-4xl lg:text-2xl font-black text-black">
                 ₹{displayStartingPrice}
-                <span className="text-2xl text-gray-400 font-normal">/month</span>
+                <span className="sm:text-2xl lg:text-xl text-gray-400 font-normal">/month</span>
               </p>
             </div>
             <button
               onClick={() => navigate(`/book/${pg._id}`)}
-              className="bg-primary hover:bg-orange-600 text-white px-8 md:px-12 py-4 rounded-md font-bold shadow-md transition-all active:scale-95 text-2xl"
+              className="bg-primary hover:bg-orange-600 text-white px-8 md:px-12 py-4 rounded-md font-bold shadow-md transition-all active:scale-95 sm:text-2xl lg:text-xl"
             >
               Book Now
             </button>
@@ -153,7 +153,7 @@ const PGDetails = () => {
           {/* 4. MAP */}
           <div className="order-4 bg-white rounded-md overflow-hidden shadow">
             <div className="flex justify-between items-center p-5 border-b font-bold">
-              <div className="flex items-center gap-2 text-3xl"><MapPinIcon className="h-6 w-6 text-red-500" />Location</div>
+              <div className="flex items-center gap-2 sm:text-3xl lg:text-xl"><MapPinIcon className="h-6 w-6 text-red-500" />Location</div>
               <button onClick={() => window.open(`https://maps.google.com?q=${encodeURIComponent(pg.name + " " + (pg.location || ""))}`, "_blank")} className="text-sm bg-blue-600 text-white px-4 py-2 rounded-xl">
                 <PaperAirplaneIcon className="h-5 w-5 inline mr-1 -rotate-45" />Start
               </button>
@@ -164,9 +164,9 @@ const PGDetails = () => {
           {/* 5. REVIEWS */}
           <div ref={reviewsRef} className="order-5 bg-white rounded-md p-6 shadow">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="font-black text-3xl">⭐ {averageRating} ({reviews.length} Reviews)</h2>
+              <h2 className="font-black sm:text-3xl lg:text-xl">⭐ {averageRating} ({reviews.length} Reviews)</h2>
               {isLoggedIn && (
-                <button onClick={() => setIsFeedbackOpen(true)} className="text-blue-600 text-2xl font-bold hover:underline">
+                <button onClick={() => setIsFeedbackOpen(true)} className="text-blue-600 sm:text-2xl lg:text-xl font-bold hover:underline">
                   Write Review
                 </button>
               )}
@@ -175,10 +175,10 @@ const PGDetails = () => {
             {reviews.map((r, i) => (
               <div key={i} className="border-b last:border-none pb-4 mb-4">
                 <div className="flex justify-between font-bold text-lg">
-                  <span className="md:text-3xl">{r.user}</span>
+                  <span className="sm:text-3xl lg:text-xl ">{r.user}</span>
                   <span className="text-amber-500">★ {r.rating}</span>
                 </div>
-                <p className="text-xl md:text-3xl text-gray-600 mt-1">{r.comment}</p>
+                <p className="lg:text-xl sm:text-3xl text-gray-600 mt-1">{r.comment}</p>
               </div>
             ))}
           </div>
@@ -187,8 +187,8 @@ const PGDetails = () => {
         {/* ================= RIGHT / LAPTOP SIDEBAR ================= */}
         <div className="hidden lg:flex w-[50%] flex-col gap-6">
           <div className="bg-white rounded-md shadow p-8">
-            <h1 className="text-4xl font-black mb-2">{pg.name}</h1>
-            <p className="text-gray-500 flex items-center gap-1 text-xl">
+            <h1 className="text-2xl font-black mb-2">{pg.name}</h1>
+            <p className="text-gray-500 flex items-center gap-1 text-lg">
               <MapPinIcon className="h-6 w-6 text-red-400" /> {pg.location}
             </p>
 
@@ -198,7 +198,7 @@ const PGDetails = () => {
               </div>
               <div>
                 <p className="text-xs text-gray-600 font-bold uppercase tracking-widest">Community Rating</p>
-                <span className="font-black text-3xl">{averageRating}</span>
+                <span className="font-black text-xl">{averageRating}</span>
               </div>
             </div>
           </div>
@@ -267,7 +267,7 @@ const FeatureList = ({ title, items, icon }) => {
 
   return (
     <div className="bg-white p-6 rounded-md shadow font-poppins">
-      <h2 className="font-black mb-4 uppercase text-3xl tracking-wider flex items-center gap-2">
+      <h2 className="font-black mb-4 uppercase lg:text-xl sm:text-3xl tracking-wider flex items-center gap-2">
         <span>{icon}</span> {title}
       </h2>
       <div className="flex flex-wrap gap-3">
@@ -278,7 +278,7 @@ const FeatureList = ({ title, items, icon }) => {
             </span>
           ))
         ) : (
-          <span className="text-gray-400 text-3xl italic">No {title.toLowerCase()} listed</span>
+          <span className="text-gray-400 lg:text-xl sm:text-3xl italic">No {title.toLowerCase()} listed</span>
         )}
       </div>
     </div>
@@ -289,7 +289,7 @@ const HouseRules = ({ pg, ruleIcons }) => {
   const rules = pg?.houseRules || pg?.rules || [];
   return (
     <div className="bg-white p-6 rounded-md shadow font-poppins">
-      <h2 className="font-black mb-4 uppercase text-3xl tracking-wider flex items-center gap-2">
+      <h2 className="font-black mb-4 uppercase lg:text-xl sm:text-3xl tracking-wider flex items-center gap-2">
         <span>📜</span> House Rules
       </h2>
       <div className="space-y-4">
@@ -307,7 +307,7 @@ const HouseRules = ({ pg, ruleIcons }) => {
             );
           })
         ) : (
-          <p className="text-gray-400 text-3xl italic">No rules specified</p>
+          <p className="text-gray-400 lg:text-xl sm:text-3xl italic">No rules specified</p>
         )}
       </div>
     </div>
