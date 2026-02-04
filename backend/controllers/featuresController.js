@@ -35,6 +35,20 @@ const getHomeFeatures = async (req, res) => {
           desc: "Safe and secure payment gateway with multiple options",
           category: "home",
           iconName: "payment"
+        },
+        {
+          _id: "5",
+          title: "Real-time Updates",
+          desc: "Get instant notifications for bookings and payments",
+          category: "home",
+          iconName: "updates"
+        },
+        {
+          _id: "6",
+          title: "Mobile App",
+          desc: "Manage your PG on the go with our mobile application",
+          category: "home",
+          iconName: "mobile"
         }
       ]);
     }

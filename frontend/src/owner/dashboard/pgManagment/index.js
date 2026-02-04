@@ -1,43 +1,77 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 import CButton from "../../../components/cButton";
-import { FaHome, FaRegEye, FaEdit } from "react-icons/fa";
-
-const myPgs = [
-  {
-    id: 1,
-    name: "Green View PG",
-    location: "Koramangala, Bangalore",
-    status: "Draft",
-    rooms: 10,
-    beds: 20,
-    image:
-      "https://images.unsplash.com/photo-1600585154340-be6161a56a0c",
-  },
-  {
-    id: 2,
-    name: "Royal Stay PG",
-    location: "Indiranagar, Bangalore",
-    status: "Pending",
-    rooms: 8,
-    beds: 16,
-    image:
-      "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2",
-  },
-  {
-    id: 3,
-    name: "City Living PG",
-    location: "Whitefield, Bangalore",
-    status: "Approved",
-    rooms: 12,
-    beds: 24,
-    image:
-      "https://images.unsplash.com/photo-1580587771525-78b9dba3b914",
-  },
-];
+import { FaHome, FaRegEye, FaEdit, FaTrash } from "react-icons/fa";
+import Swal from "sweetalert2";
 
 const PgManagement = () => {
   const navigate = useNavigate();
+  const [myPgs, setMyPgs] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch PGs from backend
+  const fetchMyPgs = async () => {
+    try {
+      const token = localStorage.getItem("userToken");
+      const response = await axios.get("http://localhost:5000/api/owner/my-pgs", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (response.data.success) {
+        // Transform backend data to match frontend format
+        const transformedPgs = response.data.data.map(pg => ({
+          id: pg._id,
+          name: pg.pgName,
+          location: pg.location,
+          status: pg.status.charAt(0).toUpperCase() + pg.status.slice(1),
+          rooms: pg.totalRooms || 0,
+          beds: pg.liveListings || 0,
+          image: pg.mainImage || "https://images.unsplash.com/photo-1600585154340-be6161a56a0c",
+        }));
+        setMyPgs(transformedPgs);
+      }
+    } catch (error) {
+      console.error("Error fetching PGs:", error);
+      // Keep static data as fallback
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchMyPgs();
+  }, []);
+
+  // Delete PG function
+  const handleDeletePg = async (pgId) => {
+    try {
+      const result = await Swal.fire({
+        title: "Are you sure?",
+        text: "You won't be able to revert this!",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#d33",
+        cancelButtonColor: "#3085d6",
+        confirmButtonText: "Yes, delete it!",
+      });
+
+      if (result.isConfirmed) {
+        const token = localStorage.getItem("userToken");
+        await axios.delete(`http://localhost:5000/api/owner/pg/${pgId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        // Remove from local state immediately
+        setMyPgs(prevPgs => prevPgs.filter(pg => pg.id !== pgId));
+
+        Swal.fire("Deleted!", "Your PG has been deleted.", "success");
+      }
+    } catch (error) {
+      console.error("Error deleting PG:", error);
+      Swal.fire("Error!", "Failed to delete PG.", "error");
+    }
+  };
 
   return (
     <div className="p-3 sm:p-4 md:p-6 bg-gray-100 min-h-screen space-y-8">
@@ -141,12 +175,20 @@ const PgManagement = () => {
                     <FaEdit size={26} />
                   </button>
 
+                  <button
+                    onClick={() => handleDeletePg(pg.id)}
+                    className="text-red-500 hover:text-red-700"
+                    title="Delete PG"
+                  >
+                    <FaTrash size={26} />
+                  </button>
+
                   <CButton
                     size="sm"
                     className="ml-auto md:text-lg "
                     onClick={() =>
                       navigate(
-                        "/owner/dashboard/pgManagment/roomManagement"
+                        `/owner/dashboard/pgManagment/roomManagement/${pg.id}`
                       )
                     }
                   >

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { homeBannerStats, features } from "../../../config/staticData";
+import { features } from "../../../config/staticData";
 import { getHomeFeatures } from "../../../api/api";
 import CFormCard from "../../../components/cFormCard";
 import CButton from "../../../components/cButton";
@@ -39,7 +39,7 @@ const floatAnimation = {
 
 /* ================= COMPONENT ================= */
 
-const HomeFeatures = () => {
+const HomeFeatures = ({ stats }) => {
   const [featureList, setFeatureList] = useState(features);
   const [openDemo, setOpenDemo] = useState(false);
 
@@ -100,6 +100,17 @@ const HomeFeatures = () => {
           {featureList.map((feature, index) => (
             <motion.div key={index} variants={fadeUp} className="h-full">
               <CFormCard className="h-full min-h-[180px] flex flex-col p-6">
+                <div className="flex items-center mb-4">
+                  <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary text-xl font-bold">
+                    {feature.iconName === 'verified' && '✓'}
+                    {feature.iconName === 'support' && '🎧'}
+                    {feature.iconName === 'booking' && '📅'}
+                    {feature.iconName === 'payment' && '💳'}
+                    {feature.iconName === 'updates' && '🔔'}
+                    {feature.iconName === 'mobile' && '📱'}
+                    {!feature.iconName && '✓'}
+                  </div>
+                </div>
                 <h3 className="text-xl font-semibold text-primary mb-2">
                   {feature.title}
                 </h3>
@@ -150,14 +161,27 @@ const HomeFeatures = () => {
               whileInView="visible"
               viewport={{ once: true }}
             >
-              {homeBannerStats.map((item, index) => (
+              {stats && [
+                {
+                  value: stats.customersWorldwide || 0,
+                  label: "Customers Worldwide"
+                },
+                {
+                  value: stats.dailyUsers || 0,
+                  label: "Daily Users"
+                },
+                {
+                  value: `₹${(stats.worthOfRentManaged || 0).toLocaleString()}`,
+                  label: "Worth of Rent Managed"
+                }
+              ].map((item, index) => (
                 <motion.div
                   key={index}
                   className="flex items-center gap-4"
                   variants={fadeUp}
                 >
                   <div className="w-12 h-12 rounded-md bg-primary/10 text-primary flex items-center justify-center font-semibold text-sm">
-                    {item.value}
+                    {index + 1}
                   </div>
                   <div>
                     <p className="text-xl font-semibold text-text-primary">

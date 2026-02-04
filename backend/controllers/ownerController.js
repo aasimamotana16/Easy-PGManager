@@ -129,16 +129,29 @@ const getOwnerDashboardData = async (req, res) => {
 
 const createPg = async (req, res) => {
   try {
-    const { pgName, location, totalRooms, liveListings } = req.body;
+    const { 
+      pgName, 
+      location, 
+      price, 
+      totalRooms, 
+      propertyType, 
+      forWhom, 
+      facilities, 
+      rules 
+    } = req.body;
     const ownerId = req.user._id; 
 
     const newPg = await Pg.create({
       ownerId,
       pgName,
       location,
+      price: price || 0,
       totalRooms: totalRooms || 0,
-      liveListings: liveListings || 0,
-      status: "live"
+      liveListings: 0,
+      type: forWhom || "Any",
+      amenities: facilities || [],
+      description: "",
+      status: "draft"
     });
 
     res.status(201).json({
@@ -147,6 +160,7 @@ const createPg = async (req, res) => {
       data: newPg
     });
   } catch (error) {
+    console.error("Create PG Error:", error);
     res.status(400).json({ success: false, message: error.message });
   }
 };
@@ -166,15 +180,73 @@ const getMyPgs = async (req, res) => {
   }
 };
 
+const deletePg = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const ownerId = req.user._id;
+
+    // Find and delete the PG
+    const deletedPg = await Pg.findOneAndDelete({ _id: id, ownerId });
+
+    if (!deletedPg) {
+      return res.status(404).json({ success: false, message: "PG not found" });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "PG deleted successfully",
+      data: deletedPg
+    });
+  } catch (error) {
+    console.error("Delete PG Error:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const getPgById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const ownerId = req.user._id;
+
+    const pg = await Pg.findOne({ _id: id, ownerId });
+
+    if (!pg) {
+      return res.status(404).json({ success: false, message: "PG not found" });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: pg
+    });
+  } catch (error) {
+    console.error("Get PG Error:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 // --- ADD ROOM DETAILS (Step 1 of your flow) ---
 const addRoom = async (req, res) => {
   try {
+    console.log("=== ADD ROOM API CALLED ===");
+    console.log("Request body:", req.body);
+    console.log("User ID:", req.user._id);
+    
     const { roomType, totalRooms, bedsPerRoom, description } = req.body;
     const ownerId = req.user._id;
 
     const latestPg = await Pg.findOne({ ownerId }).sort({ createdAt: -1 });
 
-    if (!latestPg) return res.status(404).json({ success: false, message: "PG not found" });
+    if (!latestPg) {
+      console.log("PG not found for owner:", ownerId);
+      return res.status(404).json({ success: false, message: "PG not found" });
+    }
+
+    console.log("Found PG:", latestPg.pgName);
+
+    // Initialize rooms array if it doesn't exist
+    if (!latestPg.rooms) {
+      latestPg.rooms = [];
+    }
 
     latestPg.rooms.push({ roomType, totalRooms, bedsPerRoom, description });
     
@@ -183,8 +255,11 @@ const addRoom = async (req, res) => {
     
     await latestPg.save();
 
+    console.log("Room added successfully. Total rooms now:", latestPg.totalRooms);
+
     res.status(201).json({ success: true, message: "Room added", data: latestPg });
   } catch (error) {
+    console.error("Add Room Error:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -476,6 +551,8 @@ module.exports = {
   getOwnerDashboardData, 
   createPg, 
   getMyPgs, 
+  deletePg,
+  getPgById,
   addRoom,
   updateRoomPrices, 
   addTenant, 

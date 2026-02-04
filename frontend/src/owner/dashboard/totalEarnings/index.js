@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   FaMoneyBillWave,
   FaArrowUp,
@@ -18,6 +18,7 @@ import {
 } from "chart.js";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import axios from "axios";
 
 ChartJS.register(
   CategoryScale,
@@ -34,27 +35,75 @@ const TotalEarnings = () => {
   const [selectedMonth, setSelectedMonth] = useState("Jan");
   const [pendingPage, setPendingPage] = useState(1);
   const [historyPage, setHistoryPage] = useState(1);
+  const [earningsData, setEarningsData] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  /* ---------------- DATA ---------------- */
+  // Fetch earnings data from backend
+  useEffect(() => {
+    const fetchEarningsData = async () => {
+      try {
+        const token = localStorage.getItem("userToken");
+        console.log("Token found:", token ? "Yes" : "No");
+        
+        if (!token) {
+          console.error("No user token found in localStorage");
+          setEarningsData({
+            stats: { total: 0, monthly: 0, today: 0 },
+            chartData: { labels: [], datasets: [] },
+            earningsHistory: [],
+            pendingPayments: []
+          });
+          setLoading(false);
+          return;
+        }
 
-  const earningsStats = {
-    total: 125000,
-    monthly: 32000,
-    today: 4500,
+        console.log("Fetching earnings data from backend...");
+        const response = await axios.get("http://localhost:5000/api/users/earnings", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        console.log("Backend response:", response.data);
+        
+        if (response.data.success) {
+          setEarningsData(response.data.data);
+          console.log("Dynamic earnings data from backend:", response.data.data);
+        } else {
+          console.error("Backend returned error:", response.data.message);
+        }
+      } catch (error) {
+        console.error("Error fetching earnings data:", error);
+        console.error("Error response:", error.response?.data);
+        
+        // Set empty data if backend fails - no static fallback
+        setEarningsData({
+          stats: { total: 0, monthly: 0, today: 0 },
+          chartData: { labels: [], datasets: [] },
+          earningsHistory: [],
+          pendingPayments: []
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEarningsData();
+  }, []);
+
+  // Use backend data only
+  const earningsStats = earningsData?.stats || {
+    total: 0,
+    monthly: 0,
+    today: 0,
   };
 
-  const chartData = {
-    labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul"],
-    datasets: [
-      {
-        label: "Earnings",
-        data: [15000, 18000, 21000, 24000, 26000, 30000, 32000],
-        borderColor: "#f97316",
-        backgroundColor: "rgba(249,115,22,0.15)",
-        tension: 0.35,
-      },
-    ],
+  const chartData = earningsData?.chartData || {
+    labels: [],
+    datasets: [],
   };
+
+  const earningsHistory = earningsData?.earningsHistory || [];
+
+  const pendingPayments = earningsData?.pendingPayments || [];
 
   const chartOptions = {
     responsive: true,
@@ -64,17 +113,6 @@ const TotalEarnings = () => {
       y: { grid: { color: "#e5e7eb" } },
     },
   };
-
-  const earningsHistory = [
-    { date: "05 Jan 2026", source: "Shree Residency", amount: 8500, status: "Paid" },
-    { date: "03 Jan 2026", source: "Krishna PG", amount: 7000, status: "Paid" },
-    { date: "01 Jan 2026", source: "Om Sai PG", amount: 6500, status: "Paid" },
-  ];
-
-  const pendingPayments = [
-    { tenant: "Amit Patel", pg: "Shree Residency", amount: 9000, due: "15 Jan 2026" },
-    { tenant: "Riya Shah", pg: "Om Sai PG", amount: 7500, due: "18 Jan 2026" },
-  ];
 
   /* ---------------- PAGINATION ---------------- */
 
@@ -89,60 +127,102 @@ const TotalEarnings = () => {
 
   /* ---------------- PDF DOWNLOAD ---------------- */
 
-  const handleDownloadPDF = () => {
-    const doc = new jsPDF();
+  const handleDownloadPDF = async () => {
+    try {
+      const token = localStorage.getItem("userToken");
+      
+      if (!token) {
+        alert("Please log in to download PDF");
+        return;
+      }
 
-    doc.setFontSize(16);
-    doc.text("EasyPG Manager - Earnings Report", 14, 15);
+      console.log("Downloading PDF for month:", selectedMonth);
+      
+      // Download PDF from backend
+      const response = await axios.get(`http://localhost:5000/api/users/earnings/pdf?month=${selectedMonth}`, {
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: 'blob'
+      });
 
-    doc.setFontSize(11);
-    doc.text(`Month: ${selectedMonth}`, 14, 25);
+      // Create blob and download
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `Earnings_Report_${selectedMonth}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
 
-    autoTable(doc, {
-      startY: 32,
-      head: [["Metric", "Amount"]],
-      body: [
-        ["Total Earnings", `Rs. ${earningsStats.total.toLocaleString()}`],
-        ["This Month", `Rs. ${earningsStats.monthly.toLocaleString()}`],
-        ["Today", `Rs. ${earningsStats.today.toLocaleString()}`],
-      ],
-    });
+      console.log("PDF downloaded from backend successfully");
+    } catch (error) {
+      console.error("Error downloading PDF from backend:", error);
+      
+      // Show user-friendly error message
+      if (error.response?.status === 403) {
+        alert("Access denied. Please log in as an owner to download PDF.");
+      } else if (error.response?.status === 500) {
+        alert("Server error generating PDF. Using fallback method...");
+      } else {
+        alert("Failed to download PDF from backend. Using fallback method...");
+      }
+      
+      // Fallback to frontend PDF generation
+      const doc = new jsPDF();
 
-    doc.text("Pending Payments", 14, doc.lastAutoTable.finalY + 10);
-    autoTable(doc, {
-      startY: doc.lastAutoTable.finalY + 14,
-      head: [["Tenant", "PG", "Amount", "Due Date"]],
-      body: pendingPayments.map(p => [
-        p.tenant,
-        p.pg,
-        `Rs. ${p.amount.toLocaleString()}`,
-        p.due,
-      ]),
-    });
+      doc.setFontSize(16);
+      doc.text("EasyPG Manager - Earnings Report", 14, 15);
 
-    doc.text("Earnings History", 14, doc.lastAutoTable.finalY + 10);
-    autoTable(doc, {
-      startY: doc.lastAutoTable.finalY + 14,
-      head: [["Date", "PG Name", "Amount", "Status"]],
-      body: earningsHistory.map(e => [
-        e.date,
-        e.source,
-        `Rs. ${e.amount.toLocaleString()}`,
-        e.status,
-      ]),
-    });
+      doc.setFontSize(11);
+      doc.text(`Month: ${selectedMonth}`, 14, 25);
 
-    doc.save(`Earnings_Report_${selectedMonth}.pdf`);
+      autoTable(doc, {
+        startY: 32,
+        head: [["Metric", "Amount"]],
+        body: [
+          ["Total Earnings", `Rs. ${earningsStats.total.toLocaleString()}`],
+          ["This Month", `Rs. ${earningsStats.monthly.toLocaleString()}`],
+          ["Today", `Rs. ${earningsStats.today.toLocaleString()}`],
+        ],
+      });
+
+      doc.text("Pending Payments", 14, doc.lastAutoTable.finalY + 10);
+      autoTable(doc, {
+        startY: doc.lastAutoTable.finalY + 14,
+        head: [["Tenant", "PG", "Amount", "Due Date"]],
+        body: pendingPayments.map(p => [
+          p.tenant,
+          p.pg,
+          `Rs. ${p.amount.toLocaleString()}`,
+          p.due,
+        ]),
+      });
+
+      doc.text("Earnings History", 14, doc.lastAutoTable.finalY + 10);
+      autoTable(doc, {
+        startY: doc.lastAutoTable.finalY + 14,
+        head: [["Date", "PG Name", "Amount", "Status"]],
+        body: earningsHistory.map(e => [
+          e.date,
+          e.source,
+          `Rs. ${e.amount.toLocaleString()}`,
+          e.status,
+        ]),
+      });
+
+      doc.save(`Earnings_Report_${selectedMonth}.pdf`);
+    }
   };
 
   return (
     <div className="p-6 bg-gray-100 min-h-screen space-y-6">
-
       {/* HEADER */}
       <div>
         <h1 className="text-2xl font-bold text-primary">Earnings Overview</h1>
         <p className="text-gray-500">
           Track your income, pending payments and reports
+          {loading && <span className="ml-2 text-orange-500">(Loading dynamic data from backend...)</span>}
         </p>
       </div>
 

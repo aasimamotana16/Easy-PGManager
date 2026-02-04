@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { FaEye, FaReply, FaLifeRing } from "react-icons/fa";
 import CButton from "../../../components/cButton";
+import Swal from "sweetalert2";
+import axios from "axios";
 
 /* Sample support tickets with tracking */
 const sampleTickets = [
@@ -38,21 +40,62 @@ const SupportPage = () => {
     t.subject.toLowerCase().includes(search.toLowerCase())
   );
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!subject || !message) return;
 
-    const newTicket = {
-      id: tickets.length + 1,
-      subject,
-      status: "Open",
-      date: new Date().toISOString().split("T")[0],
-      description: message,
-    };
+    try {
+      // Get owner token from localStorage
+      const token = localStorage.getItem("userToken");
+      
+      // Call backend API to send support ticket
+      const response = await axios.post(
+        "http://localhost:5000/api/users/support-ticket",
+        {
+          ticketSubject: subject,
+          issueDescription: message,
+          email: localStorage.getItem("userEmail") || "owner@example.com"
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
 
-    setTickets([newTicket, ...tickets]);
-    setSubject("");
-    setMessage("");
+      if (response.data.success) {
+        // Add to local state for display
+        const newTicket = {
+          id: tickets.length + 1,
+          subject,
+          status: "Open",
+          date: new Date().toISOString().split("T")[0],
+          description: message,
+        };
+
+        setTickets([newTicket, ...tickets]);
+        setSubject("");
+        setMessage("");
+
+        // Show SweetAlert notification
+        Swal.fire({
+          title: 'Success!',
+          text: 'Your support request has been sent successfully to the admin',
+          icon: 'success',
+          confirmButtonColor: '#f97316',
+          timer: 3000,
+          timerProgressBar: true
+        });
+      }
+    } catch (error) {
+      console.error("Support ticket error:", error);
+      Swal.fire({
+        title: 'Error!',
+        text: 'Failed to send support request. Please try again.',
+        icon: 'error',
+        confirmButtonColor: '#000'
+      });
+    }
   };
 
   return (
@@ -95,9 +138,9 @@ const SupportPage = () => {
             onChange={(e) => setMessage(e.target.value)}
           />
 
-          <CButton className="bg-primary text-white px-6 py-2 rounded-md w-max">
+          <button type="submit" className="bg-primary text-white px-6 py-2 rounded-md w-max">
             Submit Request
-          </CButton>
+          </button>
         </form>
       </div>
 

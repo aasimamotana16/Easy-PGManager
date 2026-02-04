@@ -20,7 +20,11 @@ const {
   verifyOtpAndRegister,
   getMyCheckIns,   // To fetch past activities [cite: 2026-01-06]
   createCheckIn,
-  verifySecurityAction // <--- ADD THIS HERE [cite: 2026-01-07]
+  generateCaptcha,
+  verifySecurityAction, 
+  submitSupportTicket, // Add support ticket function
+  getOwnerEarnings, // Add earnings function
+  downloadEarningsPDF, // Add PDF download function
 } = require("../controllers/userController");
 const { protect } = require("../middleware/authMiddleware");
 const upload = require("../middleware/uploadMiddleware"); // Your Multer config [cite: 2026-01-06]
@@ -82,5 +86,12 @@ router.post("/verify-security", protect, verifySecurityAction);
 
 // Add this line
 router.post("/logout", protect, logoutUser);
+
+// Support ticket route
+router.post("/support-ticket", protect, submitSupportTicket);
+
+// Earnings routes for owners
+router.get("/earnings", protect, getOwnerEarnings);
+router.get("/earnings/pdf", protect, downloadEarningsPDF);
 
 module.exports = router;

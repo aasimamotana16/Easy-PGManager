@@ -21,14 +21,21 @@ const verifyRecaptcha = async (recaptchaToken) => {
 // Temporary in-memory store for OTPs
 const otpCache = {};
 
-// 1. SEND OTP (Updated without reCAPTCHA for now)
+// 1. SEND OTP (Updated with reCAPTCHA logic)
 exports.sendOtp = async (req, res) => {
   try {
-    const { email } = req.body; // Removed recaptchaToken requirement
+    const { email, recaptchaToken } = req.body; // Expect recaptchaToken from front-end
     if (!email) return res.status(400).json({ success: false, message: "Email is required" });
 
-    // --- TEMPORARILY DISABLED RECAPTCHA ---
-    // Will be re-enabled once frontend is properly configured
+    // --- VERIFY RECAPTCHA FIRST ---
+    if (!recaptchaToken) {
+      return res.status(400).json({ success: false, message: "Captcha token is missing" });
+    }
+
+    const isCaptchaValid = await verifyRecaptcha(recaptchaToken);
+    if (!isCaptchaValid) {
+      return res.status(400).json({ success: false, message: "Invalid Captcha. Please try again." });
+    }
     // -------------------------------
 
     const finalEmail = email.toLowerCase().trim();
@@ -40,7 +47,7 @@ exports.sendOtp = async (req, res) => {
       otp: generatedOtp,
       expires: Date.now() + 300000,
     };
-
+    
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
@@ -48,7 +55,7 @@ exports.sendOtp = async (req, res) => {
         pass: process.env.EMAIL_PASS,
       },
     });
-
+      
     await transporter.sendMail({
       from: `"EasyPG Manager" <${process.env.EMAIL_USER}>`,
       to: finalEmail,
@@ -62,6 +69,7 @@ exports.sendOtp = async (req, res) => {
     res.status(500).json({ success: false, message: "Error sending OTP" });
   }
 };
+
 
 // 2. REGISTER (Includes phone and verified status)
 exports.registerUser = async (req, res) => {
@@ -99,20 +107,8 @@ exports.registerUser = async (req, res) => {
       isVerified: true
     });
 
-    // Generate JWT token for the new user
-    const token = jwt.sign(
-      { id: user._id, role: user.role },
-      process.env.JWT_SECRET || "secret",
-      { expiresIn: "1d" }
-    );
-
     delete otpCache[finalEmail];
-    res.status(201).json({ 
-      success: true, 
-      message: "Registration successful",
-      token,
-      user: { id: user._id, fullName: user.fullName, role: user.role }
-    });
+    res.status(201).json({ success: true, message: "Registration successful" });
   } catch (error) {
     console.error("REGISTRATION ERROR:", error.message);
     res.status(400).json({ success: false, message: error.message });

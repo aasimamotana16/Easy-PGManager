@@ -6,6 +6,8 @@ const {
   getOwnerDashboardData, 
   createPg, 
   getMyPgs, 
+  deletePg,
+  getPgById,
   addTenant, 
   getMyTenants, 
   getMyBookings, 
@@ -30,6 +32,8 @@ router.get('/dashboard-summary', protect, isOwner, getOwnerDashboardData);
 // --- PG MANAGEMENT ---
 router.post('/add-pg', protect, isOwner, createPg);
 router.get('/my-pgs', protect, isOwner, getMyPgs);
+router.delete('/pg/:id', protect, isOwner, deletePg);
+router.get('/pg/:id', protect, isOwner, getPgById);
 
 // --- ROOM FLOW ---
 router.post('/add-room', protect, isOwner, addRoom);

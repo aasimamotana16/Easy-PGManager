@@ -155,23 +155,38 @@ const AddProperty = () => {
 
     const error = validateForm();
     if (error) {
-      alert(error);
+      Swal.fire({
+        title: "Validation Error!",
+        text: error,
+        icon: "warning",
+      });
       return;
     }
 
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("userToken");
+      
+      if (!token) {
+        Swal.fire({
+          title: "Error!",
+          text: "Please login to add property",
+          icon: "error",
+        });
+        return;
+      }
 
       const dataToSend = {
         pgName: formData.name,
         location: `${formData.area}, ${formData.city}`,
-        price: 0, // 👈 ADD THIS LINE HERE
-        totalRooms: 0,
+        price: 5000, // Default price
+        totalRooms: parseInt(formData.totalFloors) || 0,
         propertyType: formData.propertyType,
         forWhom: formData.forWhom,
         facilities: formData.facilities,
         rules: formData.rules,
       };
+
+      console.log("Sending data:", dataToSend);
 
       const response = await axios.post(
         "http://localhost:5000/api/owner/add-pg",
@@ -179,15 +194,28 @@ const AddProperty = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
+      console.log("Response:", response.data);
+
       if (response.data.success) {
-        alert("Property saved successfully!");
-        navigate("/owner/dashBoard/pgManagment/addRooms", {
-          state: { propertyData: formData, pgId: response.data.data._id },
+        Swal.fire({
+          title: "Success!",
+          text: "Property added successfully!",
+          icon: "success",
+          timer: 2000,
+          showConfirmButton: false,
+        }).then(() => {
+          navigate("/owner/dashBoard/pgManagment/addRooms", {
+            state: { propertyData: formData, pgId: response.data.data._id },
+          });
         });
       }
     } catch (err) {
       console.error("Submission Error:", err);
-      alert("Failed to save property.");
+      Swal.fire({
+        title: "Error!",
+        text: err.response?.data?.message || "Failed to save property.",
+        icon: "error",
+      });
     }
   };
 
