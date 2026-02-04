@@ -34,11 +34,11 @@ export default function Services() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 sm:py-16 lg:py-20">
 
           {/* PAGE TITLE */}
-          <h1 className="text-3xl md:text-5xl lg:text-5xl  text-center mb-4 sm:mb-6">
+          <h1 className="text-5xl  text-center mb-4 sm:mb-6">
             Our Services
           </h1>
 
-          <p className="text-sm md:text-2xl lg:text-xl text-center max-w-3xl mx-auto mb-12 sm:mb-16 lg:mb-20 text-gray-600">
+          <p className="text-2xl text-center max-w-3xl mx-auto mb-12 sm:mb-16 lg:mb-20 text-gray-600">
             EasyPG Manager provides verified PGs, smart booking, and
             seamless property management.
           </p>
@@ -55,14 +55,14 @@ export default function Services() {
             <img
               src={`${process.env.PUBLIC_URL}/images/serviceImage/mapimage.png`}
               alt="Map View"
-              className="w-full h-44 sm:h-52 lg:h-60 object-cover rounded-2xl mb-5 sm:mb-6"
+              className="w-full h-44 sm:h-52 lg:h-60 object-cover rounded-md mb-5 sm:mb-6"
             />
 
-            <h2 className="text-2xl md:text-4xl lg:text-4xl  text-orange-600 mb-3 sm:mb-4">
+            <h2 className="text-4xl  text-primary mb-3 sm:mb-4">
               Find Your Perfect Stay
             </h2>
 
-            <p className="text-sm md:text-2xl lg:text-xl mb-5 sm:mb-6">
+            <p className="text-2xl mb-5 sm:mb-6">
               Start your search instantly and discover verified PGs
               that match your preferences.
             </p>
@@ -71,7 +71,7 @@ export default function Services() {
               size="lg"
               variant="contained"
               onClick={() => navigate("/findMypg")}
-              className="w-full sm:w-auto md:text-2xl lg:text-xl"
+              className="w-full sm:w-auto text:2xl"
             >
               Find My Stay
             </CButton>

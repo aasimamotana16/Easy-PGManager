@@ -7,7 +7,7 @@ const AboutWhoWeServe = () => {
     <section className="py-12 px-6 snap-start">
       
       {/* Section Heading */}
-      <h2 className="text-3xl font-semibold text-primary mb-6 text-left">
+      <h2 className="text-4xl font-semibold text-primary mb-6 text-left">
         Who We Serve
       </h2>
 
@@ -20,7 +20,7 @@ const AboutWhoWeServe = () => {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: i * 0.1 }}
             viewport={{ once: true }}
-            className="text-text-secondary text-lg"
+            className="text-text-secondary text-2xl"
           >
             <span className="font-semibold">
               {item.role}:

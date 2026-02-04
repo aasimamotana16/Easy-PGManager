@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import Navbar from "../../components/navbar";
 import Footer from "../../components/footer";
-import HomeBanner from "./homeBanner";   
-import HomeSearch from "./homeSearch";   
-import HomeFeatures from "./homeFeature"; 
+import HomeBanner from "./homeBanner";
+import HomeSearch from "./homeSearch";
+import HomeFeatures from "./homeFeature";
 
 const HomePage = () => {
   const [siteStats, setSiteStats] = useState({
@@ -11,44 +11,41 @@ const HomePage = () => {
     dailyUsers: 0,
     worthOfRentManaged: 0
   });
-  // Add loading state
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Fetching from your API
     fetch('http://localhost:5000/api/home-stats')
       .then(res => res.json())
       .then(data => {
         setSiteStats(data);
-        // Turn off loader once data is ready
         setIsLoading(false);
       })
       .catch(err => {
         console.error("Error connecting to backend:", err);
-        setIsLoading(false); // Stop loading even on error
+        setIsLoading(false);
       });
   }, []);
 
-  // Branded Loading Screen
   if (isLoading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-background-default">
-        <div className="flex flex-col items-center animate-pulse">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background-default px-6 overflow-hidden">
+        <div className="flex flex-col items-center">
           <div className="relative mb-6">
             <div className="absolute inset-0 bg-amber-100 rounded-full blur-2xl opacity-40 animate-ping"></div>
+            {/* Responsive logo size for loading screen */}
             <img 
               src="/logos/logo1.png" 
               alt="EasyPG Logo" 
-              className="relative h-20 w-20 md:h-32 md:w-32 object-contain"
+              className="relative h-16 w-16 sm:h-24 sm:w-24 md:h-32 md:w-32 object-contain"
             />
           </div>
-          <h2 className="text-lg md:text-2xl  text-gray-900 tracking-widest uppercase">
+          <h2 className="text-sm sm:text-base md:text-2xl text-gray-900 tracking-[0.15em] sm:tracking-[0.2em] uppercase font-medium text-center">
             EasyPG Manager
           </h2>
-          <div className="mt-3 flex gap-1">
-            <span className="w-2 h-2 bg-amber-500 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
-            <span className="w-2 h-2 bg-amber-500 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
-            <span className="w-2 h-2 bg-amber-500 rounded-full animate-bounce"></span>
+          <div className="mt-6 flex gap-2">
+            <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 bg-amber-500 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+            <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 bg-amber-500 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+            <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 bg-amber-500 rounded-full animate-bounce"></div>
           </div>
         </div>
       </div>
@@ -56,27 +53,32 @@ const HomePage = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background-default">
-      {/* Navbar */}
+    <div className="min-h-screen flex flex-col bg-background-default overflow-x-hidden">
       <Navbar />
 
-      {/* Main Content with Responsive Spacing */}
-      <main className="flex-grow flex flex-col gap-6 md:gap-0">
-        {/* Banner: Responsive heights inside component */}
-        <HomeBanner />
+      <main className="flex-grow">
+        {/* Banner Section: Full width but content is centered inside HomeBanner */}
+        <section className="w-full">
+          <HomeBanner />
+        </section>
 
-        {/* Search: Added padding for mobile readability */}
-        <div className="px-4 sm:px-6">
+        {/* Search Section: 
+          - On mobile (default): mt-0 or small negative margin to stay close to banner.
+          - On desktop (md+): -mt-12 to overlay the banner.
+        */}
+        <section className="relative gap-6 z-10 px-4 sm:px-6 mt-10  max-w-7xl mx-auto">
           <HomeSearch />
-        </div>
+        </section>
         
-        {/* Features: Dynamic stats passed through */}
-        <div className="px-4 sm:px-6 pb-10 md:pb-20">
+        {/* Features Section: 
+          - py-10 for mobile to keep sections distinct without massive gaps.
+          - md:py-20 for desktop.
+        */}
+        <section className="px-4 sm:px-6 py-10  md:py-20 max-w-7xl mx-auto">
           <HomeFeatures stats={siteStats} />
-        </div>
+        </section>
       </main>
 
-      {/* Footer */}
       <Footer />
     </div>
   );

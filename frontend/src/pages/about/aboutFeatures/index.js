@@ -7,7 +7,7 @@ const AboutFeatures = () => {
     <section className="py-12 px-6">
       
       {/* Section Heading */}
-      <h2 className="text-3xl font-semibold text-primary mb-8 text-left">
+      <h2 className="text-4xl font-semibold text-primary mb-8 text-left">
         Our Key Features
       </h2>
 
@@ -20,15 +20,15 @@ const AboutFeatures = () => {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: i * 0.1 }}
             viewport={{ once: true }}
-            className="bg-white border border-border rounded-xl shadow-md hover:shadow-lg p-6 flex flex-col"
+            className="bg-white border border-border rounded-md shadow-md hover:shadow-lg p-6 flex flex-col"
           >
             {/* Card Title */}
-            <h3 className="text-xl font-semibold text-primary mb-3">
+            <h3 className="text-2xl font-semibold text-primary mb-3">
               {feature.title}
             </h3>
 
             {/* Description */}
-            <p className="text-lg text-text-secondary">
+            <p className="text-xl text-text-secondary">
               {feature.desc}
             </p>
           </motion.div>

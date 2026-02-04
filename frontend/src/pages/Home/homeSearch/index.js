@@ -4,7 +4,7 @@ import CButton from "../../../components/cButton";
 import CSelect from "../../../components/cSelect";
 import { getCities } from "../../../api/api";
 import { BackendContext } from "../../../context/backendContext";
-import Swal from "sweetalert2"; // Import SweetAlert2
+import Swal from "sweetalert2"; 
 
 const HomeSearch = () => {
   const navigate = useNavigate();
@@ -33,7 +33,6 @@ const HomeSearch = () => {
         setCityOptions(formattedCities);
       } catch (error) {
         console.error("Error fetching cities:", error);
-        // Fallback cities
         setCityOptions([
           { label: "Ahmedabad", value: "Ahmedabad" },
           { label: "Surat", value: "Surat" },
@@ -50,12 +49,11 @@ const HomeSearch = () => {
 
   const handleSearch = () => {
     if (!city) {
-      // ✅ Replaced standard alert with SweetAlert2
       Swal.fire({
         icon: 'warning',
         title: 'City Required',
         text: 'Please select a city first to explore available PGs!',
-        confirmButtonColor: "#f97316", // Primary theme color
+        confirmButtonColor: "#f97316", 
       });
       return;
     }
@@ -67,7 +65,7 @@ const HomeSearch = () => {
     <div
       className="
         bg-white
-        p-6
+        p-5 sm:p-8
         rounded-2xl
         shadow-md
         max-w-4xl
@@ -76,11 +74,11 @@ const HomeSearch = () => {
       "
     >
       {/* Heading */}
-      <div className="text-center mb-6">
-        <h2 className="text-3xl  text-text-primary mb-2">
+      <div className="text-center mb-6 ">
+        <h2 className="text-4xl  font-bold text-text-primary mb-2">
           Find Paying Guest Accommodation
         </h2>
-        <p className="text-lg text-text-secondary">
+        <p className="text-xl text-text-secondary">
           Select your city to explore available PGs near you
         </p>
       </div>
@@ -91,7 +89,7 @@ const HomeSearch = () => {
           label="City"
           required
           value={city}
-          onChange={(e) => {
+           onChange={(e) => {
             if (e?.target?.value !== undefined) setCity(e.target.value);
             else if (e?.value !== undefined) setCity(e.value);
             else setCity("");
@@ -113,9 +111,9 @@ const HomeSearch = () => {
           variant="contained"
           className="
             w-full sm:w-auto
-            px-12
+            px-8 sm:px-12
             py-3
-            rounded-lg
+            rounded-md
             text-lg
             font-semibold
           "

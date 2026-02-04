@@ -1,3 +1,4 @@
+// src/pages/Home/homeFeatures/index.js
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { homeBannerStats, features } from "../../../config/staticData";
@@ -61,9 +62,9 @@ const HomeFeatures = () => {
   return (
     <>
       {/* ================= FEATURES SECTION ================= */}
-      <section className="bg-background-default px-6 py-16 mt-6 relative">
+      <section className="bg-background-default px-4 sm:px-6 py-12 lg:py-16 mt-6 relative overflow-hidden">
 
-        {/* Floating Illustration (desktop only, logic unchanged) */}
+        {/* Floating Illustration */}
         <motion.div
           className="absolute right-10 top-1/2 -translate-y-1/2 hidden xl:block pointer-events-none"
           variants={floatAnimation}
@@ -74,24 +75,24 @@ const HomeFeatures = () => {
 
         {/* SECTION HEADING */}
         <motion.div
-          className="text-center max-w-3xl mx-auto mb-12"
+          className="text-center max-w-3xl mx-auto mb-10 lg:mb-16 px-2"
           variants={fadeUp}
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true }}
         >
-          <h2 className="text-3xl font-bold text-primary mb-3">
+          <h2 className="text-3xl  font-bold text-primary mb-4 leading-tight">
             Everything You Need to Manage Your PG
           </h2>
 
-          <p className="text-lg text-text-secondary leading-relaxed">
+          <p className="text-xl sm:text-lg text-text-secondary leading-relaxed">
             Powerful features designed to simplify daily operations for PG owners.
           </p>
         </motion.div>
 
         {/* FEATURES GRID */}
         <motion.div
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 max-w-6xl mx-auto"
           variants={stagger}
           initial="hidden"
           whileInView="visible"
@@ -99,12 +100,12 @@ const HomeFeatures = () => {
         >
           {featureList.map((feature, index) => (
             <motion.div key={index} variants={fadeUp} className="h-full">
-              <CFormCard className="h-full min-h-[180px] flex flex-col p-6">
-                <h3 className="text-xl font-semibold text-primary mb-2">
+              <CFormCard className="h-full min-h-[160px] sm:min-h-[180px] flex flex-col p-6 shadow-sm hover:shadow-md transition-shadow">
+                <h3 className=" sm:text-4xl md:text-2xl font-semibold text-primary mb-3">
                   {feature.title}
                 </h3>
 
-                <p className="text-lg text-text-secondary leading-relaxed">
+                <p className="sm:text-3xl md:text-xl  text-text-secondary leading-relaxed">
                   {feature.desc}
                 </p>
               </CFormCard>
@@ -114,11 +115,12 @@ const HomeFeatures = () => {
       </section>
 
       {/* ================= CTA SECTION ================= */}
-      <section className="bg-white px-6 py-20 mt-20 mb-28">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-14 items-center">
+      <section className="bg-white px-4 sm:px-6 py-12 lg:py-20 my-10 lg:my-20">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-14 items-center">
 
           {/* LEFT CONTENT */}
           <motion.div
+            className="text-center lg:text-left order-2 lg:order-1"
             variants={fadeUp}
             initial="hidden"
             whileInView="visible"
@@ -129,14 +131,14 @@ const HomeFeatures = () => {
               Onboard your university in just 10 minutes.
             </h2>
 
-            <p className="mt-6 text-lg text-text-secondary max-w-xl">
+            <p className="mt-4 sm:mt-6 text-2xl text-text-secondary max-w-xl mx-auto lg:mx-0">
               Manage PGs, bookings, payments, and tenants from a single dashboard
               designed for scale.
             </p>
 
-            <div className="mt-8">
+            <div className="mt-8 flex justify-center lg:justify-start">
               <CButton
-                className="h-12 text-sm font-bold"
+                className="w-full sm:w-auto h-12 px-10 text-lg font-bold"
                 text="Schedule a Free Demo"
                 onClick={() => setOpenDemo(true)}
               />
@@ -144,7 +146,7 @@ const HomeFeatures = () => {
 
             {/* STATS */}
             <motion.div
-              className="mt-12 flex flex-wrap gap-10"
+              className="mt-12 flex flex-wrap justify-center lg:justify-start gap-6 sm:gap-10"
               variants={stagger}
               initial="hidden"
               whileInView="visible"
@@ -153,17 +155,17 @@ const HomeFeatures = () => {
               {homeBannerStats.map((item, index) => (
                 <motion.div
                   key={index}
-                  className="flex items-center gap-4"
+                  className="flex items-center gap-4 bg-gray-50 lg:bg-transparent p-3 lg:p-0 rounded-lg min-w-[240px]"
                   variants={fadeUp}
                 >
-                  <div className="w-12 h-12 rounded-md bg-primary/10 text-primary flex items-center justify-center font-semibold text-sm">
+                  <div className="shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-md bg-primary/10 text-primary flex items-center justify-center font-bold text-lg ">
                     {item.value}
                   </div>
-                  <div>
-                    <p className="text-xl font-semibold text-text-primary">
+                  <div className="text-left">
+                    <p className="text-lg  font-bold text-text-primary">
                       {item.value}
                     </p>
-                    <p className="text-sm text-text-secondary">
+                    <p className="text-lg text-text-secondary uppercase tracking-wider font-medium">
                       {item.label}
                     </p>
                   </div>
@@ -174,7 +176,7 @@ const HomeFeatures = () => {
 
           {/* RIGHT IMAGE */}
           <motion.div
-            className="relative flex justify-center"
+            className="relative flex justify-center order-1 lg:order-2 mb-8 lg:mb-0"
             initial={{ opacity: 0, scale: 0.95 }}
             whileInView={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.6, ease: "easeOut" }}
@@ -183,7 +185,7 @@ const HomeFeatures = () => {
             <img
               src="/images/homeImages/image11.png"
               alt="PG Management Dashboard"
-              className="relative z-20 w-[700px] max-w-full"
+              className="relative z-20 w-full max-w-[320px] sm:max-w-[500px] lg:max-w-full h-auto"
             />
           </motion.div>
         </div>

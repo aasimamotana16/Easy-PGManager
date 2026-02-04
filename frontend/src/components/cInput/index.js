@@ -15,7 +15,7 @@ const CInput = ({
   disabled = false,
 }) => {
   // Common classes for dynamic states
-  const baseInputClasses = `w-full px-3 py-2 text-sm border rounded-md transition focus:outline-none focus:ring-0
+  const baseInputClasses = `w-full px-3 py-2 md:text-xl sm:text-4xl border rounded-md transition focus:outline-none focus:ring-0
     ${disabled ? "bg-gray-100 cursor-not-allowed opacity-70" : "bg-card"}
     ${
       error
@@ -27,7 +27,7 @@ const CInput = ({
     <div className={`flex flex-col gap-1 ${className}`}>
       {label && (
         <label
-          className={`text-xs font-medium transition-colors ${
+          className={`md:text-xl sm:text-4xl font-medium transition-colors ${
             error ? "text-red-600" : "text-text-secondary"
           }`}
         >

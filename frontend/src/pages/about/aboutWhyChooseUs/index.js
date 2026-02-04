@@ -7,7 +7,7 @@ const AboutWhyChooseUs = () => {
     <section className="py-12 px-6 snap-start">
       
       {/* Section Heading */}
-      <h2 className="text-3xl font-semibold text-primary mb-6 text-left">
+      <h2 className="text-4xl font-semibold text-primary mb-6 text-left">
         Why Choose Us
       </h2>
 
@@ -17,7 +17,7 @@ const AboutWhyChooseUs = () => {
         whileInView={{ opacity: 1 }}
         transition={{ duration: 0.6 }}
         viewport={{ once: true }}
-        className="text-text-secondary leading-relaxed text-lg"
+        className="text-text-secondary leading-relaxed text-2xl"
       >
         {aboutWhyChooseUs}
       </motion.p>

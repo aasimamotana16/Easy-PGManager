@@ -39,14 +39,14 @@ export default function FAQ() {
             <h1 className="text-4xl sm:text-5xl  text-amber-600 mb-4">
               Frequently Asked Questions
             </h1>
-            <p className="text-lg text-gray-700">
+            <p className="text-2xl text-gray-700">
               Find answers to common questions about EasyPG Manager.
             </p>
           </div>
 
           <div className="flex flex-col md:flex-row gap-8">
             {/* Categories Sidebar */}
-            <div className="md:w-1/4 space-y-3">
+            <div className="md:w-1/3 space-y-3">
               {categories.map((category) => (
                 <button
                   key={category}
@@ -54,9 +54,9 @@ export default function FAQ() {
                     setActiveCategory(category);
                     setActiveQuestionId(null);
                   }}
-                  className={`w-full text-left p-4 rounded-xl transition-all duration-200 ${
+                  className={`w-full text-left text-2xl p-4 rounded-md transition-all duration-200 ${
                     activeCategory === category
-                      ? "bg-amber-100 text-amber-700  shadow-md transform scale-[1.02]"
+                      ? "bg-amber-100 text-primary text-2xl  shadow-md transform scale-[1.02]"
                       : "bg-white text-gray-700 hover:bg-amber-50 shadow-sm"
                   }`}
                 >
@@ -82,7 +82,7 @@ export default function FAQ() {
                       }
                       className="flex items-center justify-between p-6 cursor-pointer hover:bg-gray-50 transition-colors"
                     >
-                      <h3 className={`text-lg sm:text-xl font-semibold transition-colors ${
+                      <h3 className={`md:text-lg sm:text-3xl font-semibold transition-colors ${
                         activeQuestionId === faq.id ? "text-amber-600" : "text-gray-800"
                       }`}>
                         {faq.question}
@@ -104,7 +104,7 @@ export default function FAQ() {
                       } overflow-hidden`}
                     >
                       <div className="p-6 pt-0 border-t border-transparent">
-                        <p className="text-gray-700 leading-relaxed">
+                        <p className="text-gray-700 text-xl leading-relaxed">
                           {faq.answer}
                         </p>
                       </div>

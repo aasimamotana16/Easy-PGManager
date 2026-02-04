@@ -29,7 +29,7 @@ const AboutReviews = () => {
     <section className="py-12 px-6 bg-gray-50 snap-start">
       
       {/* Section Heading */}
-      <h2 className="text-3xl font-semibold text-primary mb-8 text-left">
+      <h2 className="text-4xl font-semibold text-primary mb-8 text-left">
         What Our Users Say
       </h2>
 
@@ -45,12 +45,12 @@ const AboutReviews = () => {
             className="bg-white border border-border rounded-xl shadow-lg p-6 flex flex-col justify-between"
           >
             {/* Review Text */}
-            <p className="italic text-text-secondary text-lg">
+            <p className="italic text-text-secondary text-2xl">
               “{review.comment}”
             </p>
 
             {/* User Role */}
-            <p className="font-semibold text-primary mt-4 text-base">
+            <p className="font-semibold text-primary mt-4 text-lg">
               – {review.userRole}
             </p>
           </motion.div>
