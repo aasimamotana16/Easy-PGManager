@@ -28,7 +28,7 @@ const Support = () => {
     <div className="space-y-8">
 
       {/* GRADIENT WRAPPER */}
-      <div className="bg-dashboard-gradient rounded-3xl p-6 space-y-6">
+      <div className=" rounded-md p-6 space-y-6">
 
         {/* SUPPORT CARD */}
 
@@ -36,7 +36,7 @@ const Support = () => {
           <p className="text-gray-600 text-md">
             Need help? Contact our support team or submit your query below.
           </p>
-          <div className="bg-white rounded-2xl shadow p-6 space-y-5">
+          <div className="bg-white rounded-md shadow p-6 space-y-5">
           {/* Support Contact Info */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <Info label="Email" value="support@easypgmanager.com" />
@@ -102,7 +102,7 @@ const Support = () => {
 
 // Reusable Info component
 const Info = ({ label, value }) => (
-  <div className="bg-gray-50 rounded-xl p-4">
+  <div className="bg-gray-50 rounded-md p-4">
     <p className="text-text-muted  text-xs mb-1">{label}</p>
     <p className="font-medium">{value}</p>
   </div>

@@ -26,10 +26,9 @@ const CheckIns = () => {
   const [captchaToken, setCaptchaToken] = useState(null);
   const [processing, setProcessing] = useState(false);
 
-  // Retrieve user and token [cite: 2026-01-06]
   const user = JSON.parse(localStorage.getItem("user"));
   const userEmail = user?.email;
-  const authToken = localStorage.getItem("userToken"); // Updated to use userToken
+  const authToken = localStorage.getItem("userToken");
 
   useEffect(() => {
     if (authToken) {
@@ -50,17 +49,31 @@ const CheckIns = () => {
     }
   };
 
+  const isPastDate = (date) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return date < today;
+  };
+
   const handleSecurityAction = async (e) => {
     if (e) e.preventDefault();
-    if (processing) return;
+    
+    if (isPastDate(selectedDate)) {
+      return Swal.fire({
+        title: 'Action Denied',
+        text: 'You cannot perform check-in or check-out for past dates.',
+        icon: 'error',
+        confirmButtonColor: '#000000'
+      });
+    }
 
+    if (processing) return;
     setProcessing(true);
 
     try {
       const config = { headers: { Authorization: `Bearer ${authToken}` } };
 
       if (!isOtpSent) {
-        // Step 1: Send OTP [cite: 2026-01-06]
         const res = await axios.post("http://localhost:5000/api/users/send-otp", 
           { email: userEmail, recaptchaToken: captchaToken },
           config
@@ -72,11 +85,8 @@ const CheckIns = () => {
             html: `Your security code is: <strong>${res.data.otp}</strong><br><small>Use this to complete your check-in/out</small>`, 
             icon: 'info' 
           });
-        } else {
-          Swal.fire({ title: 'OTP Sent', text: 'Check your email for the code', icon: 'info' });
         }
       } else {
-        // Step 2: Verify and Create Record [cite: 2026-01-07]
         const res = await axios.post("http://localhost:5000/api/users/verify-security", 
           { email: userEmail, otp, type: activeAction },
           config
@@ -89,7 +99,7 @@ const CheckIns = () => {
         }
       }
     } catch (error) {
-      setCaptchaToken(null); // Reset captcha on error
+      setCaptchaToken(null); 
       Swal.fire('Error', error.response?.data?.message || 'Verification failed', 'error');
     } finally {
       setProcessing(false);
@@ -115,112 +125,126 @@ const CheckIns = () => {
   };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 bg-gray-50 min-h-screen space-y-6 text-black font-sans">
-      
-      <div className="px-1 text-center md:text-left">
-        <h1 className="text-xl sm:text-3xl md:text-5xl lg:text-4xl font-bold text-gray-800"> Attendance Control</h1>
-        <p className="text-xs sm:text-lg md:text-3xl lg:text-xl text-gray-500">
-          Verify Security Code to Log Daily Entry & Exit
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-white border border-gray-100 rounded-md p-6 shadow-sm flex flex-col items-center text-center space-y-4">
-          <div className="w-12 h-12 bg-gray-100 text-black rounded-full flex items-center justify-center">
-            <FaSignInAlt size={22} />
-          </div>
-          <h3 className="font-black uppercase text-sm md:text-3xl lg:text-lg">Check-In</h3>
-          <CButton 
-            className="w-full bg-black text-white py-3 text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 md:text-xl lg:text-sm"
-            onClick={() => { setActiveAction("Check-In"); setShowScanner(true); }}
-          >
-            <FaQrcode className="text-white" /> Check-In Now
-          </CButton>
+    /* Fix: min-h-screen and absolute positioning to clear the white bar at the top */
+    <div className="relative min-h-screen bg-gray-50 text-black">
+      <div className="p-4 sm:p-6 lg:p-8 space-y-6">
+        
+        <div className="px-1 text-center md:text-left">
+          <h1 className="text-xl sm:text-3xl md:text-5xl lg:text-4xl font-bold text-gray-800"> Attendance Control</h1>
+          <p className="text-xs sm:text-lg md:text-3xl lg:text-xl text-gray-500">
+            Verify Security Code to Log Daily Entry & Exit
+          </p>
         </div>
 
-        <div className="bg-white border border-gray-100 rounded-md p-6 shadow-sm flex flex-col items-center text-center space-y-4">
-          <div className="w-12 h-12 bg-orange-50 text-orange-600 rounded-full flex items-center justify-center">
-            <FaSignOutAlt size={22}  />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="bg-white border border-gray-200 rounded-md p-6 shadow-sm flex flex-col items-center text-center space-y-4">
+            <div className="w-12 h-12 bg-gray-100 text-black rounded-full flex items-center justify-center">
+              <FaSignInAlt size={22} />
+            </div>
+            <h3 className="font-black uppercase text-sm md:text-3xl lg:text-lg">Check-In</h3>
+            <CButton 
+              className="w-full bg-black text-white py-3 text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 md:text-xl lg:text-sm"
+              onClick={() => { setActiveAction("Check-In"); setShowScanner(true); }}
+            >
+              <FaQrcode className="text-white" /> Check-In Now
+            </CButton>
           </div>
-          <h3 className="font-black uppercase text-sm md:text-3xl lg:text-lg">Check-Out</h3>
-          <CButton 
-            className="w-full bg-orange-500 text-white py-3 text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 md:text-xl lg:text-sm"
-            onClick={() => { setActiveAction("Check-Out"); setShowScanner(true); }}
-          >
-            <FaSignOutAlt /> Check-Out Now
-          </CButton>
-        </div>
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <div className="lg:col-span-7 bg-white rounded-md shadow-sm border border-gray-100 p-2 sm:p-5">
-          <Calendar
-            onChange={setSelectedDate}
-            value={selectedDate}
-            tileClassName={tileClassName}
-            className="w-full border-none"
-          />
-        </div>
-
-        <div className="lg:col-span-5 bg-white rounded-md shadow-sm border border-gray-100 flex flex-col h-[400px]">
-          <div className="p-4 border-b border-gray-50 font-black uppercase tracking-widest text-[10px] flex items-center gap-2">
-            <FaHistory className="text-orange-500" /> Recent Activity
+          <div className="bg-white border border-gray-200 rounded-md p-6 shadow-sm flex flex-col items-center text-center space-y-4">
+            <div className="w-12 h-12 bg-orange-50 text-orange-600 rounded-full flex items-center justify-center">
+              <FaSignOutAlt size={22}  />
+            </div>
+            <h3 className="font-black uppercase text-sm md:text-3xl lg:text-lg">Check-Out</h3>
+            <CButton 
+              className="w-full bg-orange-500 text-white py-3 text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 md:text-xl lg:text-sm"
+              onClick={() => { setActiveAction("Check-Out"); setShowScanner(true); }}
+            >
+              <FaSignOutAlt /> Check-Out Now
+            </CButton>
           </div>
-          <div className="p-4 overflow-y-auto space-y-3 custom-scrollbar">
-            {loading ? (
-              <div className="text-center py-10 animate-pulse text-gray-400">Syncing...</div>
-            ) : (
-              history.map((entry) => (
-                <div key={entry.id || entry._id} className="border-l-4 border-black bg-gray-50 p-4 rounded-r-md flex justify-between items-center text-xs">
-                  <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-md ${entry.actionType === 'Check-out' ? 'bg-orange-100 text-orange-600' : 'bg-gray-200 text-black'}`}>
-                      <FaClock size={12}/>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div className="lg:col-span-7 bg-white rounded-md shadow-sm border border-gray-200 p-2 sm:p-5">
+            <Calendar
+              onChange={setSelectedDate}
+              value={selectedDate}
+              tileClassName={tileClassName}
+              className="w-full border-none"
+            />
+          </div>
+
+          <div className="lg:col-span-5 bg-white rounded-md shadow-sm border border-gray-200 flex flex-col h-[400px]">
+            <div className="p-4 border-b border-gray-100 font-black uppercase tracking-widest text-[10px] flex items-center gap-2">
+              <FaHistory className="text-orange-500" /> Recent Activity
+            </div>
+            <div className="p-4 overflow-y-auto space-y-3 custom-scrollbar flex-grow">
+              {loading ? (
+                <div className="text-center py-10 animate-pulse text-gray-400">Syncing...</div>
+              ) : history.length === 0 ? (
+                <div className="text-center py-10 text-gray-400 text-xs">No records found</div>
+              ) : (
+                history.map((entry) => (
+                  <div key={entry.id || entry._id} className="border-l-4 border-black bg-gray-50 p-4 rounded-r-md flex justify-between items-center text-xs">
+                    <div className="flex items-center gap-3">
+                      <div className={`p-2 rounded-md ${entry.actionType === 'Check-out' ? 'bg-orange-100 text-orange-600' : 'bg-gray-200 text-black'}`}>
+                        <FaClock size={12}/>
+                      </div>
+                      <div>
+                        <p className="font-black">{entry.checkIn}</p>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase">{entry.time || "Verified"}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-black">{entry.checkIn}</p>
-                      <p className="text-[10px] font-bold text-gray-400 uppercase">{entry.time || "Verified"}</p>
-                    </div>
+                    <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded ${entry.actionType === 'Check-out' ? 'bg-orange-100' : 'bg-gray-200'}`}>
+                      {entry.actionType}
+                    </span>
                   </div>
-                  <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded ${entry.actionType === 'Check-out' ? 'bg-orange-100' : 'bg-gray-200'}`}>
-                    {entry.actionType}
-                  </span>
-                </div>
-              ))
-            )}
+                ))
+              )}
+            </div>
           </div>
         </div>
       </div>
 
+      {/* Fix: Unified backdrop shade and centering */}
       {showScanner && (
-        <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[100] flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-md rounded-2xl overflow-hidden shadow-2xl">
-            
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+          {/* Background Shade Layer */}
+          <div 
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm" 
+            onClick={closeModal}
+          ></div>
+          
+          {/* Modal Content */}
+          <div className="relative bg-white w-[90%] max-w-md rounded-2xl overflow-hidden shadow-2xl z-10">
             <div className="p-4 bg-black text-white flex justify-between items-center">
-              <span className="text-sm font-black uppercase">Security Portal: {activeAction}</span>
-              <button onClick={closeModal} className="text-orange-500"><FaTimes size={20} /></button>
+              <span className="text-sm font-black uppercase tracking-tight">Security Portal: {activeAction}</span>
+              <button onClick={closeModal} className="text-orange-500 hover:text-orange-400 transition-colors">
+                <FaTimes size={20} />
+              </button>
             </div>
 
             <div className="p-8">
-              <form onSubmit={handleSecurityAction} className="space-y-6">
+              <form onSubmit={handleSecurityAction} className="space-y-6 text-center">
                 {!isOtpSent ? (
                   <div className="flex flex-col items-center gap-4">
-                    <ReCAPTCHA
-                      sitekey="6LfT_lksAAAAAOanKI3_z06JdciUMm5vg3emlZgL"
-                      onChange={(token) => setCaptchaToken(token)}
-                      onExpired={() => setCaptchaToken(null)}
-                      onError={() => setCaptchaToken(null)}
-                    />
-                    <p className="text-[10px] text-gray-400 font-bold uppercase text-center">
+                    <div className="inline-block bg-gray-50 p-2 rounded-lg border border-gray-100">
+                      <ReCAPTCHA
+                        sitekey="6LfT_lksAAAAAOanKI3_z06JdciUMm5vg3emlZgL"
+                        onChange={(token) => setCaptchaToken(token)}
+                      />
+                    </div>
+                    <p className="text-[10px] text-gray-400 font-bold uppercase">
                       Confirm you are human to receive code
                     </p>
                   </div>
                 ) : (
-                  <div className="space-y-4 text-center">
+                  <div className="space-y-4">
                     <h4 className="text-xs font-black uppercase text-gray-800">Enter Security Code</h4>
                     <input 
                       type="text" 
                       placeholder="· · · · · ·"
-                      className="w-full bg-gray-50 border-2 border-gray-100 p-4 rounded-xl text-center font-black text-2xl tracking-[0.3em] focus:border-orange-500 outline-none"
+                      className="w-full bg-gray-50 border-2 border-gray-200 p-4 rounded-xl text-center font-black text-2xl tracking-[0.3em] focus:border-orange-500 focus:bg-white transition-all outline-none"
                       value={otp}
                       onChange={(e) => setOtp(e.target.value)}
                     />
@@ -228,12 +252,18 @@ const CheckIns = () => {
                 )}
 
                 <CButton 
-                  className="w-full bg-black text-white py-4 font-black uppercase tracking-widest rounded-xl disabled:opacity-50"
+                  className={` font-black uppercase tracking-widest r transition-all ${isPastDate(selectedDate) ? 'bg-gray-400 text-white cursor-not-allowed' : ' text-white shadow-lg'}`}
                   type="submit"
-                  disabled={(!captchaToken && !isOtpSent) || processing}
+                  disabled={(!captchaToken && !isOtpSent) || processing || isPastDate(selectedDate)}
                 >
                   {processing ? "Processing..." : (isOtpSent ? `Verify & ${activeAction}` : "Get Security Code")}
                 </CButton>
+                
+                {isPastDate(selectedDate) && (
+                  <p className="text-[10px] text-red-500 font-black uppercase mt-2">
+                    Action unavailable for past dates
+                  </p>
+                )}
               </form>
             </div>
           </div>
@@ -241,11 +271,13 @@ const CheckIns = () => {
       )}
 
       <style jsx global>{`
-        .react-calendar { width: 100% !important; border: none !important; }
+        .react-calendar { width: 100% !important; border: none !important; background: transparent !important; }
         .transparent-black-tile { background: rgba(0, 0, 0, 0.08) !important; color: black !important; border-radius: 6px; }
         .transparent-orange-tile { background: rgba(249, 115, 22, 0.08) !important; color: #f97316 !important; border-radius: 6px; }
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 10px; }
+        .react-calendar__tile--now { background: #fff7ed !important; color: #f97316 !important; font-weight: bold; border-radius: 6px; }
+        .react-calendar__tile--active { background: #000 !important; color: #fff !important; border-radius: 6px; }
       `}</style>
     </div>
   );
