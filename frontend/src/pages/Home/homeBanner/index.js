@@ -91,19 +91,19 @@ const HomeBanner = () => {
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="mt-6 max-w-xl bg-orange-50 border border-orange-200 rounded-2xl p-4 flex flex-col sm:flex-row justify-between items-center gap-4"
+                className="mt-6 max-w-xl bg-orange-50 border border-orange-200 rounded-md p-4 flex flex-col sm:flex-row justify-between items-center gap-4"
               >
                 <div className="text-center sm:text-left">
-                  <p className="text-sm font-bold text-orange-800 uppercase tracking-wide">
+                  <p className="text-sm font-bold text-black uppercase tracking-wide">
                     Profile Incomplete
                   </p>
-                  <p className="text-sm text-orange-700">
+                  <p className="text-sm text-primary">
                     Finish setting up your account to access all features.
                   </p>
                 </div>
 
                 <button
-                  className="w-full sm:w-auto bg-orange-500 text-white px-6 py-2.5 rounded-xl text-sm font-black shadow-md"
+                  className="w-full sm:w-auto bg-primary text-white px-6 py-2.5 rounded-md text-sm font-black shadow-md"
                   onClick={() =>
                     role === "owner"
                       ? navigate("/owner/dashboard/profileStatus")
