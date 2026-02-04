@@ -166,15 +166,7 @@ export const faqs = [
     answer:
       "Yes, tenants can pay securely online through integrated billing and payment features."
   },
-  {
-    id: 3,
-    category: "General Questions",
-    question: "Is there a mobile app for tenants?",
-    answer:
-      "Yes, EasyPG Manager provides a mobile app for tenants to check bookings, pay rent, and submit requests."
-  },
-
-  // Support Team
+    // Support Team
   {
     id: 4,
     category: "Support Team",

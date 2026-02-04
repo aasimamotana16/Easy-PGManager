@@ -42,7 +42,7 @@ const HomePage = () => {
               className="relative h-20 w-20 md:h-32 md:w-32 object-contain"
             />
           </div>
-          <h2 className="text-lg md:text-2xl font-black text-gray-900 tracking-widest uppercase">
+          <h2 className="text-lg md:text-2xl  text-gray-900 tracking-widest uppercase">
             EasyPG Manager
           </h2>
           <div className="mt-3 flex gap-1">

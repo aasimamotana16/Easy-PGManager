@@ -99,7 +99,7 @@ const PGDetails = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 font-poppins text-base md:text-lg">
+    <div className="min-h-screen bg-gray-50  text-base md:text-lg">
       <Navbar />
 
       <div className="max-w-7xl mx-auto px-4 py-10 flex flex-col lg:flex-row lg:gap-20">
@@ -109,7 +109,7 @@ const PGDetails = () => {
 
           {/* 0. MOBILE ONLY NAME & RATING */}
           <div className="order-0 bg-white rounded-md shadow p-7 lg:hidden">
-            <h1 className="text-4xl sm:text-4xl font-black">{pg.name}</h1>
+            <h1 className="text-4xl sm:text-4xl ">{pg.name}</h1>
             <p className="text-gray-600 flex items-center gap-3 text-2xl">
               <MapPinIcon className="h-5 w-5 text-red-400" /> {pg.location}
             </p>
@@ -129,15 +129,15 @@ const PGDetails = () => {
           {/* 2. BOOK NOW */}
           <div className="order-2 bg-white rounded-md shadow p-6 flex justify-between items-center border border-primary">
             <div>
-              <p className="sm:text-2xl lg:text-xl font-bold text-gray-600 uppercase">Starting Price</p>
-              <p className="sm:text-4xl lg:text-2xl font-black text-black">
+              <p className="sm:text-2xl lg:text-xl  text-gray-600 uppercase">Starting Price</p>
+              <p className="sm:text-4xl lg:text-2xl  text-black">
                 ₹{displayStartingPrice}
-                <span className="sm:text-2xl lg:text-xl text-gray-400 font-normal">/month</span>
+                <span className="sm:text-2xl lg:text-xl text-gray-400 ">/month</span>
               </p>
             </div>
             <button
               onClick={() => navigate(`/book/${pg._id}`)}
-              className="bg-primary hover:bg-orange-600 text-white px-8 md:px-12 py-4 rounded-md font-bold shadow-md transition-all active:scale-95 sm:text-2xl lg:text-xl"
+              className="bg-primary  text-white px-8 md:px-12 py-4 rounded-md  shadow-md transition-all active:scale-95 sm:text-2xl lg:text-xl"
             >
               Book Now
             </button>
@@ -152,7 +152,7 @@ const PGDetails = () => {
 
           {/* 4. MAP */}
           <div className="order-4 bg-white rounded-md overflow-hidden shadow">
-            <div className="flex justify-between items-center p-5 border-b font-bold">
+            <div className="flex justify-between items-center p-5 border-b ">
               <div className="flex items-center gap-2 sm:text-3xl lg:text-xl"><MapPinIcon className="h-6 w-6 text-red-500" />Location</div>
               <button onClick={() => window.open(`https://maps.google.com?q=${encodeURIComponent(pg.name + " " + (pg.location || ""))}`, "_blank")} className="text-sm bg-blue-600 text-white px-4 py-2 rounded-xl">
                 <PaperAirplaneIcon className="h-5 w-5 inline mr-1 -rotate-45" />Start
@@ -164,9 +164,9 @@ const PGDetails = () => {
           {/* 5. REVIEWS */}
           <div ref={reviewsRef} className="order-5 bg-white rounded-md p-6 shadow">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="font-black sm:text-3xl lg:text-xl">⭐ {averageRating} ({reviews.length} Reviews)</h2>
+              <h2 className="sm:text-3xl lg:text-xl">⭐ {averageRating} ({reviews.length} Reviews)</h2>
               {isLoggedIn && (
-                <button onClick={() => setIsFeedbackOpen(true)} className="text-blue-600 sm:text-2xl lg:text-xl font-bold hover:underline">
+                <button onClick={() => setIsFeedbackOpen(true)} className="text-blue-600 sm:text-2xl lg:text-xl  hover:underline">
                   Write Review
                 </button>
               )}
@@ -174,7 +174,7 @@ const PGDetails = () => {
 
             {reviews.map((r, i) => (
               <div key={i} className="border-b last:border-none pb-4 mb-4">
-                <div className="flex justify-between font-bold text-lg">
+                <div className="flex justify-between  text-lg">
                   <span className="sm:text-3xl lg:text-xl ">{r.user}</span>
                   <span className="text-amber-500">★ {r.rating}</span>
                 </div>
@@ -187,7 +187,7 @@ const PGDetails = () => {
         {/* ================= RIGHT / LAPTOP SIDEBAR ================= */}
         <div className="hidden lg:flex w-[50%] flex-col gap-6">
           <div className="bg-white rounded-md shadow p-8">
-            <h1 className="text-2xl font-black mb-2">{pg.name}</h1>
+            <h1 className="text-2xl  mb-2">{pg.name}</h1>
             <p className="text-gray-500 flex items-center gap-1 text-lg">
               <MapPinIcon className="h-6 w-6 text-red-400" /> {pg.location}
             </p>
@@ -197,8 +197,8 @@ const PGDetails = () => {
                 <StarIcon className="h-8 w-8 text-white" />
               </div>
               <div>
-                <p className="text-xs text-gray-600 font-bold uppercase tracking-widest">Community Rating</p>
-                <span className="font-black text-xl">{averageRating}</span>
+                <p className="text-xs text-gray-600  uppercase ">Community Rating</p>
+                <span className=" text-xl">{averageRating}</span>
               </div>
             </div>
           </div>
@@ -213,27 +213,27 @@ const PGDetails = () => {
       {isFeedbackOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-md rounded-md p-8 relative shadow-2xl">
-            <button onClick={() => setIsFeedbackOpen(false)} className="absolute top-5 right-5 text-gray-400 hover:text-black font-poppins">
+            <button onClick={() => setIsFeedbackOpen(false)} className="absolute top-5 right-5 text-gray-400 hover:text-black ">
               <XMarkIcon className="h-7 w-7" />
             </button>
-            <h2 className="text-2xl font-black mb-6 text-gray-800 text-center font-poppins">Write a Review</h2>
+            <h2 className="text-2xl mb-6 text-gray-800 text-center ">Write a Review</h2>
             <div className="space-y-5">
               <div>
-                <label className="text-sm font-bold text-gray-500 uppercase ml-1">Full Name</label>
+                <label className="text-sm  text-gray-500 uppercase ml-1">Full Name</label>
                 <input
                   type="text"
                   value={editableName}
                   onChange={(e) => setEditableName(e.target.value)}
-                  className="w-full p-4 border-2 border-gray-100 rounded-md focus:border-orange-400 outline-none text-lg font-poppins"
+                  className="w-full p-4 border-2 border-gray-100 rounded-md focus:border-orange-400 outline-none text-lg "
                   placeholder="Enter your name"
                 />
               </div>
               <div>
-                <label className="text-sm font-bold text-gray-500 uppercase ml-1">Email (Locked)</label>
-                <input value={userEmail} disabled className="w-full p-4 border-2 border-gray-50 rounded-md bg-gray-50 text-gray-400 cursor-not-allowed text-lg font-poppins" />
+                <label className="text-sm  text-gray-500 uppercase ml-1">Email (Locked)</label>
+                <input value={userEmail} disabled className="w-full p-4 border-2 border-gray-50 rounded-md bg-gray-50 text-gray-400 cursor-not-allowed text-lg " />
               </div>
               <div>
-                <label className="text-sm font-bold text-gray-500 uppercase ml-1">Rating</label>
+                <label className="text-sm  text-gray-500 uppercase ml-1">Rating</label>
                 <div className="flex gap-2 mt-1 justify-center">
                   {[1, 2, 3, 4, 5].map((n) => (
                     <button key={n} onClick={() => setRating(n)} className={`text-5xl ${n <= rating ? "text-amber-500" : "text-gray-200"}`}>★</button>
@@ -241,13 +241,13 @@ const PGDetails = () => {
                 </div>
               </div>
               <div>
-                <label className="text-sm font-bold text-gray-500 uppercase ml-1">Review</label>
-                <textarea rows={4} value={comment} onChange={(e) => setComment(e.target.value)} className="w-full border-2 border-gray-100 rounded-md p-4 focus:border-orange-400 outline-none text-lg font-poppins" placeholder="Share details of your experience..." />
+                <label className="text-sm  text-gray-500 uppercase ml-1">Review</label>
+                <textarea rows={4} value={comment} onChange={(e) => setComment(e.target.value)} className="w-full border-2 border-gray-100 rounded-md p-4 focus:border-orange-400 outline-none text-lg " placeholder="Share details of your experience..." />
               </div>
             </div>
             <div className="flex gap-3 mt-8">
-              <button onClick={() => setIsFeedbackOpen(false)} className="flex-1 bg-gray-100 py-4 rounded-md font-bold text-gray-600 text-lg font-poppins">Cancel</button>
-              <button onClick={handleSubmitFeedback} className="flex-1 bg-orange-500 text-white py-4 rounded-md font-bold shadow-lg text-lg font-poppins">Submit Review</button>
+              <button onClick={() => setIsFeedbackOpen(false)} className="flex-1 bg-gray-100 py-4 rounded-md  text-gray-600 text-lg ">Cancel</button>
+              <button onClick={handleSubmitFeedback} className="flex-1 bg-orange-500 text-white py-4 rounded-md  shadow-lg text-lg ">Submit Review</button>
             </div>
           </div>
         </div>
@@ -267,13 +267,13 @@ const FeatureList = ({ title, items, icon }) => {
 
   return (
     <div className="bg-white p-6 rounded-md shadow font-poppins">
-      <h2 className="font-black mb-4 uppercase lg:text-xl sm:text-3xl tracking-wider flex items-center gap-2">
+      <h2 className=" mb-4 uppercase lg:text-xl sm:text-3xl tracking-wider flex items-center gap-2">
         <span>{icon}</span> {title}
       </h2>
       <div className="flex flex-wrap gap-3">
         {normalizedItems.length > 0 ? (
           normalizedItems.map((item, i) => (
-            <span key={i} className="px-5 py-2 bg-amber-50 rounded-md text-sm font-black uppercase text-amber-800 border border-amber-100">
+            <span key={i} className="px-5 py-2 bg-amber-50 rounded-md text-sm  uppercase text-amber-800 border border-amber-100">
               {item}
             </span>
           ))
@@ -288,8 +288,8 @@ const FeatureList = ({ title, items, icon }) => {
 const HouseRules = ({ pg, ruleIcons }) => {
   const rules = pg?.houseRules || pg?.rules || [];
   return (
-    <div className="bg-white p-6 rounded-md shadow font-poppins">
-      <h2 className="font-black mb-4 uppercase lg:text-xl sm:text-3xl tracking-wider flex items-center gap-2">
+    <div className="bg-white p-6 rounded-md shadow ">
+      <h2 className=" mb-4 uppercase lg:text-xl sm:text-3xl tracking-wider flex items-center gap-2">
         <span>📜</span> House Rules
       </h2>
       <div className="space-y-4">
@@ -300,7 +300,7 @@ const HouseRules = ({ pg, ruleIcons }) => {
             return (
               <div key={i} className="flex gap-4 items-center bg-gray-50 p-4 rounded-md border border-gray-100">
                 <span className="text-2xl">{ruleIcons[ruleIconKey] || "✅"}</span>
-                <span className="text-base font-black uppercase text-gray-600">
+                <span className="text-base  uppercase text-gray-600">
                   {ruleText}
                 </span>
               </div>
@@ -315,9 +315,9 @@ const HouseRules = ({ pg, ruleIcons }) => {
 };
 
 const NotFoundState = () => (
-  <div className="min-h-screen flex flex-col items-center justify-center font-black text-red-500 bg-gray-50 font-poppins">
+  <div className="min-h-screen flex flex-col items-center justify-center  text-red-500 bg-gray-50 ">
     <h1 className="text-8xl mb-2">404</h1>
-    <p className="text-2xl uppercase tracking-tighter">Property Not Found</p>
+    <p className="text-2xl uppercase ">Property Not Found</p>
   </div>
 );
 

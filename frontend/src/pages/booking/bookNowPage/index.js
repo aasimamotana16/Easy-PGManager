@@ -165,7 +165,7 @@ const BookingPage = () => {
   return (
     <div className="min-h-screen bg-gray-100 px-4 py-10">
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold mb-1">Book {pg.name}</h1>
+        <h1 className="text-3xl  mb-1">Book {pg.name}</h1>
         <p className="text-gray-600 mb-8">{pg.location}</p>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -280,7 +280,7 @@ const BookingPage = () => {
               <span className="text-green-600 font-medium">{maxBeds} Beds Available</span>
               <div className="flex items-center gap-3 bg-gray-100 p-1 rounded">
                 <button onClick={decrease} className="w-8 h-8 flex items-center justify-center bg-white rounded shadow-sm disabled:opacity-50" disabled={isSubmitted}>−</button>
-                <span className="font-bold w-4 text-center">{persons}</span>
+                <span className=" w-4 text-center">{persons}</span>
                 <button onClick={increase} className="w-8 h-8 flex items-center justify-center bg-white rounded shadow-sm disabled:opacity-50" disabled={isSubmitted}>+</button>
               </div>
             </div>
@@ -290,7 +290,7 @@ const BookingPage = () => {
                     <span>Rent ({persons} Person)</span>
                     <span>₹{totalRent}</span>
                 </div>
-                <div className="flex justify-between font-bold text-xl text-orange-600">
+                <div className="flex justify-between  text-xl text-orange-600">
                     <span>Total</span>
                     <span>₹{totalRent}</span>
                 </div>

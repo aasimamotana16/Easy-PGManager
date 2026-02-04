@@ -65,7 +65,7 @@ export default function PGListings() {
 
   return (
     <div className="relative mt-24 overflow-hidden">
-      <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6 text-center">
+      <h2 className="text-3xl sm:text-4xl md:text-5xl  mb-6 text-center">
         Available PGs
       </h2>
 

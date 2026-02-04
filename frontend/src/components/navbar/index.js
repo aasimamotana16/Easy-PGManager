@@ -61,7 +61,7 @@ const Navbar = () => {
   const isActive = location.pathname === path;
   
   return `relative text-sm transition-all pb-1
-    ${isActive ? "text-primary font-bold" : "text-white hover:text-white"}
+    ${isActive ? "text-primary " : "text-white hover:text-white"}
     
     after:content-[''] after:absolute after:left-0 after:bottom-0 
     after:h-[2px] after:bg-primary after:transition-all after:duration-300
@@ -89,7 +89,7 @@ const Navbar = () => {
           onClick={() => navigate("/")}
         >
           <img src="/logos/logo1.png" className="h-9 w-auto mr-1" alt="logo" />
-          <span className="text-white font-bold text-lg">
+          <span className="text-white  text-lg">
             EasyPG <span className="text-primary">Manager</span>
           </span>
         </div>
@@ -150,7 +150,7 @@ const Navbar = () => {
                 <div className="absolute right-0 top-12 w-48 bg-white rounded-lg shadow-xl z-[110] overflow-hidden border border-gray-100">
                   <div className="p-3 border-b border-gray-100 bg-gray-50">
                     <p className="text-xs text-gray-500">Signed in as</p>
-                    <p className="text-sm font-bold text-gray-900 truncate">{userName}</p>
+                    <p className="text-sm  text-gray-900 truncate">{userName}</p>
                   </div>
                   <div className="py-1">
                     <button onClick={goToDashboard} className="w-full px-4 py-2 hover:bg-gray-100 text-gray-700 text-sm text-left">
@@ -182,20 +182,20 @@ const Navbar = () => {
           <div className="bg-white p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center">
             {!isLogoutSuccessful ? (
               <>
-                <h3 className="text-xl font-bold text-gray-900">Sign Out?</h3>
+                <h3 className="text-xl  text-gray-900">Sign Out?</h3>
                 <p className="text-gray-500 mt-2 text-sm">
                   Are you sure you want to end your session?
                 </p>
                 <div className="flex gap-3 mt-6">
                   <button
                     onClick={() => setIsLogoutModalOpen(false)}
-                    className="flex-1 py-3 bg-gray-100 text-gray-600 rounded-md font-bold text-sm"
+                    className="flex-1 py-3 bg-gray-100 text-gray-600 rounded-md  text-sm"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleLogout}
-                    className="flex-1 py-3 bg-primary text-white rounded-md font-bold text-sm"
+                    className="flex-1 py-3 bg-primary text-white rounded-md  text-sm"
                   >
                     YES
                   </button>
@@ -206,7 +206,7 @@ const Navbar = () => {
                 <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-2xl mb-4">
                   ✓
                 </div>
-                <h3 className="text-xl font-bold">Logged Out</h3>
+                <h3 className="text-xl ">Logged Out</h3>
               </div>
             )}
           </div>

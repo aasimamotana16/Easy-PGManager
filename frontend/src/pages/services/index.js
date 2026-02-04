@@ -34,7 +34,7 @@ export default function Services() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 sm:py-16 lg:py-20">
 
           {/* PAGE TITLE */}
-          <h1 className="text-3xl md:text-5xl lg:text-5xl font-extrabold text-center mb-4 sm:mb-6">
+          <h1 className="text-3xl md:text-5xl lg:text-5xl  text-center mb-4 sm:mb-6">
             Our Services
           </h1>
 
@@ -58,7 +58,7 @@ export default function Services() {
               className="w-full h-44 sm:h-52 lg:h-60 object-cover rounded-2xl mb-5 sm:mb-6"
             />
 
-            <h2 className="text-2xl md:text-4xl lg:text-4xl font-extrabold text-orange-600 mb-3 sm:mb-4">
+            <h2 className="text-2xl md:text-4xl lg:text-4xl  text-orange-600 mb-3 sm:mb-4">
               Find Your Perfect Stay
             </h2>
 

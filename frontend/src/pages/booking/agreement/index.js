@@ -40,7 +40,7 @@ const UserAgreement = ({ user }) => {
       <Navbar />
 
       <div className="max-w-3xl mx-auto px-6 py-24 text-center">
-        <h1 className="text-4xl font-bold mb-6">📝 Rental Agreement</h1>
+        <h1 className="text-4xl  mb-6">📝 Rental Agreement</h1>
 
         <p className="text-lg mb-10">
           Rental Agreement for <span className="font-semibold">{property.name}</span>.

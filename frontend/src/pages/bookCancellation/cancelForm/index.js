@@ -31,7 +31,7 @@ const CancelForm = () => {
         Your profile will be archived for 10 days.
       </div>
 
-      <h2 className="text-2xl font-bold mb-6 text-primary">
+      <h2 className="text-2xl  mb-6 text-primary">
         Cancel Booking
       </h2>
 

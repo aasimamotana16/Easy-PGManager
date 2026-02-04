@@ -32,7 +32,7 @@ const CInput = ({
           }`}
         >
           {label}
-          {required && <span className="text-red-600 ml-1 font-bold">*</span>}
+          {required && <span className="text-red-600 ml-1">*</span>}
         </label>
       )}
 

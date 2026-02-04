@@ -29,7 +29,7 @@ const HomeBanner = () => {
           <div className="w-full lg:w-1/2 space-y-6 text-center lg:text-left order-2 lg:order-1">
             
             <motion.h1
-  className="text-5xl font-black leading-tight" // Added leading-tight for better spacing between lines
+  className="text-5xl  " 
   variants={fadeUp}
   initial="hidden"
   animate="visible"
@@ -67,7 +67,6 @@ const HomeBanner = () => {
                   px-8
                   h-12
                   text-sm
-                  font-bold
                   shadow-lg
                 "
                 text="Get Started"
@@ -81,7 +80,6 @@ const HomeBanner = () => {
                   px-8
                   h-12
                   text-sm
-                  font-bold
                 "
                 variant="outlined"
                 onClick={() => navigate("/about")}
@@ -98,7 +96,7 @@ const HomeBanner = () => {
                 className="mt-6 max-w-xl bg-orange-50 border border-orange-200 rounded-md p-4 flex flex-col sm:flex-row justify-between items-center gap-4"
               >
                 <div className="text-center sm:text-left">
-                  <p className="text-sm font-bold text-black uppercase tracking-wide">
+                  <p className="text-sm  text-black uppercase tracking-wide">
                     Profile Incomplete
                   </p>
                   <p className="text-sm text-primary">
@@ -107,7 +105,7 @@ const HomeBanner = () => {
                 </div>
 
                 <button
-                  className="w-full sm:w-auto bg-primary text-white px-6 py-2.5 rounded-md text-sm font-black shadow-md"
+                  className="w-full sm:w-auto bg-primary text-white px-6 py-2.5 rounded-md text-sm  shadow-md"
                   onClick={() =>
                     role === "owner"
                       ? navigate("/owner/dashboard/profileStatus")

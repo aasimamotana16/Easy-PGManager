@@ -47,7 +47,7 @@ const AboutIntro = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.35 }}
             className="
-              font-bold text-white leading-tight mb-4
+               text-white  mb-4
               text-5xl
             "
           >

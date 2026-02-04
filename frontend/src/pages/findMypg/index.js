@@ -122,7 +122,7 @@ export default function FindMyPG() {
       <Navbar />
 
       <main className="flex-1 max-w-7xl mx-auto px-6 py-16 w-full">
-        <h1 className="text-4xl font-extrabold text-center mb-6">
+        <h1 className="text-4xl  text-center mb-6">
           {city ? `PGs in ${city}` : "Find My Perfect PG"}
         </h1>
 

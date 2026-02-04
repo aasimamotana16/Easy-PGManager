@@ -36,7 +36,7 @@ export default function FAQ() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           {/* Heading */}
           <div className="text-center mb-12">
-            <h1 className="text-4xl sm:text-5xl font-extrabold text-amber-600 mb-4">
+            <h1 className="text-4xl sm:text-5xl  text-amber-600 mb-4">
               Frequently Asked Questions
             </h1>
             <p className="text-lg text-gray-700">
@@ -56,7 +56,7 @@ export default function FAQ() {
                   }}
                   className={`w-full text-left p-4 rounded-xl transition-all duration-200 ${
                     activeCategory === category
-                      ? "bg-amber-100 text-amber-700 font-bold shadow-md transform scale-[1.02]"
+                      ? "bg-amber-100 text-amber-700  shadow-md transform scale-[1.02]"
                       : "bg-white text-gray-700 hover:bg-amber-50 shadow-sm"
                   }`}
                 >

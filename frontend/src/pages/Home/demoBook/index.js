@@ -125,7 +125,7 @@ const DemoBook = ({ isOpen, onClose }) => {
           ✕
         </button>
 
-        <h2 className="text-3xl font-bold text-center text-gray-800 mb-2">
+        <h2 className="text-3xl  text-center text-gray-800 mb-2">
           Schedule Demo
         </h2>
 
@@ -182,7 +182,7 @@ const DemoBook = ({ isOpen, onClose }) => {
             type="submit"
             variant="contained"
             disabled={isSubmitting}
-            className="w-full py-4 text-lg font-bold tracking-wide"
+            className="w-full py-4 text-lg  tracking-wide"
           />
         </form>
 

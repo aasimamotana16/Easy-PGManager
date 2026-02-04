@@ -77,7 +77,7 @@ const HomeSearch = () => {
     >
       {/* Heading */}
       <div className="text-center mb-6">
-        <h2 className="text-3xl font-bold text-text-primary mb-2">
+        <h2 className="text-3xl  text-text-primary mb-2">
           Find Paying Guest Accommodation
         </h2>
         <p className="text-lg text-text-secondary">

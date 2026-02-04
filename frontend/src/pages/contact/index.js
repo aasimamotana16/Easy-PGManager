@@ -36,7 +36,6 @@ const Contact = () => {
     const emailRegex = /^\S+@\S+\.\S+$/;
     if (!form.email.trim() || !emailRegex.test(form.email)) newErrors.email = true;
     
-    // Phone must be exactly 10 digits
     if (!form.mobile.trim() || form.mobile.length !== 10) newErrors.mobile = true;
     
     if (!form.message.trim()) newErrors.message = true;
@@ -48,6 +47,7 @@ const Contact = () => {
   /* ---------------- SUBMIT ---------------- */
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
     if (!validate()) {
       Swal.fire({
         icon: 'warning',
@@ -77,6 +77,8 @@ const Contact = () => {
       const data = await response.json();
 
       if (data.success) {
+        console.log("Form submitted successfully!");
+
         Swal.fire({
           icon: 'success',
           title: 'Message Sent!',
@@ -95,7 +97,6 @@ const Contact = () => {
         });
       }
     } catch (error) {
-      console.error("Connection Error:", error);
       Swal.fire({
         icon: 'error',
         title: 'Server Error',
@@ -132,14 +133,14 @@ const Contact = () => {
       <Navbar />
 
       <div className="text-center mt-6 mb-6 px-4">
-        <h2 className="text-3xl sm:text-4xl font-bold text-black">Contact Us</h2>
+        <h2 className="text-3xl sm:text-4xl  text-black">Contact Us</h2>
       </div>
 
       <main className="flex-1 flex flex-col lg:flex-row gap-10 px-4 lg:px-12 mb-10">
         <div className="flex-1 flex justify-center">
           <div className="w-full max-w-2xl md:max-w-3xl mx-auto ">
             <div className="bg-white border rounded-md p-10 shadow-lg">
-              <h2 className="text-center font-bold mb-6 text-3xl sm:text-4xl text-primary">
+              <h2 className="text-center  mb-6 text-3xl sm:text-4xl text-primary">
                 Get in Touch
               </h2>
 
@@ -201,7 +202,7 @@ const Contact = () => {
 
         <div className="flex-1 flex flex-col gap-6">
           <div className="bg-white p-8 rounded-xl shadow-lg">
-            <h3 className="text-2xl md:text-4xl lg:text-2xl font-bold text-gray-900 mb-4">
+            <h3 className="text-2xl md:text-4xl lg:text-2xl  text-gray-900 mb-4">
               How can We Help?
             </h3>
             <p className="text-gray-600 mb-4 md:text-2xl lg:text-xl">
@@ -209,13 +210,13 @@ const Contact = () => {
               onboarding help, or product questions.
             </p>
             <ul className="space-y-3 md:text-2xl lg:text-xl font-medium">
-              <li className="flex items-center gap-2"><span className="text-green-500 font-bold">✔</span> Request a demo</li>
-              <li className="flex items-center gap-2"><span className="text-green-500 font-bold">✔</span> Choose the right plan</li>
-              <li className="flex items-center gap-2"><span className="text-green-500 font-bold">✔</span> Get onboarding help</li>
+              <li className="flex items-center gap-2"><span className="text-green-500 ">✔</span> Request a demo</li>
+              <li className="flex items-center gap-2"><span className="text-green-500 ">✔</span> Choose the right plan</li>
+              <li className="flex items-center gap-2"><span className="text-green-500 ">✔</span> Get onboarding help</li>
             </ul>
             <div className="mt-8">
               <div className="bg-gray-50 p-6 rounded-xl shadow border border-gray-100">
-                <h4 className="font-bold text-gray-900 mb-2 text-lg md:text-2xl lg:text-xl">General Communication</h4>
+                <h4 className=" text-gray-900 mb-2 text-lg md:text-2xl lg:text-xl">General Communication</h4>
                 <p className="text-sm md:text-xl lg:text-base text-gray-600 mb-1">Email us at:</p>
                 <p className="font-semibold text-indigo-600 break-all text-base md:text-2xl lg:text-xl">support@easyPGmanager.com</p>
               </div>
