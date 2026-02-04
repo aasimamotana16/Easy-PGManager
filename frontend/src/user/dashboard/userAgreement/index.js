@@ -129,7 +129,7 @@ const Agreements = () => {
 
   if (loading) return (
     <div className="flex justify-center items-center min-h-[60vh]">
-      <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-orange-500"></div>
+      <div className="animate-spin rounded-md h-10 w-10 border-t-2 border-orange-500"></div>
     </div>
   );
 
@@ -146,7 +146,7 @@ const Agreements = () => {
           </p>
         </div>
         
-        <div className={`self-start md:self-center px-4 py-1.5 rounded-full text-[10px] md:text-sm font-black uppercase tracking-tighter shadow-sm border ${
+        <div className={`self-start md:self-center px-4 py-1.5 rounded-md text-[10px] md:text-sm font-black uppercase tracking-tighter shadow-sm border ${
           agreementInfo?.status === 'Active' 
             ? 'bg-green-50 text-green-700 border-green-200' 
             : 'bg-orange-50 text-orange-700 border-orange-200'
