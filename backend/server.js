@@ -36,6 +36,8 @@ require('./models/userModel'); // <--- ADD THIS
 require('./models/agreementModel'); // <--- ADD THIS for agreement functionality
 require('./models/timelineModel'); // <--- Add this line here! [cite: 2026-01-06]
 require('./models/paymentModel'); // <--- CRITICAL for tonight's payment flow [cite: 2026-01-01]
+require('./models/featureModel'); // <--- ADD THIS for features functionality
+require('./models/pendingPaymentModel'); // <--- ADD THIS for pending payments
 
 // --- ROUTES (Standardized with /api prefix) ---
 
@@ -102,7 +104,16 @@ app.post('/api/request-demo', async (req, res) => {
     });
     console.log("Demo request saved to Database");
 
-    // 2. Setup Email Transporter using your existing .env
+    // 2. Check if email is configured, otherwise skip email sending
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+      console.log("⚠️ Development mode: Email not configured, skipping email sending");
+      return res.status(201).json({ 
+        success: true, 
+        message: "Demo request submitted successfully! (Email not configured)" 
+      });
+    }
+
+    // 3. Setup Email Transporter using your existing .env
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {

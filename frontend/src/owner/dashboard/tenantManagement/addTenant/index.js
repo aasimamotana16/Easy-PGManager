@@ -4,6 +4,7 @@ import React, { useState } from "react";
 const PG_LIST = [
   { id: 1, name: "Green Villa" },
   { id: 2, name: "Sunshine Residency" },
+  { id: 3, name: "Metro Living" },
 ];
 
 const AddTenant = ({ onClose, onSave }) => {
@@ -13,7 +14,7 @@ const AddTenant = ({ onClose, onSave }) => {
     email: "",
     pgId: "", 
     room: "",
-    personsInRoom: 1, // default 1
+    joiningDate: new Date().toISOString().split('T')[0], // Default to today
   });
 
   return (
@@ -93,30 +94,36 @@ const AddTenant = ({ onClose, onSave }) => {
           />
         </div>
 
-        {/* PERSONS IN ROOM */}
+        {/* JOINING DATE */}
         <div className="mb-4">
-          <label className="block text-sm font-medium mb-1">Persons in Room</label>
+          <label className="block text-sm font-medium mb-1">Joining Date</label>
           <input
-            type="number"
-            min={1}
-            value={form.personsInRoom}
-            onChange={(e) =>
-              setForm({ ...form, personsInRoom: parseInt(e.target.value) })
-            }
+            type="date"
             className="w-full border p-2 rounded"
+            value={form.joiningDate}
+            onChange={(e) => setForm({ ...form, joiningDate: e.target.value })}
           />
         </div>
 
-        {/* BUTTONS */}
+        {/* ACTIONS */}
         <div className="flex justify-end gap-2">
-          <button onClick={onClose} className="px-4 py-2 border rounded">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
+          >
             Cancel
           </button>
           <button
-            onClick={() => onSave(form)}
-            className="px-4 py-2 bg-orange-500 text-white rounded"
+            onClick={() => {
+              if (!form.name || !form.phone || !form.email || !form.pgId || !form.room) {
+              alert("Please fill all fields");
+              return;
+            }
+              onSave(form);
+            }}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
           >
-            Save
+            Add Tenant
           </button>
         </div>
       </div>

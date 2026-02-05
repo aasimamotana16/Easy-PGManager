@@ -9,6 +9,7 @@ const CButton = ({
   size = "md",           
   fullWidth = false,
   className = "",
+  disabled = false, // 1.
 }) => {
   // Variant styles
   const variantClasses = {
@@ -40,7 +41,9 @@ const CButton = ({
     <button
       type={type}
       onClick={onClick}
+      disabled={disabled}
       className={finalClasses}
+      
     >
       {text || children}
     </button>

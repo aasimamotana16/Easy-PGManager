@@ -1,7 +1,7 @@
 // src/pages/Home/homeFeatures/index.js
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { homeBannerStats, features } from "../../../config/staticData";
+import { features } from "../../../config/staticData";
 import { getHomeFeatures } from "../../../api/api";
 import CFormCard from "../../../components/cFormCard";
 import CButton from "../../../components/cButton";
@@ -40,7 +40,7 @@ const floatAnimation = {
 
 /* ================= COMPONENT ================= */
 
-const HomeFeatures = () => {
+const HomeFeatures = ({ stats }) => {
   const [featureList, setFeatureList] = useState(features);
   const [openDemo, setOpenDemo] = useState(false);
 
@@ -152,7 +152,20 @@ const HomeFeatures = () => {
               whileInView="visible"
               viewport={{ once: true }}
             >
-              {homeBannerStats.map((item, index) => (
+              {stats && [
+                {
+                  value: stats.customersWorldwide || 0,
+                  label: "Customers Worldwide"
+                },
+                {
+                  value: stats.dailyUsers || 0,
+                  label: "Daily Users"
+                },
+                {
+                  value: `₹${(stats.worthOfRentManaged || 0).toLocaleString()}`,
+                  label: "Worth of Rent Managed"
+                }
+              ].map((item, index) => (
                 <motion.div
                   key={index}
                   className="flex items-center gap-4 bg-gray-50 lg:bg-transparent p-3 lg:p-0 rounded-lg min-w-[240px]"

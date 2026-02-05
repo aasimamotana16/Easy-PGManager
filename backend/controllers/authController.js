@@ -47,7 +47,7 @@ exports.sendOtp = async (req, res) => {
       otp: generatedOtp,
       expires: Date.now() + 300000,
     };
-
+    
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
@@ -55,7 +55,7 @@ exports.sendOtp = async (req, res) => {
         pass: process.env.EMAIL_PASS,
       },
     });
-
+      
     await transporter.sendMail({
       from: `"EasyPG Manager" <${process.env.EMAIL_USER}>`,
       to: finalEmail,

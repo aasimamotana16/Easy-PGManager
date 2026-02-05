@@ -19,7 +19,7 @@ const pgSchema = new mongoose.Schema(
     // --- ADD THE NEW SEARCH FIELDS HERE ---
     price: { 
       type: Number, 
-      required: [true, "Please add a base price for filtering"] 
+      required: false // Make price optional for draft PGs
     },
     type: { 
       type: String, 
@@ -47,8 +47,8 @@ const pgSchema = new mongoose.Schema(
     liveListings: { type: Number, default: 0 },
     status: {
       type: String,
-      enum: ["live", "pending", "closed"],
-      default: "live"
+      enum: ["live", "pending", "closed", "draft"],
+      default: "draft"
     },
     rooms: [{
       roomType: String,

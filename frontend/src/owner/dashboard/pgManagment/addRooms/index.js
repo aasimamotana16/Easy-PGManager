@@ -1,18 +1,23 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import axios from "axios";
 import CInput from "../../../../components/cInput";
 import CButton from "../../../../components/cButton";
 import CFormCard from "../../../../components/cFormCard";
 import { FaTrash, FaEye } from "react-icons/fa";
+import Swal from "sweetalert2";
 
 const AddRooms = () => {
   const navigate = useNavigate();
-
-  /* TEMP PG CONTEXT (FRONTEND ONLY) */
-  const pgName = "Green View PG";
+  const location = useLocation();
+  
+  // Get PG data from navigation state
+  const pgData = location.state?.propertyData;
+  const pgId = location.state?.pgId;
 
   const [roomData, setRoomData] = useState({
-        totalRooms: "",
+    roomType: "",
+    totalRooms: "",
     bedsPerRoom: "",
     description: "",
     images: [],
@@ -47,10 +52,67 @@ const AddRooms = () => {
     window.open(fileURL);
   };
 
-  const handleSaveRoom = () => {
-    console.log("ROOM DATA 👉", roomData);
-    alert("Room saved successfully (frontend)");
-    navigate("/owner/dashboard/pgManagment/roomPrice");
+  const handleSaveRoom = async () => {
+    // Validation
+    if (!roomData.roomType.trim()) {
+      Swal.fire("Warning!", "Room Type is required", "warning");
+      return;
+    }
+    if (!roomData.totalRooms) {
+      Swal.fire("Warning!", "Total Rooms is required", "warning");
+      return;
+    }
+    if (!roomData.bedsPerRoom) {
+      Swal.fire("Warning!", "Beds Per Room is required", "warning");
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("userToken");
+      
+      if (!token) {
+        Swal.fire("Error!", "Please login to add rooms", "error");
+        return;
+      }
+
+      const dataToSend = {
+        roomType: roomData.roomType,
+        totalRooms: parseInt(roomData.totalRooms),
+        bedsPerRoom: parseInt(roomData.bedsPerRoom),
+        description: roomData.description,
+      };
+
+      console.log("Sending room data:", dataToSend);
+
+      const response = await axios.post(
+        "http://localhost:5000/api/owner/add-room",
+        dataToSend,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      console.log("Room response:", response.data);
+
+      if (response.data.success) {
+        Swal.fire({
+          title: "Success!",
+          text: "Room added successfully!",
+          icon: "success",
+          timer: 2000,
+          showConfirmButton: false,
+        }).then(() => {
+          navigate("/owner/dashboard/pgManagment/roomPrice", {
+            state: { pgId: pgId }
+          });
+        });
+      }
+    } catch (error) {
+      console.error("Error saving room:", error);
+      Swal.fire({
+        title: "Error!",
+        text: error.response?.data?.message || "Failed to save room",
+        icon: "error",
+      });
+    }
   };
 
   return (
@@ -62,7 +124,7 @@ const AddRooms = () => {
           Add Rooms
         </h1>
         <p className="text-gray-500 mt-1">
-          Adding rooms for <span className="font-semibold">{pgName}</span>
+          Adding rooms for <span className="font-semibold">{pgData?.name || 'PG Property'}</span>
         </p>
       </div>
 
@@ -75,7 +137,13 @@ const AddRooms = () => {
 
         <div className="space-y-5">
 
-          
+          <CInput
+            label="Room Type"
+            name="roomType"
+            value={roomData.roomType}
+            onChange={handleChange}
+            placeholder="e.g., Single Room, Double Room, Deluxe Room"
+          />
 
           <CInput
             label="Total Rooms"

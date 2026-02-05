@@ -202,7 +202,7 @@ function App() {
             <Route path="pgManagment" element={<PgManagement />} />
             <Route path="pgManagment/addProperty" element={<AddProperty />} />
             <Route path="pgManagment/addRooms" element={<AddRooms />} />
-            <Route path="pgManagment/roomManagement" element={<RoomManagement />} />
+            <Route path="pgManagment/roomManagement/:pgId?" element={<RoomManagement />} />
             <Route path="pgManagment/roomPrice" element={<SetRoomPrice />} />
             <Route path="pgManagment/submitApproval" element={<SubmitApproval />} />
             <Route path="tenantManagement" element={<TenantManagement />} />

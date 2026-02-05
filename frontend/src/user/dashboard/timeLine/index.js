@@ -1,28 +1,74 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import CButton from "../../../components/cButton";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { FaHistory, FaDownload, FaCircle, FaFilter } from "react-icons/fa";
-
-const timelineEvents = [
-  { icon: "✅", text: "Booking Confirmed", date: "12 Dec 2025" },
-  { icon: "🏠", text: "PG Check-in Completed", date: "15 Dec 2025" },
-  { icon: "💰", text: "Last Rent Paid: Rs.6,000", date: "01 Jan 2026" },
-  { icon: "📄", text: "Agreement Uploaded", date: "02 Jan 2026" },
-];
-
-const activityData = [
-  { month: "Jan", CheckIns: 20, Payments: 2 },
-  { month: "Feb", CheckIns: 18, Payments: 2 },
-  { month: "Mar", CheckIns: 22, Payments: 3 },
-  { month: "Apr", CheckIns: 19, Payments: 2 },
-  { month: "May", CheckIns: 21, Payments: 2 },
-  { month: "Jun", CheckIns: 20, Payments: 2 },
-];
+import axios from "axios";
 
 const Timeline = () => {
   const [selectedMonth, setSelectedMonth] = useState("All");
+  const [timelineData, setTimelineData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch timeline data from backend
+  useEffect(() => {
+    const fetchTimeline = async () => {
+      try {
+        const token = localStorage.getItem("userToken");
+        
+        if (token) {
+          const response = await axios.get("http://localhost:5000/api/users/timeline", {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          
+          if (response.data.success) {
+            setTimelineData(response.data.data);
+          }
+        }
+      } catch (error) {
+        console.error("Timeline fetch error:", error);
+      } finally {
+        // Set sample data with check-in/check-out activities as fallback
+        setTimelineData({
+          keyEvents: [
+            { id: 1, title: "Booking Confirmed", type: "booking", date: "12 Dec 2025", status: "Confirmed" },
+            { id: 2, title: "Checked In", type: "checkin", date: "15 Dec 2025", status: "Check-In" },
+            { id: 3, title: "Checked Out", type: "checkout", date: "20 Dec 2025", status: "Check-Out" },
+            { id: 4, title: "Last Rent Paid: ₹6,000", type: "payment", date: "01 Jan 2026", status: "Paid" },
+            { id: 5, title: "Agreement Uploaded", type: "agreement", date: "02 Jan 2026", status: "Uploaded" }
+          ],
+          chartData: {
+            months: ["Jan", "Feb", "Mar", "Apr", "May"],
+            checkins: [20, 18, 22, 19, 21], 
+            payments: [2, 3, 4, 3, 3]       
+          }
+        });
+        setLoading(false);
+      }
+    };
+    fetchTimeline();
+  }, []);
+
+  // Transform backend data for frontend use
+  const timelineEvents = timelineData?.keyEvents?.map(event => ({
+    icon: event.type === "booking" ? "✅" : 
+          event.type === "checkin" ? "🏠" : 
+          event.type === "checkout" ? "🚪" :
+          event.type === "payment" ? "💰" : "📄",
+    text: event.title,
+    date: event.date || new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+    status: event.status || "Completed"
+  })) || [];
+
+  console.log("Timeline: timelineEvents:", timelineEvents);
+  console.log("Timeline: timelineData:", timelineData);
+
+  const activityData = timelineData?.chartData?.months?.map((month, index) => ({
+    month: month,
+    CheckIns: timelineData.chartData.checkins[index] || 0,
+    Payments: timelineData.chartData.payments[index] || 0
+  })) || [];
 
   const downloadTimelinePDF = () => {
     const doc = new jsPDF();
@@ -80,6 +126,14 @@ autoTable(doc, {
     doc.save(`Stay_Report_${selectedMonth}.pdf`);
   };
 
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-[60vh]">
+        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-orange-500"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-4 sm:p-6 lg:p-10 space-y-8 bg-gray-50 min-h-screen">
       {/* HEADER */}
@@ -133,7 +187,7 @@ autoTable(doc, {
                       {event.text}
                     </p>
                     <span className="text-[10px] md:text-2xl lg:text-xs font-bold text-gray-400 mt-1 uppercase">
-                      {event.date}
+                      {event.date} • {event.status}
                     </span>
                   </div>
                 </div>

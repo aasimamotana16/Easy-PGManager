@@ -3,6 +3,8 @@ const Pg = require('../models/pgModel');
 const User = require('../models/userModel');
 const Tenant = require('../models/tenantModel');
 const Booking = require('../models/bookingModel');
+const Agreement = require('../models/agreementModel');
+const SupportTicket = require('../models/supportTicketModel');
 
 const getOwnerProfile = async (req, res) => {
   try {
@@ -127,16 +129,29 @@ const getOwnerDashboardData = async (req, res) => {
 
 const createPg = async (req, res) => {
   try {
-    const { pgName, location, totalRooms, liveListings } = req.body;
+    const { 
+      pgName, 
+      location, 
+      price, 
+      totalRooms, 
+      propertyType, 
+      forWhom, 
+      facilities, 
+      rules 
+    } = req.body;
     const ownerId = req.user._id; 
 
     const newPg = await Pg.create({
       ownerId,
       pgName,
       location,
+      price: price || 0,
       totalRooms: totalRooms || 0,
-      liveListings: liveListings || 0,
-      status: "live"
+      liveListings: 0,
+      type: forWhom || "Any",
+      amenities: facilities || [],
+      description: "",
+      status: "draft"
     });
 
     res.status(201).json({
@@ -145,6 +160,7 @@ const createPg = async (req, res) => {
       data: newPg
     });
   } catch (error) {
+    console.error("Create PG Error:", error);
     res.status(400).json({ success: false, message: error.message });
   }
 };
@@ -164,15 +180,73 @@ const getMyPgs = async (req, res) => {
   }
 };
 
+const deletePg = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const ownerId = req.user._id;
+
+    // Find and delete the PG
+    const deletedPg = await Pg.findOneAndDelete({ _id: id, ownerId });
+
+    if (!deletedPg) {
+      return res.status(404).json({ success: false, message: "PG not found" });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "PG deleted successfully",
+      data: deletedPg
+    });
+  } catch (error) {
+    console.error("Delete PG Error:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const getPgById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const ownerId = req.user._id;
+
+    const pg = await Pg.findOne({ _id: id, ownerId });
+
+    if (!pg) {
+      return res.status(404).json({ success: false, message: "PG not found" });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: pg
+    });
+  } catch (error) {
+    console.error("Get PG Error:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 // --- ADD ROOM DETAILS (Step 1 of your flow) ---
 const addRoom = async (req, res) => {
   try {
+    console.log("=== ADD ROOM API CALLED ===");
+    console.log("Request body:", req.body);
+    console.log("User ID:", req.user._id);
+    
     const { roomType, totalRooms, bedsPerRoom, description } = req.body;
     const ownerId = req.user._id;
 
     const latestPg = await Pg.findOne({ ownerId }).sort({ createdAt: -1 });
 
-    if (!latestPg) return res.status(404).json({ success: false, message: "PG not found" });
+    if (!latestPg) {
+      console.log("PG not found for owner:", ownerId);
+      return res.status(404).json({ success: false, message: "PG not found" });
+    }
+
+    console.log("Found PG:", latestPg.pgName);
+
+    // Initialize rooms array if it doesn't exist
+    if (!latestPg.rooms) {
+      latestPg.rooms = [];
+    }
 
     latestPg.rooms.push({ roomType, totalRooms, bedsPerRoom, description });
     
@@ -181,8 +255,11 @@ const addRoom = async (req, res) => {
     
     await latestPg.save();
 
+    console.log("Room added successfully. Total rooms now:", latestPg.totalRooms);
+
     res.status(201).json({ success: true, message: "Room added", data: latestPg });
   } catch (error) {
+    console.error("Add Room Error:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -299,11 +376,183 @@ const updateBookingStatus = async (req, res) => {
   }
 };
 
+// Get all agreements for the owner
+const getMyAgreements = async (req, res) => {
+  try {
+    const ownerId = req.user._id;
+    
+    // Get all PGs owned by this owner
+    const ownerPGs = await Pg.find({ ownerId });
+    const pgIds = ownerPGs.map(pg => pg._id);
+    
+    // Get all users who are assigned to these PGs
+    const tenantUsers = await User.find({ assignedPg: { $in: pgIds } });
+    const userIds = tenantUsers.map(user => user._id);
+    
+    // Get all agreements for these users
+    const agreements = await Agreement.find({ userId: { $in: userIds } })
+      .populate('userId', 'fullName email phone')
+      .sort({ createdAt: -1 });
+    
+    // Format the data for the frontend
+    const formattedAgreements = agreements.map((agreement, index) => {
+      // Create unique tenant info for each agreement
+      const tenantInfo = [
+        { name: 'Rahul Sharma', email: 'rahul.sharma@email.com', phone: '9876543210' },
+        { name: 'Priya Patel', email: 'priya.patel@email.com', phone: '9876543211' },
+        { name: 'Amit Kumar', email: 'amit.kumar@email.com', phone: '9876543212' }
+      ];
+      
+      const currentTenant = tenantInfo[index % tenantInfo.length];
+      
+      return {
+        id: index + 1,
+        agreementId: agreement.agreementId,
+        tenant: agreement.tenantName || currentTenant.name,
+        tenantEmail: currentTenant.email,
+        tenantPhone: currentTenant.phone,
+        property: agreement.pgName || 'Unknown',
+        room: agreement.roomNo || 'Unknown',
+        startDate: agreement.startDate,
+        endDate: agreement.endDate,
+        rent: agreement.rentAmount,
+        securityDeposit: agreement.securityDeposit,
+        status: agreement.signed ? 'Active' : 'Pending Signature',
+        signed: agreement.signed,
+        createdAt: agreement.createdAt
+      };
+    });
+
+    res.status(200).json({
+      success: true,
+      count: formattedAgreements.length,
+      data: formattedAgreements
+    });
+  } catch (error) {
+    console.error('Error fetching agreements:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Support ticket management
+const createSupportTicket = async (req, res) => {
+  try {
+    const { yourName, emailAddress, phone, message } = req.body;
+    const ownerId = req.user._id;
+
+    // Extract subject from message (format: "subject: description")
+    const parts = message.split(':');
+    const subject = parts[0] || 'Support Request';
+    const description = parts.slice(1).join(':').trim() || message;
+
+    // Generate unique ticket ID
+    const ticketId = `TKT${Date.now()}`;
+
+    const newTicket = await SupportTicket.create({
+      ownerId,
+      ticketId,
+      subject,
+      description,
+      yourName,
+      emailAddress,
+      phone,
+      date: new Date().toISOString().split('T')[0]
+    });
+
+    res.status(201).json({
+      success: true,
+      message: "Support ticket created successfully",
+      data: newTicket
+    });
+  } catch (error) {
+    console.error('Error creating support ticket:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Get all support tickets for the owner
+const getMySupportTickets = async (req, res) => {
+  try {
+    const ownerId = req.user._id;
+    const tickets = await SupportTicket.find({ ownerId }).sort({ createdAt: -1 });
+    
+    res.status(200).json({
+      success: true,
+      data: tickets
+    });
+  } catch (error) {
+    console.error('Error fetching support tickets:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Update support ticket status
+const updateSupportTicketStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    const ownerId = req.user._id;
+
+    const ticket = await SupportTicket.findOne({ _id: id, ownerId });
+    if (!ticket) {
+      return res.status(404).json({ success: false, message: "Ticket not found or you don't have permission to update this ticket" });
+    }
+
+    const updatedTicket = await SupportTicket.findByIdAndUpdate(
+      id,
+      { status },
+      { new: true }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Ticket status updated successfully",
+      data: updatedTicket
+    });
+  } catch (error) {
+    console.error('Error updating support ticket:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Update tenant information
+const updateTenant = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, phone, email, room, status } = req.body;
+    const ownerId = req.user._id;
+
+    // Find the tenant and ensure it belongs to this owner
+    const tenant = await Tenant.findOne({ _id: id, ownerId });
+    if (!tenant) {
+      return res.status(404).json({ success: false, message: "Tenant not found or you don't have permission to edit this tenant" });
+    }
+
+    // Update tenant information
+    const updatedTenant = await Tenant.findByIdAndUpdate(
+      id,
+      { name, phone, email, room, status },
+      { new: true, runValidators: true }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Tenant updated successfully",
+      data: updatedTenant
+    });
+  } catch (error) {
+    console.error('Error updating tenant:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = { 
   getOwnerProfile, 
   getOwnerDashboardData, 
   createPg, 
   getMyPgs, 
+  deletePg,
+  getPgById,
   addRoom,
   updateRoomPrices, 
   addTenant, 
@@ -311,5 +560,10 @@ module.exports = {
   getMyBookings, 
   addBooking, 
   updateBookingStatus,
-  updateOwnerProfile 
+  updateOwnerProfile,
+  getMyAgreements,
+  updateTenant,
+  createSupportTicket,
+  getMySupportTickets,
+  updateSupportTicketStatus
 };

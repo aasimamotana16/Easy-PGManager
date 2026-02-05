@@ -8,8 +8,15 @@ const paymentSchema = mongoose.Schema({
   },
   pgId: { 
     type: mongoose.Schema.Types.ObjectId, 
-    ref: "PG", 
-    required: true 
+    ref: "PG"
+  },
+  pgName: {
+    type: String,
+    default: null
+  },
+  tenantName: {
+    type: String,
+    default: null
   },
   amountPaid: { 
     type: Number, 
