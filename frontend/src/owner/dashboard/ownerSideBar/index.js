@@ -9,6 +9,7 @@ import {
   FaFileContract,
   FaQuestionCircle,
   FaTimes,
+  FaSignOutAlt, // Imported for a clear logout icon
 } from "react-icons/fa";
 
 const OwnerSidebar = ({ isOpen, closeSidebar }) => {
@@ -28,10 +29,7 @@ const OwnerSidebar = ({ isOpen, closeSidebar }) => {
 
   const handleLogout = async () => {
     try {
-      // Show success checkmark
       setIsLogoutSuccessful(true);
-
-      // Wait 1.5s, then wipe data and redirect
       setTimeout(() => {
         localStorage.clear();
         setIsLogoutModalOpen(false);
@@ -39,9 +37,7 @@ const OwnerSidebar = ({ isOpen, closeSidebar }) => {
         navigate("/");
         closeSidebar?.();
       }, 1500);
-
     } catch (error) {
-      // Fallback: Clear and exit
       localStorage.clear();
       setIsLogoutModalOpen(false);
       navigate("/");
@@ -81,30 +77,27 @@ const OwnerSidebar = ({ isOpen, closeSidebar }) => {
               closeSidebar?.();
             }}
           >
-            {/* LOGO IMAGE */}
             <img
               src="/logos/logo1.png"
               alt="EasyPG Manager"
               className="w-15 h-14 object-contain"
             />
-
             <div className="leading-tight">
               <div className="text-xl font-semibold">EasyPG</div>
               <div className="text-xl font-semibold text-primary">Manager</div>
             </div>
           </div>
 
-          {/* CLOSE ICON (MOBILE ONLY) */}
           <button
             className="lg:hidden text-gray-400 hover:text-white"
             onClick={closeSidebar}
           >
-            <FaTimes size={18} />
+            <FaTimes size={20} />
           </button>
         </div>
 
         {/* MENU */}
-        <nav className="flex-1 flex flex-col gap-1">
+        <nav className="flex-1 flex flex-col gap-2">
           {menuItems.map((item) => (
             <NavLink
               key={item.to}
@@ -112,11 +105,11 @@ const OwnerSidebar = ({ isOpen, closeSidebar }) => {
               end
               onClick={closeSidebar}
               className={({ isActive }) =>
-                `flex items-center gap-4 px-4 py-2.5 rounded-lg text-sm transition-colors
-                ${isActive ? "bg-primary text-white" : "hover:bg-gray-800"}`
+                `flex items-center gap-4 px-4 py-3 rounded-md text-lg font-medium transition-colors
+                ${isActive ? "bg-primary text-white" : "hover:bg-gray-800 text-gray-300 hover:text-white"}`
               }
             >
-              <span className="text-base">{item.icon}</span>
+              <span className="text-xl">{item.icon}</span>
               <span>{item.label}</span>
             </NavLink>
           ))}
@@ -125,16 +118,32 @@ const OwnerSidebar = ({ isOpen, closeSidebar }) => {
         {/* DIVIDER */}
         <div className="border-t border-gray-800 my-4" />
 
-        {/* LOGOUT */}
-        <button
-          onClick={() => setIsLogoutModalOpen(true)}
-          className="px-4 py-2 rounded-lg text-red-500 hover:text-red-600 font-semibold text-left"
-        >
-          Logout
-        </button>
+        {/* BOTTOM ACTIONS: HOME & LOGOUT */}
+        <div className="flex items-center gap-2">
+          {/* HOME ICON BUTTON */}
+          <button
+            onClick={() => {
+              navigate("/");
+              closeSidebar?.();
+            }}
+            className="p-3 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+            title="Go to Website Home"
+          >
+            <FaHome size={24} />
+          </button>
+
+          {/* LOGOUT BUTTON */}
+          <button
+            onClick={() => setIsLogoutModalOpen(true)}
+            className="flex-1 flex items-center gap-3 px-4 py-2 rounded-lg text-red-500 hover:text-red-400 font-bold text-lg text-left transition-colors"
+          >
+            <FaSignOutAlt size={20} />
+            Logout
+          </button>
+        </div>
       </aside>
 
-      {/* --- LOGOUT POPUP WITH SUCCESS CHECKMARK (MATCHES NAVBAR) --- */}
+      {/* --- LOGOUT POPUP --- */}
       {isLogoutModalOpen && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div className="bg-white p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center transition-all animate-in zoom-in duration-200">
@@ -147,13 +156,13 @@ const OwnerSidebar = ({ isOpen, closeSidebar }) => {
                     onClick={() => setIsLogoutModalOpen(false)} 
                     className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition-colors"
                   >
-                    No, Stay
+                    No
                   </button>
                   <button 
                     onClick={handleLogout} 
                     className="flex-1 py-3 bg-orange-500 text-white rounded-xl font-bold shadow-lg shadow-orange-200 hover:bg-orange-600 transition-all"
                   >
-                    Yes, Logout
+                    Yes
                   </button>
                 </div>
               </>

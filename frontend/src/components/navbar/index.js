@@ -95,24 +95,35 @@ const Navbar = () => {
         </div>
 
         {/* CENTER: NAV LINKS */}
-        <div className="hidden lg:flex gap-6">
-          {[
-            ["/", "Home"],
-            ["/about", "About"],
-            ["/services", "Services"],
-            ["/findmypg", "FindMyPG"],
-            ["/contact", "Contact"],
-            ["/faq", "FAQ"],
-          ].map(([path, label]) => (
-            <button
-              key={path}
-              className={navLinkClass(path)}
-              onClick={() => navigate(path)}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+<div className="flex flex-wrap lg:flex-nowrap justify-center items-center gap-x-4 gap-y-2 lg:gap-8 px-2">
+  {[
+    ["/", "Home"],
+    ["/about", "About"],
+    ["/services", "Services"],
+    ["/findmypg", "FindMyPG"],
+    ["/contact", "Contact"],
+    ["/faq", "FAQ"],
+  ].map(([path, label]) => (
+    <button
+      key={path}
+      onClick={() => navigate(path)}
+      className={`
+        relative py-1 lg:py-2 text-xs sm:text-base lg:text-base  tracking-wide transition-all duration-300
+        ${location.pathname === path 
+          ? "text-orange-500" 
+          : "text-white hover:text-primary"}
+        group whitespace-nowrap
+      `}
+    >
+      {label}
+      {/* Animated Underline Effect - Visible on all screens */}
+      <span className={`
+        absolute bottom-0 left-0 h-[2px] bg-orange-500 transition-all duration-300
+        ${location.pathname === path ? "w-full" : "w-0 group-hover:w-full"}
+      `}></span>
+    </button>
+  ))}
+</div>
 
         {/* RIGHT: PROFILE */}
        <div className="flex items-center gap-4">

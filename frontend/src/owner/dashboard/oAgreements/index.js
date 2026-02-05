@@ -1,6 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { FaFileContract, FaEye, FaDownload } from "react-icons/fa"; // Reverted to react-icons
+import { 
+  FaFileContract, 
+  FaEye, 
+  FaDownload, 
+  FaTimes, 
+  FaUser, 
+  FaHome, 
+  FaWallet, 
+  FaCalendarAlt 
+} from "react-icons/fa";
 import Swal from "sweetalert2";
 import CButton from "../../../components/cButton";
 import axios from "axios";
@@ -12,7 +21,10 @@ const AgreementPage = () => {
   const [agreements, setAgreements] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Get auth token
+  // Modal State
+  const [selectedAgreement, setSelectedAgreement] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   const authToken = localStorage.getItem("userToken");
 
   useEffect(() => {
@@ -20,9 +32,8 @@ const AgreementPage = () => {
   }, []);
 
   const fetchAgreements = async () => {
-    // Force show data immediately for testing
-    console.log('Force showing sample data');
-    setAgreements([
+    // Initial sample data for immediate display
+    const sampleData = [
       {
         id: 1,
         agreementId: 'AGR001',
@@ -68,23 +79,16 @@ const AgreementPage = () => {
         status: 'Active',
         signed: true
       }
-    ]);
+    ];
+    setAgreements(sampleData);
     setLoading(false);
-    
-    // Try API in background (but don't wait for it)
+
     try {
-      console.log('Trying API in background...');
       const response = await axios.get("http://localhost:5000/api/owner/my-agreements", {
         headers: { Authorization: `Bearer ${authToken}` }
       });
-      
-      console.log('API Response status:', response.status);
-      console.log('API Response data:', response.data);
-      
       if (response.data.success && response.data.data.length > 0) {
-        // Use real data if available
         setAgreements(response.data.data);
-        console.log('Using real API data:', response.data.data.length);
       }
     } catch (error) {
       console.log('API failed, keeping sample data');
@@ -97,597 +101,119 @@ const AgreementPage = () => {
       ag.property.toLowerCase().includes(propertySearch.toLowerCase())
   );
 
-  const handleViewAgreement = (agreement) => {
-    // Create a professional modal with better styling
-    const modal = document.createElement('div');
-    modal.style.cssText = `
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.6);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 9999;
-      backdrop-filter: blur(4px);
-    `;
-
-    const modalContent = document.createElement('div');
-    modalContent.style.cssText = `
-      background: white;
-      padding: 0;
-      border-radius: 16px;
-      max-width: 700px;
-      width: 90%;
-      max-height: 85vh;
-      overflow: hidden;
-      position: relative;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-      animation: modalSlideIn 0.3s ease-out;
-    `;
-
-    modalContent.innerHTML = `
-      <style>
-        @keyframes modalSlideIn {
-          from {
-            opacity: 0;
-            transform: translateY(-20px) scale(0.95);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-          }
-        }
-        .modal-header {
-          background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
-          color: white;
-          padding: 24px 32px;
-          border-radius: 16px 16px 0 0;
-          position: relative;
-        }
-        .modal-title {
-          font-size: 24px;
-          font-weight: 700;
-          margin: 0;
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-        .modal-subtitle {
-          font-size: 14px;
-          opacity: 0.9;
-          margin-top: 4px;
-        }
-        .modal-close {
-          position: absolute;
-          top: 20px;
-          right: 20px;
-          background: rgba(255, 255, 255, 0.2);
-          border: none;
-          color: white;
-          width: 36px;
-          height: 36px;
-          border-radius: 50%;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 20px;
-          transition: all 0.2s;
-        }
-        .modal-close:hover {
-          background: rgba(255, 255, 255, 0.3);
-          transform: scale(1.1);
-        }
-        .modal-body {
-          padding: 32px;
-          max-height: 60vh;
-          overflow-y: auto;
-        }
-        .section {
-          margin-bottom: 28px;
-        }
-        .section-title {
-          font-size: 16px;
-          font-weight: 600;
-          color: #374151;
-          margin-bottom: 16px;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-        .section-icon {
-          width: 24px;
-          height: 24px;
-          background: #fef3c7;
-          border-radius: 6px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: #f59e0b;
-          font-size: 14px;
-        }
-        .info-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 20px;
-        }
-        .info-item {
-          background: #f9fafb;
-          padding: 16px;
-          border-radius: 12px;
-          border-left: 4px solid #f97316;
-        }
-        .info-label {
-          font-size: 12px;
-          color: #6b7280;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-          margin-bottom: 4px;
-        }
-        .info-value {
-          font-size: 16px;
-          font-weight: 600;
-          color: #111827;
-        }
-        .status-badge {
-          display: inline-block;
-          padding: 6px 16px;
-          border-radius: 20px;
-          font-size: 12px;
-          font-weight: 600;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-        }
-        .status-active {
-          background: #dcfce7;
-          color: #166534;
-        }
-        .status-pending {
-          background: #fef3c7;
-          color: #92400e;
-        }
-        .financial-info {
-          background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-          border-left: 4px solid #0ea5e9;
-        }
-        .property-info {
-          background: linear-gradient(135deg, #fefce8 0%, #fde68a 100%);
-          border-left: 4px solid #f59e0b;
-        }
-        .tenant-info {
-          background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-          border-left: 4px solid #22c55e;
-        }
-        .modal-footer {
-          padding: 24px 32px;
-          background: #f9fafb;
-          border-top: 1px solid #e5e7eb;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-        .modal-actions {
-          display: flex;
-          gap: 12px;
-        }
-        .btn {
-          padding: 10px 20px;
-          border: none;
-          border-radius: 8px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.2s;
-          font-size: 14px;
-        }
-        .btn-primary {
-          background: #f97316;
-          color: white;
-        }
-        .btn-primary:hover {
-          background: #ea580c;
-          transform: translateY(-1px);
-        }
-        .btn-secondary {
-          background: #6b7280;
-          color: white;
-        }
-        .btn-secondary:hover {
-          background: #4b5563;
-          transform: translateY(-1px);
-        }
-      </style>
-      
-      <div class="modal-header">
-        <div>
-          <div class="modal-title">
-            📄 Agreement Details
-          </div>
-          <div class="modal-subtitle">Agreement ID: ${agreement.agreementId}</div>
-        </div>
-        <button class="modal-close" onclick="this.closest('.modal-wrapper').remove()">×</button>
-      </div>
-      
-      <div class="modal-body">
-        <div class="section">
-          <div class="section-title">
-            <div class="section-icon">👤</div>
-            Tenant Information
-          </div>
-          <div class="info-grid">
-            <div class="info-item tenant-info">
-              <div class="info-label">Full Name</div>
-              <div class="info-value">${agreement.tenant}</div>
-            </div>
-            <div class="info-item tenant-info">
-              <div class="info-label">Email Address</div>
-              <div class="info-value">${agreement.tenantEmail}</div>
-            </div>
-            <div class="info-item tenant-info">
-              <div class="info-label">Phone Number</div>
-              <div class="info-value">${agreement.tenantPhone}</div>
-            </div>
-            <div class="info-item tenant-info">
-              <div class="info-label">Status</div>
-              <div class="info-value">
-                <span class="status-badge ${agreement.status === 'Active' ? 'status-active' : 'status-pending'}">
-                  ${agreement.status}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="section">
-          <div class="section-title">
-            <div class="section-icon">🏠</div>
-            Property Details
-          </div>
-          <div class="info-grid">
-            <div class="info-item property-info">
-              <div class="info-label">Property Name</div>
-              <div class="info-value">${agreement.property}</div>
-            </div>
-            <div class="info-item property-info">
-              <div class="info-label">Room Number</div>
-              <div class="info-value">${agreement.room}</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="section">
-          <div class="section-title">
-            <div class="section-icon">💰</div>
-            Financial Information
-          </div>
-          <div class="info-grid">
-            <div class="info-item financial-info">
-              <div class="info-label">Monthly Rent</div>
-              <div class="info-value">₹${agreement.rent.toLocaleString('en-IN')}</div>
-            </div>
-            <div class="info-item financial-info">
-              <div class="info-label">Security Deposit</div>
-              <div class="info-value">₹${agreement.securityDeposit.toLocaleString('en-IN')}</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="section">
-          <div class="section-title">
-            <div class="section-icon">📅</div>
-            Agreement Period
-          </div>
-          <div class="info-grid">
-            <div class="info-item">
-              <div class="info-label">Start Date</div>
-              <div class="info-value">${new Date(agreement.startDate).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
-            </div>
-            <div class="info-item">
-              <div class="info-label">End Date</div>
-              <div class="info-value">${new Date(agreement.endDate).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <div class="modal-footer">
-        <div style="font-size: 12px; color: #6b7280;">
-          This agreement is legally binding between both parties.
-        </div>
-        <div class="modal-actions">
-          <button class="btn btn-secondary" onclick="this.closest('.modal-wrapper').remove()">Close</button>
-          <button class="btn btn-primary" onclick="window.handleDownloadAgreement(${JSON.stringify(agreement).replace(/"/g, '&quot;')})">Download Agreement</button>
-        </div>
-      </div>
-    `;
-
-    // Add the download function to window scope
-    window.handleDownloadAgreement = (agreement) => {
-      modal.remove();
-      // Call the download function
-      handleDownloadAgreement(agreement);
-    };
-
-    modal.className = 'modal-wrapper';
-    modal.appendChild(modalContent);
-    document.body.appendChild(modal);
-
-    // Close modal when clicking outside
-    modal.addEventListener('click', (e) => {
-      if (e.target === modal) {
-        modal.remove();
-      }
-    });
-
-    // Close on Escape key
-    const handleEscape = (e) => {
-      if (e.key === 'Escape') {
-        modal.remove();
-        document.removeEventListener('keydown', handleEscape);
-      }
-    };
-    document.addEventListener('keydown', handleEscape);
+  const openModal = (agreement) => {
+    setSelectedAgreement(agreement);
+    setIsModalOpen(true);
   };
 
-  const handleDownloadAgreement = (agreement) => {
-    // Create a professional PDF agreement
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setSelectedAgreement(null);
+  };
+
+  const handleDownloadFile = (agreement) => {
     const agreementContent = `
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Rental Agreement - ${agreement.agreementId}</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }
-        .header { text-align: center; border-bottom: 2px solid #f97316; padding-bottom: 20px; margin-bottom: 30px; }
-        .title { font-size: 24px; font-weight: bold; color: #333; margin-bottom: 5px; }
-        .subtitle { font-size: 14px; color: #666; }
-        .section { margin-bottom: 25px; }
-        .section-title { font-size: 18px; font-weight: bold; color: #f97316; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
-        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
-        .info-label { font-weight: bold; color: #555; }
-        .signature-area { margin-top: 50px; border-top: 1px solid #ddd; padding-top: 20px; }
-        .signature-line { height: 60px; border-bottom: 1px solid #333; margin-bottom: 10px; }
-        .date { font-size: 12px; color: #666; }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <div class="title">RENTAL AGREEMENT</div>
-        <div class="subtitle">Agreement ID: ${agreement.agreementId}</div>
-        <div class="date">Date: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
-    </div>
-
-    <div class="section">
-        <div class="section-title">PARTIES</div>
-        <div class="info-grid">
-            <div>
-                <span class="info-label">Landlord:</span><br>
-                EasyPG Manager<br>
-                Email: support@easypg.com<br>
-                Phone: +91 98765 43210
-            </div>
-            <div>
-                <span class="info-label">Tenant:</span><br>
-                ${agreement.tenant}<br>
-                Email: ${agreement.tenantEmail}<br>
-                Phone: ${agreement.tenantPhone}
-            </div>
-        </div>
-    </div>
-
-    <div class="section">
-        <div class="section-title">PROPERTY DETAILS</div>
-        <div class="info-grid">
-            <div>
-                <span class="info-label">Property Name:</span><br>${agreement.property}
-            </div>
-            <div>
-                <span class="info-label">Room Number:</span><br>${agreement.room}
-            </div>
-        </div>
-    </div>
-
-    <div class="section">
-        <div class="section-title">FINANCIAL TERMS</div>
-        <div class="info-grid">
-            <div>
-                <span class="info-label">Monthly Rent:</span><br>₹${agreement.rent}
-            </div>
-            <div>
-                <span class="info-label">Security Deposit:</span><br>₹${agreement.securityDeposit}
-            </div>
-        </div>
-    </div>
-
-    <div class="section">
-        <div class="section-title">AGREEMENT PERIOD</div>
-        <div class="info-grid">
-            <div>
-                <span class="info-label">Start Date:</span><br>${agreement.startDate}
-            </div>
-            <div>
-                <span class="info-label">End Date:</span><br>${agreement.endDate}
-            </div>
-        </div>
-    </div>
-
-    <div class="section">
-        <div class="section-title">TERMS AND CONDITIONS</div>
-        <ol>
-            <li>The tenant agrees to pay the monthly rent on or before the 1st day of each month.</li>
-            <li>The security deposit is refundable at the end of the agreement period, subject to property inspection.</li>
-            <li>The tenant shall maintain the property in good condition and not cause any damage.</li>
-            <li>No subletting is allowed without prior written consent from the landlord.</li>
-            <li>The landlord has the right to inspect the property with reasonable notice.</li>
-            <li>Both parties agree to abide by the rules and regulations of the property.</li>
-        </ol>
-    </div>
-
-    <div class="section">
-        <div class="section-title">STATUS</div>
-        <div class="info-grid">
-            <div>
-                <span class="info-label">Current Status:</span><br>${agreement.status}
-            </div>
-            <div>
-                <span class="info-label">Signed:</span><br>${agreement.signed ? 'Yes' : 'No'}
-            </div>
-        </div>
-    </div>
-
-    <div class="signature-area">
-        <div class="section-title">SIGNATURES</div>
-        <div class="info-grid">
-            <div>
-                <span class="info-label">Landlord Signature:</span>
-                <div class="signature-line"></div>
-                <div class="date">Date: _______________</div>
-            </div>
-            <div>
-                <span class="info-label">Tenant Signature:</span>
-                <div class="signature-line"></div>
-                <div class="date">Date: _______________</div>
-            </div>
-        </div>
-    </div>
-
-    <div style="text-align: center; margin-top: 50px; font-size: 12px; color: #666;">
-        <p>This agreement is legally binding between both parties.</p>
-        <p>For any disputes, please contact EasyPG Manager support.</p>
-    </div>
-</body>
-</html>
+      <!DOCTYPE html>
+      <html>
+      <head>
+          <title>Rental Agreement - ${agreement.agreementId}</title>
+          <style>
+              body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }
+              .header { text-align: center; border-bottom: 2px solid #f97316; padding-bottom: 20px; margin-bottom: 30px; }
+              .section { margin-bottom: 25px; }
+              .section-title { font-size: 18px; font-weight: bold; color: #f97316; margin-bottom: 10px; border-bottom: 1px solid #eee; }
+              .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+          </style>
+      </head>
+      <body>
+          <div class="header">
+              <h1>RENTAL AGREEMENT</h1>
+              <p>ID: ${agreement.agreementId}</p>
+          </div>
+          <div class="section">
+              <div class="section-title">PARTIES</div>
+              <p><strong>Landlord:</strong> EasyPG Manager</p>
+              <p><strong>Tenant:</strong> ${agreement.tenant} (${agreement.tenantEmail})</p>
+          </div>
+          <div class="section">
+              <div class="section-title">DETAILS</div>
+              <p>Property: ${agreement.property} - Room ${agreement.room}</p>
+              <p>Rent: ₹${agreement.rent}</p>
+          </div>
+      </body>
+      </html>
     `.trim();
 
-    // Create a blob and download as PDF
     const blob = new Blob([agreementContent], { type: 'text/html' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `Rental_Agreement_${agreement.agreementId}_${agreement.tenant.replace(/\s+/g, '_')}.html`;
+    a.download = `Rental_Agreement_${agreement.agreementId}.html`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     window.URL.revokeObjectURL(url);
 
-    // Show professional SweetAlert2 popup
     Swal.fire({
       icon: 'success',
       title: 'Agreement Downloaded!',
-      html: `
-        <div style="text-align: left;">
-          <p><strong>File:</strong> Rental_Agreement_${agreement.agreementId}.html</p>
-          <p><strong>Tenant:</strong> ${agreement.tenant}</p>
-          <p><strong>Property:</strong> ${agreement.property}</p>
-          <hr style="margin: 15px 0; border: none; border-top: 1px solid #e5e7eb;">
-          <p style="font-size: 14px; color: #666;">Open the HTML file and print it as PDF for a professional copy.</p>
-        </div>
-      `,
+      text: 'The file has been saved to your device.',
       confirmButtonColor: '#f97316',
-      confirmButtonText: 'Got it!',
-      showCancelButton: false,
-      timer: 5000,
-      timerProgressBar: true
-    });
-  };
-
-  /* ================= ACTION HANDLERS ================= */
-
-  const handleView = (agreement) => {
-    Swal.fire({
-      title: "Agreement Details",
-      html: `
-        <div style="text-align: left; font-size: 0.9rem; line-height: 1.6;">
-          <p><strong>Tenant:</strong> ${agreement.tenant}</p>
-          <p><strong>Property:</strong> ${agreement.property}</p>
-          <p><strong>Room:</strong> ${agreement.room}</p>
-          <p><strong>Monthly Rent:</strong> ₹${agreement.rent}</p>
-          <p><strong>Duration:</strong> ${agreement.startDate} to ${agreement.endDate}</p>
-          <p><strong>Status:</strong> ${agreement.status}</p>
-        </div>
-      `,
-      icon: "info",
-      confirmButtonColor: "#ed8936",
-    });
-  };
-
-  const handleDownload = (tenant) => {
-    Swal.fire({
-      title: "Download Confirmation",
-      text: `Prepare download for ${tenant}'s rental agreement?`,
-      icon: "question",
-      showCancelButton: true,
-      confirmButtonColor: "#ed8936",
-      cancelButtonColor: "#718096",
-      confirmButtonText: "Download Now",
-    }).then((result) => {
-      if (result.isConfirmed) {
-        Swal.fire({
-          title: "Downloading...",
-          text: "The file is being generated.",
-          icon: "success",
-          timer: 1500,
-          showConfirmButton: false,
-        });
-      }
     });
   };
 
   return (
     <div className="p-6 bg-gray-100 min-h-screen space-y-6">
-
+      
       {/* PAGE HEADER */}
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-3">
-          <FaFileContract className="text-orange-500 text-3xl" />
+          <div className="p-3 bg-orange-100 rounded-lg">
+            <FaFileContract className="text-orange-500 text-3xl" />
+          </div>
           <div>
-            <h1 className="text-3xl font-bold text-primary">
-              Agreements
-            </h1>
-            <p className="text-gray-500">
-              View and manage tenant rental agreements
-            </p>
+            <h1 className="text-3xl font-bold text-gray-800">Agreements</h1>
+            <p className="text-gray-500 text-sm">View and manage tenant rental agreements</p>
           </div>
         </div>
 
         <CButton
-          className="bg-primary text-white px-4 py-2 rounded-md"
+          className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2.5 rounded-lg shadow-sm transition-all"
           onClick={() => navigate("/owner/dashboard")}
         >
           Add New Agreement
         </CButton>
       </div>
 
-      {/* SEARCH / FILTER CARD */}
-      <div className="bg-white p-4 rounded-md shadow flex flex-col md:flex-row gap-4">
-        <input
-          type="text"
-          placeholder="Search by Tenant"
-          className="border rounded-md px-4 py-2 flex-1 outline-none focus:ring-1 focus:ring-orange-400"
-          value={tenantSearch}
-          onChange={(e) => setTenantSearch(e.target.value)}
-        />
-        <input
-          type="text"
-          placeholder="Search by Property / Room"
-          className="border rounded-md px-4 py-2 flex-1 outline-none focus:ring-1 focus:ring-orange-400"
-          value={propertySearch}
-          onChange={(e) => setPropertySearch(e.target.value)}
-        />
-        <CButton className="bg-orange-500 text-white px-5 py-2">
-          Search
-        </CButton>
+      {/* SEARCH / FILTER SECTION */}
+      <div className="bg-white p-5 rounded-xl shadow-sm flex flex-col md:flex-row gap-4">
+        <div className="flex-1 relative">
+          <input
+            type="text"
+            placeholder="Search by Tenant Name..."
+            className="w-full border border-gray-200 rounded-lg px-4 py-2.5 outline-none focus:ring-2 focus:ring-orange-400 transition"
+            value={tenantSearch}
+            onChange={(e) => setTenantSearch(e.target.value)}
+          />
+        </div>
+        <div className="flex-1">
+          <input
+            type="text"
+            placeholder="Search by Property / Room..."
+            className="w-full border border-gray-200 rounded-lg px-4 py-2.5 outline-none focus:ring-2 focus:ring-orange-400 transition"
+            value={propertySearch}
+            onChange={(e) => setPropertySearch(e.target.value)}
+          />
+        </div>
       </div>
 
-      {/* AGREEMENTS TABLE */}
-      <div className="bg-white rounded-md shadow overflow-x-auto">
+      {/* TABLE SECTION */}
+      <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
         <table className="w-full text-sm">
-          <thead className="bg-black text-white border-b">
+          <thead className="bg-orange-50 text-orange-900">
             <tr>
               <th className="p-4 text-left font-semibold">ID</th>
-              <th className="p-4 text-left font-semibold">Tenant</th>
+              <th className="p-4 text-left font-semibold">Tenant Information</th>
               <th className="p-4 text-left font-semibold">Property / Room</th>
               <th className="p-4 text-left font-semibold">Start Date</th>
               <th className="p-4 text-left font-semibold">End Date</th>
@@ -697,69 +223,201 @@ const AgreementPage = () => {
             </tr>
           </thead>
 
-          <tbody>
+          <tbody className="divide-y divide-gray-100">
             {loading ? (
               <tr>
-                <td colSpan={8} className="text-center py-10 text-gray-500">
-                  Loading agreements...
+                <td colSpan={8} className="text-center py-20 text-gray-400">
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+                    Loading agreements...
+                  </div>
                 </td>
               </tr>
             ) : filteredAgreements.length > 0 ? (
               filteredAgreements.map((ag) => (
-                <tr key={ag.id} className="border-b last:border-none hover:bg-orange-50 transition">
-                  <td className="p-4">{ag.id}</td>
+                <tr key={ag.id} className="hover:bg-orange-50/30 transition-colors">
+                  <td className="p-4 text-gray-500">#{ag.id}</td>
                   <td className="p-4">
-                    <div>
-                      <div className="font-semibold">{ag.tenant}</div>
-                      <div className="text-xs text-gray-500">{ag.tenantEmail}</div>
-                      <div className="text-xs text-gray-500">{ag.tenantPhone}</div>
-                    </div>
+                    <div className="font-bold text-gray-800">{ag.tenant}</div>
+                    <div className="text-xs text-gray-500">{ag.tenantEmail}</div>
                   </td>
-                  <td className="p-4 font-medium">{ag.property} / {ag.room}</td>
+                  <td className="p-4 font-medium text-gray-700">{ag.property} / {ag.room}</td>
                   <td className="p-4 text-gray-600">{ag.startDate}</td>
                   <td className="p-4 text-gray-600">{ag.endDate}</td>
-                  <td className="p-4 font-semibold text-primary">
-                    ₹{ag.rent}
-                  </td>
+                  <td className="p-4 font-bold text-black text-base">₹{ag.rent}</td>
                   <td className="p-4 text-center">
-                    <span
-                      className={`px-3 py-1 rounded-md text-xs font-semibold ${
-                        ag.status === "Active"
-                          ? "bg-green-100 text-green-700"
-                          : ag.status === "Pending Signature"
-                          ? "bg-yellow-100 text-yellow-700"
-                          : "bg-red-100 text-red-700"
-                      }`}
-                    >
+                    <span className={`px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${
+                      ag.status === "Active" 
+                        ? "bg-green-100 text-green-700" 
+                        : "bg-yellow-100 text-yellow-700"
+                    }`}>
                       {ag.status}
                     </span>
                   </td>
-                  <td className="p-4 flex justify-center gap-2">
-                    <CButton 
-                      className="px-3 py-1"
-                      onClick={() => handleViewAgreement(ag)}
-                    >
-                      View
-                    </CButton>
-                    <CButton 
-                      className="px-3 py-1"
-                      onClick={() => handleDownloadAgreement(ag)}
-                    >
-                      Download
-                    </CButton>
+                  <td className="p-4">
+                    <div className="flex justify-center gap-2">
+                      <button
+                        onClick={() => openModal(ag)}
+                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                        title="View Details"
+                      >
+                        <FaEye size={18} />
+                      </button>
+                      <button
+                        onClick={() => handleDownloadFile(ag)}
+                        className="p-2 text-gray-500 hover:bg-orange-50 rounded-lg transition"
+                        title="Download"
+                      >
+                        <FaDownload size={16} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan={8} className="text-center py-10 text-gray-500">
-                  No agreements found.
+                <td colSpan={8} className="text-center py-20 text-gray-500">
+                  No agreements matching your search.
                 </td>
               </tr>
             )}
           </tbody>
         </table>
       </div>
+
+      {/* REACT + TAILWIND MODAL */}
+      {isModalOpen && selectedAgreement && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
+            onClick={closeModal}
+          ></div>
+          
+          {/* Modal Content */}
+          <div className="relative bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+            
+            {/* Modal Header */}
+            <div className="bg-orange-500 px-6 py-5 text-white flex justify-between items-center">
+              <div>
+                <h2 className="text-xl font-bold flex items-center gap-3">
+                  <FaFileContract /> Agreement Details
+                </h2>
+                <p className="text-orange-100 text-sm">ID: {selectedAgreement.agreementId}</p>
+              </div>
+              <button 
+                onClick={closeModal}
+                className="hover:bg-white/20 p-2 rounded-full transition-colors"
+              >
+                <FaTimes size={20} />
+              </button>
+            </div>
+
+            {/* Modal Body - No more custom colors/gradients as requested */}
+            <div className="p-6 max-h-[70vh] overflow-y-auto space-y-8">
+              
+              {/* Tenant Section */}
+              <section>
+                <h3 className="text-gray-800 font-bold text-sm uppercase tracking-widest flex items-center gap-2 mb-4">
+                  <FaUser className="text-gray-400" /> Tenant Information
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="border border-gray-100 p-3 rounded-lg bg-gray-50">
+                    <label className="text-[10px] text-gray-500 uppercase font-bold">Full Name</label>
+                    <p className="text-gray-800 font-semibold">{selectedAgreement.tenant}</p>
+                  </div>
+                  <div className="border border-gray-100 p-3 rounded-lg bg-gray-50">
+                    <label className="text-[10px] text-gray-500 uppercase font-bold">Email Address</label>
+                    <p className="text-gray-800 font-semibold">{selectedAgreement.tenantEmail}</p>
+                  </div>
+                  <div className="border border-gray-100 p-3 rounded-lg bg-gray-50">
+                    <label className="text-[10px] text-gray-500 uppercase font-bold">Phone Number</label>
+                    <p className="text-gray-800 font-semibold">{selectedAgreement.tenantPhone}</p>
+                  </div>
+                  <div className="border border-gray-100 p-3 rounded-lg bg-gray-50">
+                    <label className="text-[10px] text-gray-500 uppercase font-bold">Status</label>
+                    <p className="text-gray-800 font-semibold">{selectedAgreement.status}</p>
+                  </div>
+                </div>
+              </section>
+
+              {/* Property Section */}
+              <section>
+                <h3 className="text-gray-800 font-bold text-sm uppercase tracking-widest flex items-center gap-2 mb-4">
+                  <FaHome className="text-gray-400" /> Property Details
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="border border-gray-100 p-3 rounded-lg bg-gray-50">
+                    <label className="text-[10px] text-gray-500 uppercase font-bold">Property Name</label>
+                    <p className="text-gray-800 font-semibold">{selectedAgreement.property}</p>
+                  </div>
+                  <div className="border border-gray-100 p-3 rounded-lg bg-gray-50">
+                    <label className="text-[10px] text-gray-500 uppercase font-bold">Room</label>
+                    <p className="text-gray-800 font-semibold">{selectedAgreement.room}</p>
+                  </div>
+                </div>
+              </section>
+
+              {/* Finance & Dates Section */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <section>
+                  <h3 className="text-gray-800 font-bold text-sm uppercase tracking-widest flex items-center gap-2 mb-4 border-b pb-2">
+                    <FaWallet className="text-gray-400" /> Financials
+                  </h3>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-500 text-sm">Monthly Rent</span>
+                      <span className="font-bold text-gray-800">₹{selectedAgreement.rent}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-500 text-sm">Security Deposit</span>
+                      <span className="font-bold text-gray-800">₹{selectedAgreement.securityDeposit}</span>
+                    </div>
+                  </div>
+                </section>
+
+                <section>
+                  <h3 className="text-gray-800 font-bold text-sm uppercase tracking-widest flex items-center gap-2 mb-4 border-b pb-2">
+                    <FaCalendarAlt className="text-gray-400" /> Period
+                  </h3>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-500 text-sm">Start Date</span>
+                      <span className="font-bold text-gray-800">{selectedAgreement.startDate}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-500 text-sm">End Date</span>
+                      <span className="font-bold text-gray-800">{selectedAgreement.endDate}</span>
+                    </div>
+                  </div>
+                </section>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="bg-gray-50 px-6 py-5 flex justify-between items-center border-t border-gray-100">
+              <span className="text-[11px] text-gray-400 italic">Document is legally binding.</span>
+              <div className="flex gap-3">
+                <button 
+                  onClick={closeModal}
+                  className="px-5 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-200 rounded-lg transition"
+                >
+                  Close
+                </button>
+                <button 
+                  onClick={() => {
+                    handleDownloadFile(selectedAgreement);
+                    closeModal();
+                  }}
+                  className="px-5 py-2 text-sm font-semibold bg-orange-500 text-white hover:bg-orange-600 rounded-lg shadow-md transition flex items-center gap-2"
+                >
+                  <FaDownload size={14} /> Download PDF
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

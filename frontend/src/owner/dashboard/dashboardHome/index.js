@@ -84,10 +84,10 @@ const DashboardHome = () => {
       
       {/* HEADER */}
       <div className="px-1">
-        <h1 className="text-xl sm:text-3xl md:text-4xl md:text-3xl lg:text-4xl font-bold text-gray-800">
+        <h1 className="text-4xl font-semibold text-gray-800">
           Owner Dashboard
         </h1>
-        <p className="text-xs lg:text-lg sm:text-xl  md:text-3xl text-gray-500">
+        <p className="sm:text-3xl md:text-2xl text-gray-500">
           Welcome back, <span className="text-primary font-medium">{user.fullName}</span>
         </p>
       </div>
@@ -112,7 +112,7 @@ const DashboardHome = () => {
 
       {/* QUICK ACTIONS */}
       <div className="bg-white p-4 sm:p-6 rounded-md shadow-sm border border-gray-100 space-y-4">
-        <h2 className="text-sm sm:text-lg md:text-4xl lg:text-xl font-bold text-gray-700 uppercase tracking-tight">
+        <h2 className="md:text-2xl   text-gray-700 uppercase ">
           Quick Actions
         </h2>
 
@@ -146,10 +146,10 @@ const DashboardHome = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6">
         {/* Earnings Chart */}
         <div className="lg:col-span-2 bg-white p-4 sm:p-6 rounded-md shadow-sm border border-gray-100 space-y-4">
-          <h2 className="text-sm sm:text-lg md:text-4xl lg:text-xl font-bold text-gray-700">
+          <h2 className=" sm:text-lg md:text-4xl  text-gray-700">
             Earnings Overview
           </h2>
-          <div className="h-[200px] sm:h-[300px]">
+          <div className="h-[200px] sm:h-[500px]  ">
             <Line data={earningsData} options={earningsOptions} />
           </div>
         </div>
@@ -176,9 +176,9 @@ const DashboardHome = () => {
 const ActionButton = ({ label, icon, onClick }) => (
   <CButton
     onClick={onClick}
-    className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 text-[11px] sm:text-sm md:text-3xl lg:text-xl py-3 px-1 w-full font-semibold transition-all "
+    className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 sm:text-sm md:text-xl  py-3 px-1 w-full  transition-all "
   >
-    <span className="text-base sm:text-lg md:text-3xl lg:text-xl ">{icon}</span>
+    <span className="text-xl ">{icon}</span>
     {label}
   </CButton>
 );
@@ -187,7 +187,7 @@ const ActionButton = ({ label, icon, onClick }) => (
 const StatCard = ({ title, value, icon, live }) => (
   <div className="bg-black text-white p-3 sm:p-5 rounded-md flex flex-col justify-between shadow-md relative overflow-hidden">
     <div className="flex justify-between items-start">
-      <p className="text-[10px] sm:text-xs md:text-2xl lg:text-lg text-gray-200 uppercase font-bold tracking-wider">
+      <p className="text-[10px] sm:text-xs md:text-2xl lg:text-lg text-gray-200 uppercase  tracking-wider">
         {title}
       </p>
       <div className="text-primary md:text-3xl text-lg sm:text-2xl ">
@@ -196,7 +196,7 @@ const StatCard = ({ title, value, icon, live }) => (
     </div>
     
     <div className="mt-2 flex items-center gap-2">
-      <p className="text-lg sm:text-2xl md:text-3xl lg:text-xl font-black">
+      <p className="text-lg sm:text-2xl md:text-3xl lg:text-xl ">
         {value}
       </p>
       {live && (
@@ -213,10 +213,10 @@ const StatCard = ({ title, value, icon, live }) => (
 const SummaryCard = ({ title, value, icon }) => (
   <div className="bg-black text-white p-4 sm:p-6 rounded-md flex justify-between items-center shadow-md ">
     <div className="space-y-1">
-      <p className="text-lg sm:text-xs md:text-2xl lg:text-lg text-gray-300 uppercase font-bold tracking-widest">
+      <p className="text-lg sm:text-xs md:text-2xl lg:text-lg text-gray-300 uppercase  tracking-widest">
         {title}
       </p>
-      <p className="text-lg sm:text-2xl md:text-3xl lg:text-xl font-black">
+      <p className="text-lg sm:text-2xl md:text-3xl lg:text-xl">
         {value}
       </p>
     </div>

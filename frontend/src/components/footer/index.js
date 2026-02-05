@@ -33,7 +33,7 @@ const Footer = () => {
 
             {/* Brand Info */}
             <div>
-              <h2 className="text-2xl font-bold text-primary mb-4">
+              <h2 className="text-2xl  text-primary mb-4">
                 EasyPG Manager
               </h2>
 

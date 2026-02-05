@@ -1,10 +1,22 @@
-import { Outlet } from "react-router-dom";
-import { useState } from "react";
+import { Outlet, useLocation } from "react-router-dom";
+import { useState, useEffect } from "react";
 import { FaBars } from "react-icons/fa";
 import OwnerSidebar from "../ownerSideBar";
 
 const OwnerLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [pageLoading, setPageLoading] = useState(false);
+  const location = useLocation();
+
+  // 🔄 Trigger Loader on every route change
+  useEffect(() => {
+    setPageLoading(true);
+    const timer = setTimeout(() => {
+      setPageLoading(false);
+    }, 600); // Adjust timing as needed
+
+    return () => clearTimeout(timer);
+  }, [location.pathname]);
 
   return (
     // 🔒 Lock entire dashboard height & stop page scroll
@@ -27,17 +39,32 @@ const OwnerLayout = () => {
               className="text-gray-700 p-1 -ml-1 hover:bg-gray-100 rounded-md transition-colors"
               aria-label="Open menu"
             >
-              <FaBars size={20} />
+              <FaBars size={24} />
             </button>
-            <span className="ml-3 font-bold text-gray-900 tracking-tight">
-              EasyPG Manager
-            </span>
           </div>
-          {/* Optional: Add user avatar icon here for better UI */}
         </div>
 
         {/* ✅ DYNAMIC PADDING: p-3 on mobile, p-6 on desktop */}
-        <main className="flex-1 overflow-y-auto overflow-x-hidden p-3 md:p-6 bg-gray-50/50">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden p-3 md:p-6 bg-gray-50/50 relative">
+          
+          {/* 🎯 THE CENTRAL CIRCLE LOADER */}
+          {pageLoading && (
+            <div className="absolute inset-0 z-[100] flex items-center justify-center bg-gray-50/80 backdrop-blur-sm">
+              <div className="flex flex-col items-center gap-4">
+                {/* Custom Animated Circle */}
+                <div className="relative w-16 h-16">
+                   <div className="w-16 h-16 rounded-full border-4 border-gray-100 border-t-orange-500 animate-spin"></div>
+                   <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="w-8 h-8 bg-orange-500/10 rounded-full animate-pulse"></div>
+                   </div>
+                </div>
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 animate-pulse">
+                  Loading Dashboard...
+                </span>
+              </div>
+            </div>
+          )}
+
           <div className="max-w-7xl mx-auto"> 
             <Outlet />
           </div>

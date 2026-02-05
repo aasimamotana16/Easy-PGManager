@@ -32,11 +32,11 @@ export default function Profile() {
     <div className="max-w-4xl mx-auto p-4">
       {/* 1. Header Section */}
       <div className="flex items-center gap-4 bg-white p-6 rounded-xl shadow-sm mb-6">
-        <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center text-2xl font-bold text-amber-600">
+        <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center text-2xl  text-amber-600">
           {user?.fullName?.charAt(0)}
         </div>
         <div>
-          <h2 className="text-2xl font-bold text-primary">{user?.fullName}</h2>
+          <h2 className="text-2xl  text-primary">{user?.fullName}</h2>
           <p className="text-gray-500">{user?.role} / {user?.email}</p>
         </div>
       </div>
@@ -55,7 +55,7 @@ export default function Profile() {
 
       {/* 3. Emergency Contact Section */}
       <div className="bg-white p-6 rounded-xl shadow-sm">
-        <h3 className="font-bold mb-4">Emergency Contact</h3>
+        <h3 className=" mb-4">Emergency Contact</h3>
         <div className="grid grid-cols-3 gap-4">
           <div>
             <label className="text-xs text-gray-400">Contact Name</label>
