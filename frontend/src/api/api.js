@@ -95,8 +95,9 @@ export const uploadUserDocument = (formData) =>
   API.post("/users/upload-doc", formData, {
     headers: { "Content-Type": "multipart/form-data" },
   });
+// Change this line in api.js:
 export const deleteUserDocument = (documentType) => 
-  API.delete("/users/delete-doc", { data: { documentType } });
+  API.post("/users/delete-doc", { documentType });
 
 // Add this to your api/api.js [cite: 2026-01-01]
 export const updateUserProfile = (userData) => API.put("/users/profile/update", userData);
