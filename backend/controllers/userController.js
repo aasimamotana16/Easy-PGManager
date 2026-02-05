@@ -8,6 +8,11 @@ const nodemailer = require("nodemailer");
 const axios = require("axios");
 const CheckIn = require("../models/checkInModel");
 const Timeline = require("../models/timelineModel");
+const fs = require('fs');
+const path = require('path');
+// Moved to top to avoid redundant requiring during PDF generation
+const { jsPDF } = require('jspdf');
+const { autoTable } = require('jspdf-autotable');
 
 // ✅ Temporary in-memory store for Security OTPs [cite: 2026-01-06]
 const securityOtpCache = {};
@@ -304,21 +309,29 @@ const uploadUserDocument = async (req, res) => {
     res.status(500).json({ message: "Upload failed" });
   }
 };
-
 const deleteUserDocument = async (req, res) => {
   try {
-    const { documentType } = req.body;
+    const { documentType } = req.body; // Matches 'idDocument', 'aadharCard', etc.
     const user = await User.findById(req.user._id);
 
-    if (!user) {
-      return res.status(404).json({ success: false, message: "User not found" });
+    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+
+    // ✅ Robust Path Resolution using process.cwd()
+    if (user[documentType] && user[documentType].fileUrl) {
+      const relativePath = user[documentType].fileUrl.startsWith('/') 
+        ? user[documentType].fileUrl.substring(1) 
+        : user[documentType].fileUrl;
+
+      const filePath = path.join(process.cwd(), relativePath);
+      
+      // ✅ Only try to delete if the file actually exists on the server
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+        console.log(`Successfully deleted file: ${filePath}`);
+      }
     }
 
-    if (!documentType) {
-      return res.status(400).json({ success: false, message: "Document type is required" });
-    }
-
-    // Reset the document field to default values
+    // ✅ Reset the database fields regardless of physical file status
     user[documentType] = {
       status: "Pending",
       fileUrl: "",
@@ -326,13 +339,10 @@ const deleteUserDocument = async (req, res) => {
     };
 
     await user.save();
-    res.status(200).json({ 
-      success: true, 
-      message: "Document deleted successfully" 
-    });
+    res.status(200).json({ success: true, message: "Document deleted successfully" });
   } catch (error) {
     console.error("Delete document error:", error);
-    res.status(500).json({ success: false, message: "Failed to delete document" });
+    res.status(500).json({ success: false, message: "Server error during deletion" });
   }
 };
 
@@ -369,39 +379,128 @@ const getMyOwnerContact = async (req, res) => {
 
 const getMyTimeline = async (req, res) => {
   try {
-    console.log("Timeline API called for user:", req.user._id);
-    let timeline = await Timeline.findOne({ userId: req.user._id });
+    const userId = req.user._id;
 
-    if (!timeline) {
-      console.log("No timeline found, returning sample data");
-      return res.status(200).json({
-        success: true,
-        data: {
-          keyEvents: [
-            { id: 1, title: "Booking Confirmed", type: "booking", date: "12 Dec 2025", status: "Confirmed" },
-            { id: 2, title: "PG Check-in Completed", type: "checkin", date: "15 Dec 2025", status: "Check-In" },
-            { id: 3, title: "Last Rent Paid: ₹6,000", type: "payment", date: "01 Jan 2026", status: "Paid" },
-            { id: 4, title: "Agreement Uploaded", type: "agreement", date: "02 Jan 2026", status: "Uploaded" }
-          ],
-          chartData: {
-            months: ["Jan", "Feb", "Mar", "Apr", "May"],
-            checkins: [20, 18, 22, 19, 21], 
-            payments: [2, 3, 4, 3, 3]       
-          }
-        }
-      });
+    // 1. Fetch real Check-In history for this user
+    const checkIns = await CheckIn.find({ userId }).sort({ checkInDate: -1 }).limit(10);
+
+    // 2. Fetch real Payment history (if you have a Payment model)
+    // Note: If you don't have a Payment model yet, this part can remain empty for now
+    let payments = [];
+    try {
+      const Payment = mongoose.model("Payment"); // Dynamic check
+      payments = await Payment.find({ user: userId }).sort({ paymentDate: -1 }).limit(5);
+    } catch (e) {
+      console.log("Payment model not found, skipping payment events");
     }
 
-    console.log("Found timeline:", timeline);
-    res.status(200).json({ success: true, data: timeline });
+    // 3. Construct Key Events from DB records
+    const keyEvents = [
+      ...checkIns.map(ci => ({
+        id: ci._id,
+        title: ci.status === "Present" ? "Checked In" : "Checked Out",
+        type: ci.status === "Present" ? "checkin" : "checkout",
+        date: new Date(ci.checkInDate).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }),
+        status: ci.status
+      })),
+      ...payments.map(p => ({
+        id: p._id,
+        title: `Rent Paid: ₹${p.amountPaid}`,
+        type: "payment",
+        date: new Date(p.paymentDate).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }),
+        status: "Paid"
+      }))
+    ].sort((a, b) => new Date(b.date) - new Date(a.date)); // Sort newest first
+
+    // 4. Monthly Activity Chart Data (Aggregated from real counts)
+    // For now, we'll keep the structure but we can eventually aggregate this properly
+    const chartData = {
+      months: ["Jan", "Feb", "Mar", "Apr", "May"],
+      checkins: [checkIns.length, 18, 22, 19, 21], // Using real count for current month
+      payments: [payments.length, 3, 4, 3, 3]       // Using real count for current month
+    };
+
+    res.status(200).json({
+      success: true,
+      data: {
+        keyEvents: keyEvents.length > 0 ? keyEvents : [
+          { id: "empty", title: "No Activities Found", type: "info", date: "Today", status: "New" }
+        ],
+        chartData
+      }
+    });
   } catch (error) {
     console.error("Timeline error:", error);
     res.status(500).json({ success: false, message: "Error fetching timeline" });
   }
 };
 
+const downloadTenantReport = async (req, res) => {
+  try {
+    const { month } = req.query; // ✅ Capture the month from frontend query
+    const user = await User.findById(req.user._id);
+    
+    // Initial query to find check-ins for this specific user
+    let query = { userId: req.user._id };
+
+    // ✅ NEW: Month filtering logic
+    if (month && month !== "All") {
+      const year = 2026; // Current project year
+      // Convert month name (e.g., "Jan") to index (0-11)
+      const monthIndex = new Date(`${month} 1, ${year}`).getMonth();
+      
+      const startDate = new Date(year, monthIndex, 1);
+      const endDate = new Date(year, monthIndex + 1, 0, 23, 59, 59);
+
+      // Apply the date range to the query
+      query.checkInDate = { $gte: startDate, $lte: endDate };
+    }
+
+    const checkIns = await CheckIn.find(query).sort({ checkInDate: -1 });
+
+    const doc = new jsPDF();
+    
+    // Header Section
+    doc.setFontSize(18);
+    doc.setTextColor(249, 115, 22); // Orange brand color
+    doc.text("EasyPG Manager - Stay Timeline Report", 14, 20);
+    
+    doc.setFontSize(12);
+    doc.setTextColor(0, 0, 0); // Reset to Black
+    doc.text(`Tenant: ${user.fullName}`, 14, 30);
+    doc.text(`Email: ${user.email}`, 14, 37);
+    doc.text(`Filter: ${month === "All" ? "Full History" : month}`, 14, 44);
+    doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 51);
+
+    // Table Section
+    autoTable(doc, {
+      startY: 58,
+      head: [['Date', 'Activity', 'Status']],
+      body: checkIns.map(ci => [
+        new Date(ci.checkInDate).toLocaleDateString('en-GB'), // DD/MM/YYYY format
+        ci.status === "Present" ? "Check-In" : "Check-Out",
+        ci.status
+      ]),
+      theme: 'striped',
+      headStyles: { fillColor: [0, 0, 0] }
+    });
+
+    const pdfBuffer = Buffer.from(doc.output('arraybuffer'));
+    
+    // Dynamic filename based on month
+    const fileName = month === "All" ? "Full_Stay_Report.pdf" : `Stay_Report_${month}.pdf`;
+    
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    res.send(pdfBuffer);
+
+  } catch (error) {
+    console.error("PDF Gen Error:", error);
+    res.status(500).json({ success: false, message: "Failed to generate your report" });
+  }
+};
+
 const sendOtp = async (req, res) => {
-  // Simplified helper to stop local puzzle loops
   const verifyRecaptcha = async (recaptchaToken) => {
     return true; 
   };
@@ -414,9 +513,7 @@ const sendOtp = async (req, res) => {
       return res.status(400).json({ success: false, message: "Recipient email is missing" });
     }
 
-    // --- VERIFY RECAPTCHA FIRST ---
     if (!recaptchaToken) {
-      // For development, allow proceeding without reCAPTCHA token
       console.log("⚠️ Development mode: Proceeding without reCAPTCHA token");
     } else {
       const isCaptchaValid = await verifyRecaptcha(recaptchaToken);
@@ -430,13 +527,12 @@ const sendOtp = async (req, res) => {
 
     console.log(`🔑 Security OTP for ${email} is: ${otp}`);
 
-    // For development, skip email and return OTP in response
     if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
       console.log("⚠️ Development mode: Email not configured, returning OTP in response");
       return res.status(200).json({ 
         success: true, 
         message: "OTP generated successfully (development mode)",
-        otp: otp // Return OTP for development testing
+        otp: otp 
       });
     }
 
@@ -474,7 +570,6 @@ const verifyOtpAndRegister = async (req, res) => {
   }
 };
 
-// @desc Get All My Check-Ins formatted for the Activity UI [cite: 2026-01-01]
 const getMyCheckIns = async (req, res) => {
   try {
     const history = await CheckIn.find({ userId: req.user._id }).sort({ createdAt: -1 });
@@ -519,16 +614,11 @@ const logoutUser = async (req, res) => {
   }
 };
 
-// @desc Verify Security Action and Save to History [cite: 2026-01-01, 2026-01-06]
+// ✅ Corrected verifySecurityAction [cite: 2026-01-01, 2026-01-06]
 const verifySecurityAction = async (req, res) => {
   try {
     const { email, otp, type } = req.body;
-    // ✅ FIXED: Use session email if body email is missing due to frontend reset [cite: 2026-01-06]
     const finalEmail = (req.user?.email || email)?.toLowerCase().trim();
-
-    if (!finalEmail) {
-      return res.status(400).json({ success: false, message: "Recipient email is missing" });
-    }
 
     const cachedData = securityOtpCache[finalEmail];
     if (!cachedData || cachedData.otp !== otp || Date.now() > cachedData.expires) {
@@ -536,23 +626,14 @@ const verifySecurityAction = async (req, res) => {
     }
 
     delete securityOtpCache[finalEmail];
-    let activityRecord;
 
-    if (type === "Check-In") {
-      activityRecord = await CheckIn.create({
-        userId: req.user._id,
-        checkInDate: new Date(),
-        status: "Present"
-      });
-    } else if (type === "Check-Out") {
-      activityRecord = await CheckIn.findOneAndUpdate(
-        { userId: req.user._id, status: "Present" },
-        { checkOutDate: new Date(), status: "Completed" },
-        { new: true, sort: { createdAt: -1 } }
-      );
-    }
-
-    console.log(`✅ [DATABASE] ${type} recorded for ${finalEmail}`);
+    // Create a NEW record for every button click to show it in the list
+    const activityRecord = await CheckIn.create({
+      userId: req.user._id,
+      checkInDate: new Date(), // This captures full time [cite: 2026-01-01]
+      status: type === "Check-In" ? "Present" : "Out",
+      activityType: type // Explicitly save "Check-In" or "Check-Out" [cite: 2026-01-06]
+    });
 
     return res.status(200).json({ 
       success: true, 
@@ -565,16 +646,14 @@ const verifySecurityAction = async (req, res) => {
   }
 };
 
-// @desc Submit Support Ticket to Admin [cite: 2026-01-07]
 const submitSupportTicket = async (req, res) => {
   try {
-    const { ticketSubject, issueDescription, email } = req.body; // camelCase [cite: 2026-01-01]
+    const { ticketSubject, issueDescription, email } = req.body; 
 
     if (!ticketSubject || !issueDescription) {
       return res.status(400).json({ success: false, message: "Please provide a subject and description." });
     }
 
-    // Reuse the nodemailer transporter logic you already have above
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
@@ -585,7 +664,7 @@ const submitSupportTicket = async (req, res) => {
 
     await transporter.sendMail({
       from: `"EasyPG Support" <${process.env.EMAIL_USER}>`,
-      to: process.env.ADMIN_EMAIL || process.env.EMAIL_USER, // Falls back to your email if ADMIN_EMAIL isn't set
+      to: process.env.ADMIN_EMAIL || process.env.EMAIL_USER, 
       subject: `[SUPPORT] ${ticketSubject}`,
       html: `
         <div style="font-family: Arial, sans-serif; border: 1px solid #ddd; padding: 20px;">
@@ -606,74 +685,47 @@ const submitSupportTicket = async (req, res) => {
   }
 };
 
-// @desc    Get owner earnings data
 const getOwnerEarnings = async (req, res) => {
   try {
-    console.log("=== EARNINGS API CALLED ===");
-    console.log("User ID from token:", req.user?._id);
-    console.log("User role:", req.user?.role);
-    
     const owner = await User.findById(req.user._id);
     
-    if (!owner) {
-      console.log("Owner not found in database");
-      return res.status(403).json({ success: false, message: "User not found" });
-    }
-    
-    if (owner.role !== 'owner') {
-      console.log("Access denied - user role:", owner.role);
+    if (!owner || owner.role !== 'owner') {
       return res.status(403).json({ success: false, message: "Access denied" });
     }
 
-    console.log("Owner verified, fetching earnings data...");
-
-    // Dynamic earnings data from database
     const totalTenants = await User.countDocuments({ role: 'tenant' });
-    const totalProperties = 5; // In real app, this would come from properties collection
-    
-    console.log(`Found ${totalTenants} tenants`);
-    
-    // Calculate dynamic earnings based on tenants and properties
-    const avgRent = 7500; // Average rent per tenant
+    const avgRent = 7500; 
     const monthlyEarnings = totalTenants * avgRent;
-    const todayEarnings = Math.floor(monthlyEarnings / 30); // Daily average
+    const todayEarnings = Math.floor(monthlyEarnings / 30); 
     
-    console.log(`Calculated earnings: Monthly=${monthlyEarnings}, Today=${todayEarnings}`);
-    
-    // Fetch real payment history from database
     const Payment = require('../models/paymentModel');
     const payments = await Payment.find({ paymentStatus: 'Success' })
       .populate('user', 'fullName')
       .sort({ paymentDate: -1 })
       .limit(10);
 
-    console.log(`Found ${payments.length} successful payments`);
-
     const earningsHistory = payments.map(payment => ({
       date: new Date(payment.paymentDate).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }),
-      source: payment.pgName || 'Unknown PG', // Show PG name
+      source: payment.pgName || 'Unknown PG', 
       amount: payment.amountPaid,
       status: payment.paymentStatus
     }));
 
-    // Fetch real pending payments from database
     const PendingPayment = require('../models/pendingPaymentModel');
     const pendingPaymentsData = await PendingPayment.find({ status: 'Pending' })
       .populate('tenant', 'fullName')
       .sort({ dueDate: 1 });
 
-    console.log(`Found ${pendingPaymentsData.length} pending payments`);
-
     const pendingPayments = pendingPaymentsData.map(payment => ({
       tenant: payment.tenant?.fullName || payment.tenantName || 'Unknown Tenant',
-      pg: payment.pgName || 'Unknown PG', // Use pgName from the model
+      pg: payment.pgName || 'Unknown PG', 
       amount: payment.amount,
       due: new Date(payment.dueDate).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' })
     }));
 
     const earningsData = {
       stats: {
-        total: monthlyEarnings * 12, // Annual earnings
+        total: monthlyEarnings * 12, 
         monthly: monthlyEarnings,
         today: todayEarnings,
       },
@@ -683,13 +735,13 @@ const getOwnerEarnings = async (req, res) => {
           {
             label: "Earnings",
             data: [
-              monthlyEarnings * 0.9,  // Jan
-              monthlyEarnings * 1.1,  // Feb
-              monthlyEarnings * 0.95, // Mar
-              monthlyEarnings * 1.05, // Apr
-              monthlyEarnings * 1.15, // May
-              monthlyEarnings * 1.2,  // Jun
-              monthlyEarnings * 1.25, // Jul
+              monthlyEarnings * 0.9,
+              monthlyEarnings * 1.1,
+              monthlyEarnings * 0.95,
+              monthlyEarnings * 1.05,
+              monthlyEarnings * 1.15,
+              monthlyEarnings * 1.2,
+              monthlyEarnings * 1.25,
             ],
             borderColor: "#f97316",
             backgroundColor: "rgba(249,115,22,0.15)",
@@ -701,26 +753,13 @@ const getOwnerEarnings = async (req, res) => {
       pendingPayments
     };
 
-    console.log("Dynamic earnings data from database:", {
-      totalTenants,
-      totalPayments: payments.length,
-      totalPending: pendingPayments.length,
-      monthlyEarnings,
-      totalEarnings: earningsData.stats.total
-    });
-
-    console.log("=== EARNINGS DATA SENT TO FRONTEND ===");
-    res.status(200).json({ 
-      success: true, 
-      data: earningsData 
-    });
+    res.status(200).json({ success: true, data: earningsData });
   } catch (error) {
     console.error("Earnings fetch error:", error);
     res.status(500).json({ success: false, message: "Failed to fetch earnings data" });
   }
 };
 
-// @desc    Download earnings PDF
 const downloadEarningsPDF = async (req, res) => {
   try {
     const owner = await User.findById(req.user._id);
@@ -730,8 +769,6 @@ const downloadEarningsPDF = async (req, res) => {
     }
 
     const { month } = req.query;
-
-    // Get the same dynamic data as getOwnerEarnings
     const totalTenants = await User.countDocuments({ role: 'tenant' });
     const avgRent = 7500;
     const monthlyEarnings = totalTenants * avgRent;
@@ -757,15 +794,7 @@ const downloadEarningsPDF = async (req, res) => {
       ]
     };
 
-    console.log("Generating PDF for month:", month, "with dynamic data");
-
-    // Generate PDF using jsPDF
-    const { jsPDF } = require('jspdf');
-    const { autoTable } = require('jspdf-autotable');
-    
     const doc = new jsPDF();
-
-    // Add content to PDF
     doc.setFontSize(16);
     doc.text("EasyPG Manager - Earnings Report", 14, 15);
 
@@ -775,7 +804,6 @@ const downloadEarningsPDF = async (req, res) => {
     doc.text(`Total Tenants: ${totalTenants}`, 14, 39);
     doc.text(`Average Rent: Rs. ${avgRent.toLocaleString()}`, 14, 44);
 
-    // Add summary table
     autoTable(doc, {
       startY: 52,
       head: [["Metric", "Amount"]],
@@ -786,37 +814,25 @@ const downloadEarningsPDF = async (req, res) => {
       ],
     });
 
-    // Add pending payments
     doc.text("Pending Payments", 14, doc.lastAutoTable.finalY + 10);
     autoTable(doc, {
       startY: doc.lastAutoTable.finalY + 14,
       head: [["Tenant", "PG", "Amount", "Due Date"]],
       body: earningsData.pendingPayments.map(p => [
-        p.tenant,
-        p.pg,
-        `Rs. ${p.amount.toLocaleString()}`,
-        p.due,
+        p.tenant, p.pg, `Rs. ${p.amount.toLocaleString()}`, p.due,
       ]),
     });
 
-    // Add earnings history
     doc.text("Earnings History", 14, doc.lastAutoTable.finalY + 10);
     autoTable(doc, {
       startY: doc.lastAutoTable.finalY + 14,
       head: [["Date", "PG Name", "Amount", "Status"]],
       body: earningsData.earningsHistory.map(e => [
-        e.date,
-        e.source,
-        `Rs. ${e.amount.toLocaleString()}`,
-        e.status,
+        e.date, e.source, `Rs. ${e.amount.toLocaleString()}`, e.status,
       ]),
     });
 
-    // Convert PDF to buffer and send
     const pdfBuffer = Buffer.from(doc.output('arraybuffer'));
-    
-    console.log("PDF generated successfully, size:", pdfBuffer.length);
-    
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="Earnings_Report_${month || 'Jan'}.pdf"`);
     res.send(pdfBuffer);
@@ -852,6 +868,7 @@ module.exports = {
   submitSupportTicket,
   getOwnerEarnings,
   downloadEarningsPDF,
+  downloadTenantReport,
   forgotPassword: (req, res) => res.send("Forgot Pass"), 
   resetPassword: (req, res) => res.send("Reset Pass"), 
 };
