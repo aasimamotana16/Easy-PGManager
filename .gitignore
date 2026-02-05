@@ -30,4 +30,7 @@ yarn-error.log*
 yarn.lock
 .next
 
+backend/.env
+frontend/src/pages/Login/index.js
+
 /test-project
