@@ -208,6 +208,10 @@ const CheckIns = () => {
 
                   const typeValue = (entry.activityType || entry.actionType || "").toLowerCase();
                   const isCheckOut = typeValue.includes("out") || entry.status === "Completed";
+                  
+                  // UPDATED: Use backend variables while keeping camelCase [cite: 2026-01-01]
+                  const displayTitle = entry.title || (isCheckOut ? "Check-Out" : "Check-In");
+                  const displayTime = entry.time || formattedTime; 
 
                   return (
                     <div key={entry.id || entry._id} className="border-l-4 border-black bg-gray-50 p-4 rounded-r-md flex justify-between items-center text-xs">
@@ -217,11 +221,13 @@ const CheckIns = () => {
                         </div>
                         <div>
                           <p className="font-black">{formattedDate}</p>
-                          <p className="text-[10px] font-bold text-gray-400 uppercase">{formattedTime}</p>
+                          {/* UPDATED: shows real time like 11:20 PM */}
+                          <p className="text-[10px] font-bold text-gray-400 uppercase">{displayTime}</p>
                         </div>
                       </div>
                       <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded ${isCheckOut ? 'bg-orange-100' : 'bg-gray-200'}`}>
-                        {entry.activityType || entry.actionType || (isCheckOut ? "Check-Out" : "Check-In")}
+                        {/* UPDATED: shows real status from backend */}
+                        {displayTitle}
                       </span>
                     </div>
                   );
