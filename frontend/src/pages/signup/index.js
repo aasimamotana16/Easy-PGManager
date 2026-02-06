@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate , Link} from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
+import { Eye, EyeOff } from "lucide-react";
 
 import CFormCard from "../../components/cFormCard";
 import CInput from "../../components/cInput";
@@ -21,7 +22,6 @@ const SignUp = () => {
   const [pageLoading, setPageLoading] = useState(true);
   const [loading, setLoading] = useState(false);
 
-  // Form States
   const [role, setRole] = useState("user");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -29,13 +29,12 @@ const SignUp = () => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [agreeTerms, setAgreeTerms] = useState(false);
+  
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // OTP States
   const [otpStage, setOtpStage] = useState(false);
   const [enteredOtp, setEnteredOtp] = useState("");
-  const [otpMessage, setOtpMessage] = useState("");
-
-  // Validation Error States
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
@@ -52,77 +51,41 @@ const SignUp = () => {
 
   const validateForm = () => {
     let newErrors = {};
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const phoneRegex = /^[6-9]\d{9}$/;
-
     if (!name.trim()) newErrors.name = "Full name is required";
-    if (!emailRegex.test(email)) newErrors.email = "Enter a valid email address";
-    if (!phoneRegex.test(phone)) newErrors.phone = "Enter a valid 10-digit mobile number";
-    if (password.length < 6) newErrors.password = "Password must be at least 6 characters";
-    if (password !== confirmPassword) newErrors.confirmPassword = "Passwords do not match";
+    if (!email.trim()) {
+      newErrors.email = "Email is required";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      newErrors.email = "Please enter a valid email address";
+    }
+    if (!phone.trim()) {
+      newErrors.phone = "Phone number is required";
+    } else if (!/^[6-9]\d{9}$/.test(phone)) {
+      newErrors.phone = "Enter a valid 10-digit mobile number";
+    }
+    if (!password) {
+      newErrors.password = "Password is required";
+    } else if (password.length < 6) {
+      newErrors.password = "Password must be at least 6 characters";
+    }
+    if (!confirmPassword) {
+      newErrors.confirmPassword = "Please confirm your password";
+    } else if (password !== confirmPassword) {
+      newErrors.confirmPassword = "Passwords do not match";
+    }
     if (!agreeTerms) newErrors.terms = "You must agree to the terms";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const getPasswordStrength = (pwd) => {
-    if (!pwd) return "";
-    const strongRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])(?=.{8,})/;
-    const mediumRegex = /^(?=.*[a-zA-Z])(?=.*[0-9])(?=.{6,})/;
-    
-    if (strongRegex.test(pwd)) return { text: "Strong Password", color: "text-green-600" };
-    if (mediumRegex.test(pwd)) return { text: "Medium Password", color: "text-orange-500" };
-    return { text: "Weak Password", color: "text-red-500" };
-  };
-
   const handleSendOtp = async () => {
     if (!validateForm()) return;
-
     setLoading(true);
     try {
       const response = await sendOtp({ email });
-      if (response?.data?.success) {
-        setOtpStage(true);
-        setOtpMessage("OTP sent successfully to your email.");
-      } else {
-        setErrors({ server: response?.data?.message || "Failed to send OTP" });
-      }
+      if (response?.data?.success) setOtpStage(true);
     } catch (error) {
-      setErrors({ server: "Server connection failed" });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleVerifyOtpAndSignup = async () => {
-    if (!enteredOtp) {
-      setErrors({ otp: "Please enter the OTP" });
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const response = await registerUser({
-        role,
-        fullName: name,
-        email,
-        phone,
-        password,
-        otp: enteredOtp,
-      });
-
-      if (response?.data?.success) {
-        const userObj = response.data.user;
-        localStorage.setItem("user", JSON.stringify(userObj));
-        localStorage.setItem("isLoggedIn", "true");
-        localStorage.setItem("userToken", response.data.token);
-        window.location.href = "/";
-      } else {
-        setErrors({ otp: response?.data?.message || "Sign up failed" });
-      }
-    } catch (error) {
-      setErrors({ otp: error.response?.data?.message || "Something went wrong" });
+      setErrors({ server: "Failed to send OTP" });
     } finally {
       setLoading(false);
     }
@@ -131,99 +94,105 @@ const SignUp = () => {
   if (pageLoading) return <Loader />;
 
   return (
-    <div className="min-h-screen flex flex-col bg-background.DEFAULT">
-      <section className="relative w-full h-screen px-4 sm:px-8 lg:px-20 flex overflow-hidden">
+    <div className="min-h-screen relative flex items-center justify-center lg:justify-start bg-orange-50 overflow-x-hidden">
+      
+      <div className="hidden lg:block">
         {images.map((img, index) => (
           <div
             key={index}
-            className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
-              index === currentImage ? "opacity-100 z-0" : "opacity-0 -z-10"
-            }`}
+            className={`absolute inset-0 transition-opacity duration-1000 ${index === currentImage ? "opacity-100" : "opacity-0"}`}
             style={{ backgroundImage: `url('${img}')`, backgroundSize: "cover", backgroundPosition: "center" }}
           />
         ))}
+      </div>
 
-        <div className="relative z-10 w-full max-w-sm sm:w-4/5 md:max-w-xl lg:max-w-2xl flex flex-col justify-center h-full mx-auto lg:mx-0">
-          <CFormCard className="bg-white border border-border rounded-md shadow-lg p-5 sm:p-8 md:p-10 w-full text-sm">
-            <div className="mb-2 flex justify-center">
-              <img src="/logos/logo1.png" alt="Logo" className="h-10 md:h-16 w-auto" />
-            </div>
+      <div className="relative z-10 w-full px-4 lg:ml-20 flex justify-center lg:justify-start">
+        <CFormCard className="bg-white border border-gray-100 rounded-xl p-5 sm:p-8 w-full max-w-[360px] lg:max-w-none lg:w-[700px] animate-fadeIn shadow-none">
+          
+          <div className="mb-2 flex justify-center">
+            <img src="/logos/logo1.png" alt="Logo" className="h-10 md:h-14 w-auto" />
+          </div>
 
-            {!otpStage ? (
-              <>
-                <h1 className="text-sm sm:text-lg font-semibold mb-3 text-primary text-center">Create Your Account</h1>
-                <div className="flex flex-col gap-3">
-                  <div className="flex gap-2 mb-2">
-                    <CButton size="sm" fullWidth variant={role === "user" ? "contained" : "outlined"} onClick={() => setRole("user")}>User</CButton>
-                    <CButton size="sm" fullWidth variant={role === "owner" ? "contained" : "outlined"} onClick={() => setRole("owner")}>Owner</CButton>
-                  </div>
-
-                  <CInput label="Full Name" value={name} onChange={(e) => setName(e.target.value)} error={errors.name} />
-
-                  <div className="flex flex-col sm:flex-row gap-4">
-                    <CInput label="Email" type="email" value={email} className="flex-1" onChange={(e) => setEmail(e.target.value)} error={errors.email} />
-                    <CInput label="Phone Number" type="tel" value={phone} className="flex-1" placeholder="10-digit number" onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))} error={errors.phone} />
-                  </div>
-
-                  <div className="flex flex-col sm:flex-row gap-4">
-                    <div className="flex-1 flex flex-col gap-1">
-                      <CInput label="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} error={errors.password} />
-                      {password && (
-                        <span className={`text-[10px] font-bold ${getPasswordStrength(password).color}`}>
-                          {getPasswordStrength(password).text}
-                        </span>
-                      )}
-                    </div>
-                    <CInput label="Confirm Password" type="password" value={confirmPassword} className="flex-1" onChange={(e) => setConfirmPassword(e.target.value)} error={errors.confirmPassword} />
-                  </div>
-
-                 <div className="mt-1">
-  <label className="flex items-start gap-2 text-xs text-gray-600 cursor-pointer">
-    <input 
-      type="checkbox" 
-      checked={agreeTerms} 
-      onChange={(e) => setAgreeTerms(e.target.checked)} 
-      className="mt-1 accent-primary" 
-    />
-    <span>
-      I agree to the{" "}
-      <Link to="/termsConditions" className="text-primary font-medium hover:underline">
-        Terms
-      </Link>{" "}
-      and{" "}
-      <Link to="/privacyPolicy" className="text-primary font-medium hover:underline">
-        Privacy Policy
-      </Link>
-    </span>
-  </label>
-  {errors.terms && <p className="text-red-500 text-[10px] mt-1">{errors.terms}</p>}
-</div>
-
-                  <CButton fullWidth variant="contained" className="mt-2 py-2" onClick={handleSendOtp} disabled={loading}>
-                    {loading ? "Sending..." : "Send OTP"}
-                  </CButton>
+          {!otpStage ? (
+            <>
+              <h1 className="text-lg font-bold text-center mb-4 text-primary">
+                Create Your <span className="text-black">Account</span>
+              </h1>
+              
+              <div className="flex flex-col gap-3">
+                <div className="flex gap-2 mb-2">
+                  <CButton fullWidth variant={role === "user" ? "contained" : "outlined"} onClick={() => setRole("user")}>User</CButton>
+                  <CButton fullWidth variant={role === "owner" ? "contained" : "outlined"} onClick={() => setRole("owner")}>Owner</CButton>
                 </div>
-              </>
-            ) : (
-              <>
-                <div className="flex items-center gap-2 mb-4 cursor-pointer" onClick={() => setOtpStage(false)}>
-                  <span className="text-lg">←</span> <span className="text-xs text-primary font-medium">Back</span>
+
+                <div className="w-full">
+                   <CInput label="Full Name" value={name} onChange={(e) => {setName(e.target.value); setErrors({...errors, name: ""})}} error={!!errors.name} />
+                   {errors.name && <p className="text-red-500 text-[10px] mt-1 ml-1 font-medium">{errors.name}</p>}
                 </div>
-                <h1 className="text-lg font-semibold mb-4 text-primary text-center">Verify OTP</h1>
-                <p className="text-center text-xs text-gray-500 mb-4">{otpMessage}</p>
-                <CInput label="Enter OTP" value={enteredOtp} onChange={(e) => setEnteredOtp(e.target.value)} error={errors.otp} />
-                <CButton fullWidth variant="contained" className="mt-4 py-2" onClick={handleVerifyOtpAndSignup} disabled={loading}>
-                  {loading ? "Signing Up..." : "Verify OTP & Sign Up"}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <CInput label="Email" type="email" value={email} onChange={(e) => {setEmail(e.target.value); setErrors({...errors, email: ""})}} error={!!errors.email} />
+                    {errors.email && <p className="text-red-500 text-[10px] mt-1 ml-1 font-medium">{errors.email}</p>}
+                  </div>
+                  <div>
+                    <CInput label="Phone" type="tel" value={phone} onChange={(e) => {setPhone(e.target.value.slice(0, 10)); setErrors({...errors, phone: ""})}} error={!!errors.phone} />
+                    {errors.phone && <p className="text-red-500 text-[10px] mt-1 ml-1 font-medium">{errors.phone}</p>}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="relative">
+                    <CInput label="Password" type={showPassword ? "text" : "password"} value={password} onChange={(e) => {setPassword(e.target.value); setErrors({...errors, password: ""})}} error={!!errors.password} />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-[42px] text-gray-400">
+                      {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    </button>
+                    {errors.password && <p className="text-red-500 text-[10px] mt-1 ml-1 font-medium">{errors.password}</p>}
+                  </div>
+
+                  <div className="relative">
+                    <CInput label="Confirm Password" type={showConfirmPassword ? "text" : "password"} value={confirmPassword} onChange={(e) => {setConfirmPassword(e.target.value); setErrors({...errors, confirmPassword: ""})}} error={!!errors.confirmPassword} />
+                    <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-[42px] text-gray-400">
+                      {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    </button>
+                    {errors.confirmPassword && <p className="text-red-500 text-[10px] mt-1 ml-1 font-medium">{errors.confirmPassword}</p>}
+                  </div>
+                </div>
+
+                <div className="mt-1">
+                  <label className="flex items-start gap-2 text-[11px] text-gray-600 cursor-pointer">
+                    <input type="checkbox" checked={agreeTerms} onChange={(e) => {setAgreeTerms(e.target.checked); setErrors({...errors, terms: ""})}} className="mt-1 accent-primary scale-110" />
+                    <span>
+                      I agree to the <Link to="/termsConditions" className="text-primary font-medium hover:underline">Terms</Link> and <Link to="/privacyPolicy" className="text-primary font-medium hover:underline">Privacy Policy</Link>
+                    </span>
+                  </label>
+                  {errors.terms && <p className="text-red-500 text-[10px] mt-1 font-medium">{errors.terms}</p>}
+                </div>
+
+                <CButton fullWidth variant="contained" className="mt-2 py-2.5 text-sm font-bold" onClick={handleSendOtp} disabled={loading}>
+                  {loading ? "Sending..." : "Send OTP"}
                 </CButton>
-              </>
-            )}
+              </div>
+            </>
+          ) : (
+            <div className="max-w-sm mx-auto w-full py-4 text-center">
+               <h2 className="text-lg font-bold mb-4">Verify OTP</h2>
+               <CInput label="Enter OTP" value={enteredOtp} onChange={(e) => setEnteredOtp(e.target.value)} />
+               <CButton fullWidth variant="contained" className="mt-4 py-2" onClick={() => {}}>Verify</CButton>
+            </div>
+          )}
 
-            <p className="text-center mt-4 text-xs">
-              Already have an account? <span onClick={() => navigate("/login")} className="font-semibold text-primary cursor-pointer hover:underline">Login</span>
-            </p>
-          </CFormCard>
-        </div>
-      </section>
+          <p className="text-center text-sm mt-6 text-gray-600">
+            Already have an account?{" "}
+            <span 
+              onClick={() => navigate("/login")} 
+              className="font-bold text-[#D97706] cursor-pointer hover:underline underline-offset-4 transition-colors hover:text-blue-600"
+            >
+              Login
+            </span>
+          </p>
+        </CFormCard>
+      </div>
     </div>
   );
 };
