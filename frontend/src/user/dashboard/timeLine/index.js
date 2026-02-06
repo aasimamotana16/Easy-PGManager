@@ -11,8 +11,7 @@ const Timeline = () => {
   const [timelineData, setTimelineData] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Fetch timeline data from backend
-  useEffect(() => {
+useEffect(() => {
     const fetchTimeline = async () => {
       try {
         const token = localStorage.getItem("userToken");
@@ -24,12 +23,13 @@ const Timeline = () => {
           
           if (response.data.success) {
             setTimelineData(response.data.data);
+            setLoading(false);
+            return; // Success, so we stop here
           }
         }
       } catch (error) {
-        console.error("Timeline fetch error:", error);
-      } finally {
-        // Set sample data with check-in/check-out activities as fallback
+        console.error("Backend fetch failed, using fallback:", error);
+        // We only set this data if the backend call fails
         setTimelineData({
           keyEvents: [
             { id: 1, title: "Booking Confirmed", type: "booking", date: "12 Dec 2025", status: "Confirmed" },
@@ -44,22 +44,35 @@ const Timeline = () => {
             payments: [2, 3, 4, 3, 3]       
           }
         });
+      } finally {
         setLoading(false);
       }
     };
     fetchTimeline();
   }, []);
 
+ // Transform backend data for frontend use
   // Transform backend data for frontend use
-  const timelineEvents = timelineData?.keyEvents?.map(event => ({
+const timelineEvents = timelineData?.keyEvents?.map(event => {
+  // ✅ 1. Only extract the Date part. This does NOT change the status or the day.
+  const dateOnly = event.date 
+    ? new Date(event.date).toLocaleDateString('en-GB', { 
+        day: '2-digit', 
+        month: 'short', 
+        year: 'numeric' 
+      }) 
+    : "Pending";
+
+  return {
     icon: event.type === "booking" ? "✅" : 
           event.type === "checkin" ? "🏠" : 
           event.type === "checkout" ? "🚪" :
           event.type === "payment" ? "💰" : "📄",
-    text: event.title,
-    date: event.date || new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-    status: event.status || "Completed"
-  })) || [];
+    text: event.title, // This stays "Checked In" or "Checked Out"
+    date: dateOnly,    // This is now just the date, no 12:00
+    status: event.status || "Completed" // This keeps the status (Confirmed, Paid, etc.)
+  };
+}) || [];
 
   console.log("Timeline: timelineEvents:", timelineEvents);
   console.log("Timeline: timelineData:", timelineData);
@@ -69,63 +82,50 @@ const Timeline = () => {
     CheckIns: timelineData.chartData.checkins[index] || 0,
     Payments: timelineData.chartData.payments[index] || 0
   })) || [];
-
-  const downloadTimelinePDF = () => {
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
-
-    // 1. Header & Branding
-    doc.setFontSize(22);
-    doc.setTextColor(249, 115, 22); // Orange-500
-    doc.text("EasyPG STAY REPORT", 14, 20);
+const downloadTimelinePDF = async () => {
+  try {
+    const token = localStorage.getItem("userToken");
     
-    doc.setFontSize(10);
-    doc.setTextColor(100);
-    doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 28);
-    doc.text(`Report Period: ${selectedMonth === "All" ? "Full History" : selectedMonth + " 2026"}`, 14, 33);
-    
-    doc.setDrawColor(240);
-    doc.line(14, 38, pageWidth - 14, 38);
-
-    // 2. Key Events Section
-    doc.setFontSize(16);
-    doc.setTextColor(0);
-    doc.text("Key Timeline Events", 14, 50);
-
-    const eventRows = timelineEvents.map(ev => [ev.date, ev.text]);
-
-autoTable(doc, {
-  startY: 55,
-  head: [['Date', 'Activity']],
-  body: eventRows,
-  theme: 'striped',
-  headStyles: { fillColor: [0, 0, 0] },
-});
-
-    // 3. Activity Summary Section
-   const finalY = doc.lastAutoTable.finalY + 15;
-    doc.text("Monthly Activity Data", 14, finalY);
-
-    const chartRows = activityData
-      .filter(d => selectedMonth === "All" || d.month === selectedMonth)
-      .map(d => [d.month, d.CheckIns, d.Payments]);
-
-    autoTable(doc, {
-      startY: finalY + 5,
-      head: [['Month', 'Check-ins', 'Payments Made']],
-      body: chartRows,
-      theme: 'grid',
-      headStyles: { fillColor: [249, 115, 22] },
+    // ✅ Change: Added ?month query parameter to the URL
+    const response = await axios.get(`http://localhost:5000/api/users/download-report?month=${selectedMonth}`, {
+      headers: { Authorization: `Bearer ${token}` },
+      responseType: 'blob', 
     });
-    // 4. Security Footer
-    const pageHeight = doc.internal.pageSize.getHeight();
-    doc.setFontSize(8);
-    doc.setTextColor(150);
-    doc.text("This is a system-generated encrypted log. AES-256 Verified.", pageWidth / 2, pageHeight - 10, { align: "center" });
 
-    doc.save(`Stay_Report_${selectedMonth}.pdf`);
+    const blob = new Blob([response.data], { type: 'application/pdf' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    
+    // Keep the filename dynamic as well
+    link.setAttribute('download', `Stay_Report_${selectedMonth}.pdf`);
+    document.body.appendChild(link);
+    link.click();
+    
+    link.parentNode.removeChild(link);
+    window.URL.revokeObjectURL(url);
+
+  } catch (error) {
+      console.error("Official PDF failed, using local generator:", error);
+      
+      // Keep your original PDF code here as a fallback!
+      const doc = new jsPDF();
+      doc.setFontSize(22);
+      doc.setTextColor(249, 115, 22);
+      doc.text("EasyPG STAY REPORT (Local)", 14, 20);
+      
+      const eventRows = timelineEvents.map(ev => [ev.date, ev.text]);
+      autoTable(doc, {
+        startY: 35,
+        head: [['Date', 'Activity']],
+        body: eventRows,
+        theme: 'striped',
+        headStyles: { fillColor: [0, 0, 0] },
+      });
+      
+      doc.save(`Stay_Report_${selectedMonth}.pdf`);
+    }
   };
-
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[60vh]">

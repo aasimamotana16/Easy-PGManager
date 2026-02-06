@@ -116,16 +116,25 @@ const CheckIns = () => {
   const tileClassName = ({ date, view }) => {
     if (view === "month") {
       const dateStr = date.toISOString().split('T')[0];
-      const dayEntries = history.filter((entry) => entry.checkIn === dateStr);
+      const dayEntries = history.filter((entry) => {
+        const rawDate = entry.checkInDate || entry.createdAt || entry.date;
+        if (!rawDate) return false;
+        const entryDateObj = new Date(rawDate);
+        if (isNaN(entryDateObj.getTime())) return false;
+        return entryDateObj.toISOString().split('T')[0] === dateStr;
+      });
+
       if (dayEntries.length > 0) {
-        const hasCheckOut = dayEntries.some(e => e.actionType === "Check-out");
+        const hasCheckOut = dayEntries.some(e => {
+            const type = (e.activityType || e.actionType || "").toLowerCase();
+            return type.includes("out") || e.status === "Completed";
+        });
         return hasCheckOut ? "transparent-orange-tile" : "transparent-black-tile";
       }
     }
   };
 
   return (
-    /* Fix: min-h-screen and absolute positioning to clear the white bar at the top */
     <div className="relative min-h-screen bg-gray-50 text-black">
       <div className="p-4 sm:p-6 lg:p-8 space-y-6">
         
@@ -184,38 +193,54 @@ const CheckIns = () => {
               ) : history.length === 0 ? (
                 <div className="text-center py-10 text-gray-400 text-xs">No records found</div>
               ) : (
-                history.map((entry) => (
-                  <div key={entry.id || entry._id} className="border-l-4 border-black bg-gray-50 p-4 rounded-r-md flex justify-between items-center text-xs">
-                    <div className="flex items-center gap-3">
-                      <div className={`p-2 rounded-md ${entry.actionType === 'Check-out' ? 'bg-orange-100 text-orange-600' : 'bg-gray-200 text-black'}`}>
-                        <FaClock size={12}/>
+                history.map((entry) => {
+                  const rawDate = entry.checkInDate || entry.createdAt || entry.date;
+                  const dateObj = new Date(rawDate);
+                  const isValid = rawDate && !isNaN(dateObj.getTime());
+
+                  const formattedDate = isValid 
+                    ? dateObj.toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })
+                    : "Invalid Date";
+
+                  const formattedTime = isValid 
+                    ? dateObj.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true })
+                    : "--:--";
+
+                  const typeValue = (entry.activityType || entry.actionType || "").toLowerCase();
+                  const isCheckOut = typeValue.includes("out") || entry.status === "Completed";
+                  
+                  // UPDATED: Use backend variables while keeping camelCase [cite: 2026-01-01]
+                  const displayTitle = entry.title || (isCheckOut ? "Check-Out" : "Check-In");
+                  const displayTime = entry.time || formattedTime; 
+
+                  return (
+                    <div key={entry.id || entry._id} className="border-l-4 border-black bg-gray-50 p-4 rounded-r-md flex justify-between items-center text-xs">
+                      <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-md ${isCheckOut ? 'bg-orange-100 text-orange-600' : 'bg-gray-200 text-black'}`}>
+                          <FaClock size={12}/>
+                        </div>
+                        <div>
+                          <p className="font-black">{formattedDate}</p>
+                          {/* UPDATED: shows real time like 11:20 PM */}
+                          <p className="text-[10px] font-bold text-gray-400 uppercase">{displayTime}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-black">{entry.checkIn}</p>
-                        <p className="text-[10px] font-bold text-gray-400 uppercase">{entry.time || "Verified"}</p>
-                      </div>
+                      <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded ${isCheckOut ? 'bg-orange-100' : 'bg-gray-200'}`}>
+                        {/* UPDATED: shows real status from backend */}
+                        {displayTitle}
+                      </span>
                     </div>
-                    <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded ${entry.actionType === 'Check-out' ? 'bg-orange-100' : 'bg-gray-200'}`}>
-                      {entry.actionType}
-                    </span>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Fix: Unified backdrop shade and centering */}
       {showScanner && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center">
-          {/* Background Shade Layer */}
-          <div 
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm" 
-            onClick={closeModal}
-          ></div>
-          
-          {/* Modal Content */}
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={closeModal}></div>
           <div className="relative bg-white w-[90%] max-w-md rounded-2xl overflow-hidden shadow-2xl z-10">
             <div className="p-4 bg-black text-white flex justify-between items-center">
               <span className="text-sm font-black uppercase tracking-tight">Security Portal: {activeAction}</span>
@@ -223,7 +248,6 @@ const CheckIns = () => {
                 <FaTimes size={20} />
               </button>
             </div>
-
             <div className="p-8">
               <form onSubmit={handleSecurityAction} className="space-y-6 text-center">
                 {!isOtpSent ? (
@@ -234,9 +258,7 @@ const CheckIns = () => {
                         onChange={(token) => setCaptchaToken(token)}
                       />
                     </div>
-                    <p className="text-[10px] text-gray-400 font-bold uppercase">
-                      Confirm you are human to receive code
-                    </p>
+                    <p className="text-[10px] text-gray-400 font-bold uppercase">Confirm you are human to receive code</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -250,20 +272,13 @@ const CheckIns = () => {
                     />
                   </div>
                 )}
-
                 <CButton 
-                  className={` font-black uppercase tracking-widest r transition-all ${isPastDate(selectedDate) ? 'bg-gray-400 text-white cursor-not-allowed' : ' text-white shadow-lg'}`}
+                  className={` font-black uppercase tracking-widest transition-all ${isPastDate(selectedDate) ? 'bg-gray-400 text-white cursor-not-allowed' : 'bg-black text-white shadow-lg'}`}
                   type="submit"
                   disabled={(!captchaToken && !isOtpSent) || processing || isPastDate(selectedDate)}
                 >
                   {processing ? "Processing..." : (isOtpSent ? `Verify & ${activeAction}` : "Get Security Code")}
                 </CButton>
-                
-                {isPastDate(selectedDate) && (
-                  <p className="text-[10px] text-red-500 font-black uppercase mt-2">
-                    Action unavailable for past dates
-                  </p>
-                )}
               </form>
             </div>
           </div>

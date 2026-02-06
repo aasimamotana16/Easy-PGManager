@@ -32,9 +32,14 @@ exports.sendOtp = async (req, res) => {
       return res.status(400).json({ success: false, message: "Captcha token is missing" });
     }
 
-    const isCaptchaValid = await verifyRecaptcha(recaptchaToken);
-    if (!isCaptchaValid) {
-      return res.status(400).json({ success: false, message: "Invalid Captcha. Please try again." });
+    // Development bypass for testing
+    if (recaptchaToken === "development_bypass") {
+      console.log(" Development mode: Bypassing reCAPTCHA verification");
+    } else {
+      const isCaptchaValid = await verifyRecaptcha(recaptchaToken);
+      if (!isCaptchaValid) {
+        return res.status(400).json({ success: false, message: "Invalid Captcha. Please try again." });
+      }
     }
     // -------------------------------
 
@@ -48,6 +53,16 @@ exports.sendOtp = async (req, res) => {
       expires: Date.now() + 300000,
     };
     
+    // Check if email is configured, otherwise return OTP in response for development
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+      console.log("⚠️ Development mode: Email not configured, returning OTP in response");
+      return res.status(200).json({ 
+        success: true, 
+        message: "OTP generated successfully (development mode)",
+        otp: generatedOtp 
+      });
+    }
+
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
@@ -86,9 +101,25 @@ exports.registerUser = async (req, res) => {
     }
 
     // VERIFY OTP Logic
+    console.log("🔍 DEBUG - Checking OTP for email:", finalEmail);
+    console.log("🔍 DEBUG - Entered OTP:", otp);
+    console.log("🔍 DEBUG - OTP Cache keys:", Object.keys(otpCache));
+    console.log("🔍 DEBUG - Cached data for email:", otpCache[finalEmail]);
+    
     const cachedData = otpCache[finalEmail];
-    if (!cachedData || cachedData.otp !== otp || Date.now() > cachedData.expires) {
-      return res.status(400).json({ success: false, message: "Invalid or expired OTP" });
+    if (!cachedData) {
+      console.log("❌ No cached OTP found for email:", finalEmail);
+      return res.status(400).json({ success: false, message: "No OTP found. Please request a new OTP." });
+    }
+    
+    if (cachedData.otp !== otp) {
+      console.log("❌ OTP mismatch. Expected:", cachedData.otp, "Got:", otp);
+      return res.status(400).json({ success: false, message: "Invalid OTP" });
+    }
+    
+    if (Date.now() > cachedData.expires) {
+      console.log("❌ OTP expired for email:", finalEmail);
+      return res.status(400).json({ success: false, message: "OTP expired. Please request a new OTP." });
     }
 
     const existingUser = await User.findOne({ email: finalEmail });
@@ -107,8 +138,20 @@ exports.registerUser = async (req, res) => {
       isVerified: true
     });
 
+    // Generate token for the new user
+    const token = jwt.sign(
+      { id: user._id, role: user.role },
+      process.env.JWT_SECRET || "secret",
+      { expiresIn: "1d" }
+    );
+
     delete otpCache[finalEmail];
-    res.status(201).json({ success: true, message: "Registration successful" });
+    res.status(201).json({ 
+      success: true, 
+      message: "Registration successful",
+      token,
+      user: { id: user._id, fullName: user.fullName, role: user.role }
+    });
   } catch (error) {
     console.error("REGISTRATION ERROR:", error.message);
     res.status(400).json({ success: false, message: error.message });
