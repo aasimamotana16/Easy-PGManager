@@ -1,9 +1,10 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom"; 
+import { ArrowLeft } from "lucide-react"; 
 
 import Navbar from "../../components/navbar";
 import Footer from "../../components/footer";
-import Loader from "../../components/loader"; // 1. Import your Loader
+import Loader from "../../components/loader"; 
 
 import Filters from "./servicesFilter";
 import PGListings from "./pgListing";
@@ -20,14 +21,19 @@ const DEFAULT_FILTERS = {
 
 export default function FindMyPG() {
   const locationObj = useLocation();
+  const navigate = useNavigate(); 
+  
+  // Only show back button if 'fromServices' exists in navigation state
+  const showBackButton = locationObj.state?.fromServices;
+
   const city = new URLSearchParams(locationObj.search).get("city");
 
   const [pgList, setPgList] = useState([]);
-  const [isLoading, setIsLoading] = useState(true); // 2. Initial state true
+  const [isLoading, setIsLoading] = useState(true);
 
   /* ================= FETCH PGs (Initial) ================= */
   useEffect(() => {
-    setIsLoading(true); // Start loading
+    setIsLoading(true); 
     fetch("http://localhost:5000/api/pg/all")
       .then((res) => res.json())
       .then((json) => {
@@ -35,7 +41,6 @@ export default function FindMyPG() {
       })
       .catch((err) => console.error("Error:", err))
       .finally(() => {
-        // Adding a slight delay for smooth UX like your other pages
         setTimeout(() => setIsLoading(false), 600);
       });
   }, []);
@@ -67,9 +72,9 @@ export default function FindMyPG() {
     setFilters(DEFAULT_FILTERS);
   };
 
-  /* ================= APPLY FILTERS (BACKEND CONNECTED) ================= */
+  /* ================= APPLY FILTERS ================= */
   const applyFiltersClick = async () => {
-    setIsLoading(true); // 3. Start loader when user applies filters
+    setIsLoading(true); 
     try {
       const queryParams = new URLSearchParams({
         city: city || "Any",
@@ -91,28 +96,22 @@ export default function FindMyPG() {
     } catch (err) {
       console.error("Filter request failed:", err);
     } finally {
-      setTimeout(() => setIsLoading(false), 600); // Stop loader
+      setTimeout(() => setIsLoading(false), 600); 
     }
   };
 
   /* ================= SORT + FILTER LOGIC ================= */
   const filteredPGs = useMemo(() => {
     let list = [...pgList];
-
     if (filters.sortBy === "priceAsc") {
       list = [...list].sort((a, b) => Number(a.rent) - Number(b.rent));
     }
-
     if (filters.sortBy === "priceDesc") {
       list = [...list].sort((a, b) => Number(b.rent) - Number(a.rent));
     }
-
     return list;
   }, [filters.sortBy, pgList]);
 
-  /* ================= RENDER ================= */
-
-  // 4. Return Loader if isLoading is true
   if (isLoading) {
     return <Loader />;
   }
@@ -121,9 +120,23 @@ export default function FindMyPG() {
     <div className="bg-gray-50 min-h-screen flex flex-col">
       <Navbar />
 
-      <main className="flex-1 max-w-7xl mx-auto px-6 py-16 w-full">
-        <h1 className="text-4xl  text-center mb-6">
-          {city ? `PGs in ${city}` : "Find My Perfect PG"}
+      <main className="flex-1 max-w-7xl mx-auto px-6 py-10 w-full">
+        
+        {/* --- BACK BUTTON (Conditional) --- */}
+        {showBackButton && (
+          <button 
+            onClick={() => navigate(-1)} 
+            className="group flex items-center gap-2 text-gray-500 hover:text-primary transition-all mb-6 text-sm font-medium animate-fadeIn"
+          >
+            <div className="p-2 rounded-full bg-white shadow-sm group-hover:bg-primary/10 transition-colors">
+              <ArrowLeft size={18} />
+            </div>
+            Back to Services
+          </button>
+        )}
+
+        <h1 className="text-3xl md:text-4xl font-bold text-gray-800 text-center mb-8">
+          {city ? `PGs in ${city}` : "Find Your Perfect Stay"}
         </h1>
 
         <Filters
@@ -133,22 +146,21 @@ export default function FindMyPG() {
           applyFilters={applyFiltersClick}
         />
 
-        {/* Listings Section */}
         <div className="mt-10">
             <PGListings list={filteredPGs} />
 
             {filteredPGs.length === 0 && (
-            <div className="text-center py-20">
-                <p className="text-xl text-gray-500">
-                    No PGs found matching your requirements.
-                </p>
-                <button 
-                    onClick={resetFilters}
-                    className="mt-4 text-orange-600 font-semibold hover:underline"
-                >
-                    Clear all filters
-                </button>
-            </div>
+              <div className="text-center py-20">
+                  <p className="text-xl text-gray-500">
+                      No PGs found matching your requirements.
+                  </p>
+                  <button 
+                      onClick={resetFilters}
+                      className="mt-4 text-orange-600 font-semibold hover:underline"
+                  >
+                      Clear all filters
+                  </button>
+              </div>
             )}
         </div>
       </main>

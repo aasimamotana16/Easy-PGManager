@@ -20,7 +20,7 @@ const CSelect = ({
         name={name}
         value={value}
         onChange={onChange}
-        className="w-full px-4 py-2 rounded-sm border border-border bg-card text-text-secondary focus:outline-none focus:ring-2 focus:ring-amber transition"
+        className="w-full px-4 py-2 rounded-sm border border-border bg-card text-text-secondary focus:outline-none focus:ring-2 focus:ring-primary transition"
       >
         <option value="">-- Select --</option>
 

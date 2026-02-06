@@ -3,7 +3,7 @@ import Navbar from "../../components/navbar";
 import Footer from "../../components/footer";
 import ServiceCard from "../../components/sCard";
 import CButton from "../../components/cButton";
-import Loader from "../../components/loader"; // Using your component
+import Loader from "../../components/loader";
 import { services } from "../../config/staticData";
 import { useNavigate } from "react-router-dom";
 
@@ -11,19 +11,16 @@ export default function Services() {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
 
-  // Syncing with today's date for any future date-based logic
-  const today = new Date().toISOString().split("T")[0];
-
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsLoading(false);
-    }, 800); // Matching the 800ms duration from your About page
+    }, 800);
 
     return () => clearTimeout(timer);
   }, []);
 
   if (isLoading) {
-    return <Loader />; // Using your specific Loader component
+    return <Loader />;
   }
 
   return (
@@ -34,7 +31,7 @@ export default function Services() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 sm:py-16 lg:py-20">
 
           {/* PAGE TITLE */}
-          <h1 className="text-5xl  text-center mb-4 sm:mb-6">
+          <h1 className="text-5xl text-center mb-4 sm:mb-6">
             Our Services
           </h1>
 
@@ -58,7 +55,7 @@ export default function Services() {
               className="w-full h-44 sm:h-52 lg:h-60 object-cover rounded-md mb-5 sm:mb-6"
             />
 
-            <h2 className="text-4xl  text-primary mb-3 sm:mb-4">
+            <h2 className="text-4xl text-primary mb-3 sm:mb-4">
               Find Your Perfect Stay
             </h2>
 
@@ -70,7 +67,8 @@ export default function Services() {
             <CButton
               size="lg"
               variant="contained"
-              onClick={() => navigate("/findMypg")}
+              /* UPDATED: Passing state to trigger the back button logic */
+              onClick={() => navigate("/findMypg", { state: { fromServices: true } })}
               className="w-full sm:w-auto text:2xl"
             >
               Find My Stay

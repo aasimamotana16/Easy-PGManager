@@ -10,9 +10,7 @@ const CFormCard = ({ children, className = "" }) => {
         border border-border
         rounded-2xl
         p-6 md:p-10
-        shadow-card
         transition-shadow duration-300
-        hover:shadow-hover
         ${className}
       `}
     >

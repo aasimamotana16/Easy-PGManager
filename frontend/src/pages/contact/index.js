@@ -139,7 +139,7 @@ const Contact = () => {
       <main className="flex-1 flex flex-col lg:flex-row gap-10 px-4 lg:px-12 mb-10">
         <div className="flex-1 flex justify-center">
           <div className="w-full max-w-2xl md:max-w-3xl mx-auto ">
-            <div className="bg-white border rounded-md p-10 shadow-lg">
+            <div className="bg-white border border-primary rounded-md p-10 shadow-lg">
               <h2 className="text-center  mb-6 text-3xl sm:text-4xl text-primary">
                 Get in Touch
               </h2>
@@ -201,7 +201,7 @@ const Contact = () => {
         </div>
 
         <div className="flex-1 flex flex-col gap-6">
-          <div className="bg-white p-8 rounded-xl shadow-lg">
+          <div className="bg-white p-8 rounded-md shadow-lg border border-primary">
             <h3 className="text-2xl md:text-4xl lg:text-2xl  text-gray-900 mb-4">
               How can We Help?
             </h3>
@@ -215,7 +215,7 @@ const Contact = () => {
               <li className="flex items-center gap-2"><span className="text-green-500 ">✔</span> Get onboarding help</li>
             </ul>
             <div className="mt-8">
-              <div className="bg-gray-50 p-6 rounded-xl shadow border border-gray-100">
+              <div className="bg-gray-50 p-6 rounded-xl shadow border border-primary">
                 <h4 className=" text-gray-900 mb-2 text-lg md:text-2xl lg:text-xl">General Communication</h4>
                 <p className="text-sm md:text-xl lg:text-base text-gray-600 mb-1">Email us at:</p>
                 <p className="font-semibold text-indigo-600 break-all text-base md:text-2xl lg:text-xl">support@easyPGmanager.com</p>

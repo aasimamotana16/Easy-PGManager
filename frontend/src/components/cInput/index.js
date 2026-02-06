@@ -19,7 +19,7 @@ const CInput = ({
     ${disabled ? "bg-gray-100 cursor-not-allowed opacity-70" : "bg-card"}
     ${
       error
-        ? "border-red-600 focus:border-red-600 text-red-600 placeholder-red-300"
+        ? "border-red-600 focus:border-red-600 text-red-600 "
         : "border-border focus:border-primary text-text-secondary"
     }`;
 
