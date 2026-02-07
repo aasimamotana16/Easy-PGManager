@@ -22,6 +22,7 @@ export const registerUser = (userData) => API.post("/auth/signup", userData);
 export const loginUser = (userData) => API.post("/auth/login", userData);
 export const sendOtp = (data) => API.post("/auth/send-otp", data);
 export const forgotPassword = (email) => API.post("/auth/forgot-password", { email });
+export const verifyOtpAndResetPassword = (data) => API.post("/auth/verify-otp-reset", data);
 export const resetPassword = (token, password) => API.post(`/auth/reset-password/${token}`, { password });
 export const verifySecurityAction = (data) => API.post("/auth/verify-action", data);
 

@@ -19,16 +19,14 @@ const userSchema = new mongoose.Schema(
     password: {
       type: String,
       required: [true, "Please add a password"],
+      minlength: [6, "Password must be at least 6 characters"], // Add this line
     },
     phone: {
       type: String,
-      // Removed "required: true" for now so existing users without phone 
-      // can still login to update it
-      default: "Not Set",
     },
-    city: { type: String, default: "Not Set" },
-    state: { type: String, default: "Not Set" },
-    address: { type: String },
+    city: { type: String, select: false },
+    state: { type: String, select: false },
+    address: { type: String, select: false },
     role: {
       type: String,
       required: true,
@@ -39,14 +37,14 @@ const userSchema = new mongoose.Schema(
 
     profileCompletion: {
       type: Number,
-      default: 20, 
+      select: false,
     },
 
     // Kept in camelCase as requested [cite: 2026-01-01]
     emergencyContact: {
-      contactName: { type: String, default: "" },
-      relationship: { type: String, default: "" },
-      phoneNumber: { type: String, default: "" },
+      contactName: { type: String },
+      relationship: { type: String },
+      phoneNumber: { type: String },
     },
     
     isVerified: {
@@ -54,26 +52,26 @@ const userSchema = new mongoose.Schema(
       default: false,
     },
     // Social Links
-    facebook: { type: String, default: "#" },
-    instagram: { type: String, default: "#" },
-    linkedin: { type: String, default: "#" },
-    twitter: { type: String, default: "#" },
+    facebook: { type: String, select: false },
+    instagram: { type: String, select: false },
+    linkedin: { type: String, select: false },
+    twitter: { type: String, select: false },
 
     // FIX: Renamed to profilePicture to match Controller [cite: 2026-01-07]
-    profilePicture: { type: String, default: null },
+    profilePicture: { type: String, select: false },
     // --- DOCUMENT FIELDS FOR DASHBOARD ---
     idDocument: {
-      status: { type: String, enum: ["Pending", "Uploaded"], default: "Pending" },
-      fileUrl: { type: String, default: "" },
+      status: { type: String, enum: ["Pending", "Uploaded"], select: false },
+      fileUrl: { type: String, select: false },
     },
     aadharCard: {
-      status: { type: String, enum: ["Pending", "Uploaded"], default: "Pending" },
-      fileUrl: { type: String, default: "" },
+      status: { type: String, enum: ["Pending", "Uploaded"], select: false },
+      fileUrl: { type: String, select: false },
     },
     rentalAgreementCopy: {
-      status: { type: String, enum: ["Pending", "Uploaded"], default: "Pending" }, 
-      fileUrl: { type: String, default: "" },
-      uploadedAt: { type: Date, default: Date.now },
+      status: { type: String, enum: ["Pending", "Uploaded"], select: false },
+      fileUrl: { type: String, select: false },
+      uploadedAt: { type: Date, select: false },
     },
     // --- ADD THIS HERE ---
     assignedPg: {

@@ -10,7 +10,8 @@ const {
     sendOtp, 
     registerUser, 
     loginUser, 
-    forgotPassword, 
+    forgotPassword,
+    verifyOtpAndResetPassword,
     resetPassword 
 } = require('../controllers/authController');
 
@@ -54,11 +55,15 @@ router.post('/forgot-password', forgotPassword);
 
 
 
-// --- 5. RESET PASSWORD ---
+// --- 5. VERIFY OTP AND RESET PASSWORD (NEW OTP-based) ---
+
+router.post('/verify-otp-reset', verifyOtpAndResetPassword);
+
+// --- 6. RESET PASSWORD (Legacy token-based) ---
 
 router.post('/reset-password/:token', resetPassword);
 
-// --- 6. SUPPORT TICKET --- [cite: 2026-01-07]
+// --- 7. SUPPORT TICKET --- [cite: 2026-01-07]
 // 2. ADD THIS ROUTE HERE
 router.post('/support/submit', submitSupportTicket);
 
