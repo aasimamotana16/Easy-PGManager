@@ -38,7 +38,9 @@ const PGDetails = () => {
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  /* ================= ROLE & AUTH LOGIC ================= */
   const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
+  const role = localStorage.getItem("role"); // "owner" or "tenant"
   const storedUserName = localStorage.getItem("userName") || "";
   const userEmail = localStorage.getItem("userEmail") || "";
 
@@ -48,7 +50,7 @@ const PGDetails = () => {
 
   const reviewsRef = useRef(null);
 
-  const pg = pgList.find((item) => item._id === id);
+  const pg = pgList?.find((item) => item._id === id);
 
   useEffect(() => {
     if (pgList && pgList.length > 0) {
@@ -68,9 +70,9 @@ const PGDetails = () => {
 
     const interval = setInterval(() => {
       setCurrentIndex((prevIndex) => (prevIndex + 1) % gallery.length);
-    }, 4000); // Changes image every 4 seconds
+    }, 4000);
 
-    return () => clearInterval(interval); // Cleanup on component unmount or reload
+    return () => clearInterval(interval);
   }, [loading, gallery.length]);
 
   if (loading) return <Loader />;
@@ -103,7 +105,7 @@ const PGDetails = () => {
 
           {/* MOBILE NAME & RATING */}
           <div className="bg-white rounded-md shadow p-5 md:p-7 lg:hidden">
-            <h1 className="text-3xl md:text-4xl ">{pg.name}</h1>
+            <h1 className="text-3xl md:text-4xl font-bold">{pg.name}</h1>
             <p className="text-gray-500 flex items-center gap-2 text-lg mt-2">
               <MapPinIcon className="h-5 w-5 text-red-400" /> {pg.location}
             </p>
@@ -128,21 +130,31 @@ const PGDetails = () => {
             </button>
           </div>
 
-          {/* BOOK NOW SECTION */}
-          <div className="bg-white rounded-md shadow p-5 md:p-6 flex flex-row justify-between items-center border border-primary/20">
+          {/* ================= CONDITIONAL BOOK NOW SECTION ================= */}
+          <div className="bg-white rounded-md shadow p-5 md:p-6 flex flex-row justify-between items-center border border-orange-500/20">
             <div>
-              <p className="text-xs md:text-sm  text-gray-500 uppercase tracking-widest">Starting Price</p>
-              <p className="text-2xl md:text-3xl  text-black">
+              <p className="text-xs md:text-sm font-semibold text-gray-500 uppercase tracking-widest">Starting Price</p>
+              <p className="text-2xl md:text-3xl font-bold text-black">
                 ₹{displayStartingPrice}
                 <span className="text-sm md:text-lg text-gray-400 font-normal ml-1">/month</span>
               </p>
             </div>
-            <button
-              onClick={() => navigate(`/book/${pg._id}`)}
-              className="bg-primary text-white px-6 md:px-10 py-3 md:py-4 rounded-md  shadow-lg transition-all active:scale-95 text-sm md:text-lg uppercase tracking-wider"
-            >
-              Book Now
-            </button>
+            
+            {role === "owner" ? (
+              <div className="flex flex-col items-end">
+                <span className="bg-orange-100 text-orange-600 px-4 py-2 rounded-md text-xs font-bold uppercase tracking-widest border border-orange-200">
+                  Owner Preview
+                </span>
+                <p className="text-[10px] text-gray-400 mt-1">Management is in Dashboard</p>
+              </div>
+            ) : (
+              <button
+                onClick={() => navigate(`/book/${pg._id}`)}
+                className="bg-orange-500 text-white px-6 md:px-10 py-3 md:py-4 rounded-md font-bold shadow-lg transition-all active:scale-95 text-sm md:text-lg uppercase tracking-wider"
+              >
+                Book Now
+              </button>
+            )}
           </div>
 
           {/* MOBILE ONLY: RULES & FEATURES */}
@@ -155,13 +167,13 @@ const PGDetails = () => {
           {/* MAP */}
           <div className="bg-white rounded-md overflow-hidden shadow">
             <div className="flex justify-between items-center p-4 md:p-5 border-b">
-              <div className="flex items-center gap-2 text-lg ">
+              <div className="flex items-center gap-2 text-lg font-bold">
                 <MapPinIcon className="h-6 w-6 text-red-500" />
                 Location
               </div>
               <button 
                 onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(pg.name + " " + (pg.location || ""))}`, "_blank")} 
-                className="text-xs md:text-sm bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md  transition-colors"
+                className="text-xs md:text-sm bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-semibold transition-colors"
               >
                 <PaperAirplaneIcon className="h-4 w-4 inline mr-1 -rotate-45" /> Open Maps
               </button>
@@ -172,12 +184,13 @@ const PGDetails = () => {
           {/* REVIEWS */}
           <div ref={reviewsRef} className="bg-white rounded-md p-5 md:p-6 shadow">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl md:text-2xl  flex items-center gap-2">
+              <h2 className="text-xl md:text-2xl font-bold flex items-center gap-2">
                 <span className="text-amber-500">⭐</span> {averageRating} 
                 <span className="text-gray-400 font-normal text-sm md:text-lg">({reviews.length} Reviews)</span>
               </h2>
-              {isLoggedIn && (
-                <button onClick={() => setIsFeedbackOpen(true)} className="text-blue-600  hover:underline text-sm md:text-base">
+              {/* Owners cannot write reviews for any property */}
+              {isLoggedIn && role !== "owner" && (
+                <button onClick={() => setIsFeedbackOpen(true)} className="text-blue-600 font-bold hover:underline text-sm md:text-base">
                   Write Review
                 </button>
               )}
@@ -187,8 +200,8 @@ const PGDetails = () => {
               {reviews.map((r, i) => (
                 <div key={i} className="border-b last:border-none pb-4">
                   <div className="flex justify-between items-center mb-2">
-                    <span className=" text-gray-800 md:text-lg">{r.user}</span>
-                    <span className="text-amber-500  text-sm bg-amber-50 px-2 py-1 rounded">★ {r.rating}</span>
+                    <span className="font-bold text-gray-800 md:text-lg">{r.user}</span>
+                    <span className="text-amber-500 font-bold text-sm bg-amber-50 px-2 py-1 rounded">★ {r.rating}</span>
                   </div>
                   <p className="text-gray-600 text-sm md:text-base leading-relaxed">{r.comment}</p>
                 </div>
@@ -199,9 +212,9 @@ const PGDetails = () => {
 
         {/* ================= RIGHT COLUMN (SIDEBAR) ================= */}
         <div className="hidden lg:flex w-[35%] flex-col gap-6 sticky top-24 h-fit">
-          <div className="bg-white rounded-md shadow p-6 border-l-4 border-primary">
-            <h1 className="text-2xl  text-gray-900 mb-1">{pg.name}</h1>
-            <p className="text-gray-500 flex items-center gap-1 text-sm">
+          <div className="bg-white rounded-md shadow p-6 border-l-4 border-orange-500">
+            <h1 className="text-2xl font-bold text-gray-900 mb-1">{pg.name}</h1>
+            <p className="text-gray-500 flex items-center gap-1 text-sm font-medium">
               <MapPinIcon className="h-5 w-5 text-red-400" /> {pg.location}
             </p>
 
@@ -210,8 +223,8 @@ const PGDetails = () => {
                 <StarIcon className="h-6 w-6 text-white" />
               </div>
               <div>
-                <p className="text-[10px] text-gray-600  uppercase tracking-widest">Community Rating</p>
-                <span className="text-xl  text-gray-800">{averageRating} / 5.0</span>
+                <p className="text-[10px] text-gray-600 font-bold uppercase tracking-widest">Community Rating</p>
+                <span className="text-xl font-bold text-gray-800">{averageRating} / 5.0</span>
               </div>
             </div>
           </div>
@@ -229,24 +242,24 @@ const PGDetails = () => {
             <button onClick={() => setIsFeedbackOpen(false)} className="absolute top-4 right-4 text-gray-400 hover:text-black transition-colors">
               <XMarkIcon className="h-6 w-6" />
             </button>
-            <h2 className="text-2xl  mb-6 text-center">Write a Review</h2>
+            <h2 className="text-2xl font-bold mb-6 text-center">Write a Review</h2>
             <div className="space-y-4">
               <div>
-                <label className="text-[10px]  text-gray-400 uppercase tracking-widest block mb-1">Full Name</label>
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Full Name</label>
                 <input
                   type="text"
                   value={editableName}
                   onChange={(e) => setEditableName(e.target.value)}
-                  className="w-full p-3 border rounded-md focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                  className="w-full p-3 border rounded-md focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all"
                   placeholder="Enter your name"
                 />
               </div>
               <div>
-                <label className="text-[10px]  text-gray-400 uppercase tracking-widest block mb-1">Email (Locked)</label>
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Email (Locked)</label>
                 <input value={userEmail} disabled className="w-full p-3 border rounded-md bg-gray-50 text-gray-400 cursor-not-allowed" />
               </div>
               <div>
-                <label className="text-[10px]  text-gray-400 uppercase tracking-widest block mb-1 text-center">Your Rating</label>
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1 text-center">Your Rating</label>
                 <div className="flex gap-2 justify-center">
                   {[1, 2, 3, 4, 5].map((n) => (
                     <button key={n} onClick={() => setRating(n)} className={`text-4xl transition-transform active:scale-90 ${n <= rating ? "text-amber-500" : "text-gray-200"}`}>★</button>
@@ -254,13 +267,13 @@ const PGDetails = () => {
                 </div>
               </div>
               <div>
-                <label className="text-[10px]  text-gray-400 uppercase tracking-widest block mb-1">Your Review</label>
-                <textarea rows={4} value={comment} onChange={(e) => setComment(e.target.value)} className="w-full border rounded-md p-3 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all" placeholder="Share your experience..." />
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Your Review</label>
+                <textarea rows={4} value={comment} onChange={(e) => setComment(e.target.value)} className="w-full border rounded-md p-3 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all" placeholder="Share your experience..." />
               </div>
             </div>
             <div className="flex gap-3 mt-6">
-              <button onClick={() => setIsFeedbackOpen(false)} className="flex-1 bg-gray-100 py-3 rounded-md  text-gray-600 hover:bg-gray-200 transition-colors">Cancel</button>
-              <button onClick={handleSubmitFeedback} className="flex-1 bg-primary text-white py-3 rounded-md  shadow-lg hover:brightness-110 transition-all">Submit</button>
+              <button onClick={() => setIsFeedbackOpen(false)} className="flex-1 bg-gray-100 py-3 rounded-md font-bold text-gray-600 hover:bg-gray-200 transition-colors">Cancel</button>
+              <button onClick={handleSubmitFeedback} className="flex-1 bg-orange-500 text-white py-3 rounded-md font-bold shadow-lg hover:brightness-110 transition-all">Submit</button>
             </div>
           </div>
         </div>
@@ -280,13 +293,13 @@ const FeatureList = ({ title, items, icon }) => {
 
   return (
     <div className="bg-white p-5 md:p-6 rounded-md shadow">
-      <h2 className="text-sm  mb-4 font-semibold uppercase tracking-widest flex items-center gap-2 border-b pb-2">
+      <h2 className="text-sm font-bold mb-4 uppercase tracking-widest flex items-center gap-2 border-b pb-2">
         <span className="text-lg">{icon}</span> {title}
       </h2>
       <div className="flex flex-wrap gap-2 md:gap-3">
         {normalizedItems.length > 0 ? (
           normalizedItems.map((item, i) => (
-            <span key={i} className="px-3 md:px-4 py-1.5 md:py-2 bg-amber-50 rounded-md text-[10px] md:text-xs  uppercase text-amber-800 border border-amber-100">
+            <span key={i} className="px-3 md:px-4 py-1.5 md:py-2 bg-amber-50 rounded-md text-[10px] md:text-xs font-bold uppercase text-amber-800 border border-amber-100">
               {item}
             </span>
           ))
@@ -302,7 +315,7 @@ const HouseRules = ({ pg, ruleIcons }) => {
   const rules = pg?.houseRules || pg?.rules || [];
   return (
     <div className="bg-white p-5 md:p-6 rounded-md shadow">
-      <h2 className="text-sm font-semibold mb-4 uppercase tracking-widest flex items-center gap-2 border-b pb-2">
+      <h2 className="text-sm font-bold mb-4 uppercase tracking-widest flex items-center gap-2 border-b pb-2">
         <span className="text-lg ">📜</span> House Rules
       </h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
@@ -313,7 +326,7 @@ const HouseRules = ({ pg, ruleIcons }) => {
             return (
               <div key={i} className="flex gap-3 items-center bg-gray-50 p-3 rounded-md border border-gray-100 transition-colors hover:bg-white">
                 <span className="text-xl">{ruleIcons[ruleIconKey] || "✅"}</span>
-                <span className="text-xs  uppercase text-gray-500 truncate">
+                <span className="text-[10px] font-bold uppercase text-gray-500 truncate">
                   {ruleText}
                 </span>
               </div>
@@ -329,9 +342,9 @@ const HouseRules = ({ pg, ruleIcons }) => {
 
 const NotFoundState = () => (
   <div className="min-h-screen flex flex-col items-center justify-center text-red-500 bg-gray-50 px-4 text-center">
-    <h1 className="text-7xl md:text-9xl k mb-4">404</h1>
-    <p className="text-xl md:text-2xl  uppercase tracking-widest">Property Not Found</p>
-    <button onClick={() => window.history.back()} className="mt-6 text-gray-600  hover:underline">Go Back</button>
+    <h1 className="text-7xl md:text-9xl font-bold mb-4">404</h1>
+    <p className="text-xl md:text-2xl font-bold uppercase tracking-widest">Property Not Found</p>
+    <button onClick={() => window.history.back()} className="mt-6 text-gray-600 font-bold hover:underline">Go Back</button>
   </div>
 );
 

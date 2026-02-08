@@ -102,7 +102,7 @@ const getOwnerDashboardData = async (req, res) => {
         stats: [
           { label: "Total PGs", value: mockTotalPgs },
           { label: "Total Rooms", value: mockTotalRooms },
-          { label: "Live Listings", value: mockLiveListings },
+          { label: "Available PGs", value: mockLiveListings },
           { label: "Recent Status", value: "Active" }
         ],
         recentActivity: [

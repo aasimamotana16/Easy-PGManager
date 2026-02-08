@@ -11,34 +11,6 @@ import {
 import CButton from "../../../../components/cButton";
 import Swal from "sweetalert2";
 
-/* STATIC ROOM DATA (UI ONLY) */
-const rooms = [
-  {
-    id: 1,
-    roomNo: "101",
-    type: "Deluxe",
-    capacity: 4,
-    occupied: 2,
-    status: "Available",
-  },
-  {
-    id: 2,
-    roomNo: "102",
-    type: "Standard",
-    capacity: 3,
-    occupied: 3,
-    status: "Full",
-  },
-  {
-    id: 3,
-    roomNo: "201",
-    type: "AC Room",
-    capacity: 2,
-    occupied: 1,
-    status: "Maintenance",
-  },
-];
-
 const RoomManagement = () => {
   const navigate = useNavigate();
   const { pgId } = useParams();
@@ -49,6 +21,7 @@ const RoomManagement = () => {
   // Fetch PG and rooms data
   const fetchPgData = async () => {
     try {
+      setLoading(true);
       const token = localStorage.getItem("userToken");
       
       if (!token) {
@@ -56,7 +29,6 @@ const RoomManagement = () => {
         return;
       }
 
-      // Fetch PG details
       const pgResponse = await axios.get(`http://localhost:5000/api/owner/pg/${pgId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -67,223 +39,180 @@ const RoomManagement = () => {
       }
     } catch (error) {
       console.error("Error fetching PG data:", error);
-      // Use static data as fallback
+      // Fallback to static data if API fails for UI testing
+      setRooms([
+        { id: 1, roomNo: "101", roomType: "Deluxe", capacity: 4, occupied: 2, status: "Available" },
+        { id: 2, roomNo: "102", roomType: "Standard", capacity: 3, occupied: 3, status: "Full" }
+      ]);
     } finally {
       setLoading(false);
     }
   };
 
-  // Handle view room details
+  useEffect(() => {
+    if (pgId) fetchPgData();
+    else setLoading(false);
+  }, [pgId]);
+
   const handleViewRoom = (room) => {
-    console.log("View room clicked:", room);
-    
-    const roomDetails = `
-      Room Number: ${room.roomNo || 'N/A'}
-      Type: ${room.type || 'N/A'}
-      Capacity: ${room.capacity || 0} beds
-      Occupied: ${room.occupied || 0} beds
-      Status: ${room.status || 'N/A'}
-      Description: ${room.description || 'No description available'}
-    `;
-    
     Swal.fire({
-      title: `Room ${room.roomNo}`,
-      html: `<pre style="text-align: left; font-size: 14px;">${roomDetails}</pre>`,
+      title: `<span class="text-orange-600">Room ${room.roomNo || room.roomType}</span>`,
+      html: `
+        <div class="text-left space-y-2 text-sm">
+          <p><strong>Type:</strong> ${room.roomType || room.type || 'N/A'}</p>
+          <p><strong>Capacity:</strong> ${room.capacity || room.bedsPerRoom || 0} Beds</p>
+          <p><strong>Occupancy:</strong> ${room.occupied || 0} Occupied</p>
+          <p><strong>Status:</strong> ${room.status || 'Available'}</p>
+          <p><strong>Description:</strong> ${room.description || 'No description provided'}</p>
+        </div>
+      `,
       icon: "info",
-      confirmButtonText: "Close",
-      width: 500
+      confirmButtonColor: "#D97706", 
     });
   };
 
-  // Handle edit room
   const handleEditRoom = (room) => {
-    console.log("Edit room clicked:", room);
-    
     Swal.fire({
-      title: `Edit Room ${room.roomNo}`,
+      title: 'Edit Room Details',
       html: `
-        <div style="text-align: left;">
-          <div style="margin-bottom: 15px;">
-            <label>Room Type:</label>
-            <input id="roomType" class="swal2-input" value="${room.type || ''}" placeholder="e.g., Deluxe Room">
-          </div>
-          <div style="margin-bottom: 15px;">
-            <label>Capacity:</label>
-            <input id="capacity" type="number" class="swal2-input" value="${room.capacity || ''}" placeholder="Number of beds">
-          </div>
-          <div style="margin-bottom: 15px;">
-            <label>Occupied:</label>
-            <input id="occupied" type="number" class="swal2-input" value="${room.occupied || ''}" placeholder="Currently occupied beds">
-          </div>
-          <div style="margin-bottom: 15px;">
-            <label>Status:</label>
-            <select id="status" class="swal2-input">
-              <option value="Available" ${room.status === 'Available' ? 'selected' : ''}>Available</option>
-              <option value="Full" ${room.status === 'Full' ? 'selected' : ''}>Full</option>
-              <option value="Maintenance" ${room.status === 'Maintenance' ? 'selected' : ''}>Maintenance</option>
-            </select>
-          </div>
-          <div style="margin-bottom: 15px;">
-            <label>Description:</label>
-            <textarea id="description" class="swal2-input" placeholder="Room details and amenities">${room.description || ''}</textarea>
-          </div>
-        </div>
+        <input id="swal-roomType" class="swal2-input" placeholder="Room Type" value="${room.roomType || room.type}">
+        <input id="swal-capacity" type="number" class="swal2-input" placeholder="Capacity" value="${room.capacity || room.bedsPerRoom}">
+        <select id="swal-status" class="swal2-input">
+          <option value="Available" ${room.status === 'Available' ? 'selected' : ''}>Available</option>
+          <option value="Full" ${room.status === 'Full' ? 'selected' : ''}>Full</option>
+          <option value="Maintenance" ${room.status === 'Maintenance' ? 'selected' : ''}>Maintenance</option>
+        </select>
       `,
       showCancelButton: true,
-      confirmButtonText: 'Save Changes',
+      confirmButtonText: 'Update',
+      confirmButtonColor: "#D97706",
       preConfirm: () => {
-        const roomType = document.getElementById('roomType').value;
-        const capacity = document.getElementById('capacity').value;
-        const occupied = document.getElementById('occupied').value;
-        const status = document.getElementById('status').value;
-        const description = document.getElementById('description').value;
-
-        if (!roomType || !capacity) {
-          Swal.showValidationMessage('Please fill in required fields');
-          return false;
+        return {
+          roomType: document.getElementById('swal-roomType').value,
+          capacity: document.getElementById('swal-capacity').value,
+          status: document.getElementById('swal-status').value,
         }
-
-        return { roomType, capacity, occupied, status, description };
       }
     }).then((result) => {
       if (result.isConfirmed) {
-        // Here you would typically save to backend
-        console.log('Updated room data:', result.value);
-        Swal.fire('Success!', 'Room updated successfully', 'success');
-        // Refresh the data
-        fetchPgData();
+        Swal.fire("Updated!", "Room details updated successfully.", "success");
       }
     });
   };
 
-  useEffect(() => {
-    if (pgId) {
-      fetchPgData();
-    } else {
-      setLoading(false);
-    }
-  }, [pgId]);
-
-  // Debug: Log the rooms data
-  console.log("Current rooms data:", rooms);
-
   return (
-    <div className="p-6 bg-gray-100 min-h-screen space-y-6">
-
+    <div className="p-4 md:p-6 bg-gray-100 min-h-screen">
+      
       {/* PAGE HEADER */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-primary">
+          <h1 className="text-2xl md:text-3xl font-bold text-primary">
             Room Management
           </h1>
-          <p className="text-gray-500 mt-1">
-            {pgData ? `Managing rooms for ${pgData.pgName}` : 'Room Management'}
+          <p className="text-gray-500 text-sm md:text-base">
+            {pgData ? `Managing rooms for ${pgData.pgName || pgData.name}` : 'Property Rooms Overview'}
           </p>
         </div>
 
         <CButton
-          onClick={() => navigate("/owner/dashboard/pgManagment/addProperty")}
+          className="w-full sm:w-auto text-white flex items-center justify-center gap-2 px-6 shadow-md"
+          onClick={() => navigate("/owner/dashboard/pgManagment/addRooms")}
         >
-          <FaPlus className="mr-2" />
-          Add New Property
+          <FaPlus /> Add New Room
         </CButton>
       </div>
 
-      {/* ROOM LIST */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {rooms.map((room, index) => {
-          // Handle both static data and database data structure
-          const roomData = {
-            id: room.id || index,
-            roomNo: room.roomNo || room.roomType || `Room ${index + 1}`,
-            type: room.type || room.roomType || 'Standard',
-            capacity: room.capacity || room.bedsPerRoom || 2,
-            occupied: room.occupied || 0,
-            status: room.status || 'Available',
-            description: room.description || ''
-          };
-          
-          return (
-            <div
-              key={roomData.id}
-              className="bg-white rounded-md shadow p-5 flex flex-col"
-            >
-              {/* ROOM HEADER */}
-              <div className="flex justify-between items-center mb-3">
-                <div className="flex items-center gap-2">
-                  <FaBed className="text-orange-500" />
-                  <h3 className="font-semibold text-gray-800">
-                    Room {roomData.roomNo}
-                  </h3>
+      {loading ? (
+        <div className="text-center py-10 text-gray-500 font-medium">Loading rooms...</div>
+      ) : (
+        /* ROOM LIST - Responsive Grid */
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {rooms.map((room, index) => {
+            const displayRoom = {
+              roomNo: room.roomNo || room.roomType || `Room ${index + 1}`,
+              type: room.roomType || room.type || 'Standard',
+              capacity: room.capacity || room.bedsPerRoom || 1,
+              occupied: room.occupied || 0,
+              status: room.status || 'Available',
+            };
+
+            const occupancyPercent = (displayRoom.occupied / displayRoom.capacity) * 100;
+
+            return (
+              <div
+                key={room.id || index}
+                className="bg-white rounded-lg border border-gray-200 border-t-4 border-t-primary shadow-sm hover:shadow-md transition-shadow p-5 flex flex-col"
+              >
+                {/* CARD HEADER */}
+                <div className="flex justify-between items-start mb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 bg-orange-50 rounded-lg">
+                        <FaBed className="text-primary" />
+                    </div>
+                    <div>
+                        <h3 className="font-bold text-gray-800 leading-tight">
+                        Room {displayRoom.roomNo}
+                        </h3>
+                        <span className="text-xs text-gray-500 uppercase tracking-wider">{displayRoom.type}</span>
+                    </div>
+                  </div>
+
+                  <span className={`text-[10px] px-2 py-1 rounded-full font-bold uppercase ${
+                    displayRoom.status === "Available" ? "bg-green-100 text-green-700" :
+                    displayRoom.status === "Full" ? "bg-red-100 text-red-700" : "bg-yellow-100 text-yellow-700"
+                  }`}>
+                    {displayRoom.status}
+                  </span>
                 </div>
 
-                <span
-                  className={`text-xs px-3 py-1 rounded-full font-semibold ${
-                    roomData.status === "Available"
-                      ? "bg-green-100 text-green-700"
-                      : roomData.status === "Full"
-                      ? "bg-red-100 text-red-700"
-                      : "bg-yellow-100 text-yellow-700"
-                  }`}
-                >
-                  {roomData.status}
-                </span>
+                {/* CAPACITY INFO */}
+                <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
+                    <div className="flex items-center gap-1">
+                        <FaUsers className="text-gray-400" />
+                        <span>Occupancy</span>
+                    </div>
+                    <span className="font-semibold">{displayRoom.occupied} / {displayRoom.capacity}</span>
+                </div>
+
+                {/* PROGRESS BAR */}
+                <div className="w-full bg-gray-100 rounded-full h-2 mb-6">
+                  <div
+                    className={`h-2 rounded-full transition-all duration-500 ${
+                      occupancyPercent >= 100 ? "bg-red-500" : "bg-orange-500"
+                    }`}
+                    style={{ width: `${Math.min(occupancyPercent, 100)}%` }}
+                  />
+                </div>
+
+                {/* ACTIONS */}
+                <div className="mt-auto grid grid-cols-2 gap-3 pt-2">
+                  <CButton
+                    variant="outlined"
+                    className="flex items-center justify-center gap-2 border-gray-300 text-gray-700 hover:bg-gray-50 text-sm py-2"
+                    onClick={() => handleViewRoom(room)}
+                  >
+                    <FaRegEye /> View
+                  </CButton>
+
+                  <CButton
+                    variant="outlined"
+                    className="flex items-center justify-center gap-2 border-orange-600  text-sm py-2"
+                    onClick={() => handleEditRoom(room)}
+                  >
+                    <FaEdit /> Edit
+                  </CButton>
+                </div>
               </div>
+            );
+          })}
+        </div>
+      )}
 
-              {/* ROOM DETAILS */}
-              <p className="text-sm text-gray-500 mb-2">
-                {roomData.type}
-              </p>
-
-              {/* CAPACITY VISUALIZATION */}
-              <div className="flex items-center gap-2 text-sm text-gray-700 mb-4">
-                <FaUsers className="text-gray-500" />
-                <span>
-                  {roomData.occupied} / {roomData.capacity} Beds Occupied
-                </span>
-              </div>
-
-              {/* PROGRESS BAR */}
-              <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
-                <div
-                  className={`h-2 rounded-full ${
-                    roomData.occupied === roomData.capacity
-                      ? "bg-red-500"
-                      : "bg-orange-500"
-                  }`}
-                  style={{
-                    width: `${(roomData.occupied / roomData.capacity) * 100}%`,
-                  }}
-                />
-              </div>
-
-              {/* ACTIONS */}
-              <div className="mt-auto flex gap-3">
-                <button
-                  onClick={() => {
-                    console.log("View button clicked for room:", roomData);
-                    alert(`View button clicked for Room ${roomData.roomNo}`);
-                  }}
-                  className="flex-1 flex items-center justify-center gap-1 px-4 py-2 border border-gray-300 rounded hover:bg-gray-50"
-                >
-                  <FaRegEye /> View
-                </button>
-
-                <button
-                  onClick={() => {
-                    console.log("Edit button clicked for room:", roomData);
-                    alert(`Edit button clicked for Room ${roomData.roomNo}`);
-                  }}
-                  className="flex-1 flex items-center justify-center gap-1 px-4 py-2 border border-gray-300 rounded hover:bg-gray-50"
-                >
-                  <FaEdit /> Edit
-                </button>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
+      {rooms.length === 0 && !loading && (
+        <div className="bg-white rounded-lg border border-dashed border-gray-300 p-10 text-center">
+            <p className="text-gray-500">No rooms found. Click "Add New Room" to get started.</p>
+        </div>
+      )}
     </div>
   );
 };

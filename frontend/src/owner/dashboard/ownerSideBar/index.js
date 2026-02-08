@@ -9,7 +9,7 @@ import {
   FaFileContract,
   FaQuestionCircle,
   FaTimes,
-  FaSignOutAlt, // Imported for a clear logout icon
+  FaSignOutAlt,
 } from "react-icons/fa";
 
 const OwnerSidebar = ({ isOpen, closeSidebar }) => {
@@ -58,18 +58,17 @@ const OwnerSidebar = ({ isOpen, closeSidebar }) => {
       <aside
         className={`
           fixed top-0 left-0 z-50
-          h-screen w-1/2 sm:w-1/2 md:w-2/5 lg:w-64
+          h-screen w-[280px] max-w-[85vw]
           bg-black text-white
           flex flex-col
           px-4 py-5
-          overflow-hidden
-          transform transition-transform duration-300
+          transform transition-transform duration-300 ease-in-out
           ${isOpen ? "translate-x-0" : "-translate-x-full"}
-          lg:translate-x-0 lg:static
+          lg:translate-x-0 lg:static lg:w-64
         `}
       >
         {/* LOGO / BRAND */}
-        <div className="flex items-center justify-between mb-14">
+        <div className="flex items-center justify-between mb-10 shrink-0">
           <div
             className="flex items-center gap-1 cursor-pointer"
             onClick={() => {
@@ -89,15 +88,15 @@ const OwnerSidebar = ({ isOpen, closeSidebar }) => {
           </div>
 
           <button
-            className="lg:hidden text-gray-400 hover:text-white"
+            className="lg:hidden text-gray-400 hover:text-white p-2"
             onClick={closeSidebar}
           >
             <FaTimes size={20} />
           </button>
         </div>
 
-        {/* MENU */}
-        <nav className="flex-1 flex flex-col gap-2">
+        {/* MENU - Added overflow-y-auto for responsiveness on short screens */}
+        <nav className="flex-1 flex flex-col gap-2 overflow-y-auto no-scrollbar">
           {menuItems.map((item) => (
             <NavLink
               key={item.to}
@@ -105,7 +104,7 @@ const OwnerSidebar = ({ isOpen, closeSidebar }) => {
               end
               onClick={closeSidebar}
               className={({ isActive }) =>
-                `flex items-center gap-4 px-4 py-3 rounded-md text-lg font-medium transition-colors
+                `flex items-center gap-4 px-4 py-3 rounded-md text-lg font-medium transition-colors shrink-0
                 ${isActive ? "bg-primary text-white" : "hover:bg-gray-800 text-gray-300 hover:text-white"}`
               }
             >
@@ -115,52 +114,52 @@ const OwnerSidebar = ({ isOpen, closeSidebar }) => {
           ))}
         </nav>
 
-        {/* DIVIDER */}
-        <div className="border-t border-gray-800 my-4" />
-
         {/* BOTTOM ACTIONS: HOME & LOGOUT */}
-        <div className="flex items-center gap-2">
-          {/* HOME ICON BUTTON */}
-          <button
-            onClick={() => {
-              navigate("/");
-              closeSidebar?.();
-            }}
-            className="p-3 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
-            title="Go to Website Home"
-          >
-            <FaHome size={24} />
-          </button>
+        <div className="shrink-0">
+          <div className="border-t border-gray-800 my-4" />
+          <div className="flex items-center gap-2 pb-2">
+            {/* HOME ICON BUTTON */}
+            <button
+              onClick={() => {
+                navigate("/");
+                closeSidebar?.();
+              }}
+              className="p-3 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+              title="Go to Website Home"
+            >
+              <FaHome size={24} />
+            </button>
 
-          {/* LOGOUT BUTTON */}
-          <button
-            onClick={() => setIsLogoutModalOpen(true)}
-            className="flex-1 flex items-center gap-3 px-4 py-2 rounded-lg text-red-500 hover:text-red-400 font-bold text-lg text-left transition-colors"
-          >
-            <FaSignOutAlt size={20} />
-            Logout
-          </button>
+            {/* LOGOUT BUTTON */}
+            <button
+              onClick={() => setIsLogoutModalOpen(true)}
+              className="flex-1 flex items-center gap-3 px-4 py-2 rounded-lg text-red-500 hover:text-red-400 font-bold text-lg text-left transition-colors"
+            >
+              <FaSignOutAlt size={20} />
+              Logout
+            </button>
+          </div>
         </div>
       </aside>
 
       {/* --- LOGOUT POPUP --- */}
       {isLogoutModalOpen && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-white p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center transition-all animate-in zoom-in duration-200">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center transition-all animate-in zoom-in duration-200">
             {!isLogoutSuccessful ? (
               <>
                 <h3 className="text-2xl font-bold text-gray-800">Confirm Logout</h3>
                 <p className="text-gray-500 my-4 font-medium">Are you sure you want to end your session?</p>
-                <div className="flex gap-3 mt-6">
+                <div className="flex flex-col sm:flex-row gap-3 mt-6">
                   <button 
                     onClick={() => setIsLogoutModalOpen(false)} 
-                    className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition-colors"
+                    className="order-2 sm:order-1 flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition-colors"
                   >
                     No
                   </button>
                   <button 
                     onClick={handleLogout} 
-                    className="flex-1 py-3 bg-orange-500 text-white rounded-xl font-bold shadow-lg shadow-orange-200 hover:bg-orange-600 transition-all"
+                    className="order-1 sm:order-2 flex-1 py-3 bg-orange-500 text-white rounded-xl font-bold shadow-lg shadow-orange-200 hover:bg-orange-600 transition-all"
                   >
                     Yes
                   </button>
@@ -172,7 +171,7 @@ const OwnerSidebar = ({ isOpen, closeSidebar }) => {
                   ✓
                 </div>
                 <h3 className="text-2xl font-bold text-gray-800">Success!</h3>
-                <p className="text-gray-500 mt-2 font-medium">Logged out successfully.</p>
+                <p className="text-gray-500 mt-2 font-medium">Signed Out successfully.</p>
               </div>
             )}
           </div>

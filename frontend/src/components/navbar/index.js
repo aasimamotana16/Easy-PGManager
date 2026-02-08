@@ -1,19 +1,20 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { FaUserCircle, FaBars, FaTimes } from "react-icons/fa"; // Added icons for mobile
+import { FaUserCircle, FaBars, FaTimes } from "react-icons/fa"; 
 import axios from "axios";
 import CButton from "../../components/cButton";
 
 const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const dropdownRef = useRef(null); // Ref to detect clicks outside
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userName, setUserName] = useState("");
   const [profileOpen, setProfileOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isLogoutSuccessful, setIsLogoutSuccessful] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // Mobile state
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); 
 
   const role = localStorage.getItem("role");
 
@@ -24,8 +25,19 @@ const Navbar = () => {
 
   useEffect(() => {
     checkLoginStatus();
-    setIsMobileMenuOpen(false); // Close menu on route change
+    setIsMobileMenuOpen(false); 
   }, [location.pathname]);
+
+  // Click outside listener logic
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setProfileOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   useEffect(() => {
     window.addEventListener("storage", checkLoginStatus);
@@ -88,7 +100,7 @@ const Navbar = () => {
           </span>
         </div>
 
-        {/* CENTER: NAV LINKS (Hidden on mobile, flex on desktop) */}
+        {/* CENTER: NAV LINKS */}
         <div className="hidden lg:flex items-center gap-8">
           {navLinks.map(([path, label]) => (
             <button
@@ -110,21 +122,30 @@ const Navbar = () => {
         <div className="flex items-center gap-3 md:gap-4">
           {!isLoggedIn ? (
             <div className="hidden sm:flex gap-3">
-              <CButton variant="outline"  text="Login" onClick={() => navigate("/login")} />
-              <CButton  text="Sign Up" onClick={() => navigate("/signup")} />
+              <CButton variant="outline" text="Login" onClick={() => navigate("/login")} />
+              <CButton text="Sign Up" onClick={() => navigate("/signup")} />
             </div>
           ) : (
-            <div className="relative">
-              <button className="flex items-center gap-2 text-white" onClick={() => setProfileOpen((p) => !p)}>
-                <span className="text-sm font-medium hidden md:block">{userName}</span>
-                <FaUserCircle size={24} className="text-orange-500" />
+            <div className="relative" ref={dropdownRef}>
+              <button className="flex items-center gap-3 text-white" onClick={() => setProfileOpen((p) => !p)}>
+                {/* ROLE ADDED BESIDE NAME IN NAVBAR */}
+                <div className="hidden md:flex flex-col items-end leading-tight">
+                  <span className="text-sm font-medium">{userName}</span>
+                  <span className="text-[10px] text-orange-500 uppercase font-bold tracking-widest">
+                    {role === "owner" ? "Property Owner" : "Tenant"}
+                  </span>
+                </div>
+                <FaUserCircle size={28} className="text-orange-500" />
               </button>
+              
               {profileOpen && (
                 <div className="absolute right-0 top-12 w-48 bg-white rounded-lg shadow-xl z-[110] overflow-hidden border border-gray-100">
+                  {/* HEADER UPDATED: Removed "Signed in as" 
                   <div className="p-3 border-b bg-gray-50">
-                    <p className="text-[10px] text-gray-500">Signed in as</p>
                     <p className="text-sm text-gray-900 truncate font-bold">{userName}</p>
-                  </div>
+                    <p className="text-[11px] text-gray-500 uppercase">{role === "owner" ? "Owner" : "Tenant"}</p>
+                  </div>*/}
+                  
                   <div className="py-1">
                     <button onClick={goToDashboard} className="w-full px-4 py-2 hover:bg-gray-100 text-gray-700 text-sm text-left">Dashboard</button>
                     <button onClick={goToProfile} className="w-full px-4 py-2 hover:bg-gray-100 text-gray-700 text-sm text-left">My Profile</button>
@@ -135,7 +156,6 @@ const Navbar = () => {
             </div>
           )}
 
-          {/* Hamburger Menu Icon (Visible on mobile only) */}
           <button className="lg:hidden text-white p-1" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
             {isMobileMenuOpen ? <FaTimes size={20} /> : <FaBars size={20} />}
           </button>
@@ -163,7 +183,7 @@ const Navbar = () => {
         </div>
       </nav>
 
-      {/* LOGOUT MODAL remains same */}
+      {/* LOGOUT MODAL */}
       {isLogoutModalOpen && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <div className="bg-white p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center">

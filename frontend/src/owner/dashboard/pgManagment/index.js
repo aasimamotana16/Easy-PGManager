@@ -74,11 +74,11 @@ const PgManagement = () => {
   };
 
   return (
-    <div className="p-3 sm:p-4 md:p-6 bg-gray-100 min-h-screen space-y-8">
+    <div className="p-3 sm:p-4 md:p-6 bg-gray-100 min-h-screen space-y-6 md:space-y-8">
 
       {/* PAGE HEADER */}
       <div className="space-y-1">
-        <h1 className="text-xl sm:text-2xl md:text-5xl lg:text-2xl font-bold text-primary">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-black">
           PG Management
         </h1>
         <p className="text-sm sm:text-base lg:text-lg text-gray-500">
@@ -87,15 +87,16 @@ const PgManagement = () => {
       </div>
 
       {/* ADD NEW PROPERTY */}
-      <div className="bg-white p-6 sm:p-8 rounded-md shadow flex flex-col items-center text-center max-w-4xl mx-auto">
+      <div className="bg-white p-5 sm:p-8 rounded-md shadow border border-t-4 border-primary flex flex-col items-center text-center max-w-4xl mx-auto">
         <FaHome size={42} className="text-orange-500 mb-4" />
-        <h3 className="text-base sm:text-lg md:text-xl font-semibold mb-2">
+        <h3 className="text-lg sm:text-xl font-semibold mb-2 text-gray-800">
           Add New Property
         </h3>
-        <p className="text-sm sm:text-base text-gray-500 mb-6 max-w-md">
+        <p className="text-xs sm:text-sm md:text-base text-gray-500 mb-6 max-w-md">
           Add a new PG to start managing rooms, tenants, and bookings.
         </p>
         <CButton
+          className="w-full sm:w-auto px-10"
           size="lg"
           onClick={() =>
             navigate("/owner/dashboard/pgManagment/addProperty")
@@ -106,37 +107,40 @@ const PgManagement = () => {
       </div>
 
       {/* MY UPLOADED PGs */}
-      <div className="bg-white p-4 sm:p-6 rounded-md shadow">
-        <h3 className="text-base sm:text-lg md:text-2xl font-semibold">
-          My Uploaded PGs
-        </h3>
-        <p className="text-sm sm:text-base text-gray-500 mb-6">
-          View and manage all your PG properties
-        </p>
+      <div className="bg-white p-4 sm:p-6 border border-t-4 border-primary rounded-md shadow">
+        <div className="mb-6">
+          <h3 className="text-lg sm:text-xl md:text-2xl font-semibold text-gray-800">
+            My Uploaded PGs
+          </h3>
+          <p className="text-xs sm:text-sm md:text-base text-gray-500">
+            View and manage all your PG properties
+          </p>
+        </div>
 
-        {/* 
-          MOBILE + MD: 1 column (vertical scroll)
+        {/* MOBILE: 1 column
           LG+: 2 column grid
         */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
           {myPgs.map((pg) => (
             <div
               key={pg.id}
-              className="border rounded-xl bg-white overflow-hidden flex flex-col"
+              className="border border-gray-200 rounded-xl bg-white overflow-hidden flex flex-col hover:shadow-md transition-shadow"
             >
-              <img
-                src={pg.image}
-                alt={pg.name}
-                className="h-48 sm:h-56 w-full object-cover"
-              />
+              <div className="aspect-video w-full overflow-hidden">
+                 <img
+                    src={pg.image}
+                    alt={pg.name}
+                    className="h-full w-full object-cover"
+                  />
+              </div>
 
-              <div className="p-4 sm:p-5 flex flex-col flex-1 space-y-2">
-                <div className="flex justify-between items-center">
-                  <h4 className="text-sm sm:text-base md:text-2xl lg:text-lg font-semibold">
+              <div className="p-4 sm:p-5 flex flex-col flex-1 space-y-3">
+                <div className="flex justify-between items-start gap-2">
+                  <h4 className="text-base sm:text-lg md:text-xl font-bold text-gray-800 line-clamp-1">
                     {pg.name}
                   </h4>
                   <span
-                    className={`text-xs md:text-lg lg:text-sm px-3 py-1 rounded-md font-medium ${
+                    className={`whitespace-nowrap text-[10px] sm:text-xs px-2.5 py-1 rounded-md font-bold ${
                       pg.status === "Approved"
                         ? "bg-green-100 text-green-700"
                         : pg.status === "Pending"
@@ -148,44 +152,48 @@ const PgManagement = () => {
                   </span>
                 </div>
 
-                <p className="text-xs sm:text-sm md:text-lg text-gray-500">
+                <p className="text-xs sm:text-sm text-gray-500 line-clamp-1 italic">
                   {pg.location}
                 </p>
 
-                <p className="text-xs sm:text-sm  md:text-lg text-gray-600">
-                  Total Rooms: {pg.rooms} | Total Beds: {pg.beds}
-                </p>
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs sm:text-sm font-medium text-gray-600">
+                  <span>Rooms: <b className="text-gray-900">{pg.rooms}</b></span>
+                  <span className="text-gray-300">|</span>
+                  <span>Beds: <b className="text-gray-900">{pg.beds}</b></span>
+                </div>
 
                 {/* ACTION BUTTONS */}
-                <div className="mt-auto flex items-center gap-3 pt-4">
-                  <button
-                    onClick={() =>
-                      navigate(`/owner/dashboard/pg/${pg.id}`)
-                    }
-                    className="text-gray-600 hover:text-primary"
-                    title="View PG"
-                  >
-                    <FaRegEye size={26} />
-                  </button>
+                <div className="mt-auto flex flex-wrap items-center gap-4 pt-4 border-t border-gray-100">
+                  <div className="flex items-center gap-4">
+                    <button
+                      onClick={() =>
+                        navigate(`/owner/dashboard/pg/${pg.id}`)
+                      }
+                      className="text-blue-500 hover:text-blue-800 transition-colors"
+                      title="View PG"
+                    >
+                      <FaRegEye className="text-xl sm:text-2xl" />
+                    </button>
 
-                  <button
-                    className="text-gray-600 hover:text-primary"
-                    title="Edit PG"
-                  >
-                    <FaEdit size={26} />
-                  </button>
+                    <button
+                      className="text-gray-500 hover:text-primary transition-colors"
+                      title="Edit PG"
+                    >
+                      <FaEdit className="text-xl sm:text-2xl" />
+                    </button>
 
-                  <button
-                    onClick={() => handleDeletePg(pg.id)}
-                    className="text-red-500 hover:text-red-700"
-                    title="Delete PG"
-                  >
-                    <FaTrash size={26} />
-                  </button>
+                    <button
+                      onClick={() => handleDeletePg(pg.id)}
+                      className="text-red-400 hover:text-red-600 transition-colors"
+                      title="Delete PG"
+                    >
+                      <FaTrash className="text-lg sm:text-xl" />
+                    </button>
+                  </div>
 
                   <CButton
                     size="sm"
-                    className="ml-auto md:text-lg "
+                    className="ml-auto text-xs sm:text-sm px-4"
                     onClick={() =>
                       navigate(
                         `/owner/dashboard/pgManagment/roomManagement/${pg.id}`
@@ -199,6 +207,12 @@ const PgManagement = () => {
             </div>
           ))}
         </div>
+        
+        {myPgs.length === 0 && !loading && (
+          <div className="text-center py-10">
+            <p className="text-gray-400">No properties found. Add your first PG above!</p>
+          </div>
+        )}
       </div>
 
     </div>
