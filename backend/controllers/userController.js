@@ -45,8 +45,8 @@ const registerUser = async (req, res) => {
       password: hashedPassword,
       profileCompletion: 20,
       emergencyContact: {
-        contactName: "",
-        relationship: "",
+        contactName: "",  // contactname
+        relationship: "", // relationship
         phoneNumber: ""
       }
     });
