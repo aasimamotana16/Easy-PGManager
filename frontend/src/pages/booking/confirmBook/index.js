@@ -69,7 +69,7 @@ const ConfirmBooking = () => {
 
         {/* Summary Card */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-8">
-          <div className="bg-gray-900 px-6 py-4">
+          <div className="bg-primary px-6 py-4">
             <h2 className="text-white font-medium flex items-center gap-2">
               <CheckCircleIcon className="h-5 w-5 text-green-400" />
               Booking Summary
@@ -113,9 +113,9 @@ const ConfirmBooking = () => {
         {/* Action Buttons */}
         <div className="space-y-4">
           <CButton
-            text="Go to Dashboard"
+            text="Go to Home"
             fullWidth
-            onClick={() => navigate("/services")}
+            onClick={() => navigate("/Home")}
             className="shadow-md"
           />
           

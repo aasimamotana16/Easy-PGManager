@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { BackendContext } from "../../../context/backendContext";
 import CButton from "../../../components/cButton";
 import CInput from "../../../components/cInput";
-import Loader from "../../../components/loader"; // Import Loader
+import Loader from "../../../components/loader";
 import Swal from "sweetalert2";
 
 const BookingPage = () => {
@@ -18,7 +18,7 @@ const BookingPage = () => {
 
   const [persons, setPersons] = useState(1);
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [pageLoading, setPageLoading] = useState(true); // Branded Loader state
+  const [pageLoading, setPageLoading] = useState(true);
   const [errors, setErrors] = useState({});
 
   const personRefs = useRef([]);
@@ -41,7 +41,6 @@ const BookingPage = () => {
     checkOut: "",
   });
 
-  // Initial Loader Effect
   useEffect(() => {
     const timer = setTimeout(() => setPageLoading(false), 800);
     return () => clearTimeout(timer);
@@ -81,8 +80,6 @@ const BookingPage = () => {
 
   const handleChange = (index, field, value) => {
     const updated = [...personsData];
-    
-    // Phone logic: only numbers and max 10 digits
     if (field === "phone" || field === "emergencyPhone") {
         const val = value.replace(/\D/g, "");
         if (val.length > 10) return;
@@ -90,7 +87,6 @@ const BookingPage = () => {
     } else {
         updated[index][field] = value;
     }
-    
     setPersonsData(updated);
 
     const errorKey = `${field}_${index}`;
@@ -104,16 +100,35 @@ const BookingPage = () => {
   const validate = () => {
     const newErrors = {};
     personsData.forEach((p, index) => {
-      if (!p.fullName.trim()) newErrors[`fullName_${index}`] = true;
-      if (!p.email || !/^\S+@\S+\.\S+$/.test(p.email)) newErrors[`email_${index}`] = true;
-      if (!p.phone || p.phone.length !== 10) newErrors[`phone_${index}`] = true;
-      if (!p.gender) newErrors[`gender_${index}`] = true;
-      if (!p.institution.trim()) newErrors[`institution_${index}`] = true;
-      if (!p.emergencyPhone || p.emergencyPhone.length !== 10) newErrors[`emergencyPhone_${index}`] = true;
+      if (!p.fullName.trim()) newErrors[`fullName_${index}`] = "Full Name is required";
+      if (!p.email) {
+          newErrors[`email_${index}`] = "Email is required";
+      } else if (!/^\S+@\S+\.\S+$/.test(p.email)) {
+          newErrors[`email_${index}`] = "Invalid email format";
+      }
+      if (!p.phone) {
+          newErrors[`phone_${index}`] = "Phone number is required";
+      } else if (p.phone.length !== 10) {
+          newErrors[`phone_${index}`] = "Must be 10 digits";
+      }
+      if (!p.gender) newErrors[`gender_${index}`] = "Please select gender";
+      if (!p.institution.trim()) newErrors[`institution_${index}`] = "Institution name is required";
+      if (!p.emergencyPhone) {
+          newErrors[`emergencyPhone_${index}`] = "Emergency contact is required";
+      } else if (p.emergencyPhone.length !== 10) {
+          newErrors[`emergencyPhone_${index}`] = "Must be 10 digits";
+      }
     });
 
-    if (!stayDetails.checkIn || stayDetails.checkIn < today) newErrors.checkIn = true;
-    if (stayDetails.checkOut && new Date(stayDetails.checkOut) <= new Date(stayDetails.checkIn)) newErrors.checkOut = true;
+    if (!stayDetails.checkIn) {
+        newErrors.checkIn = "Check-in date is required";
+    } else if (stayDetails.checkIn < today) {
+        newErrors.checkIn = "Date cannot be in the past";
+    }
+
+    if (stayDetails.checkOut && new Date(stayDetails.checkOut) <= new Date(stayDetails.checkIn)) {
+        newErrors.checkOut = "Must be after check-in date";
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -165,13 +180,13 @@ const BookingPage = () => {
   return (
     <div className="min-h-screen bg-gray-100 px-4 py-10">
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl  mb-1">Book {pg.name}</h1>
+        <h1 className="text-3xl mb-1">Book {pg.name}</h1>
         <p className="text-gray-600 mb-8">{pg.location}</p>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
             {personsData.map((person, index) => (
-              <div key={index} ref={(el) => (personRefs.current[index] = el)} className="bg-white rounded-md p-6 shadow">
+              <div key={index} ref={(el) => (personRefs.current[index] = el)} className="bg-white rounded-md p-6 shadow border border-gray-200">
                 <h3 className="font-semibold text-lg mb-4">Person {index + 1} (Tenant)</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <CInput 
@@ -244,7 +259,7 @@ const BookingPage = () => {
               </div>
             ))}
 
-            <div className="bg-white rounded-md p-6 shadow">
+            <div className="bg-white rounded-md p-6 shadow border border-gray-200">
               <h3 className="font-semibold text-lg mb-4">Stay Details</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <CInput
@@ -274,7 +289,7 @@ const BookingPage = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-md p-6 shadow h-fit sticky top-10">
+          <div className="bg-white rounded-md p-6 shadow h-fit sticky top-10 border border-gray-200">
             <h3 className="text-lg font-semibold mb-4">Summary</h3>
             <div className="flex justify-between items-center mb-4">
               <span className="text-green-600 font-medium">{maxBeds} Beds Available</span>
@@ -290,7 +305,7 @@ const BookingPage = () => {
                     <span>Rent ({persons} Person)</span>
                     <span>₹{totalRent}</span>
                 </div>
-                <div className="flex justify-between  text-xl text-orange-600">
+                <div className="flex justify-between text-xl text-orange-600">
                     <span>Total</span>
                     <span>₹{totalRent}</span>
                 </div>

@@ -1,6 +1,6 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom"; 
-import { ArrowLeft } from "lucide-react"; 
+import { ArrowLeft, SearchX } from "lucide-react"; 
 
 import Navbar from "../../components/navbar";
 import Footer from "../../components/footer";
@@ -23,15 +23,26 @@ export default function FindMyPG() {
   const locationObj = useLocation();
   const navigate = useNavigate(); 
   
-  // Only show back button if 'fromServices' exists in navigation state
   const showBackButton = locationObj.state?.fromServices;
-
   const city = new URLSearchParams(locationObj.search).get("city");
 
   const [pgList, setPgList] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  /* ================= FETCH PGs (Initial) ================= */
+  // --- LAPTOP SCROLL FIX (Global Handler) ---
+  useEffect(() => {
+    const handleWheel = (e) => {
+      // If the focused element is a number input, prevent scroll-to-change
+      if (document.activeElement.type === "number") {
+        document.activeElement.blur();
+      }
+    };
+
+    window.addEventListener("wheel", handleWheel, { passive: false });
+    return () => window.removeEventListener("wheel", handleWheel);
+  }, []);
+
+  /* ================= FETCH DATA ================= */
   useEffect(() => {
     setIsLoading(true); 
     fetch("http://localhost:5000/api/pg/all")
@@ -45,14 +56,14 @@ export default function FindMyPG() {
       });
   }, []);
 
-  /* ================= FILTER STATES ================= */
   const [tempFilters, setTempFilters] = useState(DEFAULT_FILTERS);
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
 
-  /* ================= FILTER HANDLERS ================= */
+  /* ================= HANDLERS ================= */
   const handleFilterChange = (key, value) => {
     if (key === "reset") {
-      resetFilters();
+      setTempFilters(DEFAULT_FILTERS);
+      setFilters(DEFAULT_FILTERS);
       return;
     }
     setTempFilters((prev) => ({ ...prev, [key]: value }));
@@ -67,12 +78,6 @@ export default function FindMyPG() {
     }));
   };
 
-  const resetFilters = () => {
-    setTempFilters(DEFAULT_FILTERS);
-    setFilters(DEFAULT_FILTERS);
-  };
-
-  /* ================= APPLY FILTERS ================= */
   const applyFiltersClick = async () => {
     setIsLoading(true); 
     try {
@@ -100,45 +105,52 @@ export default function FindMyPG() {
     }
   };
 
-  /* ================= SORT + FILTER LOGIC ================= */
   const filteredPGs = useMemo(() => {
     let list = [...pgList];
     if (filters.sortBy === "priceAsc") {
-      list = [...list].sort((a, b) => Number(a.rent) - Number(b.rent));
+      list.sort((a, b) => Number(a.rent) - Number(b.rent));
     }
     if (filters.sortBy === "priceDesc") {
-      list = [...list].sort((a, b) => Number(b.rent) - Number(a.rent));
+      list.sort((a, b) => Number(b.rent) - Number(a.rent));
     }
     return list;
   }, [filters.sortBy, pgList]);
 
-  if (isLoading) {
-    return <Loader />;
-  }
+  if (isLoading) return <Loader />;
 
   return (
     <div className="bg-gray-50 min-h-screen flex flex-col">
       <Navbar />
 
-      <main className="flex-1 max-w-7xl mx-auto px-6 py-10 w-full">
+      {/* Main Container - Fully Responsive Padding */}
+      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10 w-full">
         
-        {/* --- BACK BUTTON (Conditional) --- */}
-        {showBackButton && (
-          <button 
-            onClick={() => navigate(-1)} 
-            className="group flex items-center gap-2 text-gray-500 hover:text-primary transition-all mb-6 text-sm font-medium animate-fadeIn"
-          >
-            <div className="p-2 rounded-full bg-white shadow-sm group-hover:bg-primary/10 transition-colors">
-              <ArrowLeft size={18} />
-            </div>
-            Back to Services
-          </button>
-        )}
+        {/* Back Button */}
+        <div className="flex justify-start mb-6">
+          {showBackButton && (
+            <button 
+              onClick={() => navigate(-1)} 
+              className="group flex items-center gap-2 text-gray-500 hover:text-primary transition-all text-sm font-medium"
+            >
+              <div className="p-2 rounded-full bg-white shadow-sm group-hover:bg-primary/5 transition-colors border border-gray-100">
+                <ArrowLeft size={16} />
+              </div>
+              <span className="hidden sm:inline">Back to Services</span>
+            </button>
+          )}
+        </div>
 
-        <h1 className="text-3xl md:text-4xl font-bold text-gray-800 text-center mb-8">
-          {city ? `PGs in ${city}` : "Find Your Perfect Stay"}
-        </h1>
+        {/* Responsive Header */}
+        <div className="text-center mb-10 md:mb-14">
+          <h1 className="text-2xl sm:text-3xl md:text-5xl font-bold text-gray-900 tracking-tight px-2">
+            {city ? `PGs in ${city}` : "Find Your Perfect Stay"}
+          </h1>
+          <p className="text-gray-500 mt-3 text-sm md:text-lg max-w-2xl mx-auto">
+            Browse verified listings with the best amenities in town.
+          </p>
+        </div>
 
+        {/* Filters Section */}
         <Filters
           filters={tempFilters}
           handleFilterChange={handleFilterChange}
@@ -146,19 +158,25 @@ export default function FindMyPG() {
           applyFilters={applyFiltersClick}
         />
 
-        <div className="mt-10">
+        {/* Listings Result Section */}
+        <div className="mt-10 md:mt-16">
             <PGListings list={filteredPGs} />
 
+            {/* Empty State UI */}
             {filteredPGs.length === 0 && (
-              <div className="text-center py-20">
-                  <p className="text-xl text-gray-500">
-                      No PGs found matching your requirements.
+              <div className="text-center py-20 bg-white rounded-2xl border border-gray-200 shadow-sm px-6">
+                  <div className="flex justify-center mb-4 text-gray-300">
+                    <SearchX size={60} strokeWidth={1.5} />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-800">No results found</h3>
+                  <p className="text-gray-500 mt-2 max-w-xs mx-auto text-sm md:text-base">
+                    We couldn't find any PGs matching your current filters. Try adjusting your budget or amenities.
                   </p>
                   <button 
-                      onClick={resetFilters}
-                      className="mt-4 text-orange-600 font-semibold hover:underline"
+                    onClick={() => handleFilterChange("reset")}
+                    className="mt-6 px-8 py-2.5 bg-primary text-white rounded-full font-bold shadow-md hover:opacity-90 transition-all"
                   >
-                      Clear all filters
+                    Reset All Filters
                   </button>
               </div>
             )}

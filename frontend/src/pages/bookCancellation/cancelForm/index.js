@@ -4,7 +4,8 @@ import CButton from "../../../components/cButton";
 import CInput from "../../../components/cInput";
 import CSelect from "../../../components/cSelect";
 import CancelConfirmModal from "../cancelConfirm";
-import { cancelReasons } from "../../../config/staticData"; 
+import { cancelReasons } from "../../../config/staticData";
+import { FaExclamationTriangle } from "react-icons/fa";
 
 const CancelForm = () => {
   const navigate = useNavigate();
@@ -12,75 +13,122 @@ const CancelForm = () => {
 
   const [form, setForm] = useState({
     email: "",
-    password: "",
     reason: "",
     otherReason: "",
   });
 
-  const isValid =
-    form.email &&
-    form.password &&
-    form.reason &&
-    (form.reason !== "Other" || form.otherReason);
+  const [errors, setErrors] = useState({});
+
+  const validate = () => {
+    const newErrors = {};
+    if (!form.email || !/^\S+@\S+\.\S+$/.test(form.email)) {
+      newErrors.email = "Please enter a valid email address";
+    }
+    if (!form.reason) {
+      newErrors.reason = "Please select a reason";
+    }
+    if (form.reason === "Other" && !form.otherReason.trim()) {
+      newErrors.otherReason = "Please specify your reason";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleCancelClick = () => {
+    if (validate()) {
+      setShowModal(true);
+    }
+  };
 
   return (
-    <section className="max-w-3xl mx-auto px-6 py-14">
-      {/* Warning */}
-      <div className="bg-red-500/10 border border-red-500 text-red-500 rounded-xl p-4 mb-8">
-        ⚠️ Advance payment will not be refunded.  
-        Your profile will be archived for 10 days.
-      </div>
+    <section className="min-h-screen bg-gray-100 px-4 py-12">
+      <div className="max-w-2xl mx-auto">
+        {/* Warning Card */}
+        <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-8 rounded-r-xl shadow-sm flex items-start gap-3">
+          <FaExclamationTriangle className="text-red-500 mt-1 shrink-0" size={20} />
+          <div>
+            <h3 className="text-red-800 font-bold text-sm uppercase">Permanent Action</h3>
+            <p className="text-red-600 text-sm">
+              Advance payments are non-refundable. Your booking data will be <strong>permanently deleted</strong> immediately upon cancellation.
+            </p>
+          </div>
+        </div>
 
-      <h2 className="text-2xl  mb-6 text-primary">
-        Cancel Booking
-      </h2>
+        {/* Main Form Card */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+          <div className="bg-gray-50 px-8 py-6 border-b border-gray-100">
+            <h2 className="text-2xl font-bold text-gray-800">Cancel Booking</h2>
+            <p className="text-gray-500 text-sm">Please verify your details to proceed</p>
+          </div>
 
-      <div className="space-y-5">
-        <CInput
-          type="email"
-          placeholder="Email"
-          value={form.email}
-          onChange={(e) => setForm({ ...form, email: e.target.value })}
-        />
+          <div className="p-8 space-y-6">
+            <CInput
+              label="Registered Email"
+              type="email"
+              placeholder="Enter your email"
+              value={form.email}
+              error={errors.email}
+              onChange={(e) => {
+                setForm({ ...form, email: e.target.value });
+                if (errors.email) setErrors({ ...errors, email: null });
+              }}
+            />
 
-        <CInput
-          type="password"
-          placeholder="Password"
-          value={form.password}
-          onChange={(e) => setForm({ ...form, password: e.target.value })}
-        />
+            <div className="space-y-1">
+              <label className="text-sm font-semibold text-gray-700">Reason for Cancellation</label>
+              <CSelect
+                placeholder="Select a reason"
+                value={form.reason}
+                onChange={(e) => {
+                  setForm({ ...form, reason: e.target.value });
+                  if (errors.reason) setErrors({ ...errors, reason: null });
+                }}
+                options={cancelReasons}
+              />
+              {errors.reason && <p className="text-red-500 text-xs mt-1">{errors.reason}</p>}
+            </div>
 
-        <CSelect
-          placeholder="Select reason"
-          value={form.reason}
-          onChange={(e) => setForm({ ...form, reason: e.target.value })}
-          options={cancelReasons} // ✅ static data used
-        />
+            {form.reason === "Other" && (
+              <CInput
+                label="Specify Reason"
+                type="text"
+                placeholder="Why are you leaving?"
+                value={form.otherReason}
+                error={errors.otherReason}
+                onChange={(e) => {
+                  setForm({ ...form, otherReason: e.target.value });
+                  if (errors.otherReason) setErrors({ ...errors, otherReason: null });
+                }}
+              />
+            )}
 
-        {form.reason === "Other" && (
-          <CInput
-            type="text"
-            placeholder="Enter reason"
-            value={form.otherReason}
-            onChange={(e) =>
-              setForm({ ...form, otherReason: e.target.value })
-            }
-          />
-        )}
-
-        <CButton
-          disabled={!isValid}
-          className="bg-red-500 hover:bg-red-600"
-          onClick={() => setShowModal(true)}
-        >
-          Cancel Booking
-        </CButton>
+            <div className="pt-4">
+              <CButton
+                className="w-full  text-white  font-bold transition-all shadow-lg shadow-red-200"
+                onClick={handleCancelClick}
+              >
+                Confirm Cancellation
+              </CButton>
+              <button 
+                onClick={() => navigate(-1)}
+                className="w-full mt-4 text-sm font-medium text-gray-600 hover:text-gray-600 transition-colors"
+              >
+                Nevermind, take me back
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
 
       {showModal && (
         <CancelConfirmModal
           onClose={() => setShowModal(false)}
-          onConfirm={() => navigate("/cancel-success")}
+          onConfirm={() => {
+            // Success logic here (e.g., API call)
+            // Redirecting to login as requested
+            navigate("/Home");
+          }}
         />
       )}
     </section>

@@ -28,50 +28,56 @@ export default function Services() {
       <Navbar />
 
       <main className="flex-1">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 sm:py-16 lg:py-20">
+        {/* Adjusted padding: py-10 for mobile, py-20 for desktop */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-16 lg:py-20">
 
-          {/* PAGE TITLE */}
-          <h1 className="text-5xl text-center mb-4 sm:mb-6">
-            Our Services
-          </h1>
+          {/* PAGE TITLE - Styled like Filter/FindMyPG headings */}
+          <div className="text-center  mb-10 md:mb-16">
+            <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold text-gray-900 tracking-tight mb-4">
+              Our Services
+            </h1>
+            <p className="text-base md:text-xl lg:text-2xl text-gray-600 max-w-3xl mx-auto px-2">
+              EasyPG Manager provides verified PGs, smart booking, and
+              seamless property management tailored for your comfort.
+            </p>
+          </div>
 
-          <p className="text-2xl text-center max-w-3xl mx-auto mb-12 sm:mb-16 lg:mb-20 text-gray-600">
-            EasyPG Manager provides verified PGs, smart booking, and
-            seamless property management.
-          </p>
-
-          {/* SERVICE CARDS */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 mb-16 md:mb-20 lg:mb-24">
+          {/* SERVICE CARDS - Responsive Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 mb-16 md:mb-24">
             {services.map((service, idx) => (
-              <ServiceCard key={idx} {...service} />
+              <ServiceCard key={idx}
+               {...service} />
             ))}
           </div>
 
-          {/* FIND YOUR PG SECTION */}
-          <div className="max-w-4xl mx-auto bg-white rounded-md shadow-xl p-5 sm:p-8 lg:p-10 text-center">
-            <img
-              src={`${process.env.PUBLIC_URL}/images/serviceImage/mapimage.png`}
-              alt="Map View"
-              className="w-full h-44 sm:h-52 lg:h-60 object-cover rounded-md mb-5 sm:mb-6"
-            />
+          {/* FIND YOUR PG SECTION - Matches Filter Box UI */}
+          <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-xl border border-t-4 border-primary p-6 sm:p-10 lg:p-12 text-center overflow-hidden">
+            <div className="relative group mb-8">
+              <img
+                src={`${process.env.PUBLIC_URL}/images/serviceImage/mapimage.png`}
+                alt="Map View"
+                className="w-full h-48 sm:h-64 lg:h-72 object-cover rounded-xl shadow-md transition-transform duration-500 group-hover:scale-[1.02]"
+              />
+              {/* Optional overlay for extra polish */}
+              <div className="absolute inset-0 bg-primary/5 rounded-xl pointer-events-none"></div>
+            </div>
 
-            <h2 className="text-4xl text-primary mb-3 sm:mb-4">
+            <h2 className="text-2xl md:text-4xl font-bold text-gray-800 mb-4 tracking-tight">
               Find Your Perfect Stay
             </h2>
 
-            <p className="text-2xl mb-5 sm:mb-6">
-              Start your search instantly and discover verified PGs
-              that match your preferences.
+            <p className="text-sm md:text-lg text-gray-500 mb-8 max-w-2xl mx-auto">
+              Ready to move? Start your search instantly and discover 
+              hand-picked, verified PGs that match your budget and lifestyle.
             </p>
 
             <CButton
               size="lg"
               variant="contained"
-              /* UPDATED: Passing state to trigger the back button logic */
               onClick={() => navigate("/findMypg", { state: { fromServices: true } })}
-              className="w-full sm:w-auto text:2xl"
+              className="w-full sm:w-auto px-10 py-4 text-lg font-bold shadow-lg shadow-primary/20"
             >
-              Find My Stay
+              Start Searching Now
             </CButton>
           </div>
         </div>
