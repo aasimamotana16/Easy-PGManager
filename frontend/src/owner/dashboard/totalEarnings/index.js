@@ -131,14 +131,14 @@ const TotalEarnings = () => {
   };
 
   return (
-    <div className="p-4 md:p-6 bg-gray-100 min-h-screen space-y-6">
+    <div className="p-4 md:p-6 bg-gray-200 min-h-screen space-y-6">
       
       {/* HEADER - Matched to Support Page */}
       <div className="flex items-center gap-3">
-        <FaMoneyBillWave className="text-orange-500 text-2xl md:text-3xl" />
         <div>
-          <h1 className="text-xl md:text-3xl font-bold text-primary">Earnings Overview</h1>
-          <p className="text-xs md:text-base text-gray-500">
+<h1 className="text-2xl sm:text-4xl font-bold text-textPrimary">
+          Earnings Overview
+        </h1>          <p className="text-xs md:text-base text-gray-500">
             Track your income and pending payments
             {loading && <span className="ml-2 text-orange-500 animate-pulse">(Loading...)</span>}
           </p>
@@ -153,7 +153,7 @@ const TotalEarnings = () => {
       </div>
 
       {/* FILTER + DOWNLOAD */}
-      <div className="bg-white p-4 rounded-md shadow border-t-4  border-primary flex flex-col sm:flex-row gap-4 justify-between items-center">
+      <div className="bg-white p-4 rounded-md shadow border border-border border-t-4 border-t-primary flex flex-col sm:flex-row gap-4 justify-between items-center">
         <select
           className="w-full sm:w-max border rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-orange-400"
           value={selectedMonth}
@@ -173,7 +173,7 @@ const TotalEarnings = () => {
       </div>
 
       {/* GRAPH */}
-      <div className="bg-white p-4 md:p-6 border border-t-4  border-primary rounded-md shadow">
+      <div className="bg-white p-4 md:p-6 border border-  border-primary rounded-md shadow">
         <h2 className="text-base md:text-lg font-semibold mb-4 text-dark">
           Monthly Earnings ({selectedMonth})
         </h2>
@@ -214,15 +214,15 @@ const TotalEarnings = () => {
 const SummaryCard = ({ title, value, icon }) => (
   <div className="bg-black text-white p-5 md:p-6 rounded-md flex justify-between items-center shadow">
     <div>
-      <p className="text-xs md:text-sm text-gray-400 uppercase tracking-wider">{title}</p>
-      <p className="text-xl md:text-2xl font-bold mt-1">{value}</p>
+      <p className="text-base  text-textLight uppercase tracking-wider">{title}</p>
+      <p className="text-xl text-textLight font-bold mt-1">{value}</p>
     </div>
     <div className="text-orange-500 text-2xl md:text-3xl">{icon}</div>
   </div>
 );
 
 const TableSection = ({ title, icon, headers, rows, page, totalPages, setPage, amountColor, status }) => (
-  <div className="bg-white p-4 md:p-6 border border-t-4 border-primary rounded-md shadow">
+  <div className="bg-white p-4 md:p-6 border  border-primary rounded-md shadow">
     <h2 className="text-base md:text-lg font-semibold mb-4 flex items-center gap-2 text-dark">
       {icon} {title}
     </h2>

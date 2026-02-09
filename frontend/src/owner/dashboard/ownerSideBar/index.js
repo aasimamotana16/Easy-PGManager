@@ -68,7 +68,7 @@ const OwnerSidebar = ({ isOpen, closeSidebar }) => {
         `}
       >
         {/* LOGO / BRAND */}
-        <div className="flex items-center justify-between mb-10 shrink-0">
+        <div className="flex items-center justify-between mb-16 shrink-0">
           <div
             className="flex items-center gap-1 cursor-pointer"
             onClick={() => {
@@ -82,8 +82,8 @@ const OwnerSidebar = ({ isOpen, closeSidebar }) => {
               className="w-15 h-14 object-contain"
             />
             <div className="leading-tight">
-              <div className="text-xl font-semibold">EasyPG</div>
-              <div className="text-xl font-semibold text-primary">Manager</div>
+              <div className="text-xl font-medium">EasyPG</div>
+              <div className="text-xl font-medium text-primary">Manager</div>
             </div>
           </div>
 
@@ -95,7 +95,7 @@ const OwnerSidebar = ({ isOpen, closeSidebar }) => {
           </button>
         </div>
 
-        {/* MENU - Added overflow-y-auto for responsiveness on short screens */}
+        {/* MENU */}
         <nav className="flex-1 flex flex-col gap-2 overflow-y-auto no-scrollbar">
           {menuItems.map((item) => (
             <NavLink
@@ -104,7 +104,7 @@ const OwnerSidebar = ({ isOpen, closeSidebar }) => {
               end
               onClick={closeSidebar}
               className={({ isActive }) =>
-                `flex items-center gap-4 px-4 py-3 rounded-md text-lg font-medium transition-colors shrink-0
+                `flex items-center gap-6 px-4 py-3 rounded-md text-base  transition-colors shrink-0
                 ${isActive ? "bg-primary text-white" : "hover:bg-gray-800 text-gray-300 hover:text-white"}`
               }
             >
@@ -114,26 +114,24 @@ const OwnerSidebar = ({ isOpen, closeSidebar }) => {
           ))}
         </nav>
 
-        {/* BOTTOM ACTIONS: HOME & LOGOUT */}
+        {/* BOTTOM ACTIONS */}
         <div className="shrink-0">
           <div className="border-t border-gray-800 my-4" />
-          <div className="flex items-center gap-2 pb-2">
-            {/* HOME ICON BUTTON */}
+          <div className="flex items-center gap-8 pb-2">
             <button
               onClick={() => {
                 navigate("/");
                 closeSidebar?.();
               }}
-              className="p-3 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+              className="p-4 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
               title="Go to Website Home"
             >
-              <FaHome size={24} />
+              <FaHome size={20} />
             </button>
 
-            {/* LOGOUT BUTTON */}
             <button
               onClick={() => setIsLogoutModalOpen(true)}
-              className="flex-1 flex items-center gap-3 px-4 py-2 rounded-lg text-red-500 hover:text-red-400 font-bold text-lg text-left transition-colors"
+              className="flex-1 flex items-center gap-3 px-4 py-2 rounded-lg text-red-500 hover:text-red-400 font-medium text-lg text-left transition-colors"
             >
               <FaSignOutAlt size={20} />
               Logout
@@ -148,18 +146,18 @@ const OwnerSidebar = ({ isOpen, closeSidebar }) => {
           <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center transition-all animate-in zoom-in duration-200">
             {!isLogoutSuccessful ? (
               <>
-                <h3 className="text-2xl font-bold text-gray-800">Confirm Logout</h3>
-                <p className="text-gray-500 my-4 font-medium">Are you sure you want to end your session?</p>
+                <h3 className="text-2xl font-medium text-gray-800 text-[#1C1C1C]">Confirm Logout</h3>
+                <p className="text-[#4B4B4B] my-4 font-normal">Are you sure you want to end your session?</p>
                 <div className="flex flex-col sm:flex-row gap-3 mt-6">
                   <button 
                     onClick={() => setIsLogoutModalOpen(false)} 
-                    className="order-2 sm:order-1 flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition-colors"
+                    className="order-2 sm:order-1 flex-1 py-3 bg-gray-100 text-[#4B4B4B] rounded-xl font-medium hover:bg-gray-200 transition-colors"
                   >
                     No
                   </button>
                   <button 
                     onClick={handleLogout} 
-                    className="order-1 sm:order-2 flex-1 py-3 bg-orange-500 text-white rounded-xl font-bold shadow-lg shadow-orange-200 hover:bg-orange-600 transition-all"
+                    className="order-1 sm:order-2 flex-1 py-3 bg-primary text-white rounded-xl font-medium shadow-lg shadow-orange-100 hover:bg-[#B45309] transition-all"
                   >
                     Yes
                   </button>
@@ -167,11 +165,11 @@ const OwnerSidebar = ({ isOpen, closeSidebar }) => {
               </>
             ) : (
               <div className="flex flex-col items-center py-4 animate-in zoom-in duration-300">
-                <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-4xl mb-4 border-2 border-green-200">
+                <div className="w-20 h-20 bg-[#FEF3C7] text-primary rounded-full flex items-center justify-center text-4xl mb-4 border border-[#E5E0D9]">
                   ✓
                 </div>
-                <h3 className="text-2xl font-bold text-gray-800">Success!</h3>
-                <p className="text-gray-500 mt-2 font-medium">Signed Out successfully.</p>
+                <h3 className="text-2xl font-medium text-[#1C1C1C]">Success!</h3>
+                <p className="text-[#4B4B4B] mt-2 font-normal">Signed Out successfully.</p>
               </div>
             )}
           </div>

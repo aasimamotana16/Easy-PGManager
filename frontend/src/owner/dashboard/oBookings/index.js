@@ -1,24 +1,28 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   FaCheck,
   FaTimes,
-  FaClipboardList,
-  FaFileDownload,
   FaClock,
+  FaSearch,
+  FaFilter,
+  FaPlus,
+  FaRegPaperPlane
 } from "react-icons/fa";
+import { LuDownload } from "react-icons/lu"; 
 import axios from "axios";
-import CButton from "../../../components/cButton";
 import Swal from "sweetalert2";
+import CSelect from "../../../components/cSelect";
 
 const BookingManagement = () => {
   const [bookings, setBookings] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedPg, setSelectedPg] = useState("All Properties");
 
-  /* ---------- FETCH BOOKINGS ---------- */
   const fetchBookings = async () => {
     const sample = [
-      { _id: '1', bookingId: 'BK001', pgName: 'My Dream PG', roomType: 'Single', tenantName: 'Rahul Sharma', checkInDate: '2026-01-15', checkOutDate: '2026-02-15', bedsBooked: 1, status: 'Confirmed' },
-      { _id: '2', bookingId: 'BK002', pgName: 'Sunrise Boys PG', roomType: 'Double', tenantName: 'Priya Patel', checkInDate: '2026-01-20', checkOutDate: '2026-02-20', bedsBooked: 1, status: 'Pending' },
-      { _id: '3', bookingId: 'BK003', pgName: 'My Dream PG', roomType: 'Single', tenantName: 'Amit Kumar', checkInDate: '2026-02-01', checkOutDate: '2026-03-01', bedsBooked: 1, status: 'Cancelled' },
+      { _id: '1', bookingId: 'BK001', pgName: 'Green Villa', roomType: 'Single', tenantName: 'Rahul Sharma', checkInDate: '2026-01-15', checkOutDate: '2026-02-15', status: 'Confirmed', isPaid: false },
+      { _id: '2', bookingId: 'BK002', pgName: 'Sunshine Residency', roomType: 'Double', tenantName: 'Priya Patel', checkInDate: '2026-01-20', checkOutDate: '2026-02-20', status: 'Pending', isPaid: false },
+      { _id: '3', bookingId: 'BK003', pgName: 'Green Villa', roomType: 'Single', tenantName: 'Amit Kumar', checkInDate: '2026-02-01', checkOutDate: '2026-03-01', status: 'Cancelled', isPaid: false },
     ];
     setBookings(sample);
 
@@ -39,125 +43,183 @@ const BookingManagement = () => {
     fetchBookings();
   }, []);
 
-  /* ---------- IN-TABLE STATUS UPDATE ---------- */
+  const uniquePgs = useMemo(() => {
+    const pgs = bookings.map(b => b.pgName);
+    return ["All Properties", ...new Set(pgs)];
+  }, [bookings]);
+
+  const filteredBookings = bookings.filter((b) => {
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      b.tenantName.toLowerCase().includes(searchLower) || 
+      b.bookingId.toLowerCase().includes(searchLower) ||
+      b.pgName.toLowerCase().includes(searchLower)
+    ) && (selectedPg === "All Properties" || b.pgName === selectedPg);
+  });
+
   const handleUpdateStatus = async (id, newStatus) => {
     const confirm = await Swal.fire({
       title: `Update to ${newStatus}?`,
-      text: `Change booking status to ${newStatus}?`,
       icon: "warning",
       showCancelButton: true,
-      confirmButtonColor: "#ef7e24",
+      confirmButtonColor: "#D97706",
+      cancelButtonColor: "#4B4B4B",
     });
 
     if (confirm.isConfirmed) {
       try {
         const token = localStorage.getItem("userToken");
         await axios.patch(`http://localhost:5000/api/owner/booking/${id}`, 
-          { status: newStatus },
+          { status: newStatus }, 
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        Swal.fire("Success", "Status updated!", "success");
         fetchBookings();
       } catch (err) {
         setBookings(prev => prev.map(b => b._id === id ? {...b, status: newStatus} : b));
-        Swal.fire("Updated", "Status updated locally", "success");
       }
     }
   };
 
-  const downloadBookingConfirmation = (booking) => {
-    const bookingContent = `Booking ID: ${booking.bookingId}\nTenant: ${booking.tenantName}`;
-    const blob = new Blob([bookingContent], { type: 'text/plain' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `Booking_${booking.bookingId}.txt`;
-    a.click();
-    Swal.fire({ icon: 'success', title: 'Downloaded!' });
+  const handleResendEmail = (id) => {
+    Swal.fire({
+      title: 'Resend Payment Link?',
+      text: "The tenant will receive the email again.",
+      icon: 'info',
+      showCancelButton: true,
+      confirmButtonColor: '#D97706',
+      cancelButtonColor: '#4B4B4B',
+      confirmButtonText: 'Yes, resend'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        Swal.fire('Sent!', 'Payment link has been resent.', 'success');
+      }
+    });
   };
 
   return (
-    <div className="p-4 md:p-6 bg-[#f8f9fa] min-h-screen">
+    <div className="p-4 md:p-10 bg-gray-100 min-h-screen">
       
-      {/* HEADER SECTION - Matched to your PG Management code */}
-      <div className="flex items-start gap-4 mb-6">
-        <div className="bg-orange-100 p-3 rounded-xl hidden sm:block">
-          <FaClipboardList className="text-[#ef7e24] text-2xl" />
+      {/* HEADER SECTION */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        <div>
+          <h1 className="text-4xl font-bold text-[#1C1C1C]">Bookings</h1>
+          <p className="text-[#4B4B4B] mt-2">Manage and track all tenant booking requests</p>
         </div>
-        <div className="space-y-1">
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-black">
-            Bookings
-          </h1>
-          <p className="text-sm sm:text-base lg:text-lg text-gray-500">
-            Manage your tenant booking requests
-          </p>
+        <button className="bg-[#D97706] hover:bg-[#B45309] text-white px-6 py-3 rounded-lg font-bold flex items-center gap-2 transition-all shadow-md">
+          <FaPlus /> Add New Booking
+        </button>
+      </div>
+
+      {/* SEARCH AND FILTER */}
+      <div className="flex flex-col md:flex-row gap-4 mb-8 bg-white p-4 rounded-xl shadow-sm border border-[#D97706]">
+        <div className="relative flex-grow">
+          <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input 
+            type="text"
+            placeholder="Search by name, ID, or PG..." 
+            className="w-full pl-12 pr-4 py-3 rounded-lg border border-[#E5E0D9] focus:outline-none focus:ring-1 focus:ring-[#D97706] text-sm"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        <div className="relative min-w-[220px]">
+          <FaFilter className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+          <select 
+            className="w-full pl-12 pr-4 py-3 rounded-lg border border-[#E5E0D9] focus:outline-none bg-white text-sm appearance-none cursor-pointer"
+            value={selectedPg}
+            onChange={(e) => setSelectedPg(e.target.value)}
+          >
+            {uniquePgs.map(pg => <option key={pg} value={pg}>{pg}</option>)}
+          </select>
         </div>
       </div>
 
       {/* TABLE */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="bg-white rounded-xl shadow-sm border border-[#E5E0D9] overflow-hidden">
+        <div className="p-6 border-b border-[#E5E0D9]">
+           <h2 className="text-xl font-bold text-[#1C1C1C]">Bookings List</h2>
+        </div>
+
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-orange-100 border-b">
-             <tr className="text-black text-sm uppercase tracking-wider font-bold">
-                <th className="p-4 ">ID</th>
-                <th className="p-4 ">Tenant</th>
-                <th className="p-4 ">PG Name</th>
-                <th className="p-4 ">Room / Beds</th>
-                <th className="p-4 ">Check-In/Out</th>
-                <th className="p-4 ">Status</th>
-                <th className="p-4 ">Actions</th>
+          <table className="w-full text-left min-w-[900px]">
+            <thead className="bg-primarySoft text-black text-sm uppercase ">
+              <tr>
+                <th className="p-5">Booking Details</th>
+                <th className="p-5">Property</th>
+                <th className="p-5 text-center">Room Type</th>
+                <th className="p-5">Stay Dates</th>
+                <th className="p-5 text-center">Status</th>
+                <th className="p-5 text-center">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
-              {bookings.map((b) => (
+            <tbody className="divide-y divide-[#E5E0D9]">
+              {filteredBookings.map((b) => (
                 <tr key={b._id} className="hover:bg-gray-50 transition-colors">
-                  <td className="p-4 font-mono text-xs text-gray-500">{b.bookingId}</td>
-                  <td className="p-4">
-                    <div className="font-bold text-gray-800">{b.tenantName}</div>
+                  <td className="p-5">
+                    <div className="font-bold text-[#1C1C1C]">{b.tenantName}</div>
+                    <div className="text-xs text-[#4B4B4B] font-mono">{b.bookingId}</div>
                   </td>
-                  <td className="p-4 text-gray-600 font-medium">{b.pgName}</td>
-                  <td className="p-4">
-                    <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded text-[11px] font-bold mr-2">
-                      {b.roomType}
-                    </span>
-                    <span className="text-gray-500 text-xs font-medium">
-                       {b.bedsBooked} Bed(s)
-                    </span>
-                  </td>
-                  <td className="p-4">
-                    <div className="text-[11px] font-semibold text-gray-700">
-                      {b.checkInDate} <span className="text-gray-300 mx-1">→</span> {b.checkOutDate}
+                  <td className="p-5 text-[#4B4B4B] font-medium">{b.pgName}</td>
+                  <td className="p-5">
+                    <div className="flex justify-center">
+                      <span className="px-3 py-1 rounded border border-[#D97706] text-[#B45309] text-[10px] font-bold uppercase min-w-[80px] text-center">
+                        {b.roomType}
+                      </span>
                     </div>
                   </td>
-                  <td className="p-4 text-center">
-                    <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase ${
-                      b.status === "Pending" ? "bg-yellow-100 text-yellow-700" :
-                      b.status === "Confirmed" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-                    }`}>
-                      {b.status === "Pending" && <FaClock />}
-                      {b.status === "Confirmed" && <FaCheck />}
-                      {b.status === "Cancelled" && <FaTimes />}
-                      {b.status}
+                  <td className="p-5 text-sm text-[#4B4B4B]">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold text-gray-400">IN:</span> {b.checkInDate}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold text-gray-400">OUT:</span> {b.checkOutDate}
                     </div>
                   </td>
-                  <td className="p-4">
+                  <td className="p-5">
+                    <div className="flex flex-col items-center justify-center gap-1">
+                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase ${
+                        b.status === "Pending" ? "bg-yellow-100 text-yellow-700" :
+                        b.status === "Confirmed" ? "bg-green-100 text-green-700" : 
+                        "bg-red-100 text-red-700"
+                      }`}>
+                        {b.status === "Pending" && <FaClock />}
+                        {b.status === "Confirmed" && <FaCheck />}
+                        {b.status === "Cancelled" && <FaTimes />}
+                        {b.status}
+                      </span>
+                      {b.status === "Confirmed" && (
+                        <span className="text-[10px] text-[#B45309] font-medium italic leading-none mt-1">
+                          {b.isPaid ? "Payment Received" : "Awaiting Payment"}
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="p-5">
                     <div className="flex items-center justify-center gap-3">
-                      <select 
-                        className="text-[11px] border border-gray-200 rounded-lg px-2 py-1.5 outline-none bg-white shadow-sm font-bold cursor-pointer"
+                      <CSelect 
                         value={b.status}
-                        onChange={(e) => handleUpdateStatus(b._id, e.target.value)}
-                      >
-                        <option value="Pending">Pending</option>
-                        <option value="Confirmed">Confirmed</option>
-                        <option value="Cancelled">Cancelled</option>
-                      </select>
-
+                        onChange={(val) => handleUpdateStatus(b._id, val)}
+                        options={[
+                          { label: 'Pending', value: 'Pending' },
+                          { label: 'Confirmed', value: 'Confirmed' },
+                          { label: 'Cancelled', value: 'Cancelled' }
+                        ]}
+                      />
+                      {b.status === "Confirmed" && !b.isPaid && (
+                        <button 
+                          onClick={() => handleResendEmail(b._id)}
+                          className="p-2 text-[#D97706] hover:bg-[#FEF3C7] rounded-full transition-all"
+                          title="Resend Payment Link"
+                        >
+                          <FaRegPaperPlane size={16} />
+                        </button>
+                      )}
                       <button 
-                        onClick={() => downloadBookingConfirmation(b)}
-                        className="text-gray-400 hover:text-orange-600 p-2 hover:bg-orange-50 rounded-lg transition-all"
+                        onClick={() => window.alert(`Downloading ${b.bookingId}`)}
+                        className="p-2 text-[#4B4B4B] hover:text-[#D97706] hover:bg-[#FEF3C7] rounded-full transition-all"
+                        title="Download Confirmation"
                       >
-                        <FaFileDownload size={18} />
+                        <LuDownload size={20} />
                       </button>
                     </div>
                   </td>

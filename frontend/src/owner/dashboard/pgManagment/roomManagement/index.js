@@ -101,7 +101,7 @@ const RoomManagement = () => {
   };
 
   return (
-    <div className="p-4 md:p-6 bg-gray-100 min-h-screen">
+    <div className="p-4 md:p-6 bg-gray-200 min-h-screen">
       
       {/* PAGE HEADER */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
@@ -141,7 +141,7 @@ const RoomManagement = () => {
             return (
               <div
                 key={room.id || index}
-                className="bg-white rounded-lg border border-gray-200 border-t-4 border-t-primary shadow-sm hover:shadow-md transition-shadow p-5 flex flex-col"
+                className="bg-white rounded-lg border border-gray-200 border border-t-primary shadow-sm hover:shadow-md transition-shadow p-5 flex flex-col"
               >
                 {/* CARD HEADER */}
                 <div className="flex justify-between items-start mb-4">

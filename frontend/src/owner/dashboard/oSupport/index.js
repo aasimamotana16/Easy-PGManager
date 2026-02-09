@@ -56,19 +56,19 @@ const SupportPage = () => {
   };
 
   return (
-    <div className="p-4 md:p-6 bg-gray-100 min-h-screen space-y-6">
+    <div className="p-4 md:p-6 bg-gray-200 min-h-screen space-y-6">
       
       {/* HEADER - Responsive text sizes */}
       <div className="flex items-center gap-3 ">
-        <FaLifeRing className="text-orange-500 text-2xl md:text-3xl" />
         <div>
-          <h1 className="text-xl md:text-3xl font-bold text-black">Support</h1>
-          <p className="text-xs md:text-base text-gray-500">Raise and track support tickets</p>
+<h1 className="text-2xl sm:text-4xl font-bold text-textPrimary">
+          Support
+        </h1>          <p className="text-xs md:text-base text-gray-500">Raise and track support tickets</p>
         </div>
       </div>
 
       {/* CREATE TICKET FORM */}
-      <div className="bg-white rounded-md shadow p-4 md:p-6 border  border-t-4 border-primary">
+      <div className="bg-white rounded-md shadow p-4 md:p-6 border  border border-primary">
         <h2 className="text-base md:text-lg font-semibold mb-4 text-dark text-primary">Ask for Help</h2>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <input
@@ -92,7 +92,7 @@ const SupportPage = () => {
       </div>
 
       {/* SEARCH BAR - Stacked on mobile */}
-      <div className="bg-white border border-t-4 border-primary rounded-md shadow p-3 md:p-4 flex flex-col md:flex-row gap-3">
+      <div className="bg-white border border-primary rounded-md shadow p-3 md:p-4 flex flex-col md:flex-row gap-3">
         <div className="relative flex-1">
           <FaSearch className="absolute left-3 top-3 text-gray-400" />
           <input
@@ -111,8 +111,8 @@ const SupportPage = () => {
         {/* Desktop Table View */}
         <div className="hidden md:block">
           <table className="w-full text-sm">
-            <thead className="bg-orange-100 border-b">
-              <tr className="text-black text-xs uppercase tracking-wider font-bold">
+            <thead className="bg-primarySoft border-b">
+              <tr className="text-black text-sm uppercase tracking-wider ">
                 <th className="px-5 py-3 text-left">ID</th>
                 <th className="px-5 py-3 text-left">Subject</th>
                 <th className="px-5 py-3 text-left">Status</th>

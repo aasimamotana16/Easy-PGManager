@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { FaEdit, FaPlus, FaUsers } from "react-icons/fa";
+import React, { useState, useEffect, useMemo } from "react";
+import { FaEdit, FaPlus, FaSearch, FaFilter, FaUsers } from "react-icons/fa";
 import axios from "axios";
 import AddTenant from "./addTenant";
 import CButton from "../../../components/cButton";
@@ -18,7 +18,6 @@ const Tenants = () => {
   const [search, setSearch] = useState("");
 
   const fetchTenants = async () => {
-    // Initial sample data
     const sampleData = [
       { _id: '1', name: 'Rahul Sharma', phone: '9876543210', email: 'rahul@email.com', pgId: 1, room: '101', joiningDate: '2026-01-15', status: 'Active' },
       { _id: '2', name: 'Priya Patel', phone: '9876543211', email: 'priya@email.com', pgId: 2, room: '201', joiningDate: '2026-01-20', status: 'Active' },
@@ -35,7 +34,7 @@ const Tenants = () => {
         setTenants(res.data.data);
       }
     } catch (error) {
-      console.log('API failed, showing sample data');
+      console.log('API failed, using sample data');
     }
   };
 
@@ -52,28 +51,27 @@ const Tenants = () => {
 
   const handleEditClick = (tenant) => {
     Swal.fire({
-      title: 'Quick Edit',
+      title: 'Update Tenant',
       html: `
-        <div style="text-align: left; font-family: sans-serif;">
-          <label style="font-weight: bold; font-size: 14px;">Room Number</label>
-          <input id="swal-room" class="swal2-input" value="${tenant.room}" style="width: 85%; margin-bottom: 15px;">
+        <div style="text-align: left; font-family: inherit;">
+          <label style="display: block; font-weight: bold; font-size: 14px; color: #1C1C1C; margin-bottom: 5px;">Room Number</label>
+          <input id="swal-room" class="swal2-input" value="${tenant.room}" style="width: 100%; margin: 0 0 15px 0; border-radius: 8px; border: 1px solid #E5E0D9;">
           
-          <label style="font-weight: bold; font-size: 14px;">Occupancy Status</label>
-          <select id="swal-status" class="swal2-input" style="width: 85%;">
+          <label style="display: block; font-weight: bold; font-size: 14px; color: #1C1C1C; margin-bottom: 5px;">Occupancy Status</label>
+          <select id="swal-status" class="swal2-input" style="width: 100%; margin: 0; border-radius: 8px; border: 1px solid #E5E0D9;">
             <option value="Active" ${tenant.status === 'Active' ? 'selected' : ''}>Active</option>
             <option value="Inactive" ${tenant.status === 'Inactive' ? 'selected' : ''}>Inactive</option>
           </select>
         </div>
       `,
-      confirmButtonText: 'Update Tenant',
-      confirmButtonColor: '#ef7e24',
+      confirmButtonText: 'Save Changes',
+      confirmButtonColor: '#D97706',
       showCancelButton: true,
-      preConfirm: () => {
-        return {
-          room: document.getElementById('swal-room').value,
-          status: document.getElementById('swal-status').value
-        }
-      }
+      cancelButtonColor: '#4B4B4B',
+      preConfirm: () => ({
+        room: document.getElementById('swal-room').value,
+        status: document.getElementById('swal-status').value
+      })
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
@@ -81,103 +79,125 @@ const Tenants = () => {
           await axios.put(`http://localhost:5000/api/owner/update-tenant/${tenant._id}`, result.value, {
             headers: { Authorization: `Bearer ${token}` }
           });
-          Swal.fire('Updated!', 'Tenant details saved.', 'success');
+          Swal.fire({ icon: 'success', title: 'Updated!', confirmButtonColor: '#D97706' });
           fetchTenants();
         } catch (e) {
-          Swal.fire('Error', 'Update failed', 'error');
+          Swal.fire({ icon: 'error', title: 'Update failed', confirmButtonColor: '#D97706' });
         }
       }
     });
   };
 
   return (
-    <div className="p-4 md:p-6 bg-[#f8f9fa] min-h-screen">
+    <div className="p-4 md:p-10 bg-gray-100 min-h-screen">
       
-      {/* HEADER SECTION - Updated as per your request */}
-      <div className="flex justify-between items-start mb-6">
-        <div className="space-y-1">
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-black">
-            Tenants
-          </h1>
-          <p className="text-sm sm:text-base lg:text-lg text-gray-500">
-            View and manage tenants across PGs
-          </p>
+      {/* HEADER SECTION - Matches Booking Style */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        <div>
+          <h1 className="text-4xl font-bold text-[#1C1C1C]">Tenants</h1>
+          <p className="text-[#4B4B4B] mt-2">Manage all residents across your properties</p>
+        </div>
+        <button 
+          onClick={() => setShowAddTenant(true)}
+          className="bg-primary hover:bg-primaryDark text-white px-6 py-3 rounded-lg font-bold flex items-center gap-2 transition-all shadow-md"
+        >
+          <FaPlus /> Add New Tenant
+        </button>
+      </div>
+
+      {/* SEARCH AND FILTER BAR - Matches Booking Style */}
+      <div className="flex flex-col md:flex-row gap-4 mb-8 bg-white p-4 rounded-xl shadow-sm border border-primary">
+        <div className="relative flex-grow">
+          <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input 
+            type="text"
+            placeholder="Search by name or PG..." 
+            className="w-full pl-12 pr-4 py-3 rounded-lg border border-[#E5E0D9] focus:outline-none focus:ring-1 focus:ring-primary text-sm"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <div className="relative min-w-[220px]">
+          <FaFilter className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+          <select 
+            className="w-full pl-12 pr-4 py-3 rounded-lg border border-[#E5E0D9] focus:outline-none bg-white text-sm appearance-none cursor-pointer"
+            value={selectedPG}
+            onChange={(e) => setSelectedPG(e.target.value)}
+          >
+            <option value="all">All Properties</option>
+            {PG_LIST.map((pg) => <option key={pg.id} value={pg.id}>{pg.name}</option>)}
+          </select>
+        </div>
+      </div>
+
+      {/* TABLE CONTAINER - Matches Booking Style */}
+      <div className="bg-white rounded-xl shadow-sm border border-[#E5E0D9] overflow-hidden">
+        <div className="p-6 border-b border-[#E5E0D9]">
+           <h2 className="text-xl font-bold text-[#1C1C1C]">Current Residents</h2>
         </div>
 
-        <CButton onClick={() => setShowAddTenant(true)} className="flex items-center gap-2 whitespace-nowrap mt-2">
-          <FaPlus size={14} /> Add Tenant
-        </CButton>
-      </div>
-
-      {/* FILTER BAR */}
-      <div className="bg-white p-3 rounded-xl shadow-sm border border-t-4  border-primary flex flex-col md:flex-row gap-3 mb-6">
-        <input
-          type="text"
-          placeholder="Search name or PG..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="flex-1 border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none focus:border-[#ef7e24]"
-        />
-        <select
-          value={selectedPG}
-          onChange={(e) => setSelectedPG(e.target.value)}
-          className="border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none md:w-48"
-        >
-          <option value="all">All PGs</option>
-          {PG_LIST.map((pg) => <option key={pg.id} value={pg.id}>{pg.name}</option>)}
-        </select>
-      </div>
-
-      {/* TABLE */}
-      <div className="bg-white rounded-xl shadow-sm  overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead className="bg-orange-100 border-b">
-              <tr className="text-black text-sm uppercase tracking-wider font-bold">
-                <th className="p-4">Name</th>
-                <th className="p-4">PG Name</th>
-                <th className="p-4">Room</th>
-                <th className="p-4">Joined Date</th>
-                <th className="p-4">Status</th>
-                <th className="p-4 text-center">Actions</th>
+          <table className="w-full text-left min-w-[900px]">
+            <thead className="bg-primarySoft text-black text-sm uppercase ">
+              <tr>
+                <th className="p-5">Tenant Details</th>
+                <th className="p-5">Property</th>
+                <th className="p-5 text-center">Room No.</th>
+                <th className="p-5">Joining Date</th>
+                <th className="p-5 text-center">Status</th>
+                <th className="p-5 text-center">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-[#E5E0D9]">
               {searchedTenants.length > 0 ? (
                 searchedTenants.map((t) => (
                   <tr key={t._id} className="hover:bg-gray-50 transition-colors">
-                    <td className="p-4">
-                      <div className="font-bold text-gray-700">{t.name}</div>
-                      <div className="text-[10px] text-gray-400">{t.phone}</div>
+                    <td className="p-5">
+                      <div className="font-bold text-[#1C1C1C]">{t.name}</div>
+                      <div className="text-xs text-[#4B4B4B] font-mono">{t.phone}</div>
                     </td>
-                    <td className="p-4 text-sm text-gray-600">{getPGName(t.pgId)}</td>
-                    <td className="p-4">
-                      <span className="bg-gray-100 text-primary px-2 py-1 rounded text-xs font-bold">
-                        {t.room}
-                      </span>
+                    <td className="p-5 text-[#4B4B4B] font-medium">
+                      {getPGName(t.pgId)}
                     </td>
-                    <td className="p-4 text-sm text-gray-500">{t.joiningDate}</td>
-                    <td className="p-4">
-                      <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${
-                        t.status === 'Active' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
+                    <td className="p-5">
+                      <div className="flex justify-center items-center">
+                        <span className="px-3 py-1 rounded border border-primary text-primaryDark text-[10px] font-bold uppercase min-w-[60px] text-center">
+                          {t.room}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="p-5 text-sm text-[#4B4B4B]">
+                       {t.joiningDate}
+                    </td>
+                    <td className="p-5 text-center">
+                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase ${
+                        t.status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                       }`}>
                         {t.status}
                       </span>
                     </td>
-                    <td className="p-4 text-center">
-                      <button 
-                        onClick={() => handleEditClick(t)}
-                        className="text-[#ef7e24] hover:bg-orange-50 p-2 rounded-lg transition-all"
-                      >
-                        <FaEdit size={18} />
-                      </button>
+                    <td className="p-5">
+                      <div className="flex items-center justify-center">
+                        <button 
+                          onClick={() => handleEditClick(t)}
+                          className="p-2 text-[#4B4B4B] hover:text-primary hover:bg-primarySoft rounded-full transition-all group"
+                          title="Edit Tenant"
+                        >
+                          <FaEdit size={18} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="6" className="p-10 text-center text-gray-400">
-                    No tenants found
+                  <td colSpan="6" className="p-20 text-center">
+                    <div className="flex flex-col items-center gap-2">
+                        <div className="bg-primarySoft p-4 rounded-full text-primary">
+                            <FaUsers size={32} />
+                        </div>
+                        <p className="text-[#4B4B4B] font-medium">No tenants found.</p>
+                    </div>
                   </td>
                 </tr>
               )}

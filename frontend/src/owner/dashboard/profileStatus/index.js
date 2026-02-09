@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
-import Swal from "sweetalert2"; 
-import { 
-  FaCamera, FaCheckCircle, FaBuilding, 
-  FaPhoneSquareAlt, FaTrash, FaShieldCheck 
+import Swal from "sweetalert2";
+import {
+  FaCamera, FaCheckCircle, FaBuilding,
+  FaPhoneSquareAlt, FaTrash, FaShieldAlt, FaMapMarkerAlt
 } from "react-icons/fa";
 
-import Navbar from "../../../components/navbar"; 
+import Navbar from "../../../components/navbar";
 import Footer from "../../../components/footer";
 import CButton from "../../../components/cButton";
 
@@ -14,17 +14,17 @@ const ProfileStatus = () => {
   const [loading, setLoading] = useState(true);
   const [editMode, setEditMode] = useState(false);
   const fileInputRef = useRef(null);
-  
+
   const [profileData, setProfileData] = useState({
-    name: "Aasima Motana", 
-    role: "Property Owner", 
-    email: "amotana1607@gmail.com", 
-    phone: "7487857851", 
+    name: "Aasima Motana",
+    role: "Property Owner",
+    email: "amotana1607@gmail.com",
+    phone: "7487857851",
     emergencyPhone: "",
     businessName: "",
-    address: "", 
+    address: "",
     profileImage: "/images/profileImages/profile1.jpg",
-    isVerified: true, 
+    isVerified: true,
     memberSince: "Feb 2026"
   });
 
@@ -44,7 +44,7 @@ const ProfileStatus = () => {
         setTempData(res.data.data);
       }
     } catch (error) {
-      setTempData(profileData); 
+      setTempData(profileData);
     } finally {
       setLoading(false);
     }
@@ -62,8 +62,8 @@ const ProfileStatus = () => {
         Swal.fire({
           icon: 'success',
           title: 'Profile Updated',
-          text: 'Changes saved successfully!',
-          confirmButtonColor: '#E67E22' 
+          text: 'Your information is now up to date.',
+          confirmButtonColor: '#D97706'
         });
       }
     } catch (error) {
@@ -71,164 +71,176 @@ const ProfileStatus = () => {
     }
   };
 
-  const handleDeleteAccount = () => {
-    Swal.fire({
-      title: 'Are you sure?',
-      text: "You won't be able to revert this!",
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#3085d6',
-      confirmButtonText: 'Yes, delete it!'
-    }).then((result) => {
-      if (result.isConfirmed) {
-        Swal.fire('Deleted!', 'Your account has been deleted.', 'success');
-      }
-    });
-  };
-
-  if (loading) return <div className="h-screen flex items-center justify-center">Loading...</div>;
+  if (loading) return <div className="h-screen flex items-center justify-center text-primary animate-pulse font-medium">Loading Profile...</div>;
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA] flex flex-col">
-      <Navbar/>
+    <div className="min-h-screen bg-white flex flex-col">
+      <Navbar />
 
-      <main className="flex-grow flex flex-col lg:flex-row max-w-[1400px] mx-auto w-full gap-8 p-4 md:p-12">
+      <main className="flex-grow max-w-[1200px] mx-auto w-full px-4 py-8 md:py-16">
         
-        {/* SIDEBAR CARD */}
-        <aside className="w-full lg:w-80">
-          <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 flex flex-col items-center text-center">
-            <div className="relative group cursor-pointer" onClick={() => fileInputRef.current.click()}>
-              <img 
-                src={profileData.profileImage} 
-                className="w-44 h-44 rounded-full object-cover border-4 border-orange-500 p-1" 
-                alt="Profile"
-              />
-              <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                <FaCamera className="text-white" size={24} />
-              </div>
-              <input type="file" ref={fileInputRef} className="hidden" accept="image/*" />
-            </div>
-            
-            <h2 className="mt-4 text-2xl font-bold uppercase text-gray-900">{profileData.name}</h2>
-            <p className="text-gray-500 text-sm lowercase">{profileData.email}</p>
-            
-            <div className="mt-2 bg-orange-50 px-4 py-1 rounded-full">
-               <p className="text-[10px] font-bold text-orange-600 uppercase">Member Since: {profileData.memberSince}</p>
-            </div>
-            
-            {/* CBUTTON USED HERE */}
+        {/* TOP HEADER SECTION */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-6">
+          <div>
+            <h1 className="text-3xl md:text-5xl font-black text-[#1C1C1C] uppercase tracking-tighter">Account Settings</h1>
+            <p className="text-[#4B4B4B] font-medium mt-2">Manage your public profile and property owner identity</p>
+          </div>
+          
+          <div className="flex gap-3 w-full md:w-auto">
             <CButton 
-              onClick={() => fileInputRef.current.click()}
-              className="mt-6 w-full !bg-white !text-primary border-2 border-primary hover:!bg-primary hover:!text-white transition-all font-bold uppercase text-xs py-3"
+              className={`${editMode ? 'bg-green-600 hover:bg-green-700' : 'bg-primary hover:bg-primaryDark'} text-white py-3 px-8 rounded-xl shadow-lg transition-all w-full md:w-auto font-medium`}
+              onClick={editMode ? handleSave : () => setEditMode(true)}
             >
-              Change Photo
+              {editMode ? "Save Changes" : "Edit Profile"}
             </CButton>
-          </div>
-        </aside>
-
-        {/* CONTENT AREA */}
-        <section className="flex-1">
-          <div className="flex justify-between items-end mb-8">
-            <div>
-              <h1 className="text-4xl font-bold text-[#1A202C] uppercase">Profile Settings</h1>
-              <p className="text-gray-400 text-sm uppercase tracking-widest mt-1">Owner Identity Management</p>
-            </div>
-
-            <div className="flex flex-col items-end gap-3">
-              {/* VERIFICATION BADGE */}
-              {profileData.isVerified && (
-                <div className="flex items-center gap-2 bg-green-50 border border-green-100 px-4 py-1.5 rounded-full shadow-sm">
-                  <span className="text-[10px] font-black uppercase text-green-600 tracking-wider">Verified Identity</span>
-                  <FaCheckCircle className="text-green-500" size={14}/>
-                </div>
-              )}
+            {editMode && (
               <CButton 
-                className="bg-primary text-white font-bold"
-                onClick={editMode ? handleSave : () => setEditMode(true)}
+                className="bg-white text-[#4B4B4B] border border-[#E5E0D9] font-medium py-3 px-8 rounded-xl w-full md:w-auto"
+                onClick={() => setEditMode(false)}
               >
-                {editMode ? "Save Changes" : "Edit Profile"}
+                Cancel
               </CButton>
-            </div>
+            )}
           </div>
+        </div>
 
-          <div className="bg-white rounded-[2.5rem] p-10 shadow-sm border border-gray-50">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+        <div className="flex flex-col lg:flex-row gap-12">
+          
+          {/* LEFT COLUMN: IDENTITY CARD */}
+          <aside className="w-full lg:w-1/3">
+            <div className="bg-white rounded-3xl p-8 border border-[#E5E0D9] shadow-sm text-center sticky top-24">
+              <div className="relative group mx-auto w-48 h-48 mb-6">
+                <img 
+                  src={profileData.profileImage} 
+                  className="w-full h-full rounded-full object-cover border-4 border-[#FEF3C7] p-1.5 shadow-inner" 
+                  alt="Profile"
+                />
+                <button 
+                  className="absolute bottom-2 right-2 bg-primary p-3 rounded-full text-white shadow-xl hover:scale-110 transition-transform"
+                  onClick={() => fileInputRef.current.click()}
+                >
+                  <FaCamera size={18} />
+                </button>
+                <input type="file" ref={fileInputRef} className="hidden" accept="image/*" />
+              </div>
+
+              <div className="inline-flex items-center gap-2 bg-[#FEF3C7] px-4 py-1.5 rounded-full mb-4">
+                <FaShieldAlt className="text-primary" size={12}/>
+                <span className="text-xs font-bold uppercase text-primary tracking-widest">
+                  {profileData.isVerified ? "Verified Owner" : "Pending Verification"}
+                </span>
+              </div>
+
+              <h2 className="text-2xl font-bold text-[#1C1C1C] uppercase tracking-tight">{profileData.name}</h2>
+              <p className="text-[#4B4B4B] text-sm mb-6">{profileData.email}</p>
               
-              <div className="space-y-1">
-                <label className="text-[10px] uppercase text-gray-400 font-black tracking-widest">Full Name</label>
-                {editMode ? (
-                  <input className="w-full border-b border-gray-200 py-2 outline-none focus:border-orange-500 uppercase" value={tempData.name} onChange={e => setTempData({...tempData, name: e.target.value})} />
-                ) : (
-                  <p className="text-lg text-gray-800 font-medium uppercase">{profileData.name}</p>
-                )}
+              <div className="pt-6 border-t border-[#E5E0D9] flex justify-around">
+                <div className="text-center">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase">Since</p>
+                  <p className="text-sm font-medium text-[#1C1C1C]">{profileData.memberSince}</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase">Type</p>
+                  <p className="text-sm font-medium text-[#1C1C1C]">Owner</p>
+                </div>
               </div>
-              
-              <div className="space-y-1">
-                <label className="text-[10px] uppercase text-gray-400 font-black tracking-widest">Phone Number</label>
-                {editMode ? (
-                  <input className="w-full border-b border-gray-200 py-2 outline-none focus:border-orange-500" value={tempData.phone} onChange={e => setTempData({...tempData, phone: e.target.value})} />
-                ) : (
-                  <p className="text-lg text-gray-800 font-medium">{profileData.phone}</p>
-                )}
-              </div>
+            </div>
+          </aside>
 
-              <div className="space-y-1">
-                <label className="text-[10px] uppercase text-gray-400 font-black tracking-widest flex items-center gap-2">
-                    <FaBuilding size={12}/> Business / Company Name
-                </label>
-                {editMode ? (
-                  <input className="w-full border-b border-gray-200 py-2 outline-none focus:border-orange-500" value={tempData.businessName} onChange={e => setTempData({...tempData, businessName: e.target.value})} placeholder="e.g. Dream PG Rentals" />
-                ) : (
-                  <p className="text-lg text-gray-800 font-medium uppercase">{profileData.businessName || "Individual Owner"}</p>
-                )}
-              </div>
+          {/* RIGHT COLUMN: FORM FIELDS */}
+          <section className="flex-1 space-y-8">
+            <div className="bg-white rounded-2xl p-8 md:p-12 border border-[#E5E0D9] shadow-sm">
+              <h3 className="text-2xl font-medium text-[#1C1C1C] mb-10 flex items-center gap-3">
+                <span className="w-1.5 h-6 bg-primary rounded-full"></span>
+                Personal Information
+              </h3>
 
-              <div className="space-y-1">
-                <label className="text-[10px] uppercase text-gray-400 font-black tracking-widest flex items-center gap-2">
-                    <FaPhoneSquareAlt size={12}/> Emergency Number
-                </label>
-                {editMode ? (
-                  <input className="w-full border-b border-gray-200 py-2 outline-none focus:border-orange-500" value={tempData.emergencyPhone} onChange={e => setTempData({...tempData, emergencyPhone: e.target.value})} placeholder="Backup Phone Number" />
-                ) : (
-                  <p className="text-lg text-gray-800 font-medium uppercase">{profileData.emergencyPhone || "Not Added"}</p>
-                )}
-              </div>
-
-              <div className="space-y-1 md:col-span-2">
-                <label className="text-[10px] uppercase text-gray-400 font-black tracking-widest">Residential Address</label>
-                {editMode ? (
-                  <input className="w-full border-b border-gray-200 py-2 outline-none focus:border-orange-500 uppercase" value={tempData.address} onChange={e => setTempData({...tempData, address: e.target.value})} placeholder="Add Your Address" />
-                ) : (
-                  <p className="text-lg text-gray-800 font-medium uppercase">{profileData.address || "Add Your Address"}</p>
-                )}
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-[10px] uppercase text-gray-400 font-black tracking-widest">Primary Email</label>
-                <p className="text-lg text-gray-500 font-medium lowercase">{profileData.email}</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-10">
+                <InputField 
+                  label="Full Name" 
+                  value={editMode ? tempData.name : profileData.name} 
+                  onChange={e => setTempData({...tempData, name: e.target.value})} 
+                  editMode={editMode}
+                  uppercase
+                />
+                <InputField 
+                  label="Phone Number" 
+                  value={editMode ? tempData.phone : profileData.phone} 
+                  onChange={e => setTempData({...tempData, phone: e.target.value})} 
+                  editMode={editMode}
+                  icon={<FaPhoneSquareAlt className="text-primary/70" />}
+                />
+                <InputField 
+                  label="Business Name" 
+                  value={editMode ? tempData.businessName : profileData.businessName} 
+                  onChange={e => setTempData({...tempData, businessName: e.target.value})} 
+                  editMode={editMode}
+                  placeholder="e.g. Dream PG Rentals"
+                  icon={<FaBuilding className="text-primary/70" />}
+                />
+                <InputField 
+                  label="Emergency Contact" 
+                  value={editMode ? tempData.emergencyPhone : profileData.emergencyPhone} 
+                  onChange={e => setTempData({...tempData, emergencyPhone: e.target.value})} 
+                  editMode={editMode}
+                  placeholder="Backup phone number"
+                />
+                <div className="md:col-span-2">
+                  <InputField 
+                    label="Residential Address" 
+                    value={editMode ? tempData.address : profileData.address} 
+                    onChange={e => setTempData({...tempData, address: e.target.value})} 
+                    editMode={editMode}
+                    icon={<FaMapMarkerAlt className="text-primary/70" />}
+                    placeholder="Enter full address"
+                  />
+                </div>
               </div>
             </div>
 
             {/* DANGER ZONE */}
-            <div className="mt-20 p-8 border border-red-100 rounded-3xl bg-red-50/30 flex justify-between items-center">
-              <div>
-                <h4 className="text-red-600 font-black uppercase text-sm tracking-widest">Danger Zone</h4>
-                <p className="text-red-400 text-[10px] uppercase font-bold mt-1">Deleting your account is permanent and cannot be reversed.</p>
+            <div className="bg-red-50/50 rounded-3xl p-8 border border-red-100 flex flex-col md:flex-row justify-between items-center gap-6">
+              <div className="text-center md:text-left">
+                <h4 className="text-red-600 font-bold uppercase text-xs tracking-widest">Permanent Actions</h4>
+                <p className="text-red-400 text-sm mt-1 font-medium">Deleting your account will remove all property listings and data.</p>
               </div>
               <CButton 
-                onClick={handleDeleteAccount}
-                className="!bg-white !text-red-500 border border-red-200 hover:!bg-red-500 hover:!text-white flex items-center gap-2 px-6 py-2 text-xs font-bold"
+                onClick={() => Swal.fire('Protected', 'Please contact support to delete account', 'warning')}
+                className="!bg-white !text-red-500 border border-red-200 hover:!bg-red-500 hover:!text-white flex items-center gap-2 px-8 py-3 rounded-xl text-xs font-bold shadow-sm"
               >
-                <FaTrash size={12}/> Delete Account
+                <FaTrash size={12}/> DELETE ACCOUNT
               </CButton>
             </div>
-          </div>
-        </section>
+          </section>
+        </div>
       </main>
       <Footer />
     </div>
   );
 };
+
+/* --- REUSABLE INPUT COMPONENT --- */
+const InputField = ({ label, value, onChange, editMode, placeholder, icon, uppercase }) => (
+  <div className="space-y-2.5">
+    {/* Label: Size increased to text-xs, font changed to medium for a cleaner look */}
+    <label className="text-xs uppercase text-[#4B4B4B] font-medium tracking-wider flex items-center gap-2">
+      {icon} {label}
+    </label>
+    
+    {editMode ? (
+      <input 
+        className={`w-full bg-white border border-[#E5E0D9] rounded-xl px-4 py-3.5 outline-none focus:border-primary focus:ring-4 focus:ring-[#FEF3C7] transition-all text-[#1C1C1C] font-normal ${uppercase ? 'uppercase' : ''}`}
+        value={value || ""} 
+        onChange={onChange} 
+        placeholder={placeholder}
+      />
+    ) : (
+      /* Value: font-bold removed, using font-medium for premium feel */
+      <p className={`text-lg text-[#1C1C1C] font-medium min-h-[1.5rem] px-1 ${uppercase ? 'uppercase' : ''}`}>
+        {value || "—"}
+      </p>
+    )}
+  </div>
+);
 
 export default ProfileStatus;

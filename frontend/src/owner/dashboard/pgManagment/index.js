@@ -74,7 +74,7 @@ const PgManagement = () => {
   };
 
   return (
-    <div className="p-3 sm:p-4 md:p-6 bg-gray-100 min-h-screen space-y-6 md:space-y-8">
+    <div className="p-3 sm:p-4 md:p-6 bg-gray-200 min-h-screen space-y-6 md:space-y-8">
 
       {/* PAGE HEADER */}
       <div className="space-y-1">
@@ -87,7 +87,7 @@ const PgManagement = () => {
       </div>
 
       {/* ADD NEW PROPERTY */}
-      <div className="bg-white p-5 sm:p-8 rounded-md shadow border border-t-4 border-primary flex flex-col items-center text-center max-w-4xl mx-auto">
+      <div className="bg-white p-5 sm:p-8 rounded-md shadow border-2 border-primary flex flex-col items-center text-center max-w-4xl mx-auto">
         <FaHome size={42} className="text-orange-500 mb-4" />
         <h3 className="text-lg sm:text-xl font-semibold mb-2 text-gray-800">
           Add New Property
@@ -107,7 +107,7 @@ const PgManagement = () => {
       </div>
 
       {/* MY UPLOADED PGs */}
-      <div className="bg-white p-4 sm:p-6 border border-t-4 border-primary rounded-md shadow">
+      <div className="bg-white p-4 sm:p-6 border  border-primary rounded-md shadow">
         <div className="mb-6">
           <h3 className="text-lg sm:text-xl md:text-2xl font-semibold text-gray-800">
             My Uploaded PGs
