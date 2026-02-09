@@ -47,7 +47,7 @@ const BookingPage = () => {
   }, []);
 
   if (pageLoading || backendLoading) return <Loader />;
-  if (!pg) return <div className="text-center mt-20">PG not found</div>;
+  if (!pg) return <div className="text-center mt-20 text-textPrimary">PG not found</div>;
 
   const pricePerPerson = Number(pg.roomPrices?.singleSharing || pg.startingPrice || pg.rent || pg.price || 0);
   const maxBeds = pg.availableBeds || 5;
@@ -140,7 +140,7 @@ const BookingPage = () => {
         icon: 'error', 
         title: 'Form Incomplete', 
         text: 'Please check the required fields highlighted in red.', 
-        confirmButtonColor: "#f97316" 
+        confirmButtonColor: "#D97706" // Using theme primary [cite: 2026-02-09]
       });
       return;
     }
@@ -151,7 +151,8 @@ const BookingPage = () => {
       icon: "question",
       showCancelButton: true,
       confirmButtonText: "Confirm Request",
-      confirmButtonColor: "#f97316",
+      confirmButtonColor: "#D97706", // Using theme primary [cite: 2026-02-09]
+      cancelButtonColor: "#4B4B4B", // Using theme textSecondary [cite: 2026-02-09]
     });
 
     if (result.isConfirmed) {
@@ -170,7 +171,7 @@ const BookingPage = () => {
         icon: 'success',
         title: 'Request Sent!',
         text: 'Owner notified. Check your dashboard for status updates.',
-        confirmButtonColor: "#f97316"
+        confirmButtonColor: "#D97706"
       }).then(() => {
         navigate(`/confirmBook/${pg._id}`, { state: { bookingData } });
       });
@@ -178,16 +179,18 @@ const BookingPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 px-4 py-10">
+    /* Background set to backgroundDefault [cite: 2026-02-09] */
+    <div className="min-h-screen bg-background px-4 py-10">
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl mb-1">Book {pg.name}</h1>
-        <p className="text-gray-600 mb-8">{pg.location}</p>
+        <h1 className="text-h2-sm lg:text-h2 font-bold text-textPrimary mb-1">Book {pg.name}</h1>
+        <p className="text-textSecondary text-body-sm lg:text-body mb-8">{pg.location}</p>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
             {personsData.map((person, index) => (
-              <div key={index} ref={(el) => (personRefs.current[index] = el)} className="bg-white rounded-md p-6 shadow border border-gray-200">
-                <h3 className="font-semibold text-lg mb-4">Person {index + 1} (Tenant)</h3>
+              <div key={index} ref={(el) => (personRefs.current[index] = el)} 
+                   className="bg-background rounded-xl p-6 shadow-sm border border-border">
+                <h3 className="font-bold text-textPrimary text-lg mb-4">Person {index + 1} (Tenant)</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <CInput 
                     label="Full Name" 
@@ -259,8 +262,8 @@ const BookingPage = () => {
               </div>
             ))}
 
-            <div className="bg-white rounded-md p-6 shadow border border-gray-200">
-              <h3 className="font-semibold text-lg mb-4">Stay Details</h3>
+            <div className="bg-background rounded-xl p-6 shadow-sm border border-border">
+              <h3 className="font-bold text-textPrimary text-lg mb-4">Stay Details</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <CInput
                   type="date"
@@ -289,36 +292,42 @@ const BookingPage = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-md p-6 shadow h-fit sticky top-10 border border-gray-200">
-            <h3 className="text-lg font-semibold mb-4">Summary</h3>
+          {/* Sticky Summary Card [cite: 2026-02-06] */}
+          <div className="bg-background rounded-xl p-6 shadow-md h-fit sticky top-10 border border-border">
+            <h3 className="text-lg font-bold text-textPrimary mb-4">Summary</h3>
             <div className="flex justify-between items-center mb-4">
-              <span className="text-green-600 font-medium">{maxBeds} Beds Available</span>
-              <div className="flex items-center gap-3 bg-gray-100 p-1 rounded">
-                <button onClick={decrease} className="w-8 h-8 flex items-center justify-center bg-white rounded shadow-sm disabled:opacity-50" disabled={isSubmitted}>−</button>
-                <span className=" w-4 text-center">{persons}</span>
-                <button onClick={increase} className="w-8 h-8 flex items-center justify-center bg-white rounded shadow-sm disabled:opacity-50" disabled={isSubmitted}>+</button>
+              <span className="text-primaryDark font-medium">{maxBeds} Beds Available</span>
+              <div className="flex items-center gap-3 bg-primarySoft p-1 rounded-lg">
+                <button onClick={decrease} 
+                        className="w-8 h-8 flex items-center justify-center bg-background rounded-md shadow-sm disabled:opacity-50 text-primary font-bold" 
+                        disabled={isSubmitted}>−</button>
+                <span className="w-4 text-center font-bold text-textPrimary">{persons}</span>
+                <button onClick={increase} 
+                        className="w-8 h-8 flex items-center justify-center bg-background rounded-md shadow-sm disabled:opacity-50 text-primary font-bold" 
+                        disabled={isSubmitted}>+</button>
               </div>
             </div>
 
-            <div className="border-t pt-4 space-y-2">
-                <div className="flex justify-between text-gray-600">
+            <div className="border-t border-border pt-4 space-y-2">
+                <div className="flex justify-between text-textSecondary text-body-sm">
                     <span>Rent ({persons} Person)</span>
                     <span>₹{totalRent}</span>
                 </div>
-                <div className="flex justify-between text-xl text-orange-600">
+                <div className="flex justify-between text-xl font-bold text-primary">
                     <span>Total</span>
                     <span>₹{totalRent}</span>
                 </div>
             </div>
 
             <CButton 
-                variant="contained" 
-                className="w-full mt-6 py-3 font-semibold" 
+                className={`w-full mt-6 py-3 font-bold transition-all ${isSubmitted ? 'bg-textSecondary' : 'bg-primary hover:bg-primaryDark text-textLight'}`}
                 onClick={handleBooking} 
                 disabled={isSubmitted}
                 text={isSubmitted ? "Request Sent" : "Request to Book"}
             />
-            <p className="text-[10px] text-gray-400 text-center mt-3 uppercase tracking-wider">Approval Required • No Payment Now</p>
+            <p className="text-[10px] text-textSecondary text-center mt-3 uppercase tracking-wider font-semibold">
+              Approval Required • No Payment Now
+            </p>
           </div>
         </div>
       </div>

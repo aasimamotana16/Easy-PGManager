@@ -3,64 +3,38 @@ module.exports = {
   content: ["./src/**/*.{js,jsx,ts,tsx}"],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ["Poppins", "sans-serif"],
+      },
       colors: {
         primary: "#D97706",
+        primarySoft: "#fff7ed",
         primaryDark: "#B45309",
-        primarySoft: "#FEF3C7",
-
-        background: {
-          default: "#ffffffff",
-          muted: "#ffffffff",
-          dark: "#1F1F1F",
-        },
-
-        text: {
-          primary: "#1C1C1C",
-          secondary: "#4B4B4B",
-          muted: "#6B6B6B",
-          light: "#FFFFFF",
-        },
-
-        card: "#FFFFFF",
-        cardSky: "#E0F2FE",
-
+        background: "#ffffff",
+        backgroundDark: "#1F1F1F",
+        textPrimary: "#1C1C1C",
+        textSecondary: "#4B4B4B",
+        textLight: "#FFFFFF",
         border: "#E5E0D9",
-
-        button: {
-          DEFAULT: "#D97706",
-          hover: "#B45309",
-          ghost: "#FEF3C7",
-        },
-
-        accent: {
-          success: "#16A34A",
-          warning: "#D97706",
-          danger: "#DC2626",
-        },
+        success: "#16A34A",
+        warning: "#D97706",
+        danger: "#DC2626",
       },
 
-     backgroundImage: {
-        'dashboard-gradient': 'linear-gradient(to bottom, #D1FAE5, #FEF3C7, #FFFFFF)',
-        'background-gradient': 'linear-gradient(to top, #ffff, #b4b4b4 , #414141)',
-        'card-gradient': 'linear-gradient(to bottom, #FEF3C7, #D97706)',
-        'progress-gradient': 'linear-gradient(to right, #D1FAE5, #FEF3C7, #FFFFFF)'
-     },
-      borderRadius: {
-        sm: "6px",
-        md: "10px",
-        lg: "14px",
-        xl: "18px",
-        "2xl": "24px",
+      /* ================= TYPOGRAPHY WITH MOBILE (SM) TOKENS ================= */
+      fontSize: {
+        // Desktop Sizes
+        h1: ["60px", { lineHeight: "70px", fontWeight: "700" }], 
+        h2: ["45px", { lineHeight: "52px", fontWeight: "600" }], 
+        h3: ["28px", { lineHeight: "40px", fontWeight: "600" }], 
+        body: ["18px", { lineHeight: "30px", fontWeight: "400" }], 
+
+        // Mobile (sm) specific sizes for better responsiveness [cite: 2026-02-06]
+        "h1-sm": ["36px", { lineHeight: "42px", fontWeight: "400" }],
+        "h2-sm": ["28px", { lineHeight: "34px", fontWeight: "400" }],
+        "h3-sm": ["22px", { lineHeight: "28px", fontWeight: "400" }],
+        "body-sm": ["16px", { lineHeight: "24px", fontWeight: "400" }],
       },
-
-      boxShadow: {
-        soft: "0 2px 8px rgba(28, 28, 28, 0.06)",
-        card: "0 8px 24px rgba(28, 28, 28, 0.08)",
-        hover: "0 12px 32px rgba(28, 28, 28, 0.12)",
-      },
-
-      
-
     },
   },
   plugins: [],

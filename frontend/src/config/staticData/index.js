@@ -16,29 +16,47 @@ export const bannerText = {
 };
 
 export const features = [
+  // OWNER FEATURES
   {
     title: "Easy Room Management",
-    desc: "Add, edit, and manage rooms effortlessly with our intuitive interface."
+    desc: "Add, edit, and manage rooms effortlessly with our intuitive interface.",
+    role: "owner"
   },
   {
     title: "Automated Billing",
-    desc: "Generate invoices automatically and keep track of payments with ease."
+    desc: "Generate invoices automatically and keep track of payments with ease.",
+    role: "owner"
   },
   {
     title: "Tenant Tracking",
-    desc: "Monitor tenants' details, lease periods, and history efficiently."
-  },
-  {
-    title: "Attendance Management",
-    desc: "Keep track of tenant attendance and room usage for smooth operations."
-  },
-  {
-    title: "Custom Notifications",
-    desc: "Send reminders, alerts, and announcements to tenants directly."
+    desc: "Monitor tenants' details, lease periods, and history efficiently.",
+    role: "owner"
   },
   {
     title: "Reports & Analytics",
-    desc: "Gain insights with detailed reports and analytics for smarter decisions."
+    desc: "Gain insights with detailed reports and analytics for smarter decisions.",
+    role: "owner"
+  },
+  // TENANT / USER FEATURES
+  {
+    title: "Find My PG",
+    desc: "Search through verified listings to find the perfect stay near your university.",
+    role: "tenant"
+  },
+  {
+    title: "Instant Mobile Updates",
+    desc: "Receive real-time notifications for rent reminders and announcements.",
+    role: "tenant"
+  },
+  {
+    title: "Easy Payments",
+    desc: "Pay your rent securely online and download receipts instantly.",
+    role: "tenant"
+  },
+  {
+    title: "24/7 Support",
+    desc: "Raise maintenance requests and get support directly through the app.",
+    role: "tenant"
   }
 ];
 

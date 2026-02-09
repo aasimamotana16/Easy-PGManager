@@ -14,11 +14,19 @@ const HomeSearch = () => {
   const [cityOptions, setCityOptions] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const FALLBACK_CITIES = [
+    { label: "Ahmedabad", value: "Ahmedabad" },
+    { label: "Surat", value: "Surat" },
+    { label: "Vadodara", value: "Vadodara" },
+    { label: "Rajkot", value: "Rajkot" },
+  ];
+
   useEffect(() => {
     const fetchCityData = async () => {
       try {
         const response = await getCities();
         let cities = [];
+        
         if (Array.isArray(response?.data)) cities = response.data;
         else if (Array.isArray(response?.data?.cities)) cities = response.data.cities;
 
@@ -27,15 +35,11 @@ const HomeSearch = () => {
             ? { label: item, value: item }
             : { label: item.name, value: item.name }
         );
-        setCityOptions(formattedCities);
+        
+        setCityOptions(formattedCities.length > 0 ? formattedCities : FALLBACK_CITIES);
       } catch (error) {
         console.error("Error fetching cities:", error);
-        setCityOptions([
-          { label: "Ahmedabad", value: "Ahmedabad" },
-          { label: "Surat", value: "Surat" },
-          { label: "Vadodara", value: "Vadodara" },
-          { label: "Rajkot", value: "Rajkot" },
-        ]);
+        setCityOptions(FALLBACK_CITIES);
       } finally {
         setLoading(false);
       }
@@ -49,33 +53,25 @@ const HomeSearch = () => {
         icon: "warning",
         title: "City Required",
         text: "Please select a city first to explore available PGs!",
-        confirmButtonColor: "#f97316",
+        confirmButtonColor: "#D97706", 
       });
       return;
     }
+    
     navigate(`/findMypg/pgListing?city=${encodeURIComponent(city)}`);
     fetchLivePgs(city);
   };
 
   return (
-    <div
-      className="
-        bg-white
-        p-6 sm:p-10
-        rounded-[2rem]
-        shadow-xl
-        max-w-4xl
-        mx-auto
-        border border-primary
-        relative
-      "
-    >
-      {/* Heading - Fluid text sizes for mobile */}
+    /* Using background and primary border from theme */
+    <div className="bg-background p-6 sm:p-10 rounded-2xl max-w-4xl mx-auto border border-primary relative shadow-md">
+      
+      {/* Heading - Now fully responsive with text-h2-sm and lg:text-h2 */}
       <div className="text-center mb-8">
-        <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-2 leading-tight">
+        <h2 className="text-h2-sm lg:text-h2 text-textPrimary mb-2 leading-tight">
           Find <span className="text-primary">Paying Guest</span> Accommodation
         </h2>
-        <p className="text-sm sm:text-base md:text-lg text-gray-500 font-medium">
+        <p className="text-body-sm lg:text-body text-textSecondary font-medium">
           Select your city to explore available PGs near you
         </p>
       </div>
@@ -83,37 +79,26 @@ const HomeSearch = () => {
       {/* City Selection */}
       <div className="w-full lg:max-w-xl mx-auto mb-8">
         <CSelect
-          label="City"
-          required
+          label="Select Your City"
+          name="citySearch"
           value={city}
-          onChange={(e) => {
-            if (e?.target?.value !== undefined) setCity(e.target.value);
-            else if (e?.value !== undefined) setCity(e.value);
-            else setCity("");
-          }}
+          onChange={(e) => setCity(e.target.value)}
           options={cityOptions}
           disabled={loading}
-          placeholder={loading ? "Loading cities..." : "Select city"}
-          className="w-full h-14 text-base rounded-xl border-gray-200 focus:ring-primary focus:border-primary  outline-none"
+          className="w-full"
         />
       </div>
 
-      <div className="w-full h-px bg-primary mb-8" />
+      {/* Modern Separator using border color */}
+      <div className="w-full h-px bg-border mb-8 opacity-50" />
 
       {/* Action Button */}
       <div className="flex justify-center">
         <CButton
           onClick={handleSearch}
-          text="Search PGs"
-          variant="contained"
-          className="
-            text-lg
-            font-bold
-            shadow-lg hover:shadow-orange-200
-            transition-all
-            active:scale-95
-            bg-primary
-          "
+          text={loading ? "Loading..." : "Search PGs"}
+          disabled={loading}
+          className="px-12 py-4 text-lg font-bold"
         />
       </div>
     </div>

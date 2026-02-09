@@ -1,3 +1,38 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  html, body {
+    /* Ensures Poppins is the global default [cite: 2026-02-09] */
+    font-family: 'Poppins', sans-serif !important;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    /* Updated: text-textPrimary and bg-background match your new config keys [cite: 2026-02-09] */
+    @apply antialiased text-textPrimary bg-background;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Global Headings using the sizes we defined in Tailwind [cite: 2026-02-06, 2026-02-09] */
+  h1 {
+    @apply text-h1 text-textPrimary mb-6 font-bold;
+  }
+
+  h2 {
+    @apply text-h2 text-textPrimary mb-4 font-semibold;
+  }
+
+  p {
+    @apply text-body text-textSecondary mb-4;
+  }
+
+  /* Removes blue tap highlight for a better mobile experience [cite: 2026-02-06] */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+}

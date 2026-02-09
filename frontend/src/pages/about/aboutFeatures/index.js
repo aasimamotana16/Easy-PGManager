@@ -29,7 +29,8 @@ const AboutFeatures = () => {
 
   const renderFeatureSection = (title, features, colorClass) => (
     <div className="mb-16">
-      <h3 className={`text-3xl font-bold mb-8 ${colorClass} border-l-4 border-primary pl-4`}>
+      {/* Responsive Section Header using theme tokens [cite: 2026-02-06, 2026-02-09] */}
+      <h3 className={`text-h3-sm lg:text-h3 font-bold mb-8 ${colorClass} border-l-4 border-primary pl-4`}>
         {title}
       </h3>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -40,15 +41,18 @@ const AboutFeatures = () => {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: i * 0.1 }}
             viewport={{ once: true }}
-            className="bg-white border border-gray-100 rounded-xl shadow-sm hover:shadow-md p-6 flex flex-col items-start transition-all"
+            // Updated border and background to match theme [cite: 2026-02-09]
+            className="bg-background border border-border rounded-xl shadow-sm hover:shadow-md p-6 flex flex-col items-start transition-all"
           >
-            <div className="text-primary mb-4 bg-orange-50 p-3 rounded-lg">
+            {/* Icon container uses primarySoft background [cite: 2026-02-09] */}
+            <div className="text-primary mb-4 bg-primarySoft p-3 rounded-lg">
               {feature.icon}
             </div>
-            <h4 className="text-xl font-bold text-gray-800 mb-2">
+            <h4 className="text-xl font-bold text-textPrimary mb-2">
               {feature.title}
             </h4>
-            <p className="text-gray-600 text-sm leading-relaxed">
+            {/* Body text uses responsive sizing and secondary text color [cite: 2026-02-06, 2026-02-09] */}
+            <p className="text-textSecondary text-body-sm lg:text-body leading-relaxed">
               {feature.desc}
             </p>
           </motion.div>
@@ -58,19 +62,20 @@ const AboutFeatures = () => {
   );
 
   return (
-    <section className="py-16 px-6 max-w-7xl mx-auto">
+    <section className="py-16 px-6 max-w-7xl mx-auto bg-background">
       <div className="mb-12">
-        <h2 className="text-4xl font-bold text-primary mb-4">
+        {/* Main Header with responsive variant [cite: 2026-02-06] */}
+        <h2 className="text-h2-sm lg:text-h2 font-bold text-primary mb-4">
           Our Key Features
         </h2>
-        <p className="text-gray-500 text-lg">
+        <p className="text-textSecondary text-body-sm lg:text-body max-w-2xl">
           Tailored solutions for both property owners and their valued residents.
         </p>
       </div>
 
-      {renderFeatureSection("For Property Owners", ownerFeatures, "text-gray-800")}
-      <hr className="my-12 border-gray-100" />
-      {renderFeatureSection("For Tenants (Users)", userFeatures, "text-gray-800")}
+      {renderFeatureSection("For Property Owners", ownerFeatures, "text-textPrimary")}
+      <hr className="my-12 border-border" />
+      {renderFeatureSection("For Tenants (Users)", userFeatures, "text-textPrimary")}
     </section>
   );
 };

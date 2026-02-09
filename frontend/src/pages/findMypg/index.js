@@ -123,22 +123,24 @@ export default function FindMyPG() {
       <Navbar />
 
       {/* Main Container - Fully Responsive Padding */}
-      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10 w-full">
-        
-        {/* Back Button */}
-        <div className="flex justify-start mb-6">
-          {showBackButton && (
-            <button 
-              onClick={() => navigate(-1)} 
-              className="group flex items-center gap-2 text-gray-500 hover:text-primary transition-all text-sm font-medium"
-            >
-              <div className="p-2 rounded-full bg-white shadow-sm group-hover:bg-primary/5 transition-colors border border-gray-100">
-                <ArrowLeft size={16} />
-              </div>
-              <span className="hidden sm:inline">Back to Services</span>
-            </button>
-          )}
+<main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10 w-full">
+  
+  {/* Back Button - Minimalist Arrow Version */}
+  <div className="flex justify-start mb-6">
+    {showBackButton && (
+      <button 
+        onClick={() => navigate(-1)} 
+        className="group flex items-center justify-center outline-none"
+        aria-label="Go back" // Proper accessibility since text is removed
+      >
+        <div className="p-2.5 rounded-full bg-white shadow-sm border border-gray-100 
+                        group-hover:bg-primary group-hover:text-white group-hover:border-primary 
+                        transition-all duration-300 hover:shadow-md active:scale-95">
+          <ArrowLeft size={18} strokeWidth={2.5} />
         </div>
+      </button>
+    )}
+  </div>
 
         {/* Responsive Header */}
         <div className="text-center mb-10 md:mb-14">

@@ -17,38 +17,56 @@ const Footer = () => {
 
   // Active link style handler
   const linkClass = (path) =>
-    `cursor-pointer hover:text-primary transition ${
+    `cursor-pointer hover:text-primary transition-all duration-300 ${
       location.pathname === path
         ? "text-primary underline underline-offset-4"
         : ""
     }`;
 
+  // Social Link Helper Component to keep code clean
+  const SocialLink = ({ href, icon: Icon, label }) => (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={label}
+      className="hover:text-primary transition-colors duration-300 cursor-pointer"
+    >
+      <Icon />
+    </a>
+  );
+
   return (
     <>
-      <footer className="bg-black text-gray-300">
+      <footer className="bg-black text-gray-300 border-t border-white/10">
         {/* Full width container */}
         <div className="w-full px-6 py-14">
-          {/* Top Section */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-36 max-w-7xl mx-auto">
+          
+          {/* Responsive Grid: 1 col (mobile), 2 cols (tablet), 4 cols (desktop) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 max-w-7xl mx-auto">
 
             {/* Brand Info */}
-            <div>
-              <h2 className="text-2xl  text-primary mb-4">
-                EasyPG Manager
-              </h2>
+            <div className="flex flex-col items-start">
+              <div 
+                className="flex items-center mb-4 cursor-pointer" 
+                onClick={() => navigate("/")}
+              >
+                <img src="/logos/logo1.png" className="h-8 w-auto mr-2" alt="logo" />
+                <span className="text-white text-lg font-medium">
+                  EasyPG <span className="text-primary">Manager</span>
+                </span>
+              </div>
 
               <p className="text-sm leading-7 mb-4">
                 Smart PG management platform to simplify bookings,
                 payments, tenant records, and daily operations.
               </p>
 
-              <p className="text-sm">
-                <span className="font-semibold text-white">Address:</span>
-                <br />
-                EasyPG Manager Pvt. Ltd.
-                <br />
-                Gujarat, India
-              </p>
+              <div className="text-sm space-y-1">
+                <p><span className="font-semibold text-white">Address:</span></p>
+                <p>EasyPG Manager Pvt. Ltd.</p>
+                <p>Gujarat, India</p>
+              </div>
 
               <div className="mt-6">
                 <CButton onClick={() => setOpenDemo(true)}>
@@ -59,78 +77,57 @@ const Footer = () => {
 
             {/* Quick Links */}
             <div>
-              <h3 className="text-white font-semibold mb-4">Quick Links</h3>
-              <ul className="space-y-2 text-sm">
-                <li
-                  onClick={() => navigate("/about")}
-                  className={linkClass("/about")}
-                >
-                  About Us
-                </li>
-
-                <li
-                  onClick={() => navigate("/contact")}
-                  className={linkClass("/contact")}
-                >
-                  Contact
-                </li>
-
-                <li
-                  onClick={() => navigate("/findMypg")}
-                  className={linkClass("/findMypg")}
-                >
-                  FindMyStay
-                </li>
+              <h3 className="text-white font-semibold mb-4 text-lg">Quick Links</h3>
+              <ul className="space-y-3 text-sm">
+                <li onClick={() => navigate("/about")} className={linkClass("/about")}>About Us</li>
+                <li onClick={() => navigate("/contact")} className={linkClass("/contact")}>Contact</li>
+                <li onClick={() => navigate("/findMypg")} className={linkClass("/findMypg")}>FindMyStay</li>
               </ul>
             </div>
 
-            {/* Legal */}
+            {/* Legal Links */}
             <div>
-              <h3 className="text-white font-semibold mb-4">Legal</h3>
+              <h3 className="text-white font-semibold mb-4 text-lg">Legal</h3>
               <ul className="space-y-3 text-sm">
-                <li
-                  onClick={() => navigate("/termsConditions")}
-                  className={linkClass("/termsConditions")}
-                >
+                <li onClick={() => navigate("/termsConditions")} className={linkClass("/termsConditions")}>
                   Terms & Conditions
                 </li>
-
-                <li
-                  onClick={() => navigate("/privacyPolicy")}
-                  className={linkClass("/privacyPolicy")}
-                >
+                <li onClick={() => navigate("/privacyPolicy")} className={linkClass("/privacyPolicy")}>
                   Privacy Policy
                 </li>
               </ul>
             </div>
 
-            {/* Social Icons */}
+            {/* Social Icons Section (Main for Mobile/Tablet) */}
             <div>
-              <h3 className="text-white font-semibold mb-4">Follow Us</h3>
-              <div className="flex gap-5 text-lg">
-                <FaTwitter className="hover:text-primary cursor-pointer transition" />
-                <FaLinkedin className="hover:text-primary cursor-pointer transition" />
-                <FaFacebook className="hover:text-primary cursor-pointer transition" />
-                <FaInstagram className="hover:text-primary cursor-pointer transition" />
-                <FaYoutube className="hover:text-primary cursor-pointer transition" />
+              <h3 className="text-white font-semibold mb-4 text-lg">Follow Us</h3>
+              <div className="flex gap-5 text-2xl">
+                <SocialLink href="#" icon={FaTwitter} label="Twitter" />
+                <SocialLink href="#" icon={FaLinkedin} label="LinkedIn" />
+                <SocialLink href="#" icon={FaFacebook} label="Facebook" />
+                <SocialLink href="#" icon={FaInstagram} label="Instagram" />
+                <SocialLink href="#" icon={FaYoutube} label="YouTube" />
               </div>
             </div>
 
           </div>
 
           {/* Divider */}
-          <div className="border-t border-gray-700 my-10 max-w-7xl mx-auto" />
+          <div className="border-t border-white/10 my-10 max-w-7xl mx-auto" />
 
           {/* Bottom Bar */}
-          <div className="flex flex-col md:flex-row items-center justify-between text-sm gap-4 max-w-7xl mx-auto">
-            <p>© 2025 EasyPG Manager. All rights reserved.</p>
+          <div className="flex flex-col md:flex-row items-center justify-between text-sm gap-6 max-w-7xl mx-auto">
+            <p className="text-center md:text-left text-gray-500">
+              © 2025 EasyPG Manager. All rights reserved.
+            </p>
 
-            <div className="flex gap-6 text-lg">
-              <FaTwitter className="hover:text-primary cursor-pointer" />
-              <FaLinkedin className="hover:text-primary cursor-pointer" />
-              <FaFacebook className="hover:text-primary cursor-pointer" />
-              <FaInstagram className="hover:text-primary cursor-pointer" />
-              <FaYoutube className="hover:text-primary cursor-pointer" />
+            {/* Bottom socials - hidden on mobile to avoid duplication */}
+            <div className="hidden md:flex gap-6 text-xl">
+              <SocialLink href="#" icon={FaTwitter} label="Twitter" />
+              <SocialLink href="#" icon={FaLinkedin} label="LinkedIn" />
+              <SocialLink href="#" icon={FaFacebook} label="Facebook" />
+              <SocialLink href="#" icon={FaInstagram} label="Instagram" />
+              <SocialLink href="#" icon={FaYoutube} label="YouTube" />
             </div>
           </div>
         </div>

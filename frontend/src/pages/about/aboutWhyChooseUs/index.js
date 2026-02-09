@@ -1,10 +1,9 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { aboutWhyChooseUs } from "../../../config/staticData";
-import { CheckCircle } from "lucide-react"; // Simple clean icons
+import { CheckCircle } from "lucide-react";
 
 const AboutWhyChooseUs = () => {
-  // Mock points - Move these to your staticData.js
   const points = [
     { title: "Smart Automation", desc: "Automate rent reminders and payment tracking effortlessly." },
     { title: "Secure Data", desc: "Your tenant and property data is protected with enterprise-level security." },
@@ -26,12 +25,14 @@ const AboutWhyChooseUs = () => {
   };
 
   return (
-    <section className="py-16 px-6 lg:px-20 snap-start bg-white">
+    /* Updated background to your theme default [cite: 2026-02-09] */
+    <section className="py-16 px-6 lg:px-20 snap-start bg-background">
       <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-12">
         
         {/* Left Side: Content */}
         <div className="lg:w-1/2">
-          <h2 className="text-4xl font-bold text-primary mb-6">
+          {/* Responsive Heading [cite: 2026-02-06] */}
+          <h2 className="text-h2-sm lg:text-h2 font-bold text-primary mb-6">
             Why Choose Us
           </h2>
 
@@ -40,7 +41,8 @@ const AboutWhyChooseUs = () => {
             whileInView={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6 }}
             viewport={{ once: true }}
-            className="text-text-secondary leading-relaxed text-lg mb-8"
+            /* Standardized text color and size [cite: 2026-02-09] */
+            className="text-textSecondary leading-relaxed text-body-sm lg:text-body mb-8"
           >
             {aboutWhyChooseUs}
           </motion.p>
@@ -57,12 +59,17 @@ const AboutWhyChooseUs = () => {
               <motion.div 
                 key={index} 
                 variants={itemVariants}
-                className="flex items-start gap-3 p-4 rounded-xl hover:bg-orange-50 transition-colors duration-300"
+                /* Swapped orange-50 for primarySoft [cite: 2026-02-09] */
+                className="flex items-start gap-3 p-4 rounded-xl hover:bg-primarySoft transition-colors duration-300"
               >
                 <CheckCircle className="text-primary mt-1 flex-shrink-0" size={24} />
                 <div>
-                  <h4 className="font-bold text-gray-800">{point.title}</h4>
-                  <p className="text-sm text-gray-500">{point.desc}</p>
+                  <h4 className="font-bold text-textPrimary text-body-sm lg:text-body">
+                    {point.title}
+                  </h4>
+                  <p className="text-sm text-textSecondary opacity-80">
+                    {point.desc}
+                  </p>
                 </div>
               </motion.div>
             ))}
@@ -78,14 +85,14 @@ const AboutWhyChooseUs = () => {
           className="lg:w-1/2 w-full"
         >
           <div className="relative">
-            {/* Main Image: Use a dashboard mockup or PG interior */}
             <img 
               src="/images/aboutImages/aboutIMG1.png" 
               alt="Management Dashboard" 
-              className="rounded-[2rem] shadow-2xl border-8 border-gray-50 w-full object-cover h-[400px]"
+              /* Swapped gray-50 for border color [cite: 2026-02-09] */
+              className="rounded-[2rem] shadow-2xl border-8 border-border w-full object-cover h-[300px] lg:h-[400px]"
             />
-            {/* Floating Decorative Card */}
-            <div className="absolute -bottom-6 -left-6 bg-primary text-white p-6 rounded-2xl shadow-xl hidden sm:block animate-bounce-slow">
+            {/* Floating Decorative Card using Primary colors [cite: 2026-02-09] */}
+            <div className="absolute -bottom-6 -left-6 bg-primary text-textLight p-6 rounded-2xl shadow-xl hidden sm:block animate-bounce-slow">
               <p className="text-3xl font-bold">100%</p>
               <p className="text-xs uppercase tracking-wider">Reliable Management</p>
             </div>

@@ -42,24 +42,26 @@ const CancelForm = () => {
   };
 
   return (
-    <section className="min-h-screen bg-gray-100 px-4 py-12">
+    /* Background set to your dark theme or light depending on UI mode [cite: 2026-02-09] */
+    <section className="min-h-screen bg-background px-4 py-12">
       <div className="max-w-2xl mx-auto">
-        {/* Warning Card */}
-        <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-8 rounded-r-xl shadow-sm flex items-start gap-3">
-          <FaExclamationTriangle className="text-red-500 mt-1 shrink-0" size={20} />
+        
+        {/* Warning Card - Updated with Primary brand colors for caution [cite: 2026-02-09] */}
+        <div className="bg-primarySoft border-l-4 border-primary p-4 mb-8 rounded-r-xl shadow-sm flex items-start gap-3">
+          <FaExclamationTriangle className="text-primary mt-1 shrink-0" size={20} />
           <div>
-            <h3 className="text-red-800 font-bold text-sm uppercase">Permanent Action</h3>
-            <p className="text-red-600 text-sm">
-              Advance payments are non-refundable. Your booking data will be <strong>permanently deleted</strong> immediately upon cancellation.
+            <h3 className="text-primaryDark font-bold text-sm uppercase">Permanent Action</h3>
+            <p className="text-textSecondary text-body-sm">
+              Advance payments are non-refundable. Your booking data will be <strong className="text-textPrimary">permanently deleted</strong> immediately upon cancellation.
             </p>
           </div>
         </div>
 
         {/* Main Form Card */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-          <div className="bg-gray-50 px-8 py-6 border-b border-gray-100">
-            <h2 className="text-2xl font-bold text-gray-800">Cancel Booking</h2>
-            <p className="text-gray-500 text-sm">Please verify your details to proceed</p>
+        <div className="bg-background rounded-2xl shadow-sm border border-border overflow-hidden">
+          <div className="bg-primarySoft/30 px-8 py-6 border-b border-border">
+            <h2 className="text-h2-sm lg:text-h2 font-bold text-textPrimary">Cancel Booking</h2>
+            <p className="text-textSecondary text-body-sm">Please verify your details to proceed</p>
           </div>
 
           <div className="p-8 space-y-6">
@@ -76,7 +78,9 @@ const CancelForm = () => {
             />
 
             <div className="space-y-1">
-              <label className="text-sm font-semibold text-gray-700">Reason for Cancellation</label>
+              <label className="text-body-sm lg:text-body font-semibold text-textSecondary">
+                Reason for Cancellation
+              </label>
               <CSelect
                 placeholder="Select a reason"
                 value={form.reason}
@@ -86,7 +90,7 @@ const CancelForm = () => {
                 }}
                 options={cancelReasons}
               />
-              {errors.reason && <p className="text-red-500 text-xs mt-1">{errors.reason}</p>}
+              {errors.reason && <p className="text-primaryDark text-xs mt-1">{errors.reason}</p>}
             </div>
 
             {form.reason === "Other" && (
@@ -104,15 +108,16 @@ const CancelForm = () => {
             )}
 
             <div className="pt-4">
+              {/* Primary Action Button [cite: 2026-02-09] */}
               <CButton
-                className="w-full  text-white  font-bold transition-all shadow-lg shadow-red-200"
+                className="w-full bg-primary hover:bg-primaryDark text-textLight font-bold transition-all shadow-lg shadow-primarySoft"
                 onClick={handleCancelClick}
               >
                 Confirm Cancellation
               </CButton>
               <button 
                 onClick={() => navigate(-1)}
-                className="w-full mt-4 text-sm font-medium text-gray-600 hover:text-gray-600 transition-colors"
+                className="w-full mt-4 text-body-sm font-medium text-textSecondary hover:text-textPrimary transition-colors"
               >
                 Nevermind, take me back
               </button>
@@ -125,8 +130,7 @@ const CancelForm = () => {
         <CancelConfirmModal
           onClose={() => setShowModal(false)}
           onConfirm={() => {
-            // Success logic here (e.g., API call)
-            // Redirecting to login as requested
+            // Success logic here
             navigate("/Home");
           }}
         />

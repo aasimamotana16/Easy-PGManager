@@ -1,19 +1,26 @@
-// src/components/cCheckbox/index.js
 import React from "react";
 
 const CCheckbox = ({ label, checked, onChange, className = "" }) => {
   return (
-    // Changed cursor-pointer to cursor-default here
-    <label className={`flex items-center gap-2 cursor-default ${className}`}>
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={onChange}
-        // Added cursor-pointer specifically to the checkbox input
-        className="h-3 w-4 rounded border border-border text-button-DEFAULT focus:ring-button-DEFAULT cursor-pointer"
-      />
-      {label && <span className="text-text-secondary text-sm">{label}</span>}
-    </label>
+    /* Changed from <label> to <div> to prevent the text from triggering the checkbox [cite: 2026-02-06] */
+    <div className={`flex items-center gap-3 group ${className}`}>
+      <div className="relative flex items-center">
+        <input
+          type="checkbox"
+          checked={checked}
+          onChange={onChange}
+          /* Checkbox remains cursor-pointer and themed [cite: 2026-02-09] */
+          className="peer h-5 w-5 rounded border-2 border-border text-primary focus:ring-primarySoft transition-all cursor-pointer accent-primary"
+        />
+      </div>
+      
+      {label && (
+        /* Label is now just a span, clicking it does nothing to the checkbox */
+        <span className="text-body-sm text-textSecondary select-none cursor-default">
+          {label}
+        </span>
+      )}
+    </div>
   );
 };
 

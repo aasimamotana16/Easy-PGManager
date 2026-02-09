@@ -6,34 +6,32 @@ const CButton = ({
   onClick,
   type = "button",
   variant = "contained", 
-  size = "md",           
   fullWidth = false,
   className = "",
-  disabled = false, // 1.
+  disabled = false,
 }) => {
-  // Variant styles
+  
+  // Updated variant styles to use your theme tokens [cite: 2026-02-09]
   const variantClasses = {
     contained:
-      "bg-primary text-white hover:bg-button-hover",
+      "bg-primary text-textLight hover:bg-primaryDark border border-transparent",
     outlined:
-      "border border-primary text-black hover:bg-primary",
+      "border-2 border-primary text-textPrimary hover:bg-primarySoft transition-colors",
     text:
-      "text-black hover:text-button-hover bg-transparent",
+      "text-textPrimary hover:text-primary bg-transparent shadow-none hover:shadow-none",
   };
 
-  const sizeClasses = {
-    sm: "px-[35px] py-[5px] text-sm",
-    md: "px-[35px] py-[5px] text-base",
-    lg: "px-[35px] py-[5px] text-lg",
-  };
-
+  // Base layout classes focusing on your responsive body font size [cite: 2026-02-06]
   const finalClasses = `
-    rounded-md font-semibold
-    shadow-soft hover:shadow-hover
-    transition-all duration-200
+    inline-flex items-center justify-center
+    rounded-md font-bold
+    text-body-sm lg:text-body
+    px-8 py-3 lg:px-10 lg:py-1
+    transition-all duration-300
+    disabled:opacity-50 disabled:cursor-not-allowed
+    active:scale-95
     ${variantClasses[variant] || variantClasses.contained}
-    ${sizeClasses[size] || sizeClasses.md}
-    ${fullWidth ? "w-full" : ""}
+    ${fullWidth ? "w-full" : "w-auto"}
     ${className}
   `;
 
@@ -43,7 +41,6 @@ const CButton = ({
       onClick={onClick}
       disabled={disabled}
       className={finalClasses}
-      
     >
       {text || children}
     </button>

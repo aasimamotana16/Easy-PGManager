@@ -5,7 +5,6 @@ import { getHomeFeatures } from "../../../api/api";
 import CFormCard from "../../../components/cFormCard";
 import CButton from "../../../components/cButton";
 import DemoBook from "../demoBook";
-// Adding unique icons
 import { 
   ShieldCheck, 
   Headphones, 
@@ -31,7 +30,7 @@ const stagger = {
 
 /* ================= ICON MAPPING ================= */
 const getFeatureIcon = (title) => {
-  const iconProps = { size: 32, strokeWidth: 1.5, className: "text-[#D97706]" };
+  const iconProps = { size: 32, strokeWidth: 1.5, className: "text-primary" };
   if (title.includes("Verified")) return <ShieldCheck {...iconProps} />;
   if (title.includes("Support")) return <Headphones {...iconProps} />;
   if (title.includes("Booking")) return <CalendarCheck {...iconProps} />;
@@ -60,7 +59,6 @@ const HomeFeatures = ({ stats, userRole = "guest" }) => {
     fetchFeatureData();
   }, []);
 
-  // OWNER LOGIC: Filter features based on role
   const filteredFeatures = featureList.filter(f => 
     userRole === "owner" ? true : f.role !== "owner"
   );
@@ -68,13 +66,16 @@ const HomeFeatures = ({ stats, userRole = "guest" }) => {
   return (
     <>
       {/* ================= FEATURES GRID SECTION ================= */}
-      <section className="bg-white px-6 py-12 lg:py-16 mt-6">
+      <section className="bg-background px-6 py-12 lg:py-16 mt-6">
         <div className="max-w-7xl mx-auto">
           <motion.div className="text-center mb-16" variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }}>
-            <h2 className="text-3xl md:text-4xl font-bold text-[#D97706] mb-4">
-              Everything You Need to <span className="text-black">Manage Your PG</span>
+            {/* Responsive Typography for Feature Header [cite: 2026-02-06] */}
+            <h2 className="text-h2-sm lg:text-h2 text-primary mb-4">
+              Everything You Need to <span className="text-textPrimary">Manage Your PG</span>
             </h2>
-            <p className="text-gray-500 text-lg">Powerful features designed to simplify daily operations.</p>
+            <p className="text-textSecondary text-body-sm lg:text-body">
+              Powerful features designed to simplify daily operations.
+            </p>
           </motion.div>
 
           <motion.div 
@@ -83,18 +84,20 @@ const HomeFeatures = ({ stats, userRole = "guest" }) => {
           >
             {filteredFeatures.map((feature, index) => (
               <motion.div key={index} variants={fadeUp} className="w-full">
-                <CFormCard className="h-full flex flex-col items-start p-10 rounded-[2.5rem] border border-primary shadow-sm hover:shadow-xl transition-all duration-300 group bg-white">
+                <CFormCard className="h-full flex flex-col items-start p-10 rounded-[2.5rem] border border-border shadow-sm hover:shadow-xl transition-all duration-300 group bg-background">
                   <div className="mb-6 transition-transform group-hover:scale-110">
                     {getFeatureIcon(feature.title)}
                   </div>
-                  <h3 className="text-xl font-bold text-gray-800 mb-3 group-hover:text-primary">
+                  {/* Card Title stays as standard xl on all screens but respects theme color */}
+                  <h3 className="text-xl font-bold text-textPrimary mb-3 group-hover:text-primary">
                     {feature.title}
                   </h3>
-                  <p className="text-gray-700 text-base leading-relaxed">
+                  {/* Card Body text is now responsive [cite: 2026-02-06] */}
+                  <p className="text-textSecondary text-body-sm lg:text-body leading-relaxed">
                     {feature.desc}
                   </p>
                   {feature.role === "owner" && (
-                    <span className="mt-4 px-3 py-1 bg-orange-100 text-primary text-[10px] font-bold rounded-full uppercase tracking-widest">
+                    <span className="mt-4 px-3 py-1 bg-primarySoft text-primary text-[10px] font-bold rounded-full uppercase tracking-widest">
                       Owner Feature
                     </span>
                   )}
@@ -106,24 +109,24 @@ const HomeFeatures = ({ stats, userRole = "guest" }) => {
       </section>
 
       {/* ================= GET STARTED / CTA SECTION ================= */}
-      <section className="bg-white px-6 py-12 lg:py-20">
+      <section className="bg-background px-6 py-12 lg:py-20">
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
           
-          {/* LEFT CONTENT */}
           <motion.div 
             className="text-center lg:text-left order-2 lg:order-1"
             variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }}
           >
-            <h2 className="text-3xl md:text-5xl font-bold text-black leading-tight">
-              <span className="text-[#D97706]">Get Started!</span> Onboard your university in just 10 minutes.
+            {/* CTA Header uses responsive h2-sm [cite: 2026-02-06] */}
+            <h2 className="text-h2-sm lg:text-h2 text-textPrimary leading-tight">
+              <span className="text-primary">Get Started!</span> Onboard your university in just 10 minutes.
             </h2>
-            <p className="mt-6 text-lg text-gray-500 max-w-xl mx-auto lg:mx-0">
+            <p className="mt-6 text-body-sm lg:text-body text-textSecondary max-w-xl mx-auto lg:mx-0">
               Manage PGs, bookings, payments, and tenants from a single dashboard designed for scale.
             </p>
 
             <div className="mt-8 flex justify-center lg:justify-start">
               <CButton 
-                className="w-full sm:w-auto px-10 h-14 text-lg font-bold bg-[#D97706]" 
+                className="w-full sm:w-auto px-10 h-14 text-lg font-bold bg-primary hover:bg-primaryDark text-textLight" 
                 text="Schedule a Free Demo" 
                 onClick={() => setOpenDemo(true)} 
               />
@@ -137,19 +140,19 @@ const HomeFeatures = ({ stats, userRole = "guest" }) => {
                 { label: "Worth of Rent Managed", value: `₹${(stats?.worthOfRentManaged || 125000).toLocaleString()}` }
               ].map((stat, i) => (
                 <div key={i} className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-lg bg-orange-50 text-[#D97706] flex items-center justify-center font-bold">
+                  <div className="w-12 h-12 rounded-lg bg-primarySoft text-primary flex items-center justify-center font-bold">
                     {i === 2 ? "₹" : stat.value}
                   </div>
                   <div className="text-left">
-                    <p className="text-lg font-bold text-gray-800">{stat.value}</p>
-                    <p className="text-xs text-gray-400 uppercase tracking-widest font-bold">{stat.label}</p>
+                    <p className="text-lg font-bold text-textPrimary">{stat.value}</p>
+                    <p className="text-xs text-textSecondary uppercase tracking-widest font-bold">{stat.label}</p>
                   </div>
                 </div>
               ))}
             </div>
           </motion.div>
 
-          {/* RIGHT IMAGE / ILLUSTRATION */}
+          {/* RIGHT IMAGE */}
           <motion.div 
             className="flex justify-center order-1 lg:order-2"
             initial={{ opacity: 0, scale: 0.9 }}
