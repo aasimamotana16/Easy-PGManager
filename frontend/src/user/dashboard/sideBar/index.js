@@ -9,6 +9,7 @@ import {
   FaWallet,
   FaHistory
 } from "react-icons/fa";
+import CButton from "../../../components/cButton";
 
 const UserSidebar = ({ isOpen, closeSidebar }) => {
   const navigate = useNavigate();
@@ -151,21 +152,20 @@ const UserSidebar = ({ isOpen, closeSidebar }) => {
           <div className="bg-white p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center transition-all animate-in zoom-in duration-200">
             {!isLogoutSuccessful ? (
               <>
-                <h3 className="text-2xl font-bold text-gray-800">Confirm Logout</h3>
-                <p className="text-gray-500 my-4 font-medium">Are you sure you want to end your session?</p>
+                <h3 className="text-h2-sm lg:text-h2 font-bold text-[#1C1C1C]">Confirm Logout</h3>
+                <p className="text-white my-4 font-medium">Are you sure you want to end your session?</p>
                 <div className="flex gap-3 mt-6">
-                  <button 
-                    onClick={() => setIsLogoutModalOpen(false)} 
-                    className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition-colors"
-                  >
-                    No
-                  </button>
-                  <button 
-                    onClick={handleLogout} 
-                    className="flex-1 py-3 bg-orange-500 text-white rounded-xl font-bold shadow-lg shadow-orange-200 hover:bg-orange-600 transition-all"
-                  >
-                    Yes
-                  </button>
+                  <CButton 
+                    text="No"
+                    variant="outlined"
+                    onClick={() => setIsLogoutModalOpen(false)}
+                    className="flex-1"
+                  />
+                  <CButton 
+                    text="Yes"
+                    onClick={handleLogout}
+                    className="flex-1"
+                  />
                 </div>
               </>
             ) : (
@@ -173,8 +173,8 @@ const UserSidebar = ({ isOpen, closeSidebar }) => {
                 <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-4xl mb-4 border-2 border-green-200">
                   ✓
                 </div>
-                <h3 className="text-2xl font-bold text-gray-800">Success!</h3>
-                <p className="text-gray-500 mt-2 font-medium">Logged out successfully.</p>
+                <h3 className="text-h2-sm lg:text-h2 font-bold text-[#1C1C1C]">Success!</h3>
+                <p className="text-white mt-2 font-medium">Logged out successfully.</p>
               </div>
             )}
           </div>

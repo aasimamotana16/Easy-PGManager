@@ -97,7 +97,6 @@ import { useNavigate } from "react-router-dom";
             <ListingCard {...hostel}>
               <CButton
                 text="View"
-                className="w-full mt-2"
                 onClick={(e) => {
                   e.stopPropagation(); // prevent double navigation
                   handleNavigate(hostel.id);

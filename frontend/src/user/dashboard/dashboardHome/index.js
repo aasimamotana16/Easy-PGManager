@@ -193,14 +193,14 @@ const DashboardHome = () => {
   const completionPercentage = dashboardData?.profileCompletion || user?.profileCompletion || 0;
 
   return (
-    <div className="p-3 sm:p-6 lg:p-8 bg-gray-50 min-h-screen space-y-5 sm:space-y-8">
+    <div className="p-3 sm:p-6 lg:p-8 bg-gray-200 min-h-screen space-y-5 sm:space-y-8">
       
       {/* HEADER */}
       <div className="px-1">
-        <h1 className="text-xl sm:text-3xl md:text-5xl lg:text-4xl font-bold text-gray-800">
+        <h1 className="text-xl sm:text-3xl md:text-5xl lg:text-4xl font-bold text-[#1C1C1C]">
           User Dashboard
         </h1>
-        <p className="text-xs sm:text-lg md:text-3xl lg:text-xl text-gray-500">
+        <p className="text-xs sm:text-lg md:text-3xl lg:text-xl text-[#4B4B4B]">
           Welcome back, <span className="text-primary font-medium">{user?.fullName}</span>
         </p>
       </div>
@@ -215,7 +215,7 @@ const DashboardHome = () => {
 
       {/* QUICK ACTIONS */}
       <div className="bg-white p-4 sm:p-6 rounded-md shadow-sm border border-primary space-y-4">
-        <h2 className="text-sm sm:text-lg md:text-4xl lg:text-xl font-bold text-gray-700 uppercase tracking-tight">
+        <h2 className="text-base sm:text-xl text-gray-700 uppercase font-semibold">
           Quick Actions
         </h2>
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4">
@@ -231,7 +231,7 @@ const DashboardHome = () => {
         {/* Recent Payments Table */}
         <div className="lg:col-span-2 bg-white p-4 sm:p-6 rounded-md shadow-sm border border-primary space-y-4">
           <div className="flex justify-between items-center">
-            <h2 className="text-sm sm:text-lg md:text-4xl lg:text-xl font-bold text-gray-700">
+            <h2 className="text-sm sm:text-lg md:text-4xl lg:text-xl font-semibold text-gray-700">
               Payment History
             </h2>
             <FaHistory className="text-gray-300 md:text-3xl" />
@@ -239,7 +239,7 @@ const DashboardHome = () => {
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
-                <tr className="border-b border-gray-100 text-[10px] sm:text-xs md:text-2xl lg:text-sm uppercase text-gray-400 font-bold">
+                <tr className="border-b border-gray-100 text-[10px] sm:text-xs md:text-2xl lg:text-sm uppercase text-gray-400 font-semibold">
                   <th className="py-3 px-2">Month</th>
                   <th className="py-3 px-2">Amount</th>
                   <th className="py-3 px-2">Status</th>
@@ -267,14 +267,14 @@ const DashboardHome = () => {
         {/* PROFILE COMPLETION & DUE INFO */}
         <div className="flex flex-col gap-3 sm:gap-4">
           <div className="bg-white p-6 rounded-md border border-primary flex flex-col items-center">
-            <p className="text-[10px] sm:text-xs md:text-2xl lg:text-sm font-bold text-gray-400 uppercase w-full mb-4">Profile Completion</p>
+            <p className="text-[10px] sm:text-xs md:text-2xl lg:text-sm font-medium text-gray-400 uppercase w-full mb-4">Profile Completion</p>
             <div className="relative w-24 h-24 sm:w-32 sm:h-32 md:w-48 md:h-48 lg:w-32 lg:h-32">
               <svg className="w-full h-full" viewBox="0 0 36 36">
                 <path className="text-gray-100" strokeWidth="3" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                 <path className="text-orange-500" strokeDasharray={`${completionPercentage}, 100`} strokeWidth="3" strokeLinecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
               </svg>
               <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-xl sm:text-2xl md:text-4xl lg:text-2xl font-black">{completionPercentage}%</span>
+                <span className="text-xl sm:text-2xl md:text-4xl lg:text-2xl">{completionPercentage}%</span>
               </div>
             </div>
           </div>
@@ -282,12 +282,12 @@ const DashboardHome = () => {
           <SummaryCard title="Next Due Date" value={nextPaymentDate} icon={<FaFileContract />} />
           
           <div className="bg-black text-white p-4 sm:p-6 rounded-md shadow-md">
-            <p className="text-[10px] sm:text-xs md:text-2xl lg:text-sm text-gray-300 uppercase font-bold mb-1">Rent Due</p>
-            <p className="text-2xl sm:text-3xl md:text-5xl lg:text-3xl font-black text-orange-500 mb-4">₹{monthlyRent.toLocaleString()}</p>
-            <CButton 
+            <p className="text-[10px] sm:text-xs md:text-2xl lg:text-sm text-white uppercase font-medium mb-1">Rent Due</p>
+            <p className="text-2xl sm:text-3xl md:text-5xl lg:text-3xl text-orange-500 mb-4">₹{monthlyRent.toLocaleString()}</p>
+            <CButton
               onClick={handleDirectPayment}
-              disabled={isProcessing}
-              className="bg-primary text-white w-full py-3 md:py-6 md:text-3xl lg:py-3 lg:text-base font-bold"
+              disabled={isProcessing || (monthlyRent <= 0)}
+              className="w-full"
             >
               {isProcessing ? "INITIALIZING..." : "PAY NOW"}
             </CButton>
@@ -302,7 +302,7 @@ const DashboardHome = () => {
 const ActionButton = ({ label, icon, onClick }) => (
   <CButton
     onClick={onClick}
-    className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-3 text-[11px] sm:text-sm md:text-3xl lg:text-lg py-4 px-2 w-full font-bold transition-all border border-gray-200 hover:border-orange-500"
+    className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-3 text-[11px] sm:text-sm md:text-3xl lg:text-lg py-4 px-2 w-full transition-all border-2 border-primary/30 hover:border-primary"
   >
     <span className="text-lg sm:text-xl md:text-4xl lg:text-xl">{icon}</span>
     {label}
@@ -312,11 +312,11 @@ const ActionButton = ({ label, icon, onClick }) => (
 const StatCard = ({ title, value, icon, live }) => (
   <div className="bg-black text-white p-3 sm:p-5 rounded-md flex flex-col justify-between shadow-md  relative overflow-hidden min-h-[100px] md:min-h-[180px] lg:min-h-[120px]">
     <div className="flex justify-between items-start">
-      <p className="text-[9px] sm:text-xs md:text-2xl lg:text-xs text-gray-300 uppercase font-bold tracking-wider">{title}</p>
+      <p className="text-[9px] sm:text-xs md:text-2xl lg:text-xs text-white uppercase tracking-wider">{title}</p>
       <div className="text-orange-500 text-base sm:text-2xl md:text-4xl lg:text-2xl">{icon}</div>
     </div>
     <div className="mt-2 flex flex-wrap items-center gap-2">
-      <p className="text-sm sm:text-xl md:text-3xl lg:text-lg font-black truncate max-w-full">{value}</p>
+      <p className="text-sm sm:text-xl md:text-3xl text-white lg:text-lg truncate max-w-full">{value}</p>
       {live && (
         <span className="flex items-center gap-1 bg-green-500/20 text-green-400 text-[7px] sm:text-[9px] md:text-lg lg:text-[10px] px-1.5 py-0.5 rounded-full border border-green-500/30">
           <span className="w-1 h-1 bg-green-400 rounded-full animate-ping"></span> LIVE
@@ -330,7 +330,7 @@ const SummaryCard = ({ title, value, icon }) => (
   <div className="bg-black text-white p-4 sm:p-6 rounded-md flex justify-between items-center shadow-md">
     <div className="space-y-1">
       <p className="text-[10px] sm:text-xs md:text-2xl lg:text-sm text-gray-300 uppercase font-bold tracking-widest">{title}</p>
-      <p className="text-lg sm:text-2xl md:text-4xl lg:text-xl font-black">{value}</p>
+      <p className="text-lg sm:text-2xl md:text-4xl text-white lg:text-xl font-black">{value}</p>
     </div>
     <div className="text-primary text-xl sm:text-3xl md:text-5xl lg:text-3xl">{icon}</div>
   </div>

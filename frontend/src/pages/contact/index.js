@@ -117,7 +117,7 @@ const Contact = () => {
         transition={{ duration: 0.5 }}
         className="text-center mt-10 mb-10 px-4"
       >
-        <h1 className="text-h2-sm sm:text-h2 font-bold text-textPrimary tracking-tight">
+        <h1 className="text-h1-sm lg:text-h1 font-bold text-textPrimary tracking-tight">
           Contact Us
         </h1>
         <p className="text-textSecondary mt-2 text-sm sm:text-base font-medium">
@@ -134,7 +134,7 @@ const Contact = () => {
           className="flex-1 flex justify-center"
         >
           <div className="w-full max-w-2xl md:max-w-3xl mx-auto">
-            <div className="bg-white border border-t-4 border-primary rounded-md p-10 shadow-lg hover:shadow-xl transition-shadow duration-300">
+            <div className="bg-white border  border-primary rounded-md p-10 shadow-lg hover:shadow-xl transition-shadow duration-300">
               <h2 className="text-center mb-6 text-3xl sm:text-4xl font-bold text-primary tracking-tight">
                 Get in Touch
               </h2>
@@ -161,7 +161,7 @@ const Contact = () => {
           transition={{ delay: 0.2 }} // Slight delay for staggered effect
           className="flex-1 flex flex-col gap-6"
         >
-          <div className="bg-white p-8 rounded-md shadow-lg border border-t-4 border-primary">
+          <div className="bg-white p-8 rounded-md shadow-lg border border-primary">
             <h3 className="text-2xl md:text-4xl lg:text-2xl font-bold text-textPrimary mb-4">
               How can We Help?
             </h3>

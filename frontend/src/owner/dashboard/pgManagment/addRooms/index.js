@@ -133,7 +133,7 @@ const AddRooms = () => {
       {/* FORM CARD */}
       <CFormCard className="max-w-5xl mx-auto bg-white border border-[#E5E0D9] shadow-sm rounded-xl overflow-hidden">
         <div className="p-6 border-b border-[#E5E0D9] bg-[#FEF3C7]/40">
-          <h2 className="text-xl font-bold text-[#1C1C1C] flex items-center gap-2">
+          <h2 className="text-h2-sm lg:text-h2 font-bold text-[#1C1C1C] flex items-center gap-2">
             <FaDoorOpen className="text-[#D97706]" /> Room Specifications
           </h2>
         </div>

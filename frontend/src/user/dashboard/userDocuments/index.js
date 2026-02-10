@@ -148,7 +148,7 @@ const Documents = () => {
   };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-10 space-y-12 bg-gray-50 min-h-screen">
+    <div className="p-4 sm:p-6 lg:p-10 space-y-12 bg-gray-200 min-h-screen">
       {/* 🟢 Loader overlay removed from here as it is handled by the Layout/Sidebar */}
       
       <input type="file" accept=".pdf,.jpg,.png,.jpeg" className="hidden" ref={fileInputRef} onChange={handleFileChange} />
@@ -213,14 +213,6 @@ const Documents = () => {
               </div>
             </div>
           ))}
-        </div>
-      </div>
-
-      {/* ENCRYPTION FOOTER */}
-      <div className="pt-8 flex justify-center">
-        <div className="flex items-center gap-2 bg-white px-6 py-2 rounded-md border border-gray-100 shadow-sm">
-          <div className="w-2 h-2 rounded-md bg-green-500 animate-pulse"></div>
-          <span className="text-[9px] font-black uppercase text-gray-400 tracking-widest">AES-256 Bit Encrypted Storage Active</span>
         </div>
       </div>
     </div>

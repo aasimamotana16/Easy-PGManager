@@ -135,20 +135,20 @@ const downloadTimelinePDF = async () => {
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-10 space-y-8 bg-gray-50 min-h-screen">
+    <div className="p-4 sm:p-6 lg:p-10 space-y-8 bg-gray-200 min-h-screen">
       {/* HEADER */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-2">
           <h1 className="text-xl md:text-3xl font-black uppercase tracking-tight flex items-center gap-3">
             <FaHistory className="text-orange-500" /> Stay Timeline
           </h1>
-          <p className="text-[10px] sm:text-xs md:text-lg text-gray-500 uppercase tracking-[0.2em]">
+          <p className="text-[10px] sm:text-xs md:text-lg text-[#4B4B4B] uppercase tracking-[0.2em]">
             Real-time activity & Transaction logs
           </p>
         </div>
 
         {/* MONTH FILTER */}
-        <div className="flex items-center gap-3 bg-white p-2 rounded-md border border-gray-100 shadow-sm">
+        <div className="flex items-center gap-3 bg-white p-2 rounded-md border-2 border-primary/30 shadow">
           <FaFilter className="text-gray-400 ml-2" />
           <select 
             className="bg-transparent font-bold text-xs md:text-sm uppercase outline-none cursor-pointer"
@@ -165,7 +165,7 @@ const downloadTimelinePDF = async () => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           
           {/* LEFT COLUMN: EVENTS */}
-          <div className="lg:col-span-5 bg-white rounded-md border border-gray-100 shadow-sm p-6 md:p-8">
+          <div className="lg:col-span-5 bg-white rounded-md border-2 border-primary shadow p-6 md:p-8">
             <div className="flex justify-between items-center mb-8">
               <h3 className="text-base md:text-3xl lg:text-2xl font-black uppercase tracking-tight text-gray-800">
                 Key Events
@@ -203,7 +203,7 @@ const downloadTimelinePDF = async () => {
           </div>
 
           {/* RIGHT COLUMN: GRAPH */}
-          <div className="lg:col-span-7 bg-white rounded-md border border-gray-100 shadow-sm p-6 md:p-8">
+          <div className="lg:col-span-7 bg-white rounded-md border-2 border-primary shadow p-6 md:p-8">
             <div className="mb-6">
               <h3 className="text-base md:text-3xl lg:text-2xl font-black uppercase tracking-tight text-gray-800">
                 Monthly Activity
@@ -260,16 +260,6 @@ const downloadTimelinePDF = async () => {
               </ResponsiveContainer>
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* SECURITY FOOTER */}
-      <div className="flex flex-col items-center">
-        <div className="flex items-center gap-2 bg-white px-6 py-3 rounded-md border border-gray-100 shadow-sm">
-           <div className="w-2 h-2 rounded-md bg-green-500 animate-pulse"></div>
-           <span className="text-[9px] md:text-xs font-black uppercase text-gray-400 tracking-widest">
-             Activity logs are tamper-proof & encrypted
-           </span>
         </div>
       </div>
     </div>

@@ -139,17 +139,23 @@ const SignUp = () => {
       };
 
       const response = await registerUser(payload);
-      if (response?.data?.token) {
-        localStorage.setItem("userToken", response.data.token);
-        localStorage.setItem("role", role);
-        localStorage.setItem("isLoggedIn", "true");
-        localStorage.setItem("userName", response.data.user?.fullName || name || "User");
-
-        Swal.fire({ icon: "success", title: "Registered", text: "Account created successfully", timer: 1400, showConfirmButton: false });
+      
+      // Changed Logic: Redirect to login instead of dashboard
+      if (response?.status === 201 || response?.data?.success || response?.data?.token) {
+        Swal.fire({ 
+          icon: "success", 
+          title: "Registered Successfully", 
+          text: "Please login to continue", 
+          timer: 2000, 
+          showConfirmButton: false 
+        });
+        
         setOtpStage(false);
+        
+        // Short delay to let the user see the success message
         setTimeout(() => {
-          window.location.href = role === "owner" ? "/owner" : "/user";
-        }, 600);
+          navigate("/login");
+        }, 1500);
       }
     } catch (err) {
       const msg = err.response?.data?.message || "Registration failed";
@@ -271,7 +277,7 @@ const SignUp = () => {
               {errors.terms && <p className="text-red-500 text-[10px] mt-1 font-medium">{errors.terms}</p>}
             </div>
 
-            <CButton fullWidth variant="contained" className="mt-2 py-2.5 text-sm font-bold" onClick={handleSendOtp} disabled={loading}>
+            <CButton fullWidth variant="contained" className="mt-2" onClick={handleSendOtp} disabled={loading}>
               {loading ? "Sending..." : "Send OTP"}
             </CButton>
           </div>
@@ -303,7 +309,7 @@ const SignUp = () => {
                 <CInput label="Enter OTP" value={enteredOtp} onChange={(e) => setEnteredOtp(e.target.value.slice(0, 6))} />
               </div>
 
-              <CButton fullWidth variant="contained" className="mt-5 py-2.5 text-sm font-bold" onClick={handleVerifyAndRegister} disabled={loading}>
+              <CButton fullWidth variant="contained" className="mt-5" onClick={handleVerifyAndRegister} disabled={loading}>
                 {loading ? "Please wait..." : "Verify & Register"}
               </CButton>
 

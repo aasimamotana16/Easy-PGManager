@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { FaTimes, FaUser, FaPhone, FaEnvelope, FaDoorOpen, FaCalendarAlt, FaBuilding } from "react-icons/fa";
 import CButton from "../../../../components/cButton";
 import CInput from "../../../../components/cInput";
+import CSelect from "../../../../components/cSelect";
 
 const PG_LIST = [
   { id: 1, name: "Green Villa" },
@@ -56,7 +57,7 @@ const AddTenant = ({ onClose, onSave }) => {
             <div className="bg-white/20 p-2 sm:p-2.5 rounded-lg text-textLight">
               <FaUser size={18} className="sm:size-5" />
             </div>
-            <h2 className="text-xl sm:text-2xl font-bold text-textLight uppercase tracking-tight">
+            <h2 className="text-h2-sm lg:text-h2 font-bold text-textLight uppercase tracking-tight">
                 Add Tenant
             </h2>
           </div>
@@ -107,25 +108,13 @@ const AddTenant = ({ onClose, onSave }) => {
 
             {/* PG SELECT */}
             <div className="flex flex-col">
-              <label className="text-[10px] sm:text-[11px] font-bold text-text-secondary uppercase tracking-widest mb-1.5 flex items-center gap-2">
-                <FaBuilding size={10} className="text-primary" /> Select PG
-              </label>
-              <div className="relative">
-                <select
-                    className={`w-full border rounded-xl p-3 text-sm outline-none bg-background-default transition-all appearance-none text-text-primary ${errors.pgId ? 'border-red-500' : 'border-border focus:border-primary'}`}
-                    value={form.pgId}
-                    onChange={(e) => setForm({ ...form, pgId: parseInt(e.target.value) })}
-                >
-                    <option value="">Choose Property</option>
-                    {PG_LIST.map((pg) => (
-                    <option key={pg.id} value={pg.id}>{pg.name}</option>
-                    ))}
-                </select>
-                {/* Custom arrow for select since appearance-none is used */}
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-text-secondary opacity-50">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                </div>
-              </div>
+              <CSelect
+                label="Select PG"
+                value={form.pgId}
+                onChange={(e) => setForm({ ...form, pgId: parseInt(e.target.value) })}
+                options={PG_LIST.map(pg => ({ value: pg.id, label: pg.name }))}
+                placeholder="Choose Property"
+              />
               {errors.pgId && <p className="text-[10px] text-red-500 mt-1">{errors.pgId}</p>}
             </div>
 
@@ -156,12 +145,13 @@ const AddTenant = ({ onClose, onSave }) => {
 
         {/* FOOTER - Sticky at bottom */}
         <div className="p-5 sm:p-6 bg-primarySoft/30 border-t border-border flex flex-col-reverse sm:flex-row justify-center gap-3 sm:gap-4 shrink-0">
-          <button
+          <CButton
             onClick={onClose}
-            className="w-full sm:flex-1 px-6 py-2.5 sm:py-3 bg-background-default border border-border rounded-xl font-bold text-text-secondary hover:bg-primarySoft transition-colors shadow-sm text-sm"
+            variant="outlined"
+            className="w-full sm:flex-1"
           >
             Cancel
-          </button>
+          </CButton>
           <CButton
             onClick={handleSubmit}
             className="w-full sm:flex-[2] py-2.5 sm:py-3 !font-bold shadow-lg shadow-primary/20 text-sm sm:text-base"

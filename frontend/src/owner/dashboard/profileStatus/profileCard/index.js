@@ -74,7 +74,7 @@ const ProfileCard = ({ profileData, setProfileData }) => {
               className="border px-2 py-1 rounded w-full"
             />
           ) : (
-            <h2 className="text-2xl font-bold">{profileData.name}</h2>
+            <h2 className="text-h2-sm lg:text-h2 font-bold">{profileData.name}</h2>
           )}
           <FaCog 
             className="text-gray-500 text-xl cursor-pointer" 

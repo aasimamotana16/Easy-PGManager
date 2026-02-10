@@ -123,9 +123,9 @@ const Support = () => {
 
 // Fixed Info Component
 const Info = ({ label, value }) => (
-  <div className="bg-gray-50 rounded-md p-4 text-center border border-gray-100">
-    <p className="text-gray-500 text-xs uppercase tracking-wider mb-1">{label}</p>
-    <p className="text-gray-800 font-semibold">{value}</p>
+  <div className="bg-gray-50 rounded-md p-4 text-center border-2 border-primary">
+    <p className="text-[#4B4B4B] text-xs uppercase tracking-wider mb-1">{label}</p>
+    <p className="text-[#1C1C1C] font-semibold">{value}</p>
   </div>
 );
 

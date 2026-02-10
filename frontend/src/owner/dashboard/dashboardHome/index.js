@@ -10,6 +10,7 @@ import {
   FaEye,
   FaSignal,
   FaChartLine,
+  FaStar, // Added for feedback
 } from "react-icons/fa";
 import { Line } from "react-chartjs-2";
 import {
@@ -23,7 +24,7 @@ import {
   Filler,
 } from "chart.js";
 import CButton from "../../../components/cButton";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion"; // Added AnimatePresence
 
 ChartJS.register(
   CategoryScale,
@@ -38,6 +39,12 @@ ChartJS.register(
 const DashboardHome = () => {
   const navigate = useNavigate();
   const [user] = useState({ fullName: "Owner" });
+  
+  // Feedback States
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [rating, setRating] = useState(0);
+  const [hover, setHover] = useState(0);
+  const [reviewText, setReviewText] = useState("");
 
   const stats = {
     totalPGs: 5,
@@ -45,6 +52,13 @@ const DashboardHome = () => {
     liveListings: 18,
     totalEarnings: 125000,
     totalBookings: 50,
+  };
+
+  const handleReviewSubmit = () => {
+    // Logic to send review to backend
+    console.log({ rating, reviewText });
+    setShowReviewModal(false);
+    // You could show a small success toast here
   };
 
   const earningsData = {
@@ -103,7 +117,7 @@ const DashboardHome = () => {
       </div>
 
       {/* QUICK ACTIONS */}
-      <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border border-primary space-y-4">
+      <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-primary space-y-4">
         <h2 className="text-base sm:text-xl text-textPrimary uppercase font-semibold">
           Quick Actions
         </h2>
@@ -117,7 +131,7 @@ const DashboardHome = () => {
 
       {/* CHART & SUMMARY */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6">
-        <div className="lg:col-span-2 bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border border-primary space-y-4">
+        <div className="lg:col-span-2 bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-primary space-y-4">
           <h2 className="text-base sm:text-lg md:text-2xl text-textPrimary font-semibold">
             Earnings Overview
           </h2>
@@ -126,11 +140,91 @@ const DashboardHome = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3 sm:gap-4">
+        {/* SUMMARY & FEEDBACK COLUMN */}
+        <div className="flex flex-col gap-3 sm:gap-4">
           <SummaryCard title="Total Bookings" value={stats.totalBookings} icon={<FaChartLine />} />
           <SummaryCard title="Total Revenue" value={`₹${stats.totalEarnings.toLocaleString()}`} icon={<FaMoneyBillWave />} />
+          
+          {/* FEEDBACK PROMPT CARD */}
+          <motion.div 
+            whileHover={{ y: -5 }}
+            className="bg-primarySoft border border-primary p-5 rounded-md shadow-md space-y-3"
+          >
+            <div className="flex items-center gap-3">
+              <div className="bg-white p-2 rounded-full text-primary shadow-sm">
+                <FaStar size={18} />
+              </div>
+              <p className="font-bold text-textPrimary text-sm sm:text-base">Enjoying EasyPG?</p>
+            </div>
+            <p className="text-xs text-textSecondary leading-tight">
+              Your feedback helps us make PG management better for everyone.
+            </p>
+            <button 
+              onClick={() => setShowReviewModal(true)}
+              className="w-full bg-primary text-white py-2 rounded-md text-xs font-bold hover:bg-primaryDark transition-colors shadow-sm"
+            >
+              Write a Review
+            </button>
+          </motion.div>
         </div>
       </div>
+
+      {/* REVIEW MODAL */}
+      <AnimatePresence>
+        {showReviewModal && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[999] p-4">
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-xl p-6 w-full max-w-md border border-primary shadow-2xl"
+            >
+              <div className="text-center space-y-4">
+                <h2 className="text-xl font-bold text-textPrimary">Share Your Experience</h2>
+                <p className="text-sm text-textSecondary">How would you rate our platform?</p>
+                
+                <div className="flex justify-center gap-2 py-2">
+                  {[...Array(5)].map((_, i) => {
+                    const val = i + 1;
+                    return (
+                      <FaStar
+                        key={i}
+                        size={32}
+                        className={`cursor-pointer transition-colors ${val <= (hover || rating) ? "text-primary" : "text-gray-300"}`}
+                        onClick={() => setRating(val)}
+                        onMouseEnter={() => setHover(val)}
+                        onMouseLeave={() => setHover(0)}
+                      />
+                    );
+                  })}
+                </div>
+
+                <textarea
+                  className="w-full border border-border rounded-lg p-3 text-sm focus:ring-2 focus:ring-primary outline-none"
+                  placeholder="Tell us what you like or what we can improve..."
+                  rows={4}
+                  value={reviewText}
+                  onChange={(e) => setReviewText(e.target.value)}
+                />
+
+                <div className="flex gap-3 pt-2">
+                  <button 
+                    onClick={() => setShowReviewModal(false)}
+                    className="flex-1 py-2 text-sm font-bold text-textSecondary hover:bg-gray-100 rounded-md transition-colors"
+                  >
+                    Later
+                  </button>
+                  <CButton 
+                    className="flex-1"
+                    onClick={handleReviewSubmit}
+                    text="Submit"
+                  />
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 };
@@ -148,7 +242,7 @@ const ActionButton = ({ label, icon, onClick }) => (
   </motion.div>
 );
 
-/* STAT CARD - Updated with Background Dark, Text Light, and Normal Weight */
+/* STAT CARD */
 const StatCard = ({ title, value, icon, live, index }) => (
   <motion.div 
     initial={{ opacity: 0, y: 10 }}
@@ -166,7 +260,7 @@ const StatCard = ({ title, value, icon, live, index }) => (
     </div>
     
     <div className="mt-2 flex items-center gap-2">
-      <p className="text-xl text-textLight sm:text-3xl "> {/* Removed bold */}
+      <p className="text-xl text-textLight sm:text-3xl ">
         {value}
       </p>
       {live && (
@@ -179,14 +273,14 @@ const StatCard = ({ title, value, icon, live, index }) => (
   </motion.div>
 );
 
-/* SUMMARY CARD - Updated with Background Dark and Text Light */
+/* SUMMARY CARD */
 const SummaryCard = ({ title, value, icon }) => (
   <div className="bg-backgroundDark text-textLight p-5 sm:p-8 rounded-md flex justify-between items-center shadow-lg border-l-4 border-primary">
     <div className="space-y-1">
       <p className="text-base sm:text-base text-textLight uppercase tracking-widest font-medium">
         {title}
       </p>
-      <p className="text-xl sm:text-3xl text-textLight font-normal"> {/* Removed bold */}
+      <p className="text-xl sm:text-3xl text-textLight font-normal">
         {value}
       </p>
     </div>

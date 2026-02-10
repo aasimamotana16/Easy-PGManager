@@ -17,8 +17,8 @@ const HomeBanner = () => {
 
   // AUTH LOGIC
   const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
-  const role = localStorage.getItem("role"); 
-  const isProfileComplete = false; 
+  const role = localStorage.getItem("role");
+  const isProfileComplete = localStorage.getItem("isProfileComplete") === "true"; 
 
   return (
     <section className="bg-background overflow-hidden pt-6 sm:pt-0">
@@ -67,7 +67,6 @@ const HomeBanner = () => {
               {!isLoggedIn ? (
                 <div className="w-full sm:w-auto">
                   <CButton
-                    className="font-bold bg-primary hover:bg-primaryDark transition-colors shadow-lg text-textLight"
                     text="Get Started"
                     onClick={() => navigate("/signup")}
                   />
@@ -75,7 +74,6 @@ const HomeBanner = () => {
               ) : (
                 <div className="w-full sm:w-auto">
                   <CButton
-                    className="w-full px-10 h-14 text-lg font-bold bg-primary hover:bg-primaryDark text-textLight"
                     text="Go to Dashboard"
                     onClick={() => navigate(role === "owner" ? "/owner/dashboard" : "/user/dashboard")}
                   />
@@ -98,7 +96,7 @@ const HomeBanner = () => {
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="mt-8 mx-auto lg:mx-0 max-w-xl bg-orange-50 border border-primary/20 rounded-3xl p-6 flex flex-col sm:flex-row justify-between items-center gap-4 shadow-sm"
+                className="mt-8 mx-auto lg:mx-0 max-w-xl bg-orange-50 border border-primary/20 rounded-md p-6 flex flex-col sm:flex-row justify-between items-center gap-4 shadow-sm"
               >
                 <div className="text-center sm:text-left">
                   <p className="text-sm font-black text-primary uppercase tracking-widest mb-1">
@@ -109,14 +107,13 @@ const HomeBanner = () => {
                   </p>
                 </div>
 
-                <button
-                  className="w-full sm:w-auto bg-primary text-textLight px-6 py-3 rounded-2xl text-sm font-bold hover:bg-primaryDark transition-all active:scale-95"
+                <CButton
+                  text="Complete Now"
+                  className="whitespace-nowrap"
                   onClick={() =>
                     navigate(role === "owner" ? "/owner/dashboard/profileStatus" : "/user/dashboard/userProfile")
                   }
-                >
-                  Complete Now
-                </button>
+                />
               </motion.div>
             )}
           </div>

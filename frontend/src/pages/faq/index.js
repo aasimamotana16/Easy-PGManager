@@ -36,7 +36,7 @@ export default function FAQ() {
             animate={{ opacity: 1, y: 0 }}
             className="text-center mb-10 md:mb-16 px-4"
           >
-            <h1 className="text-3xl sm:text-5xl font-bold text-textPrimary tracking-tight mb-4">
+            <h1 className="text-h1-sm lg:text-h1 font-bold text-textPrimary tracking-tight mb-4">
               Frequently Asked Questions
             </h1>
             <p className="text-textSecondary text-sm md:text-xl max-w-2xl mx-auto">
@@ -92,15 +92,15 @@ export default function FAQ() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.05 }}
                         key={faq.id}
-                        className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden"
+                        className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden cursor-pointer transition-all duration-300"
                       >
-                        <div
+                        <motion.div
                           onClick={() =>
                             setActiveQuestionId(
                               activeQuestionId === faq.id ? null : faq.id
                             )
                           }
-                          className="flex items-center justify-between p-5 md:p-6 cursor-pointer hover:bg-primarySoft/30 transition-colors"
+                          className="flex items-center justify-between p-5 md:p-6 hover:bg-primarySoft/30 transition-colors"
                         >
                           <h3 className={`text-base md:text-lg font-bold pr-4 transition-colors ${
                             activeQuestionId === faq.id ? "text-primaryDark" : "text-textPrimary"
@@ -108,12 +108,17 @@ export default function FAQ() {
                             {faq.question}
                           </h3>
 
-                          <FaChevronDown
-                            className={`text-textSecondary flex-shrink-0 transition-transform duration-300 ${
-                              activeQuestionId === faq.id ? "rotate-180 text-primary" : ""
-                            }`}
-                          />
-                        </div>
+                          <motion.div
+                            animate={{ rotate: activeQuestionId === faq.id ? 180 : 0 }}
+                            transition={{ duration: 0.3, type: "spring", stiffness: 200 }}
+                          >
+                            <FaChevronDown
+                              className={`text-textSecondary flex-shrink-0 transition-colors ${
+                                activeQuestionId === faq.id ? "text-primary" : ""
+                              }`}
+                            />
+                          </motion.div>
+                        </motion.div>
 
                         {/* Accordion Content Animation */}
                         <AnimatePresence>
@@ -122,13 +127,18 @@ export default function FAQ() {
                               initial={{ height: 0, opacity: 0 }}
                               animate={{ height: "auto", opacity: 1 }}
                               exit={{ height: 0, opacity: 0 }}
-                              transition={{ duration: 0.3, ease: "easeInOut" }}
+                              transition={{ duration: 0.4, ease: "easeInOut" }}
                             >
-                              <div className="p-5 md:p-6 pt-0 border-t border-border/50">
+                              <motion.div 
+                                initial={{ y: -10, opacity: 0 }}
+                                animate={{ y: 0, opacity: 1 }}
+                                transition={{ delay: 0.1, duration: 0.3 }}
+                                className="p-5 md:p-6 pt-0 border-t border-border/50"
+                              >
                                 <p className="text-textSecondary text-sm md:text-base leading-relaxed">
                                   {faq.answer}
                                 </p>
-                              </div>
+                              </motion.div>
                             </motion.div>
                           )}
                         </AnimatePresence>

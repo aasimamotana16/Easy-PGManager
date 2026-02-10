@@ -47,7 +47,7 @@ const SubmitApproval = () => {
 
   return (
     <div className="max-w-4xl mx-auto my-10 px-3">
-      <h2 className="text-3xl font-bold text-center text-amber-600 mb-8">
+      <h2 className="text-h2-sm lg:text-h2 font-bold text-center text-amber-600 mb-8">
         Submit Property for Approval
       </h2>
 

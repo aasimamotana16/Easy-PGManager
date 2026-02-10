@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useState } from "react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import CButton from "../../../components/cButton";
 import CInput from "../../../components/cInput";
 import CSelect from "../../../components/cSelect"; 
@@ -15,110 +16,121 @@ export default function Filters({
   toggleAmenity,
   applyFilters,
 }) {
-  
-  // Strict Laptop/Mouse scroll fix:
-  // This prevents the value from changing but keeps the cursor inside the box.
+  const [isAmenityOpen, setIsAmenityOpen] = useState(false);
+
   const handleNumberScroll = (e) => {
     e.preventDefault(); 
   };
 
   return (
-    <div className="bg-white p-6 sm:p-10 rounded-2xl shadow-xl space-y-8 sm:space-y-12 mb-12 sm:mb-24 border border-primary">
+    /* h-[calc(100vh-250px)] ensures the sidebar height fits the screen viewport minus headers */
+    <div className="flex flex-col h-[calc(100vh-250px)]">
+      
+      {/* SCROLLABLE AREA */}
+      <div className="flex-1 overflow-y-auto pr-2 space-y-6 custom-scrollbar">
+        {/* 1. Basic Selections */}
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-sm font-bold text-[#1C1C1C]">Looking For</label>
+            <CSelect
+              value={filters.lookingFor}
+              options={genderOptions}
+              onChange={(e) => handleFilterChange("lookingFor", e.target.value)}
+            />
+          </div>
 
-      {/* Looking For & Occupancy */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-10">
-        <div className="space-y-2">
-          <label className="text-sm font-semibold text-gray-700">Looking For</label>
-          <CSelect
-            value={filters.lookingFor}
-            options={genderOptions}
-            onChange={(e) => handleFilterChange("lookingFor", e.target.value)}
+          <div className="space-y-1.5">
+            <label className="text-sm font-bold text-[#1C1C1C]">Occupancy</label>
+            <CSelect
+              value={filters.occupancy}
+              options={occupancyOptions}
+              onChange={(e) => handleFilterChange("occupancy", e.target.value)}
+            />
+          </div>
+        </div>
+
+        {/* 2. Budget Section */}
+        <div className="grid grid-cols-2 gap-4">
+          <CInput
+            type="number"
+            label="Min Budget"
+            placeholder="0"
+            value={filters.minPrice}
+            onWheel={handleNumberScroll} 
+            onChange={(e) => handleFilterChange("minPrice", e.target.value)}
+          />
+          <CInput
+            type="number"
+            label="Max Budget"
+            placeholder="No Max"
+            value={filters.maxPrice}
+            onWheel={handleNumberScroll}
+            onChange={(e) => handleFilterChange("maxPrice", e.target.value)}
           />
         </div>
 
-        <div className="space-y-2">
-          <label className="text-sm font-semibold text-gray-700">Occupancy</label>
+        {/* 3. Rent Cycle */}
+        <div className="space-y-1.5">
+          <label className="text-sm font-bold text-[#1C1C1C]">Rent Cycle</label>
           <CSelect
-            value={filters.occupancy}
-            options={occupancyOptions}
-            onChange={(e) => handleFilterChange("occupancy", e.target.value)}
+            value={filters.rentCycle}
+            options={rentCycleOptions}
+            onChange={(e) => handleFilterChange("rentCycle", e.target.value)}
           />
         </div>
-      </div>
 
-      {/* Budget Section */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-10">
-        <CInput
-          type="number"
-          label="Min Budget (₹)"
-          placeholder="0"
-          value={filters.minPrice}
-          // We use onWheel with preventDefault to stop scroll-to-change
-          onWheel={handleNumberScroll} 
-          onChange={(e) => handleFilterChange("minPrice", e.target.value)}
-        />
+        {/* 4. Amenities Dropdown */}
+        <div className="border border-[#E5E0D9] rounded-xl overflow-hidden">
+          <button 
+            type="button"
+            onClick={() => setIsAmenityOpen(!isAmenityOpen)}
+            className="w-full flex items-center justify-between p-3 bg-gray-50"
+          >
+            <span className="text-sm font-bold text-[#1C1C1C]">Select Amenities</span>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] bg-[#D97706] text-white px-2 py-0.5 rounded-full">
+                {filters.amenities.length}
+              </span>
+              {isAmenityOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </div>
+          </button>
 
-        <CInput
-          type="number"
-          label="Max Budget (₹)"
-          placeholder="No Max"
-          value={filters.maxPrice}
-          onWheel={handleNumberScroll}
-          onChange={(e) => handleFilterChange("maxPrice", e.target.value)}
-        />
-      </div>
-
-      {/* Rent Cycle */}
-      <div className="space-y-2">
-        <label className="text-sm font-semibold text-gray-700">Rent Cycle</label>
-        <CSelect
-          value={filters.rentCycle}
-          options={rentCycleOptions}
-          onChange={(e) => handleFilterChange("rentCycle", e.target.value)}
-        />
-      </div>
-
-      {/* Amenities */}
-      <div>
-        <label className="block text-base sm:text-lg font-semibold mb-5">
-          Amenities
-        </label>
-
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
-          {amenitiesList.map((amenity) => {
-            const selected = filters.amenities.includes(amenity);
-            return (
-              <CButton
-                key={amenity}
-                variant={selected ? "contained" : "outlined"}
-                onClick={() => toggleAmenity(amenity)}
-                className="text-xs sm:text-sm py-2"
-              >
-                {amenity}
-              </CButton>
-            );
-          })}
+          {isAmenityOpen && (
+            <div className="p-3 bg-white border-t border-[#E5E0D9]">
+              <div className="grid grid-cols-1 gap-2">
+                {amenitiesList.map((amenity) => {
+                  const selected = filters.amenities.includes(amenity);
+                  return (
+                    <button
+                      key={amenity}
+                      type="button"
+                      onClick={() => toggleAmenity(amenity)}
+                      className={`text-left px-3 py-2 rounded-lg text-xs font-semibold border transition-all
+                        ${selected 
+                          ? "bg-[#FEF3C7] text-[#D97706] border-[#D97706]" 
+                          : "bg-white text-[#4B4B4B] border-[#E5E0D9]"
+                        }`}
+                    >
+                      {amenity}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Submit & Reset */}
-      <div className="flex flex-col sm:flex-row items-center gap-4 pt-4 border-t border-gray-50">
+      {/* FIXED FOOTER AREA (Always Visible) */}
+      <div className="pt-4 mt-2 border-t border-[#E5E0D9] bg-white">
         <CButton
           variant="contained"
           onClick={applyFilters}
-          className="w-full sm:w-auto sm:min-w-[200px] py-3 font-bold"
+          className="w-full py-3 shadow-md font-bold"
         >
           Apply Filters
         </CButton>
-
-        <CButton
-          variant="outlined"
-          onClick={() => handleFilterChange("reset")}
-          className="w-full sm:w-auto sm:min-w-[200px] py-3 font-bold"
-        >
-          Reset Filters
-        </CButton>
-      </div>
+              </div>
     </div>
   );
 }

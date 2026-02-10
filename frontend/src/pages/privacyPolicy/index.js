@@ -24,12 +24,12 @@ const PrivacyPolicy = () => {
       <Navbar />
 
       <main className="flex-1 px-4 sm:px-6 lg:px-12 py-10">
-        <div className="max-w-4xl mx-auto bg-card border border-border rounded-xl shadow-card p-6 sm:p-8">
           
-          <h1 className="text-2xl sm:text-3xl font-bold text-primary mb-6 text-center">
+          <h1 className="text-h1-sm lg:text-h1 font-bold text-black mb-6 text-center">
             {privacyPolicyData.title}
           </h1>
-
+<div className="max-w-4xl mx-auto bg-card border border-primary rounded-md shadow-card p-6 sm:p-8">
+          
           <p className="mb-6 text-sm sm:text-base leading-relaxed">
             {privacyPolicyData.intro}
           </p>

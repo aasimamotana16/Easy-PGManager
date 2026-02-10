@@ -141,12 +141,12 @@ const Payments = () => {
   if (loading) return <div className="p-8 text-center">Loading dashboard...</div>;
 
   return (
-    <div className="p-3 sm:p-6 lg:p-8 bg-gray-50 min-h-screen space-y-6">
+    <div className="p-3 sm:p-6 lg:p-8 bg-gray-200 min-h-screen space-y-6">
       <header className="px-1">
-        <h1 className="text-xl sm:text-3xl md:text-5xl lg:text-4xl font-bold text-gray-800">
+        <h1 className="text-xl sm:text-3xl md:text-5xl lg:text-4xl font-bold text-[#1C1C1C]">
           Payments & Invoices
         </h1>
-        <p className="text-gray-500">Track your rent cycle and receipts.</p>
+        <p className="text-[#4B4B4B]">Track your rent cycle and receipts.</p>
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -155,19 +155,19 @@ const Payments = () => {
           <div className="flex justify-between items-start">
             <div>
               <p className="text-orange-500 font-bold uppercase text-xs">Current Due</p>
-              <p className="text-3xl font-black mt-1">₹{paymentData.nextPayment?.amount || "0"}</p>
+              <p className="text-3xl text-white font-black mt-1">₹{paymentData.nextPayment?.amount || "0"}</p>
             </div>
             <FaWallet className="text-orange-500 text-2xl" />
           </div>
           <div className="mt-4 flex justify-between items-center">
             <div>
-              <p className="text-gray-300 text-sm">Rent for {paymentData.nextPayment?.month}</p>
-              <p className="text-gray-400 text-xs">DUE: {paymentData.nextPayment?.dueDate}</p>
+              <p className="text-white text-sm">Rent for {paymentData.nextPayment?.month}</p>
+              <p className="text-white text-xs">DUE: {paymentData.nextPayment?.dueDate}</p>
             </div>
             <CButton
-              className="bg-primary text-white font-bold py-2 px-6 shadow-lg"
               onClick={handleDirectPayment}
-              disabled={isProcessing}
+              disabled={isProcessing || !(paymentData.nextPayment?.amount > 0)}
+              className="flex-shrink-0 "
             >
               {isProcessing ? "PROCESSING..." : "PAY NOW"}
             </CButton>
@@ -183,7 +183,7 @@ const Payments = () => {
       </div>
 
       {/* History Table */}
-      <div className="bg-white p-6 rounded-md shadow-sm border">
+      <div className="bg-white p-6 rounded-md shadow border-2 border-primary">
         <h2 className="text-lg font-bold text-gray-700 flex items-center gap-2 mb-6">
           <FaHistory className="text-orange-500" /> Payment History
         </h2>

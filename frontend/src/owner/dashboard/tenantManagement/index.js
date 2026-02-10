@@ -3,6 +3,7 @@ import { FaEdit, FaPlus, FaSearch, FaFilter, FaUsers } from "react-icons/fa";
 import axios from "axios";
 import AddTenant from "./addTenant";
 import CButton from "../../../components/cButton";
+import CSelect from "../../../components/cSelect";
 import Swal from "sweetalert2";
 
 const PG_LIST = [
@@ -97,12 +98,13 @@ const Tenants = () => {
           <h1 className="text-4xl font-bold text-[#1C1C1C]">Tenants</h1>
           <p className="text-[#4B4B4B] mt-2">Manage all residents across your properties</p>
         </div>
-        <button 
+        <CButton 
+          text="Add New Tenant"
           onClick={() => setShowAddTenant(true)}
-          className="bg-primary hover:bg-primaryDark text-white px-6 py-3 rounded-lg font-bold flex items-center gap-2 transition-all shadow-md"
+          className="flex items-center gap-2"
         >
           <FaPlus /> Add New Tenant
-        </button>
+        </CButton>
       </div>
 
       {/* SEARCH AND FILTER BAR - Matches Booking Style */}
@@ -117,23 +119,18 @@ const Tenants = () => {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <div className="relative min-w-[220px]">
-          <FaFilter className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-          <select 
-            className="w-full pl-12 pr-4 py-3 rounded-lg border border-[#E5E0D9] focus:outline-none bg-white text-sm appearance-none cursor-pointer"
-            value={selectedPG}
-            onChange={(e) => setSelectedPG(e.target.value)}
-          >
-            <option value="all">All Properties</option>
-            {PG_LIST.map((pg) => <option key={pg.id} value={pg.id}>{pg.name}</option>)}
-          </select>
-        </div>
+        <CSelect 
+          value={selectedPG}
+          onChange={(e) => setSelectedPG(e.target.value)}
+          options={PG_LIST.map(pg => ({ value: pg.id, label: pg.name }))}
+          placeholder="All Properties"
+        />
       </div>
 
       {/* TABLE CONTAINER - Matches Booking Style */}
       <div className="bg-white rounded-xl shadow-sm border border-[#E5E0D9] overflow-hidden">
         <div className="p-6 border-b border-[#E5E0D9]">
-           <h2 className="text-xl font-bold text-[#1C1C1C]">Current Residents</h2>
+           <h2 className="text-h2-sm lg:text-h2 font-bold text-[#1C1C1C]">Current Residents</h2>
         </div>
 
         <div className="overflow-x-auto">

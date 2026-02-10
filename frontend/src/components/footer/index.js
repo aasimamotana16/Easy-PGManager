@@ -38,7 +38,7 @@ const Footer = () => {
 
   return (
     <>
-      <footer className="bg-black text-gray-300 border-t border-white/10">
+      <footer className="bg-black text-textLight border-t border-white/10">
         {/* Full width container */}
         <div className="w-full px-6 py-14">
           
@@ -57,15 +57,15 @@ const Footer = () => {
                 </span>
               </div>
 
-              <p className="text-sm leading-7 mb-4">
+              <p className="text-sm leading-7 mb-4 text-white">
                 Smart PG management platform to simplify bookings,
                 payments, tenant records, and daily operations.
               </p>
 
-              <div className="text-sm space-y-1">
+              <div className="text-sm  space-y-1">
                 <p><span className="font-semibold text-white">Address:</span></p>
-                <p>EasyPG Manager Pvt. Ltd.</p>
-                <p>Gujarat, India</p>
+                <p className="text-white">EasyPG Manager Pvt. Ltd.</p>
+                <p className="text-white">Gujarat, India</p>
               </div>
 
               <div className="mt-6">
@@ -117,7 +117,7 @@ const Footer = () => {
 
           {/* Bottom Bar */}
           <div className="flex flex-col md:flex-row items-center justify-between text-sm gap-6 max-w-7xl mx-auto">
-            <p className="text-center md:text-left text-gray-500">
+            <p className="text-center md:text-left text-textLight">
               © 2025 EasyPG Manager. All rights reserved.
             </p>
 

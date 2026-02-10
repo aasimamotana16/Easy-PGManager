@@ -134,14 +134,14 @@ const Agreements = () => {
   );
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 bg-gray-50 min-h-screen space-y-6">
+    <div className="p-4 sm:p-6 lg:p-8 bg-gray-200 min-h-screen space-y-6">
       
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-1">
         <div>
-        <h1 className="text-xl sm:text-3xl md:text-5xl lg:text-4xl font-bold text-gray-800"> Digital Agreement
+        <h1 className="text-xl sm:text-3xl md:text-5xl lg:text-4xl font-bold text-[#1C1C1C]"> Digital Agreement
           </h1>
-        <p className="text-xs sm:text-lg md:text-3xl lg:text-xl text-gray-500">
+        <p className="text-xs sm:text-lg md:text-3xl lg:text-xl text-[#4B4B4B]">
             Verified Legal Document • E-Signed
           </p>
         </div>
@@ -159,7 +159,7 @@ const Agreements = () => {
       </div>
 
       {/* Details Card */}
-      <div className="bg-white rounded-md shadow-sm border border-gray-200 overflow-hidden max-w-5xl ">
+      <div className="bg-white rounded-md shadow border-2 border-primary overflow-hidden max-w-5xl">
         <div className="p-5 md:p-8">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-5 mb-8">
             <Info label="PG Name" value={agreementInfo?.pgName} />
@@ -245,7 +245,7 @@ const Info = ({ label, value }) => {
   const isPending = !value || value.includes("undefined") || value === "₹undefined";
   
   return (
-    <div className="bg-white rounded-md p-3.5 border border-gray-100 shadow-sm">
+    <div className="bg-white rounded-md p-3.5 border-2 border-primary/30 shadow">
       <p className="text-[9px] md:text-[10px] text-gray-400 uppercase font-black tracking-widest mb-1">{label}</p>
       <p className={`text-xs md:text-sm font-black truncate ${isPending ? "text-gray-300 italic" : "text-black"}`}>
         {isPending ? "Pending Update" : value}

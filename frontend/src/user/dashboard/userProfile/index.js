@@ -116,7 +116,7 @@ const Profile = () => {
             </div>
             
             <div className="flex-1 lg:mt-6 text-left lg:text-center">
-              <h2 className="text-2xl lg:text-xl font-black uppercase text-gray-800 ">{user?.fullName || "User"}</h2>
+              <h2 className="text-2xl lg:text-xl font-black uppercase text-[#1C1C1C] ">{user?.fullName || "User"}</h2>
               <p className="text-sm font-bold text-gray-400 uppercase tracking-widest mt-1 truncate max-w-[150px] lg:max-w-full">{user?.email}</p>
               <button onClick={handleRemove} className="mt-2 text-red-500 text-xs font-black uppercase hover:underline lg:hidden">Remove Photo</button>
             </div>
@@ -143,10 +143,10 @@ const Profile = () => {
           {/* Header Section */}
           <div className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
-              <h1 className="text-2xl lg:text-4xl font-black uppercase text-gray-800 ">Profile Settings</h1>
+              <h1 className="text-2xl lg:text-4xl font-black uppercase text-[#1C1C1C] ">Profile Settings</h1>
               <p className="text-xs lg:text-sm font-bold text-gray-400 uppercase tracking-[0.2em]">Verified Identity Management</p>
             </div>
-            <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full border border-gray-100 shadow-sm">
+            <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full border-2 border-primary/30 shadow">
               <FaCheckCircle className="text-green-500" />
               <span className="text-[10px] lg:text-xs font-black uppercase text-green-700">Verified User</span>
             </div>
@@ -182,9 +182,9 @@ const Profile = () => {
           </div>
 
           {/* DATA CARD */}
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 lg:p-10 relative">
-            <h3 className="text-lg font-black uppercase text-gray-800 mb-8 border-b border-gray-50 pb-4">
-               {activeTab} Info
+           <div className="bg-white rounded-md border-2 border-primary shadow p-6 lg:p-10 relative">
+            <h3 className="text-h2-sm lg:text-h2 font-bold text-[#1C1C1C] mb-8 border-b border-gray-50 pb-4">
+              {activeTab} Info
             </h3>
 
             <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
@@ -226,7 +226,7 @@ const Profile = () => {
               )}
               {activeTab === 'payment' && (
                   <div className="space-y-8">
-                      <div className="bg-gray-50 rounded-xl p-8 border border-gray-100">
+                      <div className="bg-gray-50 rounded-xl p-8 border-2 border-primary/30">
                           <p className="text-[10px] font-black uppercase text-primary mb-6 flex items-center gap-2">
                              <FaCreditCard /> Settlement Bank
                           </p>
@@ -251,7 +251,7 @@ const Profile = () => {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-center justify-center p-2 md:p-4">
           <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[95vh] flex flex-col shadow-2xl overflow-hidden">
             <div className="p-6 md:p-8 border-b bg-white">
-              <h3 className="text-xl lg:text-2xl font-black uppercase text-primary leading-none">Update Profile</h3>
+              <h3 className="text-h2-sm lg:text-h2 font-bold text-[#1C1C1C] leading-none">Update Profile</h3>
               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-2">Identity Sync Engine</p>
             </div>
             <div className="flex-1 overflow-y-auto p-6 md:p-10 space-y-10 custom-scrollbar">
@@ -303,7 +303,7 @@ const Profile = () => {
             </div>
             <div className="p-6 bg-gray-50 border-t flex flex-col sm:flex-row gap-3">
               <CButton onClick={handleSaveInfo} className="flex-1">Save Changes</CButton>
-              <CButton onClick={() => setIsModalOpen(false)} className="flex-1 bg-white !text-gray-400 border border-gray-200">Cancel</CButton>
+              <CButton onClick={() => setIsModalOpen(false)} className="flex-1 bg-white !text-gray-400 border-2 border-primary/30">Cancel</CButton>
             </div>
           </div>
         </div>

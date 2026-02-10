@@ -50,7 +50,7 @@ export default function Services() {
             animate={{ opacity: 1, y: 0 }}
             className="text-center mb-10 md:mb-16"
           >
-            <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold text-textPrimary tracking-tight mb-4">
+            <h1 className="text-h1-sm lg:text-h1 font-bold text-textPrimary tracking-tight mb-4">
               Our Services
             </h1>
             <p className="text-base md:text-xl lg:text-2xl text-textSecondary max-w-3xl mx-auto px-2">
@@ -67,7 +67,7 @@ export default function Services() {
             className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 mb-16 md:mb-24"
           >
             {services.map((service, idx) => (
-              <motion.div key={idx} variants={itemVariants}>
+              <motion.div key={idx} variants={itemVariants} className="h-full">
                 <ServiceCard {...service} />
               </motion.div>
             ))}
@@ -79,7 +79,7 @@ export default function Services() {
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
-            className="max-w-4xl mx-auto bg-white rounded-2xl shadow-xl border border-border border-t-4 border-t-primary p-6 sm:p-10 lg:p-12 text-center overflow-hidden"
+            className="max-w-4xl mx-auto bg-white rounded-2xl shadow-xl border-2 border-primary p-6 sm:p-10 lg:p-12 text-center overflow-hidden"
           >
             <div className="relative group mb-8 overflow-hidden rounded-xl">
               <motion.img

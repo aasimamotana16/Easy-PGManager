@@ -19,7 +19,7 @@ const DashboardLayout = () => {
   }, [location.pathname]);
 
   return (
-    <div className="flex h-screen bg-gray-300 overflow-hidden ">
+    <div className="flex h-screen bg-white overflow-hidden">
       {/* SIDEBAR */}
       <UserSidebar
         isOpen={sidebarOpen}

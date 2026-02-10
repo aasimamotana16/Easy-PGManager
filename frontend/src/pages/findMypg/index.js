@@ -1,10 +1,11 @@
 import { useState, useMemo, useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom"; 
-import { ArrowLeft, SearchX } from "lucide-react"; 
+import { useLocation, useNavigate } from "react-router-dom";
+import { ArrowLeft, SearchX, SlidersHorizontal } from "lucide-react";
 
 import Navbar from "../../components/navbar";
 import Footer from "../../components/footer";
-import Loader from "../../components/loader"; 
+import Loader from "../../components/loader";
+import CButton from "../../components/cButton";
 
 import Filters from "./servicesFilter";
 import PGListings from "./pgListing";
@@ -21,30 +22,16 @@ const DEFAULT_FILTERS = {
 
 export default function FindMyPG() {
   const locationObj = useLocation();
-  const navigate = useNavigate(); 
-  
+  const navigate = useNavigate();
+
   const showBackButton = locationObj.state?.fromServices;
   const city = new URLSearchParams(locationObj.search).get("city");
 
   const [pgList, setPgList] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // --- LAPTOP SCROLL FIX (Global Handler) ---
   useEffect(() => {
-    const handleWheel = (e) => {
-      // If the focused element is a number input, prevent scroll-to-change
-      if (document.activeElement.type === "number") {
-        document.activeElement.blur();
-      }
-    };
-
-    window.addEventListener("wheel", handleWheel, { passive: false });
-    return () => window.removeEventListener("wheel", handleWheel);
-  }, []);
-
-  /* ================= FETCH DATA ================= */
-  useEffect(() => {
-    setIsLoading(true); 
+    setIsLoading(true);
     fetch("http://localhost:5000/api/pg/all")
       .then((res) => res.json())
       .then((json) => {
@@ -59,7 +46,6 @@ export default function FindMyPG() {
   const [tempFilters, setTempFilters] = useState(DEFAULT_FILTERS);
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
 
-  /* ================= HANDLERS ================= */
   const handleFilterChange = (key, value) => {
     if (key === "reset") {
       setTempFilters(DEFAULT_FILTERS);
@@ -79,7 +65,7 @@ export default function FindMyPG() {
   };
 
   const applyFiltersClick = async () => {
-    setIsLoading(true); 
+    setIsLoading(true);
     try {
       const queryParams = new URLSearchParams({
         city: city || "Any",
@@ -101,7 +87,7 @@ export default function FindMyPG() {
     } catch (err) {
       console.error("Filter request failed:", err);
     } finally {
-      setTimeout(() => setIsLoading(false), 600); 
+      setTimeout(() => setIsLoading(false), 600);
     }
   };
 
@@ -119,69 +105,77 @@ export default function FindMyPG() {
   if (isLoading) return <Loader />;
 
   return (
-    <div className="bg-gray-50 min-h-screen flex flex-col">
+    <div className="bg-[#ffffff] min-h-screen flex flex-col">
       <Navbar />
 
-      {/* Main Container - Fully Responsive Padding */}
-<main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10 w-full">
-  
-  {/* Back Button - Minimalist Arrow Version */}
-  <div className="flex justify-start mb-6">
-    {showBackButton && (
-      <button 
-        onClick={() => navigate(-1)} 
-        className="group flex items-center justify-center outline-none"
-        aria-label="Go back" // Proper accessibility since text is removed
-      >
-        <div className="p-2.5 rounded-full bg-white shadow-sm border border-gray-100 
-                        group-hover:bg-primary group-hover:text-white group-hover:border-primary 
-                        transition-all duration-300 hover:shadow-md active:scale-95">
-          <ArrowLeft size={18} strokeWidth={2.5} />
-        </div>
-      </button>
-    )}
-  </div>
-
-        {/* Responsive Header */}
-        <div className="text-center mb-10 md:mb-14">
-          <h1 className="text-2xl sm:text-3xl md:text-5xl font-bold text-gray-900 tracking-tight px-2">
-            {city ? `PGs in ${city}` : "Find Your Perfect Stay"}
-          </h1>
-          <p className="text-gray-500 mt-3 text-sm md:text-lg max-w-2xl mx-auto">
-            Browse verified listings with the best amenities in town.
-          </p>
+      <main className="flex-1 max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full">
+        
+        {/* RESTORED PREVIOUS HEADING STYLE */}
+        <div className="relative mt-8 md:mt-12 mb-10">
+          <h1 className="text-h1-sm lg:text-h1 font-bold text-textPrimary tracking-tight">
+          Find your 
+          <span className="text-primary">  Perfect </span> stay
+        </h1>
+        <p className="text-textSecondary mt-2 text-sm sm:text-base font-medium">
+          Apply filters to discover verified properties that match your lifestyle and budget.
+        </p>
+          {showBackButton && (
+            <button
+              onClick={() => navigate(-1)}
+              className="absolute left-0 top-1/2 -translate-y-1/2 p-2.5 rounded-full border border-[#E5E0D9] hover:bg-[#FEF3C7] transition-all"
+            >
+              <ArrowLeft size={22} className="text-[#1C1C1C]" />
+            </button>
+          )}
         </div>
 
-        {/* Filters Section */}
-        <Filters
-          filters={tempFilters}
-          handleFilterChange={handleFilterChange}
-          toggleAmenity={toggleAmenity}
-          applyFilters={applyFiltersClick}
-        />
+        {/* --- UPDATED 40/60 GRID CONTAINER --- */}
+        <div className="flex flex-col lg:flex-row items-start gap-6 xl:gap-10">
+          
+          {/* LEFT SIDE: FILTER SECTION (40%) */}
+          <aside className="w-full lg:w-[30%] lg:sticky lg:top-24 mb-8 lg:mb-0">
+            <div className="bg-white border border-primary rounded-md p-6 sm:p-8 shadow-sm">
+              <div className="flex items-center justify-between mb-6 pb-4 border-b border-[#E5E0D9]">
+                <div className="flex items-center gap-3">
+                  <SlidersHorizontal size={20} className="text-[#D97706]" />
+                  <h2 className="text-xl font-bold text-[#1C1C1C]">Search Filters</h2>
+                </div>
+                <button 
+                   onClick={() => handleFilterChange("reset")}
+                   className="text-sm font-bold text-[#D97706] hover:underline"
+                >
+                  Reset All
+                </button>
+              </div>
 
-        {/* Listings Result Section */}
-        <div className="mt-10 md:mt-16">
-            <PGListings list={filteredPGs} />
+              <Filters
+                filters={tempFilters}
+                handleFilterChange={handleFilterChange}
+                toggleAmenity={toggleAmenity}
+                applyFilters={applyFiltersClick}
+              />
+            </div>
+          </aside>
 
-            {/* Empty State UI */}
-            {filteredPGs.length === 0 && (
-              <div className="text-center py-20 bg-white rounded-2xl border border-gray-200 shadow-sm px-6">
-                  <div className="flex justify-center mb-4 text-gray-300">
-                    <SearchX size={60} strokeWidth={1.5} />
-                  </div>
-                  <h3 className="text-xl font-bold text-gray-800">No results found</h3>
-                  <p className="text-gray-500 mt-2 max-w-xs mx-auto text-sm md:text-base">
-                    We couldn't find any PGs matching your current filters. Try adjusting your budget or amenities.
-                  </p>
-                  <button 
-                    onClick={() => handleFilterChange("reset")}
-                    className="mt-6 px-8 py-2.5 bg-primary text-white rounded-full font-bold shadow-md hover:opacity-90 transition-all"
-                  >
-                    Reset All Filters
-                  </button>
+          {/* RIGHT SIDE: PG LISTINGS (60%) */}
+          <div className="w-full lg:w-[70%]">
+            {filteredPGs.length > 0 ? (
+              <div className="flex flex-col gap-6 w-full">
+                <PGListings list={filteredPGs} />
+              </div>
+            ) : (
+              <div className="text-center py-20 bg-[#FEF3C7]/20 rounded-md border-2 border-dashed border-[#E5E0D9] px-6">
+                <SearchX size={60} className="mx-auto text-[#4B4B4B]/30 mb-4" />
+                <h3 className="text-xl font-bold text-[#1C1C1C]">No Matching stays found</h3>
+                <p className="text-[#4B4B4B] mt-2 mb-6">Try changing your location or filters.</p>
+                <CButton 
+                  text="Clear Filters" 
+                  onClick={() => handleFilterChange("reset")} 
+                />
               </div>
             )}
+          </div>
+
         </div>
       </main>
 

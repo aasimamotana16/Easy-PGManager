@@ -126,7 +126,6 @@ const HomeFeatures = ({ stats, userRole = "guest" }) => {
 
             <div className="mt-8 flex justify-center lg:justify-start">
               <CButton 
-                className="w-full sm:w-auto px-10 h-14 text-lg font-bold bg-primary hover:bg-primaryDark text-textLight" 
                 text="Schedule a Free Demo" 
                 onClick={() => setOpenDemo(true)} 
               />

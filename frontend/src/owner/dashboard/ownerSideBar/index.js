@@ -11,6 +11,7 @@ import {
   FaTimes,
   FaSignOutAlt,
 } from "react-icons/fa";
+import CButton from "../../../components/cButton";
 
 const OwnerSidebar = ({ isOpen, closeSidebar }) => {
   const navigate = useNavigate();
@@ -36,6 +37,7 @@ const OwnerSidebar = ({ isOpen, closeSidebar }) => {
         setIsLogoutSuccessful(false); 
         navigate("/");
         closeSidebar?.();
+        window.dispatchEvent(new Event("storage"));
       }, 1500);
     } catch (error) {
       localStorage.clear();
@@ -58,17 +60,18 @@ const OwnerSidebar = ({ isOpen, closeSidebar }) => {
       <aside
         className={`
           fixed top-0 left-0 z-50
-          h-screen w-[280px] max-w-[85vw]
+          h-screen w-2/3 sm:w-1/2 md:w-2/5 lg:w-64
           bg-black text-white
           flex flex-col
           px-4 py-5
-          transform transition-transform duration-300 ease-in-out
+          overflow-hidden
+          transform transition-transform duration-300
           ${isOpen ? "translate-x-0" : "-translate-x-full"}
-          lg:translate-x-0 lg:static lg:w-64
+          lg:translate-x-0 lg:static
         `}
       >
         {/* LOGO / BRAND */}
-        <div className="flex items-center justify-between mb-16 shrink-0">
+        <div className="flex items-center justify-between mb-14">
           <div
             className="flex items-center gap-1 cursor-pointer"
             onClick={() => {
@@ -82,21 +85,21 @@ const OwnerSidebar = ({ isOpen, closeSidebar }) => {
               className="w-15 h-14 object-contain"
             />
             <div className="leading-tight">
-              <div className="text-xl font-medium">EasyPG</div>
-              <div className="text-xl font-medium text-primary">Manager</div>
+              <div className="text-xl font-semibold">EasyPG</div>
+              <div className="text-xl font-semibold text-primary">Manager</div>
             </div>
           </div>
 
           <button
-            className="lg:hidden text-gray-400 hover:text-white p-2"
+            className="lg:hidden text-gray-400 hover:text-white"
             onClick={closeSidebar}
           >
-            <FaTimes size={20} />
+            <FaTimes size={18} />
           </button>
         </div>
 
         {/* MENU */}
-        <nav className="flex-1 flex flex-col gap-2 overflow-y-auto no-scrollbar">
+        <nav className="flex-1 flex flex-col gap-1">
           {menuItems.map((item) => (
             <NavLink
               key={item.to}
@@ -104,39 +107,40 @@ const OwnerSidebar = ({ isOpen, closeSidebar }) => {
               end
               onClick={closeSidebar}
               className={({ isActive }) =>
-                `flex items-center gap-6 px-4 py-3 rounded-md text-base  transition-colors shrink-0
-                ${isActive ? "bg-primary text-white" : "hover:bg-gray-800 text-gray-300 hover:text-white"}`
+                `relative flex items-center gap-4 px-4 py-2.5 rounded-md text-base transition-all duration-300 group
+                ${isActive ? "bg-primary text-white" : " text-white"}`
               }
             >
-              <span className="text-xl">{item.icon}</span>
-              <span>{item.label}</span>
+              <span className="text-base">{item.icon}</span>
+              <span className="relative">
+                {item.label}
+                <span className="absolute left-0 -bottom-1 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-full"></span>
+              </span>
             </NavLink>
           ))}
         </nav>
 
         {/* BOTTOM ACTIONS */}
-        <div className="shrink-0">
-          <div className="border-t border-gray-800 my-4" />
-          <div className="flex items-center gap-8 pb-2">
-            <button
-              onClick={() => {
-                navigate("/");
-                closeSidebar?.();
-              }}
-              className="p-4 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
-              title="Go to Website Home"
-            >
-              <FaHome size={20} />
-            </button>
+        <div className="border-t border-gray-800 my-4" />
 
-            <button
-              onClick={() => setIsLogoutModalOpen(true)}
-              className="flex-1 flex items-center gap-3 px-4 py-2 rounded-lg text-red-500 hover:text-red-400 font-medium text-lg text-left transition-colors"
-            >
-              <FaSignOutAlt size={20} />
-              Logout
-            </button>
-          </div>
+        <div className="flex items-center justify-between px-2 mb-2">
+          <button
+            onClick={() => {
+              navigate("/");
+              closeSidebar?.();
+            }}
+            className="flex items-center gap-2 py-2 text-gray-400 hover:text-white font-semibold transition-colors"
+          >
+            <FaHome size={16} />
+            <span>Home</span>
+          </button>
+
+          <button
+            onClick={() => setIsLogoutModalOpen(true)}
+            className="py-2 text-red-500 hover:text-red-600 font-semibold transition-colors"
+          >
+            Logout
+          </button>
         </div>
       </aside>
 
@@ -146,30 +150,29 @@ const OwnerSidebar = ({ isOpen, closeSidebar }) => {
           <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center transition-all animate-in zoom-in duration-200">
             {!isLogoutSuccessful ? (
               <>
-                <h3 className="text-2xl font-medium text-gray-800 text-[#1C1C1C]">Confirm Logout</h3>
-                <p className="text-[#4B4B4B] my-4 font-normal">Are you sure you want to end your session?</p>
-                <div className="flex flex-col sm:flex-row gap-3 mt-6">
-                  <button 
-                    onClick={() => setIsLogoutModalOpen(false)} 
-                    className="order-2 sm:order-1 flex-1 py-3 bg-gray-100 text-[#4B4B4B] rounded-xl font-medium hover:bg-gray-200 transition-colors"
-                  >
-                    No
-                  </button>
-                  <button 
-                    onClick={handleLogout} 
-                    className="order-1 sm:order-2 flex-1 py-3 bg-primary text-white rounded-xl font-medium shadow-lg shadow-orange-100 hover:bg-[#B45309] transition-all"
-                  >
-                    Yes
-                  </button>
+                <h3 className="text-2xl font-bold text-gray-800">Confirm Logout</h3>
+                <p className="text-white my-4 font-medium">Are you sure you want to end your session?</p>
+                <div className="flex gap-3 mt-6">
+                  <CButton 
+                    text="No"
+                    variant="outlined"
+                    onClick={() => setIsLogoutModalOpen(false)}
+                    className="flex-1"
+                  />
+                  <CButton 
+                    text="Yes"
+                    onClick={handleLogout}
+                    className="flex-1"
+                  />
                 </div>
               </>
             ) : (
               <div className="flex flex-col items-center py-4 animate-in zoom-in duration-300">
-                <div className="w-20 h-20 bg-[#FEF3C7] text-primary rounded-full flex items-center justify-center text-4xl mb-4 border border-[#E5E0D9]">
+                <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-4xl mb-4 border-2 border-green-200">
                   ✓
                 </div>
-                <h3 className="text-2xl font-medium text-[#1C1C1C]">Success!</h3>
-                <p className="text-[#4B4B4B] mt-2 font-normal">Signed Out successfully.</p>
+                <h3 className="text-2xl font-bold text-gray-800">Success!</h3>
+                <p className="text-white mt-2 font-medium">Logged out successfully.</p>
               </div>
             )}
           </div>

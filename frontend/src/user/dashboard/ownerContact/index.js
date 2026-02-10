@@ -42,12 +42,12 @@ const OwnerContact = () => {
   }, []);
 
   return (
-    <div className="p-4 sm:p-6 lg:p-10 bg-gray-50 min-h-screen space-y-8 lg:space-y-12">
+    <div className="p-4 sm:p-6 lg:p-10 bg-gray-200 min-h-screen space-y-8 lg:space-y-12">
       
       {/* HEADER - Matched to Timeline */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-2">
-          <h1 className="text-xl md:text-3xl lg:text-4xl font-black uppercase tracking-tight flex items-center gap-3 text-gray-800">
+          <h1 className="text-xl md:text-3xl lg:text-4xl font-black uppercase tracking-tight flex items-center gap-3 text-[#1C1C1C]">
              Owner Contact
           </h1>
           <p className="text-[10px] md:text-sm lg:text-lg text-gray-700 uppercase ">
@@ -55,7 +55,7 @@ const OwnerContact = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-xl border border-gray-100 shadow-sm self-start">
+        <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-xl border-2 border-primary/30 shadow self-start">
           <FaCheckCircle className="text-green-500" />
           <span className="text-[10px] md:text-xs font-black uppercase text-green-700 tracking-tighter">
             Verified Profile
@@ -66,7 +66,7 @@ const OwnerContact = () => {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10">
 
         {/* RIGHT COLUMN: DETAILS CARD - Matched to Timeline Data Style */}
-        <div className="lg:col-span-8 md:text-4xl lg:text-lg bg-white rounded-md border border-gray-100 shadow-sm p-6 md:p-8 lg:p-12">
+        <div className="lg:col-span-8 md:text-4xl lg:text-lg bg-white rounded-md border-2 border-primary shadow p-6 md:p-8 lg:p-12">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
             <Info icon={<FaUser />} label="Owner Name" value={ownerData.name} />
             <Info icon={<FaPhoneAlt />} label="Phone Number" value={ownerData.phone} />
@@ -79,16 +79,6 @@ const OwnerContact = () => {
               className="md:col-span-2 border-l-4 border-orange-500 pl-6 bg-gray-50/50 py-4 rounded-r-md"
             />
           </div>
-        </div>
-      </div>
-
-      {/* FOOTER */}
-      <div className="flex flex-col items-center">
-        <div className="flex items-center gap-2 bg-white px-6 py-3 rounded-md border border-gray-100 shadow-sm">
-           <div className="w-2 h-2 rounded-md bg-green-500 animate-pulse"></div>
-           <span className="text-[9px] md:text-xs font-black uppercase text-gray-400 tracking-widest">
-             End-to-end encrypted contact information
-           </span>
         </div>
       </div>
     </div>

@@ -126,7 +126,7 @@ const PGDetails = () => {
           </motion.div>
 
           {/* IMAGE GALLERY */}
-          <motion.div variants={fadeInUp} className="relative aspect-video md:h-[500px] md:aspect-auto rounded-md overflow-hidden shadow bg-border">
+          <motion.div variants={fadeInUp} className="relative aspect-video md:h-[500px] md:aspect-auto rounded-md overflow-hidden shadow bg-border ">
             <AnimatePresence mode="wait">
               <motion.img 
                  key={currentIndex}
@@ -148,7 +148,7 @@ const PGDetails = () => {
           </motion.div>
 
           {/* ================= CONDITIONAL BOOK NOW SECTION ================= */}
-          <motion.div variants={fadeInUp} className="bg-white rounded-md shadow p-5 md:p-6 flex flex-row justify-between items-center border border-primary/20">
+          <motion.div variants={fadeInUp} className="bg-white rounded-md shadow p-5 md:p-6 flex flex-row justify-between items-center border border-l-4 border-primary">
             <div>
               <p className="text-xs md:text-sm font-semibold text-textSecondary uppercase tracking-widest">Starting Price</p>
               <p className="text-2xl md:text-3xl font-bold text-textPrimary">
@@ -201,7 +201,7 @@ const PGDetails = () => {
           </motion.div>
 
           {/* REVIEWS */}
-          <motion.div variants={fadeInUp} ref={reviewsRef} className="bg-white rounded-md p-5 md:p-6 shadow border border-border">
+          <motion.div variants={fadeInUp} ref={reviewsRef} className="bg-white rounded-md p-5 md:p-6 shadow border border-primary">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl md:text-2xl font-bold flex items-center gap-2 text-textPrimary">
                 <span className="text-primary">⭐</span> {averageRating} 
@@ -236,7 +236,7 @@ const PGDetails = () => {
 
         {/* ================= RIGHT COLUMN (SIDEBAR) ================= */}
         <motion.div variants={fadeInUp} className="hidden lg:flex w-[35%] flex-col gap-6 sticky top-24 h-fit">
-          <motion.div whileHover={{ y: -5 }} className="bg-white rounded-md shadow p-6 border-l-4 border-primary transition-all">
+          <motion.div whileHover={{ y: -5 }} className="bg-white rounded-md shadow p-6 border b border-primary transition-all">
             <h1 className="text-2xl font-bold text-textPrimary mb-1">{pg.name}</h1>
             <p className="text-textSecondary flex items-center gap-1 text-sm font-medium">
               <MapPinIcon className="h-5 w-5 text-primary" /> {pg.location}

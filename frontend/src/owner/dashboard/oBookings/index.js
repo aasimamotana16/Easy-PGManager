@@ -11,6 +11,7 @@ import {
 import { LuDownload } from "react-icons/lu"; 
 import axios from "axios";
 import Swal from "sweetalert2";
+import CButton from "../../../components/cButton";
 import CSelect from "../../../components/cSelect";
 
 const BookingManagement = () => {
@@ -105,9 +106,9 @@ const BookingManagement = () => {
           <h1 className="text-4xl font-bold text-[#1C1C1C]">Bookings</h1>
           <p className="text-[#4B4B4B] mt-2">Manage and track all tenant booking requests</p>
         </div>
-        <button className="bg-[#D97706] hover:bg-[#B45309] text-white px-6 py-3 rounded-lg font-bold flex items-center gap-2 transition-all shadow-md">
+        <CButton className="flex items-center gap-2">
           <FaPlus /> Add New Booking
-        </button>
+        </CButton>
       </div>
 
       {/* SEARCH AND FILTER */}
@@ -122,22 +123,18 @@ const BookingManagement = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <div className="relative min-w-[220px]">
-          <FaFilter className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-          <select 
-            className="w-full pl-12 pr-4 py-3 rounded-lg border border-[#E5E0D9] focus:outline-none bg-white text-sm appearance-none cursor-pointer"
-            value={selectedPg}
-            onChange={(e) => setSelectedPg(e.target.value)}
-          >
-            {uniquePgs.map(pg => <option key={pg} value={pg}>{pg}</option>)}
-          </select>
-        </div>
+        <CSelect 
+          value={selectedPg}
+          onChange={(e) => setSelectedPg(e.target.value)}
+          options={uniquePgs.map(pg => ({ value: pg, label: pg }))}
+          placeholder="All Properties"
+        />
       </div>
 
       {/* TABLE */}
       <div className="bg-white rounded-xl shadow-sm border border-[#E5E0D9] overflow-hidden">
         <div className="p-6 border-b border-[#E5E0D9]">
-           <h2 className="text-xl font-bold text-[#1C1C1C]">Bookings List</h2>
+           <h2 className="text-h2-sm lg:text-h2 font-bold text-[#1C1C1C]">Bookings List</h2>
         </div>
 
         <div className="overflow-x-auto">

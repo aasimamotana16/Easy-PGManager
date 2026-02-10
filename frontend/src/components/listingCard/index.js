@@ -9,50 +9,63 @@ export default function ListingCard({
   const mainImage = image || roomImages?.[0];
 
   return (
-    <div className="w-80 flex-shrink-0 bg-white rounded-3xl transition-transform hover:scale-[1.02] flex flex-col overflow-hidden">
-      {/* Framed Image */}
-      <div className="w-full h-64 md:h-72 lg:h-80 bg-white p-3 flex items-center justify-center">
+    /* Changed to flex-row for desktop, removed w-80 to fill the 50% container */
+    <div className="w-full flex flex-col md:flex-row bg-white rounded-3xl border border-[#E5E0D9] transition-transform hover:scale-[1.01] overflow-hidden shadow-sm">
+      
+      {/* LEFT SIDE: Framed Image (takes 40% on desktop) */}
+      <div className="w-full md:w-[40%] h-56 md:h-64 bg-white p-3 flex items-center justify-center">
         {mainImage ? (
           <img
             src={mainImage}
             alt={name}
-            className="w-full h-full object-cover rounded-xl"
+            className="w-full h-full object-cover rounded-2xl"
           />
         ) : (
-          <div className="flex items-center justify-center h-full text-gray-400">
+          <div className="flex items-center justify-center h-full w-full bg-gray-100 rounded-2xl text-gray-400">
             No Image
           </div>
         )}
       </div>
 
-      {/* Content */}
-      <div className="p-4 flex flex-col flex-grow justify-between">
-        <div className="mb-3">
-          <h3 className="text-lg font-semibold text-amber-600 mb-1 truncate">
-            {name}
-          </h3>
+      {/* RIGHT SIDE: Content (takes 60% on desktop) */}
+      <div className="p-6 flex flex-col flex-grow justify-between">
+        <div>
+          <div className="flex justify-between items-start mb-2">
+            <h3 className="text-xl font-bold text-[#D97706] truncate">
+              {name}
+            </h3>
+            {price && (
+               <span className="text-lg font-bold text-[#1C1C1C]">₹{price}</span>
+            )}
+          </div>
 
-          <p className="text-sm text-gray-700 mb-1 truncate">
-            <strong>Location:</strong> {location}
-          </p>
-
-          {price && (
-            <p className="text-sm text-gray-700 mb-1">
-              <strong>Price:</strong> {price}
+          <div className="space-y-2">
+            <p className="text-sm text-[#4B4B4B] flex items-center gap-1">
+              <strong className="text-[#1C1C1C]">Location:</strong> 
+              <span className="truncate">{location}</span>
             </p>
-          )}
 
-          {availability && (
-            <p className="text-sm text-gray-700 mb-3">
-              <strong>Availability:</strong> {availability}
-            </p>
-          )}
+            {availability && (
+              <p className="text-sm text-[#4B4B4B]">
+                <strong className="text-[#1C1C1C]">Availability:</strong> {availability}
+              </p>
+            )}
+            
+            {/* Added a subtle divider or extra space for clean look */}
+            <div className="pt-2 flex flex-wrap gap-2">
+               <span className="text-[10px] bg-[#FEF3C7] text-[#B45309] px-2 py-1 rounded font-bold uppercase">
+                 Verified PG
+               </span>
+            </div>
+          </div>
         </div>
 
-        {/* View Button */}
-        <button className="bg-amber-600 text-white font-semibold py-2 rounded-xl w-full hover:bg-amber-700 transition">
-          View
-        </button>
+        {/* View Button - Styled with your primary colors */}
+        <div className="mt-6">
+          <button className="bg-[#D97706] text-white font-bold py-2.5 px-6 rounded-xl hover:bg-[#B45309] transition-all active:scale-95 w-full md:w-max">
+            View Details
+          </button>
+        </div>
       </div>
     </div>
   );

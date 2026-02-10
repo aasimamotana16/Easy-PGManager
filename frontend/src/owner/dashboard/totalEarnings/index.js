@@ -20,6 +20,8 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import axios from "axios";
 import Swal from "sweetalert2";
+import CButton from "../../../components/cButton";
+import CSelect from "../../../components/cSelect";
 
 ChartJS.register(
   CategoryScale,
@@ -153,27 +155,24 @@ const TotalEarnings = () => {
       </div>
 
       {/* FILTER + DOWNLOAD */}
-      <div className="bg-white p-4 rounded-md shadow border border-border border-t-4 border-t-primary flex flex-col sm:flex-row gap-4 justify-between items-center">
-        <select
-          className="w-full sm:w-max border rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-orange-400"
+      <div className="bg-white p-4 rounded-md shadow border-2 border-primary flex flex-col sm:flex-row gap-4 justify-between items-center w-full">
+        <CSelect
           value={selectedMonth}
           onChange={(e) => setSelectedMonth(e.target.value)}
-        >
-          {["Jan","Feb","Mar","Apr","May","Jun","Jul"].map(m => (
-            <option key={m} value={m}>{m}</option>
-          ))}
-        </select>
+          options={["Jan","Feb","Mar","Apr","May","Jun","Jul"].map(m => ({ value: m, label: m }))}
+          className="w-full sm:w-64"
+        />
 
-        <button
+        <CButton
           onClick={handleDownloadPDF}
-          className="w-full sm:w-max flex justify-center items-center gap-2 bg-primary text-white px-5 py-2 rounded-md text-sm transition-colors hover:bg-orange-600"
+          className="w-full sm:w-auto flex items-center justify-center gap-2"
         >
           <FaDownload /> Download Report
-        </button>
+        </CButton>
       </div>
 
       {/* GRAPH */}
-      <div className="bg-white p-4 md:p-6 border border-  border-primary rounded-md shadow">
+      <div className="bg-white p-4 md:p-6 border-2 border-primary rounded-md shadow">
         <h2 className="text-base md:text-lg font-semibold mb-4 text-dark">
           Monthly Earnings ({selectedMonth})
         </h2>
@@ -274,23 +273,23 @@ const TableSection = ({ title, icon, headers, rows, page, totalPages, setPage, a
 
     {/* PAGINATION */}
     <div className="flex justify-between sm:justify-end items-center gap-4 mt-6 border-t pt-4">
-      <button
+      <CButton
+        text="Prev"
+        variant="outlined"
         disabled={page === 1}
         onClick={() => setPage(page - 1)}
-        className="px-4 py-1.5 text-xs font-bold border rounded-md disabled:opacity-50 hover:bg-gray-100 transition-colors"
-      >
-        Prev
-      </button>
+        className="text-xs"
+      />
       <span className="text-xs font-bold text-gray-600">
         Page {page} of {totalPages}
       </span>
-      <button
+      <CButton
+        text="Next"
+        variant="outlined"
         disabled={page === totalPages}
         onClick={() => setPage(page + 1)}
-        className="px-4 py-1.5 text-xs font-bold border rounded-md disabled:opacity-50 hover:bg-gray-100 transition-colors"
-      >
-        Next
-      </button>
+        className="text-xs"
+      />
     </div>
   </div>
 );

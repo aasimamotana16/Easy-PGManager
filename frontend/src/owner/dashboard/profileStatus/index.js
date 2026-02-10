@@ -131,7 +131,7 @@ const ProfileStatus = () => {
                 </span>
               </div>
 
-              <h2 className="text-2xl font-bold text-[#1C1C1C] uppercase tracking-tight">{profileData.name}</h2>
+              <h2 className="text-h2-sm lg:text-h2 font-bold text-[#1C1C1C] uppercase tracking-tight">{profileData.name}</h2>
               <p className="text-[#4B4B4B] text-sm mb-6">{profileData.email}</p>
               
               <div className="pt-6 border-t border-[#E5E0D9] flex justify-around">

@@ -115,12 +115,12 @@ const CancelForm = () => {
               >
                 Confirm Cancellation
               </CButton>
-              <button 
+              <CButton 
+                text="Nevermind, take me back"
+                variant="text"
                 onClick={() => navigate(-1)}
-                className="w-full mt-4 text-body-sm font-medium text-textSecondary hover:text-textPrimary transition-colors"
-              >
-                Nevermind, take me back
-              </button>
+                className="w-full mt-4"
+              />
             </div>
           </div>
         </div>

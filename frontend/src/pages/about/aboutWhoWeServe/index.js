@@ -31,34 +31,43 @@ const AboutWhoWeServe = () => {
       </div>
 
       {/* Responsive Grid [cite: 2026-02-06] */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {aboutWhoWeServe.map((item, i) => (
-          <motion.div
-            key={i}
-            initial={{ opacity: 0, x: i % 2 === 0 ? -30 : 30 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: i * 0.1 }}
-            viewport={{ once: true }}
-            /* Border and Background using theme tokens [cite: 2026-02-09] */
-            className="flex flex-col sm:flex-row items-start sm:items-center gap-6 p-8 bg-background border border-border rounded-2xl shadow-sm hover:shadow-md transition-all"
-          >
-            {/* Icon Circle using primarySoft [cite: 2026-02-09] */}
-            <div className="flex-shrink-0 bg-primarySoft text-primary p-4 rounded-2xl">
-              {getIcon(item.role)}
-            </div>
+      {/* Responsive Grid */}
+<div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+  {aboutWhoWeServe.map((item, i) => {
+    // Check if it's the 3rd item (index 2)
+    const isThirdItem = i === 2;
 
-            {/* Content Area */}
-            <div>
-              <h3 className="text-h3-sm lg:text-h3 font-bold text-textPrimary mb-2">
-                {item.role}
-              </h3>
-              <p className="text-textSecondary text-body-sm lg:text-body leading-relaxed">
-                {item.desc}
-              </p>
-            </div>
-          </motion.div>
-        ))}
-      </div>
+    return (
+      <motion.div
+        key={i}
+        initial={{ opacity: 0, y: 20 }} // Changed to 'y' for a smoother entrance for centered items
+        whileInView={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: i * 0.1 }}
+        viewport={{ once: true }}
+        className={`
+          flex flex-col sm:flex-row items-start sm:items-center gap-6 p-8 
+          bg-background border border-border rounded-2xl shadow-sm hover:shadow-md transition-all
+          ${isThirdItem ? "md:col-span-2 md:max-w-2xl md:mx-auto w-full" : ""}
+        `}
+      >
+        {/* Icon Circle */}
+        <div className="flex-shrink-0 bg-primarySoft text-primary p-4 rounded-2xl">
+          {getIcon(item.role)}
+        </div>
+
+        {/* Content Area */}
+        <div>
+          <h3 className="text-h3-sm lg:text-h3 font-bold text-textPrimary mb-2">
+            {item.role}
+          </h3>
+          <p className="text-textSecondary text-body-sm lg:text-body leading-relaxed">
+            {item.desc}
+          </p>
+        </div>
+      </motion.div>
+    );
+  })}
+</div>
     </section>
   );
 };

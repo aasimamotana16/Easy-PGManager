@@ -135,18 +135,18 @@ const CheckIns = () => {
   };
 
   return (
-    <div className="relative min-h-screen bg-gray-50 text-black">
+    <div className="relative min-h-screen bg-gray-200 text-black">
       <div className="p-4 sm:p-6 lg:p-8 space-y-6">
         
         <div className="px-1 text-center md:text-left">
-          <h1 className="text-xl sm:text-3xl md:text-5xl lg:text-4xl font-bold text-gray-800"> Attendance Control</h1>
-          <p className="text-xs sm:text-lg md:text-3xl lg:text-xl text-gray-500">
+          <h1 className="text-xl sm:text-3xl md:text-5xl lg:text-4xl font-bold text-[#1C1C1C]"> Attendance Control</h1>
+          <p className="text-xs sm:text-lg md:text-3xl lg:text-xl text-[#4B4B4B]">
             Verify Security Code to Log Daily Entry & Exit
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-white border border-gray-200 rounded-md p-6 shadow-sm flex flex-col items-center text-center space-y-4">
+          <div className="bg-white  rounded-md p-6 shadow flex flex-col items-center text-center space-y-4">
             <div className="w-12 h-12 bg-gray-100 text-black rounded-full flex items-center justify-center">
               <FaSignInAlt size={22} />
             </div>
@@ -159,7 +159,7 @@ const CheckIns = () => {
             </CButton>
           </div>
 
-          <div className="bg-white border border-gray-200 rounded-md p-6 shadow-sm flex flex-col items-center text-center space-y-4">
+          <div className="bg-white  rounded-md p-6 shadow flex flex-col items-center text-center space-y-4">
             <div className="w-12 h-12 bg-orange-50 text-orange-600 rounded-full flex items-center justify-center">
               <FaSignOutAlt size={22}  />
             </div>
@@ -174,7 +174,7 @@ const CheckIns = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div className="lg:col-span-7 bg-white rounded-md shadow-sm border border-gray-200 p-2 sm:p-5">
+          <div className="lg:col-span-7 bg-white rounded-md shadow border-2 border-primary p-2 sm:p-5">
             <Calendar
               onChange={setSelectedDate}
               value={selectedDate}
@@ -183,7 +183,7 @@ const CheckIns = () => {
             />
           </div>
 
-          <div className="lg:col-span-5 bg-white rounded-md shadow-sm border border-gray-200 flex flex-col h-[400px]">
+          <div className="lg:col-span-5 bg-white rounded-md shadow border-2 border-primary flex flex-col h-[400px]">
             <div className="p-4 border-b border-gray-100 font-black uppercase tracking-widest text-[10px] flex items-center gap-2">
               <FaHistory className="text-orange-500" /> Recent Activity
             </div>
@@ -242,9 +242,9 @@ const CheckIns = () => {
         <div className="fixed inset-0 z-[9999] flex items-center justify-center">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={closeModal}></div>
           <div className="relative bg-white w-[90%] max-w-md rounded-2xl overflow-hidden shadow-2xl z-10">
-            <div className="p-4 bg-black text-white flex justify-between items-center">
+            <div className="p-4 bg-primary text-white flex justify-between items-center">
               <span className="text-sm font-black uppercase tracking-tight">Security Portal: {activeAction}</span>
-              <button onClick={closeModal} className="text-orange-500 hover:text-orange-400 transition-colors">
+              <button onClick={closeModal} className="text-white hover:text-orange-400 transition-colors">
                 <FaTimes size={20} />
               </button>
             </div>
@@ -252,7 +252,7 @@ const CheckIns = () => {
               <form onSubmit={handleSecurityAction} className="space-y-6 text-center">
                 {!isOtpSent ? (
                   <div className="flex flex-col items-center gap-4">
-                    <div className="inline-block bg-gray-50 p-2 rounded-lg border border-gray-100">
+                    <div className="inline-block bg-gray-50 p-2 rounded-lg border-2 border-primary/30">
                       <ReCAPTCHA
                         sitekey="6LfT_lksAAAAAOanKI3_z06JdciUMm5vg3emlZgL"
                         onChange={(token) => setCaptchaToken(token)}

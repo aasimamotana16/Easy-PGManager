@@ -85,9 +85,7 @@ const SupportPage = () => {
             value={message}
             onChange={(e) => setMessage(e.target.value)}
           />
-          <button type="submit" className="bg-primary text-white px-6 py-2 rounded-md text-sm w-full md:w-max transition-colors ">
-            Submit Request
-          </button>
+          <CButton type="submit" text="Submit Request" />
         </form>
       </div>
 

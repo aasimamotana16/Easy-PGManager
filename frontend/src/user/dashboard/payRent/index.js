@@ -140,10 +140,10 @@ const PayRent = ({ amount, month, dueDate, onPay, onClose, pgId }) => {
 
         <div className="p-5 md:p-8">
           <div className="mb-5">
-            <h2 className="text-xl md:text-2xl font-black text-black uppercase tracking-tight">
+            <h2 className="text-h2-sm lg:text-h2 font-bold text-[#1C1C1C]">
               Secure Checkout
             </h2>
-            <p className="text-[10px] md:text-xs text-gray-500 mt-0.5">
+            <p className="text-[10px] md:text-xs text-white mt-0.5">
               ID: #EZY-{Math.floor(100000 + Math.random() * 900000)}
             </p>
           </div>
@@ -221,12 +221,12 @@ const PayRent = ({ amount, month, dueDate, onPay, onClose, pgId }) => {
               )}
             </CButton>
 
-            <button
+            <CButton
+              text="Cancel Transaction"
+              variant="text"
               onClick={onClose}
-              className="w-full text-[10px] md:text-xs text-gray-400 font-bold hover:text-black transition-colors uppercase tracking-widest"
-            >
-              Cancel Transaction
-            </button>
+              className="w-full"
+            />
           </div>
         </div>
         

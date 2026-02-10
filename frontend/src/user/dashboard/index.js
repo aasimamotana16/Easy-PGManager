@@ -11,7 +11,6 @@ export { default as Agreements } from "./userAgreement";
 export { default as CheckIns } from "./checkIns";
 export { default as Documents } from "./userDocuments";
 export { default as Timeline } from "./timeLine";
-export { default as Rebook } from "./userRebook";
 export { default as OwnerContact } from "./ownerContact";
 export { default as Support } from "./supportPage";
 export { default as ExplorePage } from "./explorePage";
