@@ -79,12 +79,12 @@ const CInput = ({
         />
       )}
       
-      {/* Optional: Error Message placeholder */}
+      {/* Optional: Error Message placeholder 
       {error && (
         <span className="text-xs lg:text-sm text-danger font-medium">
           This field is required or invalid.
         </span>
-      )}
+      )}*/}
     </div>
   );
 };

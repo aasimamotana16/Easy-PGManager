@@ -99,7 +99,7 @@ const SignUp = () => {
       newErrors.confirmPassword = "Passwords do not match";
     }
     
-    if (!agreeTerms) newErrors.terms = "You must agree to the terms";
+    if (!agreeTerms) newErrors.terms = "You must agree to the terms and Conditions and Privacy Policy";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
