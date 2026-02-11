@@ -122,7 +122,7 @@ const Navbar = () => {
         <div className="flex items-center gap-3 md:gap-4">
           {!isLoggedIn ? (
             <div className="hidden sm:flex gap-3">
-              <CButton variant="outline" text="Login" onClick={() => navigate("/login")} />
+              <CButton variant="outline" text="Login" onClick={() => navigate("/loginPage")} />
               <CButton text="Sign Up" onClick={() => navigate("/signup")} />
             </div>
           ) : (
@@ -175,7 +175,7 @@ const Navbar = () => {
             ))}
             {!isLoggedIn && (
               <div className="flex flex-col gap-4 mt-4">
-                <CButton text="Login" onClick={() => navigate("/login")} />
+                <CButton text="Login" onClick={() => navigate("/loginPage")} />
                 <CButton text="Sign Up" onClick={() => navigate("/signup")} />
               </div>
             )}

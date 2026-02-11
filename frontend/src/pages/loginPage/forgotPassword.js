@@ -1,4 +1,4 @@
-{/*import React, { useState } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../../components/navbar";
 import CFormCard from "../../components/cFormCard";
@@ -195,4 +195,4 @@ const ForgotPassword = () => {
   );
 };
 
-export default ForgotPassword;*/}
+export default ForgotPassword;

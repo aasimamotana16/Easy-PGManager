@@ -1,4 +1,4 @@
-{/*import React, { useState } from "react";
+import React, { useState } from "react";
 // 1. ADD THESE IMPORTS
 import { useParams, useNavigate } from "react-router-dom";
 import { resetPassword } from "../../api/api"; 
@@ -74,6 +74,7 @@ const ResetPassword = () => {
             </h1>
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+              {/* OTP Section */}
               {!otpSent ? (
                 <CButton
                   text="Send OTP"
@@ -127,4 +128,4 @@ const ResetPassword = () => {
   );
 };
 
-export default ResetPassword;*/}
+export default ResetPassword;

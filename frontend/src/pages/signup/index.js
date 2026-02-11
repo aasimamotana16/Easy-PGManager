@@ -284,7 +284,7 @@ const SignUp = () => {
 
           <p className="text-center text-sm mt-6 text-gray-600">
             Already have an account?{" "}
-            <span onClick={() => navigate("/login")} className="font-bold text-[#D97706] cursor-pointer hover:underline underline-offset-4 transition-colors hover:text-blue-600">Login</span>
+            <span onClick={() => navigate("/loginPage")} className="font-bold text-[#D97706] cursor-pointer hover:underline underline-offset-4 transition-colors hover:text-blue-600">Login</span>
           </p>
         </CFormCard>
       </div>

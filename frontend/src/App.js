@@ -8,10 +8,10 @@ import theme from "./theme";
 /* ================= PUBLIC PAGES ================= */
 import Home from "./pages/Home";
 import SignUp from "./pages/signup";
-import Login from "./pages/Login";
+import Login from "./pages/loginPage";
 import About from "./pages/about";
-import ForgotPassword from "./pages/Login/forgotPassword";
-import ResetPassword from "./pages/Login/resetPassword";
+import ForgotPassword from "./pages/loginPage/forgotPassword";
+import ResetPassword from "./pages/loginPage/resetPassword";
 import Contact from "./pages/contact";
 import Services from "./pages/services";
 import FAQ from "./pages/faq";
@@ -77,7 +77,7 @@ const UserProtectedRoute = ({ children }) => {
   const role = localStorage.getItem("role");
   return isLoggedIn && role === "user"
     ? children
-    : <Navigate to="/login" replace />;
+    : <Navigate to="/loginPage" replace />;
 };
 
 const OwnerProtectedRoute = ({ children }) => {
@@ -85,12 +85,12 @@ const OwnerProtectedRoute = ({ children }) => {
   const role = localStorage.getItem("role");
   return isLoggedIn && role === "owner"
     ? children
-    : <Navigate to="/login" replace />;
+    : <Navigate to="/loginPage" replace />;
 };
 
 const ProtectedBookingRoute = ({ children }) => {
   const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
-  return isLoggedIn ? children : <Navigate to="/login" replace />;
+  return isLoggedIn ? children : <Navigate to="/loginPage" replace />;
 };
 
 /* ================= APP ================= */
@@ -104,7 +104,7 @@ function App() {
 
           {/* ===== PUBLIC ===== */}
           <Route path="/" element={<Home />} />
-          <Route path="/login" element={<Login />} />
+          <Route path="/loginPage" element={<Login />} />
           <Route path="/signup" element={<SignUp />} />
           <Route path="/about" element={<About />} />
           <Route path="/services" element={<Services />} />

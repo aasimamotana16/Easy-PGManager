@@ -111,23 +111,27 @@ export default function FindMyPG() {
       <main className="flex-1 max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full">
         
         {/* RESTORED PREVIOUS HEADING STYLE */}
-        <div className="relative mt-8 md:mt-12 mb-10">
-          <h1 className="text-h1-sm lg:text-h1 font-bold text-textPrimary tracking-tight">
-          Find your 
-          <span className="text-primary">  Perfect </span> stay
-        </h1>
-        <p className="text-textSecondary mt-2 text-sm sm:text-base font-medium">
-          Apply filters to discover verified properties that match your lifestyle and budget.
-        </p>
-          {showBackButton && (
-            <button
-              onClick={() => navigate(-1)}
-              className="absolute left-0 top-1/2 -translate-y-1/2 p-2.5 rounded-full border border-[#E5E0D9] hover:bg-[#FEF3C7] transition-all"
-            >
-              <ArrowLeft size={22} className="text-[#1C1C1C]" />
-            </button>
-          )}
-        </div>
+       <div className={`relative mt-8 md:mt-12 mb-10 ${showBackButton ? 'pl-16' : ''}`}> 
+  {/* Added dynamic left padding (pl-16) to make room for the button */}
+  
+  {showBackButton && (
+    <button
+      onClick={() => navigate(-1)}
+      className="absolute left-0 top-1/2 -translate-y-1/2 p-2.5 rounded-full border border-border hover:bg-primarySoft transition-all"
+      aria-label="Go back"
+    >
+      <ArrowLeft size={22} className="text-textPrimary" />
+    </button>
+  )}
+
+  <h1 className="text-h1-sm lg:text-h1 font-bold text-textPrimary tracking-tight">
+    Find your <span className="text-primary">Perfect</span> stay
+  </h1>
+  
+  <p className="text-textSecondary mt-2 text-sm sm:text-base font-medium">
+    Apply filters to discover verified properties that match your lifestyle and budget.
+  </p>
+</div>
 
         {/* --- UPDATED 40/60 GRID CONTAINER --- */}
         <div className="flex flex-col lg:flex-row items-start gap-6 xl:gap-10">
