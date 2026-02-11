@@ -17,7 +17,6 @@ import Services from "./pages/services";
 import FAQ from "./pages/faq";
 import FindMyPg from "./pages/findMypg";
 import DemoBook from "./pages/Home/demoBook";
-import Login1 from "./pages/login1";
 
 /* ================= BOOKING ================= */
 import BookingPage from "./pages/booking/bookNowPage";
@@ -116,7 +115,6 @@ function App() {
           <Route path="/findMypg/:type" element={<FindMyPg />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password/:token" element={<ResetPassword />} />
-          <Route path="/login1" element={<Login1/>}/>
 
           {/* ===== PG DETAILS ===== */}
           <Route path="/pg/:id" element={<PGDetails />} />
