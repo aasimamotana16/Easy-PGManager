@@ -31,6 +31,6 @@ yarn.lock
 .next
 
 backend/.env
-frontend/src/pages/loginPage/index.js
+# frontend/src/pages/loginPage/index.js
 
 /test-project
