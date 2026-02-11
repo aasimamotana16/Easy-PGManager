@@ -194,98 +194,126 @@ const SignUp = () => {
       </div>
 
       <div className="relative z-10 w-full px-4 lg:ml-20 flex justify-center lg:justify-start">
-        <CFormCard className="bg-white border border-gray-100 rounded-xl p-5 sm:p-8 w-full max-w-[360px] lg:max-w-none lg:w-[700px] animate-fadeIn shadow-none">
-          
-          <div className="mb-2 flex justify-center">
-            <img src="/logos/logo1.png" alt="Logo" className="h-10 md:h-14 w-auto" />
+        <CFormCard className="bg-white border border-gray-100 rounded-xl p-5 sm:p-8 w-full max-w-[360px] lg:max-w-none lg:w-[700px] animate-fadeIn shadow-none">  
+  <div className="mb-2 flex justify-center">
+    <img src="/logos/logo1.png" alt="Logo" className="h-10 md:h-14 w-auto" />
+  </div>
+
+  <h1 className="text-lg font-bold text-center mb-4 text-primary">
+    Create Your <span className="text-black">Account</span>
+  </h1>
+  
+  <div className="flex flex-col gap-3">
+    <div className="flex gap-2 mb-2">
+      <CButton fullWidth variant={role === "user" ? "contained" : "outlined"} onClick={() => setRole("user")}>User</CButton>
+      <CButton fullWidth variant={role === "owner" ? "contained" : "outlined"} onClick={() => setRole("owner")}>Owner</CButton>
+    </div>
+
+    <div className="w-full">
+       <CInput 
+         label="Full Name" 
+         value={name} 
+         onChange={(e) => {setName(e.target.value); setErrors({...errors, name: ""})}} 
+         error={!!errors.name} 
+         helperText={errors.name} // Moved error message inside CInput
+       />
+    </div>
+
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <CInput 
+          label="Email" 
+          type="email" 
+          value={email} 
+          onChange={(e) => {setEmail(e.target.value); setErrors({...errors, email: ""})}} 
+          error={!!errors.email} 
+          helperText={errors.email} // Moved error message inside CInput
+        />
+      </div>
+      <div>
+        <CInput 
+          label="Phone" 
+          type="tel" 
+          value={phone} 
+          onChange={(e) => {setPhone(e.target.value.slice(0, 10)); setErrors({...errors, phone: ""})}} 
+          error={!!errors.phone} 
+          helperText={errors.phone} // Moved error message inside CInput
+        />
+      </div>
+    </div>
+
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="relative">
+        <CInput 
+          label="Password" 
+          type={showPassword ? "text" : "password"} 
+          value={password} 
+          onChange={(e) => {setPassword(e.target.value); setErrors({...errors, password: ""})}} 
+          error={!!errors.password} 
+          helperText={errors.password} // Moved error message inside CInput
+        />
+        <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-[42px] text-gray-400">
+          {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+        </button>
+        
+        {password.length > 0 && (
+          <div className="mt-2">
+            <div className="flex gap-1 h-1 w-full bg-gray-100 rounded-full overflow-hidden">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className={`h-full flex-1 transition-colors duration-300 ${i < currentStrength ? strengthColors[currentStrength - 1] : "bg-gray-200"}`} />
+              ))}
+            </div>
+            <p className={`text-[9px] mt-1 font-bold uppercase tracking-wider ${currentStrength > 0 ? strengthColors[currentStrength - 1].replace('bg-', 'text-') : 'text-gray-400'}`}>
+              Strength: {strengthLabels[currentStrength - 1] || "None"}
+            </p>
           </div>
+        )}
+      </div>
 
-          <h1 className="text-lg font-bold text-center mb-4 text-primary">
-            Create Your <span className="text-black">Account</span>
-          </h1>
-          
-          <div className="flex flex-col gap-3">
-            <div className="flex gap-2 mb-2">
-              <CButton fullWidth variant={role === "user" ? "contained" : "outlined"} onClick={() => setRole("user")}>User</CButton>
-              <CButton fullWidth variant={role === "owner" ? "contained" : "outlined"} onClick={() => setRole("owner")}>Owner</CButton>
-            </div>
+      <div className="relative">
+        <CInput 
+          label="Confirm Password" 
+          type={showConfirmPassword ? "text" : "password"} 
+          value={confirmPassword} 
+          onChange={(e) => setConfirmPassword(e.target.value)} 
+          error={!!errors.confirmPassword} 
+          helperText={errors.confirmPassword} // Moved error message inside CInput
+        />
+        <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-[42px] text-gray-400">
+          {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+        </button>
+      </div>
+    </div>
 
-            <div className="w-full">
-               <CInput label="Full Name" value={name} onChange={(e) => {setName(e.target.value); setErrors({...errors, name: ""})}} error={!!errors.name} />
-               {errors.name && <p className="text-red-500 text-[10px] mt-1 ml-1 font-medium">{errors.name}</p>}
-            </div>
+    <div className="mt-1">
+      <CCheckbox
+        checked={agreeTerms}
+        onChange={(e) => {
+          setAgreeTerms(e.target.checked);
+          setErrors({ ...errors, terms: "" });
+        }}
+        error={!!errors.terms}
+        helperText={errors.terms} // Moved error message inside CCheckbox
+        label={
+          <span className="cursor-default select-none text-xs">
+            I agree to the{" "}
+            <span onClick={(e) => { e.stopPropagation(); navigate("/termsConditions"); }} className="text-primary font-medium hover:underline cursor-pointer">Terms & Conditions</span>{" "}
+            and{" "}
+            <span onClick={(e) => { e.stopPropagation(); navigate("/privacyPolicy"); }} className="text-primary font-medium hover:underline cursor-pointer">Privacy Policy</span>
+          </span>
+        }
+      />
+    </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <CInput label="Email" type="email" value={email} onChange={(e) => {setEmail(e.target.value); setErrors({...errors, email: ""})}} error={!!errors.email} />
-                {errors.email && <p className="text-red-500 text-[10px] mt-1 ml-1 font-medium">{errors.email}</p>}
-              </div>
-              <div>
-                <CInput label="Phone" type="tel" value={phone} onChange={(e) => {setPhone(e.target.value.slice(0, 10)); setErrors({...errors, phone: ""})}} error={!!errors.phone} />
-                {errors.phone && <p className="text-red-500 text-[10px] mt-1 ml-1 font-medium">{errors.phone}</p>}
-              </div>
-            </div>
+    <CButton fullWidth variant="contained" className="mt-2" onClick={handleSendOtp} disabled={loading}>
+      {loading ? "Sending..." : "Send OTP"}
+    </CButton>
+  </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="relative">
-                <CInput label="Password" type={showPassword ? "text" : "password"} value={password} onChange={(e) => {setPassword(e.target.value); setErrors({...errors, password: ""})}} error={!!errors.password} />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-[42px] text-gray-400">
-                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                </button>
-                
-                {password.length > 0 && (
-                  <div className="mt-2">
-                    <div className="flex gap-1 h-1 w-full bg-gray-100 rounded-full overflow-hidden">
-                      {[...Array(4)].map((_, i) => (
-                        <div key={i} className={`h-full flex-1 transition-colors duration-300 ${i < currentStrength ? strengthColors[currentStrength - 1] : "bg-gray-200"}`} />
-                      ))}
-                    </div>
-                    <p className={`text-[9px] mt-1 font-bold uppercase tracking-wider ${currentStrength > 0 ? strengthColors[currentStrength - 1].replace('bg-', 'text-') : 'text-gray-400'}`}>
-                      Strength: {strengthLabels[currentStrength - 1] || "None"}
-                    </p>
-                  </div>
-                )}
-                {errors.password && <p className="text-red-500 text-[10px] mt-1 ml-1 font-medium">{errors.password}</p>}
-              </div>
-
-              <div className="relative">
-                <CInput label="Confirm Password" type={showConfirmPassword ? "text" : "password"} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} error={!!errors.confirmPassword} />
-                <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-[42px] text-gray-400">
-                  {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                </button>
-                {/* Error message for confirm password */}
-                {errors.confirmPassword && <p className="text-red-500 text-[10px] mt-1 ml-1 font-medium">{errors.confirmPassword}</p>}
-              </div>
-            </div>
-
-            <div className="mt-1">
-              <CCheckbox
-                checked={agreeTerms}
-                onChange={(e) => {
-                  setAgreeTerms(e.target.checked);
-                  setErrors({ ...errors, terms: "" });
-                }}
-                label={
-                  <span className="cursor-default select-none text-xs">
-                    I agree to the{" "}
-                    <span onClick={(e) => { e.stopPropagation(); navigate("/termsConditions"); }} className="text-primary font-medium hover:underline cursor-pointer">Terms & Conditions</span>{" "}
-                    and{" "}
-                    <span onClick={(e) => { e.stopPropagation(); navigate("/privacyPolicy"); }} className="text-primary font-medium hover:underline cursor-pointer">Privacy Policy</span>
-                  </span>
-                }
-              />
-              {errors.terms && <p className="text-red-500 text-[10px] mt-1 font-medium">{errors.terms}</p>}
-            </div>
-
-            <CButton fullWidth variant="contained" className="mt-2" onClick={handleSendOtp} disabled={loading}>
-              {loading ? "Sending..." : "Send OTP"}
-            </CButton>
-          </div>
-
-          <p className="text-center text-sm mt-6 text-gray-600">
-            Already have an account?{" "}
-            <span onClick={() => navigate("/loginPage")} className="font-bold text-[#D97706] cursor-pointer hover:underline underline-offset-4 transition-colors hover:text-blue-600">Login</span>
-          </p>
+  <p className="text-center text-sm mt-6 text-gray-600">
+    Already have an account?{" "}
+    <span onClick={() => navigate("/loginPage")} className="font-bold text-[#D97706] cursor-pointer hover:underline underline-offset-4 transition-colors">Login</span>
+  </p>
         </CFormCard>
       </div>
 

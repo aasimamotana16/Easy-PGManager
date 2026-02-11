@@ -175,28 +175,27 @@ const Agreements = () => {
       {/* --- MODAL USING PORTAL TO COVER ENTIRE SCREEN --- */}
       {showRules && ReactDOM.createPortal(
         <div className="fixed inset-0 w-screen h-screen flex items-center justify-center z-[99999] p-4">
-          {/* Dark Overlay - Explicitly covering everything outside the modal content */}
           <div 
             className="absolute inset-0 bg-black/70 backdrop-blur-sm" 
             onClick={() => setShowRules(false)}
           />
           
-          {/* Modal Box */}
           <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl relative overflow-hidden transition-all animate-in zoom-in duration-200 z-[100000]">
-            <div className="h-2 px-6 bg-[#D97706] w-full" />
             
-            <div className="p-6 md:p-10">
+            {/* UPDATED: Solid Header Background using primary color */}
+            <div className="bg-primary px-6 py-4 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-white uppercase">
+                PG  Occupancy  Rules
+              </h2>
               <button 
                 onClick={() => setShowRules(false)} 
-                className="absolute top-6 right-6 text-[#4B4B4B] hover:text-[#1C1C1C] transition-colors"
+                className="text-white/80 hover:text-white transition-colors"
               >
-                <FaTimes size={22} />
+                <FaTimes size={20} />
               </button>
-
-              <h2 className="text-2xl font-bold mb-6 text-[#1C1C1C] uppercase tracking-tight">
-                PG Occupancy Rules
-              </h2>
-
+            </div>
+            
+            <div className="p-6 md:p-10">
               <div className="max-h-[50vh] overflow-y-auto pr-3 custom-scrollbar">
                 <ul className="space-y-4">
                   {agreementRules.map((rule, index) => (
@@ -217,7 +216,7 @@ const Agreements = () => {
             </div>
           </div>
         </div>,
-        document.body // Renders at the very end of <body> to beat any Navbar z-index
+        document.body
       )}
     </div>
   );

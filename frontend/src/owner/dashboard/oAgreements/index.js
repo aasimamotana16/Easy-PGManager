@@ -201,7 +201,7 @@ const AgreementPage = () => {
             {/* Modal Header: Fixed at top */}
             <div className="bg-primary px-6 py-5 text-white flex justify-between items-center shrink-0">
               <div>
-                <h2 className="text-xl font-bold flex items-center gap-3">
+                <h2 className="text-2xl font-bold text-textLight flex items-center gap-3">
                   <FaFileContract /> Agreement Details
                 </h2>
                 <p className="text-orange-100 text-sm">ID: {selectedAgreement.agreementId}</p>

@@ -114,20 +114,40 @@ const Login = () => {
             <CButton fullWidth className="text-sm" variant={role === "owner" ? "contained" : "outlined"} onClick={() => setRole("owner")}>Owner</CButton>
           </div>
  
-          <div className="mb-2">
-            <CInput label="Email" type="email" value={email} error={!!errors.email}
-                onChange={(e) => { setEmail(e.target.value); if (errors.email) setErrors({...errors, email: ""}); }} />
-            {errors.email && <p className="text-red-600 text-[10px] mt-0.5 ml-1">{errors.email}</p>}
-          </div>
- 
-          <div className="relative w-full mb-4">
-            <CInput label="Password" type={showPassword ? "text" : "password"} value={password} error={!!errors.password}
-              onChange={(e) => { setPassword(e.target.value); if (errors.password) setErrors({...errors, password: ""}); }} />
-            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-[44px] text-gray-400">
-              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-            </button>
-            {errors.password && <p className="text-red-600 text-[10px] mt-0.5 ml-1">{errors.password}</p>}
-          </div>
+         <div className="mb-2">
+  <CInput 
+    label="Email" 
+    type="email" 
+    value={email} 
+    error={!!errors.email}
+    helperText={errors.email} // Error now handled inside CInput
+    onChange={(e) => { 
+      setEmail(e.target.value); 
+      if (errors.email) setErrors({...errors, email: ""}); 
+    }} 
+  />
+</div>
+
+<div className="relative w-full mb-4">
+  <CInput 
+    label="Password" 
+    type={showPassword ? "text" : "password"} 
+    value={password} 
+    error={!!errors.password}
+    helperText={errors.password} // Error now handled inside CInput
+    onChange={(e) => { 
+      setPassword(e.target.value); 
+      if (errors.password) setErrors({...errors, password: ""}); 
+    }} 
+  />
+  <button 
+    type="button" 
+    onClick={() => setShowPassword(!showPassword)} 
+    className="absolute right-3 top-[46px] text-gray-400"
+  >
+    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+  </button>
+</div>
  
           <CButton fullWidth onClick={handleLoginClick} disabled={loading}>
             {loading ? "Logging in..." : "Login"}

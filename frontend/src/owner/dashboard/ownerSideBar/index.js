@@ -172,7 +172,7 @@ const OwnerSidebar = ({ isOpen, closeSidebar }) => {
                   ✓
                 </div>
                 <h3 className="text-2xl font-bold text-gray-800">Success!</h3>
-                <p className="text-white mt-2 font-medium">Logged out successfully.</p>
+                <p className="text-primary mt-2 font-medium">Logged out successfully.</p>
               </div>
             )}
           </div>

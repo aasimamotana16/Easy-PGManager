@@ -130,7 +130,7 @@ const Tenants = () => {
       {/* TABLE CONTAINER - Matches Booking Style */}
       <div className="bg-white rounded-xl shadow-sm border border-[#E5E0D9] overflow-hidden">
         <div className="p-6 border-b border-[#E5E0D9]">
-           <h2 className="text-h2-sm lg:text-h2 font-bold text-[#1C1C1C]">Current Residents</h2>
+           <h2 className="text-h3-sm lg:text-h3 font-bold text-[#1C1C1C]">Current Residents</h2>
         </div>
 
         <div className="overflow-x-auto">

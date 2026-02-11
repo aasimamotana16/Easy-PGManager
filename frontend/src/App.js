@@ -196,6 +196,7 @@ function App() {
               </OwnerProtectedRoute>
             }
           >
+            <Route path="pg/:id" element={<PGDetails />} />
             <Route index element={<Navigate to="dashboardHome" replace />} />
             <Route path="dashboardHome" element={<OwnerDashboardHome />} />
             <Route path="pgManagment" element={<PgManagement />} />

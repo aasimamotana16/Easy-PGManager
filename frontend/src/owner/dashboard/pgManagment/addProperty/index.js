@@ -130,7 +130,6 @@ const AddProperty = () => {
 
   const validateForm = () => {
     let newErrors = {};
-    // Basic Validations
     if (!formData.name.trim()) newErrors.name = "Property name is required";
     if (!formData.forWhom) newErrors.forWhom = "Please select category";
     if (!formData.totalRooms) newErrors.totalRooms = "Enter total rooms";
@@ -138,14 +137,8 @@ const AddProperty = () => {
     if (!formData.area.trim()) newErrors.area = "Area is required";
     if (!formData.address.trim()) newErrors.address = "Address is required";
     if (!/^\d{6}$/.test(formData.pincode)) newErrors.pincode = "Enter valid 6-digit pincode";
-    
-    // Facilities Validation
     if (formData.facilities.length === 0) newErrors.facilities = "Select at least one facility";
-    
-    // Rule/Curfew Validation
     if (!formData.rules.curfew) newErrors.curfew = "Gate closing time is required";
-    
-    // Document Validations
     if (!formData.proofDocuments.aadhaar) newErrors.aadhaar = "Aadhaar card is required";
     if (!formData.proofDocuments.electricityBill) newErrors.electricityBill = "Electricity bill is required";
     if (!formData.proofDocuments.propertyTax) newErrors.propertyTax = "Property tax receipt is required";
@@ -180,16 +173,13 @@ const AddProperty = () => {
             <h2 className="text-lg font-bold text-textPrimary mb-6 border-b pb-2 tracking-wide">BASIC DETAILS</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2">
-                <CInput label="Property Name *" name="name" value={formData.name} onChange={handleChange} />
-                <ErrorLabel message={errors.name} />
+                <CInput label="Property Name *" name="name" value={formData.name} onChange={handleChange} error={!!errors.name} helperText={errors.name} />
               </div>
               <div>
-                <CSelect label="For *" name="forWhom" value={formData.forWhom} onChange={handleChange} options={genderOptions} />
-                <ErrorLabel message={errors.forWhom} />
+                <CSelect label="For *" name="forWhom" value={formData.forWhom} onChange={handleChange} options={genderOptions} error={!!errors.forWhom} helperText={errors.forWhom} />
               </div>
               <div>
-                <CInput ref={roomsRef} label="Total Rooms *" type="number" name="totalRooms" value={formData.totalRooms} onChange={handleChange} placeholder="0" />
-                <ErrorLabel message={errors.totalRooms} />
+                <CInput ref={roomsRef} label="Total Rooms *" type="number" name="totalRooms" value={formData.totalRooms} onChange={handleChange} placeholder="0" error={!!errors.totalRooms} helperText={errors.totalRooms} />
               </div>
               <div className="md:col-span-2 lg:col-span-3">
                 <CInput type="textarea" label="Description" name="description" value={formData.description} onChange={handleChange} rows={3} />
@@ -204,20 +194,16 @@ const AddProperty = () => {
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
-                <CInput label="City *" name="city" value={formData.city} onChange={handleChange} />
-                <ErrorLabel message={errors.city} />
+                <CInput label="City *" name="city" value={formData.city} onChange={handleChange} error={!!errors.city} helperText={errors.city} />
               </div>
               <div>
-                <CInput label="Area / Landmark *" name="area" value={formData.area} onChange={handleChange} />
-                <ErrorLabel message={errors.area} />
+                <CInput label="Area / Landmark *" name="area" value={formData.area} onChange={handleChange} error={!!errors.area} helperText={errors.area} />
               </div>
               <div>
-                <CInput ref={pincodeRef} label="Pincode *" type="number" name="pincode" value={formData.pincode} onChange={handleChange} />
-                <ErrorLabel message={errors.pincode} />
+                <CInput ref={pincodeRef} label="Pincode *" type="number" name="pincode" value={formData.pincode} onChange={handleChange} error={!!errors.pincode} helperText={errors.pincode} />
               </div>
               <div className="md:col-span-3">
-                <CInput type="textarea" label="Full Address *" name="address" value={formData.address} onChange={handleChange} rows={2} />
-                <ErrorLabel message={errors.address} />
+                <CInput type="textarea" label="Full Address *" name="address" value={formData.address} onChange={handleChange} rows={2} error={!!errors.address} helperText={errors.address} />
               </div>
             </div>
           </CFormCard>
@@ -249,8 +235,7 @@ const AddProperty = () => {
                 ))}
               </div>
               <div className="max-w-xs">
-                <CInput type="time" label="Gate Closing Time *" value={formData.rules.curfew} onChange={(e) => updateRule("curfew", e.target.value)} />
-                <ErrorLabel message={errors.curfew} />
+                <CInput type="time" label="Gate Closing Time *" value={formData.rules.curfew} onChange={(e) => updateRule("curfew", e.target.value)} error={!!errors.curfew} helperText={errors.curfew} />
               </div>
             </div>
           </CFormCard>

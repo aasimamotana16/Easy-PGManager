@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import CInput from "../../../components/cInput";
 import CButton from "../../../components/cButton";
 import Swal from "sweetalert2";
-import { motion, AnimatePresence } from "framer-motion"; // Added for animation
+import { motion, AnimatePresence } from "framer-motion";
 
 const DemoBook = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
@@ -18,7 +18,7 @@ const DemoBook = ({ isOpen, onClose }) => {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Theme-consistent colors for SweetAlert
+  // Theme-consistent colors
   const primaryColor = "#D97706"; 
 
   const handleChange = (field, value) => {
@@ -28,17 +28,34 @@ const DemoBook = ({ isOpen, onClose }) => {
       if (val.length > 10) return;
     }
     setFormData({ ...formData, [field]: val });
+    
+    // Clear error when user starts typing
     if (errors[field]) {
-      setErrors({ ...errors, [field]: false });
+      setErrors({ ...errors, [field]: "" });
     }
   };
 
   const validate = () => {
     let newErrors = {};
-    if (!formData.name.trim() || formData.name.length < 2) newErrors.name = true;
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!formData.email.trim() || !emailRegex.test(formData.email)) newErrors.email = true;
-    if (!formData.phone.trim() || formData.phone.length !== 10) newErrors.phone = true;
+    if (!formData.name.trim()) {
+      newErrors.name = "Your name is required";
+    } else if (formData.name.length < 2) {
+      newErrors.name = "Name must be at least 2 characters";
+    }
+
+    const emailRegex = /^\S+@\S+\.\S+$/;
+    if (!formData.email.trim()) {
+      newErrors.email = "Email is required";
+    } else if (!emailRegex.test(formData.email)) {
+      newErrors.email = "Please enter a valid email address";
+    }
+
+    if (!formData.phone.trim()) {
+      newErrors.phone = "Phone number is required";
+    } else if (formData.phone.length !== 10) {
+      newErrors.phone = "Enter a valid 10-digit mobile number";
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -69,14 +86,29 @@ const DemoBook = ({ isOpen, onClose }) => {
       });
 
       if (response.ok) {
-        Swal.fire({ title: "Success!", text: "Demo request submitted!", icon: "success", confirmButtonColor: primaryColor });
+        Swal.fire({ 
+          title: "Success!", 
+          text: "Demo request submitted!", 
+          icon: "success", 
+          confirmButtonColor: primaryColor 
+        });
         setFormData({ name: "", email: "", phone: "", message: "" });
         onClose(); 
       } else {
-        Swal.fire({ title: "Error", text: "Something went wrong", icon: "error", confirmButtonColor: primaryColor });
+        Swal.fire({ 
+          title: "Error", 
+          text: "Something went wrong", 
+          icon: "error", 
+          confirmButtonColor: primaryColor 
+        });
       }
     } catch (error) {
-      Swal.fire({ title: "Error", text: "Connection failed", icon: "warning", confirmButtonColor: primaryColor });
+      Swal.fire({ 
+        title: "Error", 
+        text: "Connection failed", 
+        icon: "warning", 
+        confirmButtonColor: primaryColor 
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -101,7 +133,7 @@ const DemoBook = ({ isOpen, onClose }) => {
           >
             
             {/* HEADER SECTION */}
-            <div className="bg-primary py-5 px-6 sm:px-10 text-center relative">
+            <div className="bg-[#D97706] py-5 px-6 sm:px-10 text-center relative">
               <button
                 onClick={onClose}
                 type="button"
@@ -119,12 +151,13 @@ const DemoBook = ({ isOpen, onClose }) => {
 
             {/* FORM SECTION */}
             <div className="overflow-y-auto p-5 sm:p-8 scrollbar-hide">
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-3">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <CInput
                     label="Your Name"
                     required
-                    error={errors.name}
+                    error={!!errors.name}
+                    helperText={errors.name}
                     placeholder="Ex: John Doe"
                     value={formData.name}
                     onChange={(e) => handleChange("name", e.target.value)}
@@ -135,7 +168,8 @@ const DemoBook = ({ isOpen, onClose }) => {
                     label="Email Address"
                     type="email"
                     required
-                    error={errors.email}
+                    error={!!errors.email}
+                    helperText={errors.email}
                     placeholder="john@example.com"
                     value={formData.email}
                     onChange={(e) => handleChange("email", e.target.value)}
@@ -146,7 +180,8 @@ const DemoBook = ({ isOpen, onClose }) => {
                 <CInput
                   label="Phone Number"
                   required
-                  error={errors.phone}
+                  error={!!errors.phone}
+                  helperText={errors.phone}
                   placeholder="10-digit number"
                   value={formData.phone}
                   onChange={(e) => handleChange("phone", e.target.value)}
@@ -170,17 +205,17 @@ const DemoBook = ({ isOpen, onClose }) => {
                       type="submit"
                       variant="contained"
                       disabled={isSubmitting}
-                      className="w-full h-12 text-base font-bold rounded-xl bg-primary text-white hover:bg-primaryDark transition-all shadow-md"
+                      className="w-full h-12 text-base font-bold rounded-xl bg-[#D97706] text-white hover:bg-[#B45309] transition-all shadow-md"
                     />
                   </motion.div>
                 </div>
               </form>
 
-              <p className="text-[10px] text-center text-textSecondary mt-4 uppercase tracking-widest font-medium">
+              <p className="text-[10px] text-center text-[#4B4B4B] mt-4 uppercase tracking-widest font-medium">
                 Agree to our{" "}
                 <span 
                   onClick={() => { onClose(); navigate("/privacyPolicy"); }}
-                  className="text-primary cursor-pointer hover:underline font-bold"
+                  className="text-[#D97706] cursor-pointer hover:underline font-bold"
                 >
                   Privacy Policy
                 </span>

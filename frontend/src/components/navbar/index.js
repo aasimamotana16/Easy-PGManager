@@ -81,7 +81,8 @@ const Navbar = () => {
     setProfileOpen(false);
   };
 
-  const navLinks = [
+  // UPDATED: Logic to filter links based on owner role
+  const allNavLinks = [
     ["/", "Home"],
     ["/about", "About"],
     ["/services", "Services"],
@@ -89,6 +90,14 @@ const Navbar = () => {
     ["/contact", "Contact"],
     ["/faq", "FAQ"],
   ];
+
+  const navLinks = allNavLinks.filter(([path, label]) => {
+    if (role === "owner") {
+      // Hide Services and FindMyPG for owners
+      return label !== "Services" && label !== "FindMyPG";
+    }
+    return true;
+  });
 
   return (
     <>
@@ -183,7 +192,7 @@ const Navbar = () => {
         </div>
       </nav>
 
-      {/* --- LOGOUT POPUP (Matched with Sidebar) --- */}
+      {/* --- LOGOUT POPUP --- */}
       {isLogoutModalOpen && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center transition-all animate-in zoom-in duration-200">

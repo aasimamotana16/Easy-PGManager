@@ -3,10 +3,11 @@ import Navbar from "../../components/navbar";
 import Footer from "../../components/footer";
 import CInput from "../../components/cInput";
 import CButton from "../../components/cButton";
+import CFormCard from "../../components/cFormCard";
 import Loader from "../../components/loader";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
-import { motion } from "framer-motion"; // Add this import
+import { motion } from "framer-motion";
 
 const Contact = () => {
   const navigate = useNavigate();
@@ -32,11 +33,25 @@ const Contact = () => {
   /* ---------------- VALIDATION ---------------- */
   const validate = () => {
     const newErrors = {};
-    if (!form.fullName.trim()) newErrors.fullName = true;
+    if (!form.fullName.trim()) newErrors.fullName = "Full name is required";
+    
     const emailRegex = /^\S+@\S+\.\S+$/;
-    if (!form.email.trim() || !emailRegex.test(form.email)) newErrors.email = true;
-    if (!form.mobile.trim() || form.mobile.length !== 10) newErrors.mobile = true;
-    if (!form.message.trim()) newErrors.message = true;
+    if (!form.email.trim()) {
+      newErrors.email = "Email is required";
+    } else if (!emailRegex.test(form.email)) {
+      newErrors.email = "Please enter a valid email address";
+    }
+
+    if (!form.mobile.trim()) {
+      newErrors.mobile = "Phone number is required";
+    } else if (form.mobile.length !== 10) {
+      newErrors.mobile = "Enter a valid 10-digit mobile number";
+    }
+
+    if (!form.message.trim()) {
+      newErrors.message = "Message cannot be empty";
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -55,18 +70,16 @@ const Contact = () => {
     }
 
     setLoading(true);
-    const contactData = {
-      fullName: form.fullName,
-      emailAddress: form.email,
-      phoneNumber: form.mobile,
-      yourMessage: form.message,
-    };
-
     try {
       const response = await fetch("http://localhost:5000/api/contact-us", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(contactData),
+        body: JSON.stringify({
+          fullName: form.fullName,
+          emailAddress: form.email,
+          phoneNumber: form.mobile,
+          yourMessage: form.message,
+        }),
       });
       const data = await response.json();
 
@@ -79,8 +92,6 @@ const Contact = () => {
         });
         setForm({ fullName: "", email: "", mobile: "", message: "" });
         setErrors({});
-      } else {
-        Swal.fire({ icon: "error", title: "Submission Failed", confirmButtonColor: "#D97706" });
       }
     } catch (error) {
       Swal.fire({ icon: "error", title: "Server Error", confirmButtonColor: "#D97706" });
@@ -96,19 +107,18 @@ const Contact = () => {
       if (value.length > 10) return;
     }
     setForm({ ...form, [field]: value });
-    if (errors[field]) setErrors({ ...errors, [field]: false });
+    if (errors[field]) setErrors({ ...errors, [field]: "" });
   };
 
   if (pageLoading) return <Loader />;
 
-  // Animation Variants
   const containerVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } },
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-background text-textSecondary">
+    <div className="min-h-screen flex flex-col bg-white text-[#4B4B4B]">
       <Navbar />
 
       <motion.div 
@@ -117,70 +127,118 @@ const Contact = () => {
         transition={{ duration: 0.5 }}
         className="text-center mt-10 mb-10 px-4"
       >
-        <h1 className="text-h1-sm lg:text-h1 font-bold text-textPrimary tracking-tight">
+        <h1 className="text-h1-sm lg:text-h1 font-bold text-[#1C1C1C] tracking-tight">
           Contact Us
         </h1>
-        <p className="text-textSecondary mt-2 text-sm sm:text-base font-medium">
+        <p className="text-[#4B4B4B] mt-2 text-sm sm:text-base font-medium">
           Have questions? Our team is here to help.
         </p>
       </motion.div>
 
-      <main className="flex-1 flex flex-col lg:flex-row gap-16 px-4 lg:px-12 mb-10 max-w-8xl mx-auto w-full">
-        {/* Animated Form Card */}
+      <main className="flex-1 flex flex-col lg:flex-row gap-16 px-4 lg:px-12 mb-16 max-w-8xl mx-auto w-full">
+        
+        {/* Contact Form Card */}
         <motion.div 
           variants={containerVariants}
           initial="hidden"
           animate="visible"
           className="flex-1 flex justify-center"
         >
-          <div className="w-full max-w-2xl md:max-w-3xl mx-auto">
-            <div className="bg-white border  border-primary rounded-md p-10 shadow-lg hover:shadow-xl transition-shadow duration-300">
-              <h2 className="text-center mb-6 text-3xl sm:text-4xl font-bold text-primary tracking-tight">
-                Get in Touch
-              </h2>
+          <CFormCard className="w-full max-w-2xl md:max-w-3xl border-[#D97706] p-8 lg:p-12">
+            <h2 className="text-center mb-8 text-3xl sm:text-4xl font-bold text-[#D97706] tracking-tight">
+              Get in Touch
+            </h2>
 
-              <form className="flex flex-col gap-4 sm:gap-5 lg:gap-6" onSubmit={handleSubmit}>
-                <CInput label="Full Name" required error={errors.fullName} value={form.fullName} onChange={handleChange("fullName")} disabled={loading} placeholder="Enter your full name" />
-                <CInput label="Email Address" type="email" required error={errors.email} value={form.email} onChange={handleChange("email")} disabled={loading} placeholder="example@mail.com" />
-                <CInput label="Phone Number (10 Digits)" required error={errors.mobile} value={form.mobile} onChange={handleChange("mobile")} disabled={loading} placeholder="Enter mobile number" onWheel={(e) => e.target.blur()} />
-                <CInput label="Your Message" type="textarea" required error={errors.message} rows={5} value={form.message} onChange={handleChange("message")} disabled={loading} placeholder="How can we help you?" />
+            <form className="flex flex-col gap-5" onSubmit={handleSubmit}>
+              <CInput 
+                label="Full Name" 
+                required 
+                error={!!errors.fullName} 
+                helperText={errors.fullName} // Integrated helperText
+                value={form.fullName} 
+                onChange={handleChange("fullName")} 
+                disabled={loading} 
+              />
 
-                <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }}>
-                  <CButton type="submit" text={loading ? "Sending..." : "Send Message"} disabled={loading} variant="contained" className="mt-2 w-full py-3 text-lg font-bold shadow-md" />
-                </motion.div>
-              </form>
-            </div>
-          </div>
+              <CInput 
+                label="Email Address" 
+                type="email" 
+                required 
+                error={!!errors.email} 
+                helperText={errors.email} // Integrated helperText
+                value={form.email} 
+                onChange={handleChange("email")} 
+                disabled={loading} 
+              />
+
+              <CInput 
+                label="Phone Number" 
+                type="tel"
+                required 
+                error={!!errors.mobile} 
+                helperText={errors.mobile} // Integrated helperText
+                value={form.mobile} 
+                onChange={handleChange("mobile")} 
+                disabled={loading} 
+                onWheel={(e) => e.target.blur()} 
+              />
+
+              <CInput 
+                label="Your Message" 
+                type="textarea" 
+                required 
+                error={!!errors.message} 
+                helperText={errors.message} // Integrated helperText
+                rows={5} 
+                value={form.message} 
+                onChange={handleChange("message")} 
+                disabled={loading} 
+              />
+
+              <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }} className="mt-4">
+                <CButton 
+                  type="submit" 
+                  text={loading ? "Sending..." : "Send Message"} 
+                  disabled={loading} 
+                  variant="contained" 
+                  className="w-full py-4 text-lg font-bold shadow-md bg-[#D97706]" 
+                />
+              </motion.div>
+            </form>
+          </CFormCard>
         </motion.div>
 
-        {/* Animated Info Card */}
+        {/* Info Column */}
         <motion.div 
           variants={containerVariants}
           initial="hidden"
           animate="visible"
-          transition={{ delay: 0.2 }} // Slight delay for staggered effect
-          className="flex-1 flex flex-col gap-6"
+          transition={{ delay: 0.2 }}
+          className="flex-1 flex flex-col gap-8"
         >
-          <div className="bg-white p-8 rounded-md shadow-lg border border-primary">
-            <h3 className="text-2xl md:text-4xl lg:text-2xl font-bold text-textPrimary mb-4">
+          <div className="bg-white p-8 rounded-md shadow-lg border border-[#D97706]">
+            <h3 className="text-2xl md:text-3xl font-bold text-[#1C1C1C] mb-4">
               How can We Help?
             </h3>
-            <p className="text-textSecondary mb-4 md:text-2xl lg:text-xl">
+            <p className="text-[#4B4B4B] mb-6 text-lg">
               Get in touch with our support team for demos, onboarding help, or product questions.
             </p>
-            <ul className="space-y-3 md:text-2xl lg:text-xl font-medium">
-              <motion.li whileHover={{ x: 5 }} className="flex items-center gap-2 cursor-default"><span className="text-primary">✔</span> Request a demo</motion.li>
-              <motion.li whileHover={{ x: 5 }} className="flex items-center gap-2 cursor-default"><span className="text-primary">✔</span> Choose the right plan</motion.li>
-              <motion.li whileHover={{ x: 5 }} className="flex items-center gap-2 cursor-default"><span className="text-primary">✔</span> Get onboarding help</motion.li>
+            <ul className="space-y-4 text-lg font-medium">
+              <li className="flex items-center gap-3"><span className="text-[#D97706] font-bold">✔</span> Request a demo</li>
+              <li className="flex items-center gap-3"><span className="text-[#D97706] font-bold">✔</span> Choose the right plan</li>
+              <li className="flex items-center gap-3"><span className="text-[#D97706] font-bold">✔</span> Get onboarding help</li>
             </ul>
-            <div className="mt-8">
+            
+            <div className="mt-10">
               <motion.div 
                 whileHover={{ scale: 1.02 }}
-                className="bg-primarySoft p-6 rounded-xl shadow border border-border"
+                className="bg-[#FEF3C7] p-8 rounded-xl shadow border border-[#E5E0D9]"
               >
-                <h4 className="text-textPrimary mb-2 text-lg md:text-2xl lg:text-xl font-bold">General Communication</h4>
-                <p className="text-sm md:text-xl lg:text-base text-textSecondary mb-1">Email us at:</p>
-                <p className="font-semibold text-primaryDark break-all text-base md:text-2xl lg:text-xl underline decoration-primary/30">support@easyPGmanager.com</p>
+                <h4 className="text-[#1C1C1C] mb-2 text-xl font-bold">General Communication</h4>
+                <p className="text-[#4B4B4B] mb-1">Email us at:</p>
+                <p className="font-semibold text-[#B45309] break-all text-xl underline decoration-[#D97706]/30">
+                  support@easyPGmanager.com
+                </p>
               </motion.div>
             </div>
           </div>
