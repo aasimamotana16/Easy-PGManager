@@ -106,9 +106,9 @@ const BookingManagement = () => {
           <h1 className="text-4xl font-bold text-[#1C1C1C]">Bookings</h1>
           <p className="text-[#4B4B4B] mt-2">Manage and track all tenant booking requests</p>
         </div>
-        <CButton className="flex items-center gap-2">
+        {/*<CButton className="flex items-center gap-2">
           <FaPlus /> Add New Booking
-        </CButton>
+        </CButton>*/}
       </div>
 
       {/* SEARCH AND FILTER */}

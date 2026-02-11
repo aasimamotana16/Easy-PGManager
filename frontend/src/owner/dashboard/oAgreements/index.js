@@ -108,12 +108,12 @@ const AgreementPage = () => {
             </div>
           </div>
 
-          <CButton
+          {/*<CButton
             className="w-full sm:w-auto text-white px-6 py-2.5 rounded-md shadow-sm text-sm md:text-base"
             onClick={() => navigate("/owner/dashboard")}
           >
             + Add New Agreement
-          </CButton>
+          </CButton>*/}
         </div>
 
         {/* SEARCH SECTION */}

@@ -151,7 +151,7 @@ const OwnerSidebar = ({ isOpen, closeSidebar }) => {
             {!isLogoutSuccessful ? (
               <>
                 <h3 className="text-2xl font-bold text-gray-800">Confirm Logout</h3>
-                <p className="text-white my-4 font-medium">Are you sure you want to end your session?</p>
+                <p className="text-black my-4 font-medium">Are you sure you want to end your session?</p>
                 <div className="flex gap-3 mt-6">
                   <CButton 
                     text="No"
