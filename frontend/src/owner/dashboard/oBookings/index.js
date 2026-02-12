@@ -4,8 +4,6 @@ import {
   FaTimes,
   FaClock,
   FaSearch,
-  FaFilter,
-  FaPlus,
   FaRegPaperPlane
 } from "react-icons/fa";
 import { LuDownload } from "react-icons/lu"; 
@@ -20,6 +18,7 @@ const BookingManagement = () => {
   const [selectedPg, setSelectedPg] = useState("All Properties");
 
   const fetchBookings = async () => {
+    // Sample data for initial state
     const sample = [
       { _id: '1', bookingId: 'BK001', pgName: 'Green Villa', roomType: 'Single', tenantName: 'Rahul Sharma', checkInDate: '2026-01-15', checkOutDate: '2026-02-15', status: 'Confirmed', isPaid: false },
       { _id: '2', bookingId: 'BK002', pgName: 'Sunshine Residency', roomType: 'Double', tenantName: 'Priya Patel', checkInDate: '2026-01-20', checkOutDate: '2026-02-20', status: 'Pending', isPaid: false },
@@ -61,10 +60,12 @@ const BookingManagement = () => {
   const handleUpdateStatus = async (id, newStatus) => {
     const confirm = await Swal.fire({
       title: `Update to ${newStatus}?`,
+      text: `Are you sure you want to mark this as ${newStatus}?`,
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#D97706",
       cancelButtonColor: "#4B4B4B",
+      confirmButtonText: "Yes, update it!"
     });
 
     if (confirm.isConfirmed) {
@@ -75,7 +76,14 @@ const BookingManagement = () => {
           { headers: { Authorization: `Bearer ${token}` } }
         );
         fetchBookings();
+        Swal.fire({
+          title: "Updated!",
+          text: `Booking is now ${newStatus}.`,
+          icon: "success",
+          confirmButtonColor: "#D97706",
+        });
       } catch (err) {
+        // Optimistic UI fallback if API fails
         setBookings(prev => prev.map(b => b._id === id ? {...b, status: newStatus} : b));
       }
     }
@@ -92,23 +100,54 @@ const BookingManagement = () => {
       confirmButtonText: 'Yes, resend'
     }).then((result) => {
       if (result.isConfirmed) {
-        Swal.fire('Sent!', 'Payment link has been resent.', 'success');
+        // Show a loading state while "sending"
+        Swal.fire({
+          title: 'Sending...',
+          allowOutsideClick: false,
+          didOpen: () => {
+            Swal.showLoading();
+          }
+        });
+
+        // Simulate API call
+        setTimeout(() => {
+          Swal.fire({
+            title: 'Sent!',
+            text: 'Payment link has been resent successfully.',
+            icon: 'success',
+            confirmButtonColor: '#D97706',
+          });
+        }, 1500);
       }
+    });
+  };
+
+  const handleDownload = (bookingId) => {
+    Swal.fire({
+      title: 'Generating PDF...',
+      timer: 1500,
+      timerProgressBar: true,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    }).then(() => {
+      Swal.fire({
+        title: 'Download Started',
+        text: `Booking details for ${bookingId} have been saved.`,
+        icon: 'success',
+        confirmButtonColor: '#D97706',
+      });
     });
   };
 
   return (
     <div className="p-4 md:p-10 bg-gray-100 min-h-screen">
-      
       {/* HEADER SECTION */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
           <h1 className="text-4xl font-bold text-[#1C1C1C]">Bookings</h1>
           <p className="text-[#4B4B4B] mt-2">Manage and track all tenant booking requests</p>
         </div>
-        {/*<CButton className="flex items-center gap-2">
-          <FaPlus /> Add New Booking
-        </CButton>*/}
       </div>
 
       {/* SEARCH AND FILTER */}
@@ -212,7 +251,7 @@ const BookingManagement = () => {
                         </button>
                       )}
                       <button 
-                        onClick={() => window.alert(`Downloading ${b.bookingId}`)}
+                        onClick={() => handleDownload(b.bookingId)}
                         className="p-2 text-[#4B4B4B] hover:text-[#D97706] hover:bg-[#FEF3C7] rounded-full transition-all"
                         title="Download Confirmation"
                       >

@@ -95,7 +95,7 @@ const ProfileStatus = () => {
             </CButton>
             {editMode && (
               <CButton 
-                className="bg-white text-[#4B4B4B] border border-[#E5E0D9] font-medium py-3 px-8 rounded-xl w-full md:w-auto"
+                className="bg-primary text-[#4B4B4B] border border-[#E5E0D9] font-medium py-3 px-8 rounded-xl w-full md:w-auto"
                 onClick={() => setEditMode(false)}
               >
                 Cancel

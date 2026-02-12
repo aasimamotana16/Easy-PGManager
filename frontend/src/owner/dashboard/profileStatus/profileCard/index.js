@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import CButton from "../../../../components/cButton";
+import Swal from "sweetalert2"; // Import SweetAlert2
 import { 
   FaEdit, FaCog, FaFacebookF, FaInstagram, FaLinkedinIn, FaTwitter 
 } from "react-icons/fa";
@@ -10,18 +11,15 @@ const ProfileCard = ({ profileData, setProfileData }) => {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("profile");
 
-
   React.useEffect(() => {
     setTempData(profileData);
   }, [profileData]);
-
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setTempData({ ...tempData, [name]: value });
   };
 
- // PASTE THE NEW CODE HERE (Replacing the old handleSave)
   const handleSave = async () => {
     try {
       const token = localStorage.getItem("token"); 
@@ -43,16 +41,37 @@ const ProfileCard = ({ profileData, setProfileData }) => {
       const result = await response.json();
 
       if (result.success) {
-        setProfileData(result.data); // result.data matches your UI structure
+        setProfileData(result.data);
         setEditMode(false);
         setSettingsOpen(false);
-        alert("Profile saved to database!");
+
+        // SweetAlert Success [cite: 2026-02-09]
+        Swal.fire({
+          title: "Success!",
+          text: "Profile saved to database!",
+          icon: "success",
+          confirmButtonColor: "#D97706", // Your primary color
+        });
+
       } else {
-        alert("Error: " + result.message);
+        // SweetAlert Error
+        Swal.fire({
+          title: "Error!",
+          text: result.message || "Failed to update profile",
+          icon: "error",
+          confirmButtonColor: "#D97706",
+        });
       }
     } catch (error) {
       console.error("Failed to save profile:", error);
-      alert("Server connection failed.");
+      
+      // SweetAlert Connection Error
+      Swal.fire({
+        title: "Server Error",
+        text: "Could not connect to the server.",
+        icon: "warning",
+        confirmButtonColor: "#D97706",
+      });
     }
   };
 
@@ -163,7 +182,6 @@ const ProfileCard = ({ profileData, setProfileData }) => {
                     <p className="font-bold mb-2">Update Profile Info</p>
                     <input name="name" value={tempData.name} onChange={handleChange} className="border rounded px-2 py-1 w-full mb-2" />
                     <input name="email" value={tempData.email} onChange={handleChange} className="border rounded px-2 py-1 w-full mb-2" />
-                    
                     <input name="phone" value={tempData.phone} onChange={handleChange} className="border rounded px-2 py-1 w-full mb-2" />
                   </div>
                 )}
@@ -172,10 +190,10 @@ const ProfileCard = ({ profileData, setProfileData }) => {
                   <div>
                     <p className="font-bold mb-2">Notification Settings</p>
                     <label className="flex items-center gap-2">
-                      <input type="checkbox" checked /> Bookings Updates
+                      <input type="checkbox" defaultChecked /> Bookings Updates
                     </label>
                     <label className="flex items-center gap-2">
-                      <input type="checkbox" checked /> Complaints Alerts
+                      <input type="checkbox" defaultChecked /> Complaints Alerts
                     </label>
                     <label className="flex items-center gap-2">
                       <input type="checkbox" /> PG Updates

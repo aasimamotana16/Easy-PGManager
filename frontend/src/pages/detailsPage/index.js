@@ -11,7 +11,8 @@ import {
   StarIcon,
   MapPinIcon,
   PaperAirplaneIcon,
-  XMarkIcon
+  XMarkIcon,
+  ShieldCheckIcon
 } from "@heroicons/react/24/solid";
 
 /* ================= ANIMATION VARIANTS ================= */
@@ -57,6 +58,9 @@ const PGDetails = () => {
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
   const [editableName, setEditableName] = useState(storedUserName);
+  
+  // ERROR STATE FOR VALIDATION
+  const [formError, setFormError] = useState("");
 
   const reviewsRef = useRef(null);
   const pg = pgList?.find((item) => item._id === id);
@@ -86,6 +90,8 @@ const PGDetails = () => {
 
   const priceData = pg?.roomPrices || pg?.price || {};
   const displayStartingPrice = pg?.startingPrice || (Object.keys(priceData).length ? Math.min(...Object.values(priceData).map(Number)) : "5,000");
+  
+  const displayDeposit = pg?.securityDeposit || displayStartingPrice;
 
   const reviews = pg?.reviews?.length ? pg.reviews : [
     { user: "ABCD", rating: 5, comment: "Clean rooms and very safe environment." },
@@ -94,7 +100,14 @@ const PGDetails = () => {
 
   const averageRating = (reviews.reduce((sum, r) => sum + Number(r.rating), 0) / reviews.length).toFixed(1);
 
+  // UPDATED VALIDATION LOGIC
   const handleSubmitFeedback = () => {
+    if (!editableName.trim() || !comment.trim() || rating === 0) {
+      setFormError("Please provide name, rating, and a comment.");
+      return;
+    }
+    
+    setFormError("");
     setIsFeedbackOpen(false);
     setRating(0);
     setComment("");
@@ -149,12 +162,26 @@ const PGDetails = () => {
 
           {/* ================= CONDITIONAL BOOK NOW SECTION ================= */}
           <motion.div variants={fadeInUp} className="bg-white rounded-md shadow p-5 md:p-6 flex flex-row justify-between items-center border border-l-4 border-primary">
-            <div>
-              <p className="text-xs md:text-sm font-semibold text-textSecondary uppercase tracking-widest">Starting Price</p>
-              <p className="text-2xl md:text-3xl font-bold text-textPrimary">
-                ₹{displayStartingPrice}
-                <span className="text-sm md:text-lg text-textSecondary font-normal ml-1">/month</span>
-              </p>
+            <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-8">
+              <div>
+                <p className="text-xs md:text-sm font-semibold text-textSecondary uppercase tracking-widest">Starting Price</p>
+                <p className="text-2xl md:text-3xl font-bold text-textPrimary">
+                  ₹{displayStartingPrice}
+                  <span className="text-sm md:text-lg text-textSecondary font-normal ml-1">/month</span>
+                </p>
+              </div>
+              
+              <div className="h-8 w-[1px] bg-border hidden md:block"></div>
+
+              <div>
+                <p className="text-xs md:text-sm font-semibold text-textSecondary uppercase tracking-widest flex items-center gap-1">
+                   Security Deposit
+                </p>
+                <p className="text-xl md:text-2xl font-bold text-textSecondary">
+                  ₹{displayDeposit}
+                  <span className="text-[10px] md:text-xs text-textSecondary font-medium ml-1 bg-background px-2 py-0.5 rounded border border-border italic uppercase tracking-tighter">Refundable</span>
+                </p>
+              </div>
             </div>
             
             {role === "owner" ? (
@@ -176,14 +203,12 @@ const PGDetails = () => {
             )}
           </motion.div>
 
-          {/* MOBILE ONLY: RULES & FEATURES */}
           <div className="flex flex-col gap-6 lg:hidden">
-             <HouseRules pg={pg} ruleIcons={ruleIcons} />
-             <FeatureList title="Facilities" items={pg?.facilities || []} icon="🛠️" />
-             <FeatureList title="Amenities" items={pg?.amenities || []} icon="⭐" />
+              <HouseRules pg={pg} ruleIcons={ruleIcons} />
+              <FeatureList title="Facilities" items={pg?.facilities || []} icon="🛠️" />
+              <FeatureList title="Amenities" items={pg?.amenities || []} icon="⭐" />
           </div>
 
-          {/* MAP */}
           <motion.div variants={fadeInUp} className="bg-white rounded-md overflow-hidden shadow border border-border">
             <div className="flex justify-between items-center p-4 md:p-5 border-b border-border">
               <div className="flex items-center gap-2 text-lg font-bold text-textPrimary">
@@ -200,7 +225,6 @@ const PGDetails = () => {
             <iframe title="map" className="w-full h-64 md:h-80 grayscale-[0.3]" src={`https://maps.google.com/maps?q=${encodeURIComponent(pg.name + " " + (pg.location || ""))}&t=&z=14&ie=UTF8&iwloc=&output=embed`} />
           </motion.div>
 
-          {/* REVIEWS */}
           <motion.div variants={fadeInUp} ref={reviewsRef} className="bg-white rounded-md p-5 md:p-6 shadow border border-primary">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl md:text-2xl font-bold flex items-center gap-2 text-textPrimary">
@@ -208,7 +232,7 @@ const PGDetails = () => {
                 <span className="text-textSecondary font-normal text-sm md:text-lg">({reviews.length} Reviews)</span>
               </h2>
               {isLoggedIn && role !== "owner" && (
-                <button onClick={() => setIsFeedbackOpen(true)} className="text-primaryDark font-bold hover:underline text-sm md:text-base">
+                <button onClick={() => { setIsFeedbackOpen(true); setFormError(""); }} className="text-primaryDark font-bold hover:underline text-sm md:text-base">
                   Write Review
                 </button>
               )}
@@ -242,13 +266,15 @@ const PGDetails = () => {
               <MapPinIcon className="h-5 w-5 text-primary" /> {pg.location}
             </p>
 
-            <div className="mt-6 flex items-center gap-4 bg-background p-4 rounded-md border border-border">
-              <div className="bg-primary p-2 rounded-md shadow-sm">
-                <StarIcon className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <p className="text-[10px] text-textSecondary font-bold uppercase tracking-widest">Community Rating</p>
-                <span className="text-xl font-bold text-textPrimary">{averageRating} / 5.0</span>
+            <div className="mt-6 flex flex-col gap-3">
+              <div className="flex items-center gap-4 bg-background p-4 rounded-md border border-border">
+                <div className="bg-primary p-2 rounded-md shadow-sm">
+                  <StarIcon className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <p className="text-[10px] text-textSecondary font-bold uppercase tracking-widest">Community Rating</p>
+                  <span className="text-xl font-bold text-textPrimary">{averageRating} / 5.0</span>
+                </div>
               </div>
             </div>
           </motion.div>
@@ -278,6 +304,14 @@ const PGDetails = () => {
                 <XMarkIcon className="h-6 w-6" />
               </button>
               <h2 className="text-2xl font-bold mb-6 text-center text-textPrimary">Write a Review</h2>
+              
+              {/* DISPLAY ERROR MESSAGE */}
+              {formError && (
+                <div className="mb-4 p-2 bg-red-50 border border-red-200 text-red-600 text-xs font-bold rounded text-center animate-pulse">
+                  {formError}
+                </div>
+              )}
+
               <div className="space-y-4">
                 <div>
                   <label className="text-[10px] font-bold text-textSecondary uppercase tracking-widest block mb-1">Full Name</label>
@@ -285,7 +319,7 @@ const PGDetails = () => {
                     type="text"
                     value={editableName}
                     onChange={(e) => setEditableName(e.target.value)}
-                    className="w-full p-3 border border-border rounded-md focus:ring-2 focus:ring-primarySoft focus:border-primary outline-none transition-all"
+                    className={`w-full p-3 border rounded-md focus:ring-2 focus:ring-primarySoft focus:border-primary outline-none transition-all ${formError && !editableName.trim() ? 'border-red-500 bg-red-50' : 'border-border'}`}
                     placeholder="Enter your name"
                   />
                 </div>
@@ -301,7 +335,7 @@ const PGDetails = () => {
                         whileHover={{ scale: 1.2 }}
                         whileTap={{ scale: 0.8 }}
                         key={n} 
-                        onClick={() => setRating(n)} 
+                        onClick={() => {setRating(n); setFormError("");}} 
                         className={`text-4xl ${n <= rating ? "text-primary" : "text-border"}`}
                       >★</motion.button>
                     ))}
@@ -309,7 +343,7 @@ const PGDetails = () => {
                 </div>
                 <div>
                   <label className="text-[10px] font-bold text-textSecondary uppercase tracking-widest block mb-1">Your Review</label>
-                  <textarea rows={4} value={comment} onChange={(e) => setComment(e.target.value)} className="w-full border border-border rounded-md p-3 focus:ring-2 focus:ring-primarySoft focus:border-primary outline-none transition-all" placeholder="Share your experience..." />
+                  <textarea rows={4} value={comment} onChange={(e) => setComment(e.target.value)} className={`w-full border rounded-md p-3 focus:ring-2 focus:ring-primarySoft focus:border-primary outline-none transition-all ${formError && !comment.trim() ? 'border-red-500 bg-red-50' : 'border-border'}`} placeholder="Share your experience..." />
                 </div>
               </div>
               <div className="flex gap-3 mt-6">

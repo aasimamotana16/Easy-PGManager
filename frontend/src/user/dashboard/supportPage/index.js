@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import CButton from "../../../components/cButton";
 import CInput from "../../../components/cInput";
 import axios from "axios";
+import Swal from "sweetalert2"; // Import SweetAlert2
 
 const Support = () => {
   const [formData, setFormData] = useState({
@@ -11,7 +12,6 @@ const Support = () => {
     message: "",
   });
 
-  const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
@@ -31,13 +31,26 @@ const Support = () => {
       });
 
       if (response.data.success) {
-        setSubmitted(true);
+        // SweetAlert Success instead of manual state
+        Swal.fire({
+          title: "Submitted!",
+          text: "Your query has been submitted successfully!",
+          icon: "success",
+          confirmButtonColor: "#D97706",
+        });
+
         setFormData({ name: "", email: "", subject: "", message: "" });
-        setTimeout(() => setSubmitted(false), 5000);
       }
     } catch (error) {
       console.error("Support Submission Error:", error);
-      alert(error.response?.data?.message || "Connection failed. Check your terminal.");
+      
+      // SweetAlert Error
+      Swal.fire({
+        title: "Submission Failed",
+        text: error.response?.data?.message || "Connection failed. Please try again later.",
+        icon: "error",
+        confirmButtonColor: "#D97706",
+      });
     } finally {
       setLoading(false);
     }
@@ -59,15 +72,6 @@ const Support = () => {
           <Info label="Phone" value="+91 98765 43210" />
           <Info label="Working Hours" value="Mon-Sat, 9AM - 6PM" />
         </div>
-
-        {/* Success Message */}
-        {submitted && (
-          <div className="bg-green-50 p-3 rounded-md border border-green-200">
-            <p className="text-green-600 font-medium">
-              Your query has been submitted successfully!
-            </p>
-          </div>
-        )}
 
         {/* Support Form */}
         <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">

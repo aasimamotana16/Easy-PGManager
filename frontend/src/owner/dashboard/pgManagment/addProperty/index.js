@@ -314,9 +314,9 @@ const AddProperty = () => {
               <div>
                 <CSelect label="For *" name="forWhom" value={formData.forWhom} onChange={handleChange} options={genderOptions} error={!!errors.forWhom} helperText={errors.forWhom} />
               </div>
-              <div>
+              {/*<div>
                 <CInput ref={roomsRef} label="Total Rooms *" type="number" name="totalRooms" value={formData.totalRooms} onChange={handleChange} placeholder="0" error={!!errors.totalRooms} helperText={errors.totalRooms} />
-              </div>
+              </div>*/}
               <div className="md:col-span-2 lg:col-span-3">
                 <CInput type="textarea" label="Description" name="description" value={formData.description} onChange={handleChange} rows={3} />
               </div>

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-// 1. ADD THESE IMPORTS
 import { useParams, useNavigate } from "react-router-dom";
 import { resetPassword } from "../../api/api"; 
+import Swal from "sweetalert2"; // Import SweetAlert2
 
 import Navbar from "../../components/navbar";
 import CFormCard from "../../components/cFormCard";
@@ -12,33 +12,43 @@ const ResetPassword = () => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  // OTP related states for frontend demo
   const [otp, setOtp] = useState("");
   const [enteredOtp, setEnteredOtp] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   const [otpMessage, setOtpMessage] = useState("");
 
-  // 2. INITIALIZE HOOKS
   const { token } = useParams(); 
   const navigate = useNavigate();
 
-  // Generate frontend OTP for demo
   const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString();
 
   const handleSendOtp = () => {
     const newOtp = generateOtp();
     setOtp(newOtp);
     setOtpSent(true);
+    
+    // Updated to use SweetAlert for OTP notification
+    Swal.fire({
+      title: "OTP Sent!",
+      text: "Check your console for the demo OTP.",
+      icon: "info",
+      confirmButtonColor: "#D97706",
+    });
+
     setOtpMessage(`OTP sent (check console for demo)`);
-    console.log("Generated OTP:", newOtp); // frontend-only OTP
+    console.log("Generated OTP:", newOtp);
   };
 
-  // 3. MAKE THIS FUNCTION ASYNC
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!otpSent) {
-      alert("Please send OTP first.");
+      Swal.fire({
+        title: "Wait!",
+        text: "Please send OTP first.",
+        icon: "warning",
+        confirmButtonColor: "#D97706",
+      });
       return;
     }
 
@@ -48,18 +58,37 @@ const ResetPassword = () => {
     }
 
     if (password !== confirmPassword) {
-      alert("Passwords do not match");
+      Swal.fire({
+        title: "Mismatch!",
+        text: "Passwords do not match.",
+        icon: "error",
+        confirmButtonColor: "#D97706",
+      });
       return;
     }
 
     try {
-      // 4. CALL THE BACKEND
       const response = await resetPassword(token, { password });
-      alert(response.data.message || "Password updated successfully!");
+      
+      // Success SweetAlert
+      await Swal.fire({
+        title: "Success!",
+        text: response.data.message || "Password updated successfully!",
+        icon: "success",
+        confirmButtonColor: "#D97706",
+      });
+
       navigate("/login"); 
     } catch (err) {
       console.error(err);
-      alert(err.response?.data?.message || "Invalid or expired link. Please try again.");
+      
+      // Error SweetAlert
+      Swal.fire({
+        title: "Error",
+        text: err.response?.data?.message || "Invalid or expired link. Please try again.",
+        icon: "error",
+        confirmButtonColor: "#D97706",
+      });
     }
   };
 
@@ -69,12 +98,11 @@ const ResetPassword = () => {
       <main className="flex-1 flex items-center justify-center px-4 py-6">
         <div className="w-full max-w-[360px] sm:max-w-[420px] md:max-w-[700px] mx-auto">
           <CFormCard className="p-6 sm:p-8 md:p-10">
-            <h1 className="text-center  mb-6 text-2xl sm:text-3xl md:text-4xl text-text-primary">
+            <h1 className="text-center mb-6 text-2xl sm:text-3xl md:text-4xl text-text-primary">
               Reset Password
             </h1>
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-              {/* OTP Section */}
               {!otpSent ? (
                 <CButton
                   text="Send OTP"

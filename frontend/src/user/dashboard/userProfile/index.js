@@ -3,6 +3,7 @@ import CButton from "../../../components/cButton";
 import CInput from "../../../components/cInput";
 import Navbar from "../../../components/navbar";
 import Footer from "../../../components/footer";
+import Swal from "sweetalert2"; // Import SweetAlert2
 import {
   getUserProfile,
   updateProfilePicture,
@@ -45,21 +46,60 @@ const Profile = () => {
     try {
       setLoading(true);
       const res = await updateProfilePicture(formDataObj);
-      if (res.data.success) await fetchProfile();
+      if (res.data.success) {
+        await fetchProfile();
+        Swal.fire({
+          title: "Uploaded!",
+          text: "Profile picture updated successfully.",
+          icon: "success",
+          confirmButtonColor: "#D97706",
+        });
+      }
     } catch (err) {
-      alert("Failed to upload image");
+      Swal.fire({
+        title: "Error",
+        text: "Failed to upload image",
+        icon: "error",
+        confirmButtonColor: "#D97706",
+      });
     } finally {
       setLoading(false);
     }
   };
 
   const handleRemove = async () => {
-    if (window.confirm("Remove profile picture?")) {
+    // Replaced window.confirm with SweetAlert
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: "Do you want to remove your profile picture?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#D97706",
+      cancelButtonColor: "#1F1F1F",
+      confirmButtonText: "Yes, remove it!",
+      cancelButtonText: "No, keep it"
+    });
+
+    if (result.isConfirmed) {
       try {
         const res = await removeProfilePicture();
-        if (res.data.success) await fetchProfile();
+        if (res.data.success) {
+          await fetchProfile();
+          Swal.fire({
+            title: "Removed!",
+            text: "Profile picture has been removed.",
+            icon: "success",
+            confirmButtonColor: "#D97706",
+          });
+        }
       } catch (err) {
         console.error("Remove failed", err);
+        Swal.fire({
+          title: "Error",
+          text: "Failed to remove photo.",
+          icon: "error",
+          confirmButtonColor: "#D97706",
+        });
       }
     }
   };
@@ -80,9 +120,20 @@ const Profile = () => {
       if (res.data.success) {
         await fetchProfile();
         setIsModalOpen(false);
+        Swal.fire({
+          title: "Profile Updated",
+          text: "Your information has been synced successfully.",
+          icon: "success",
+          confirmButtonColor: "#D97706",
+        });
       }
     } catch (err) {
-      alert("Update failed");
+      Swal.fire({
+        title: "Update Failed",
+        text: err.response?.data?.message || "Something went wrong.",
+        icon: "error",
+        confirmButtonColor: "#D97706",
+      });
     } finally {
       setLoading(false);
     }
@@ -152,7 +203,6 @@ const Profile = () => {
             </div>
           </div>
 
-          {/* TAB NAVIGATION + EDIT BUTTON (AS PER SCREENSHOT) */}
           <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
             <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
               {[
@@ -175,13 +225,11 @@ const Profile = () => {
               ))}
             </div>
 
-            {/* THE RIGHT-SIDE EDIT BUTTON */}
             <CButton onClick={openEditModal} className="text-white rounded-md text-[11px] uppercase px-6 py-2.5 flex items-center gap-2 shadow-sm">
               <FaUserEdit size={16} /> Edit
             </CButton>
           </div>
 
-          {/* DATA CARD */}
            <div className="bg-white rounded-md border-2 border-primary shadow p-6 lg:p-10 relative">
             <h3 className="text-h2-sm lg:text-h2 font-bold text-[#1C1C1C] mb-8 border-b border-gray-50 pb-4">
               {activeTab} Info
@@ -199,6 +247,7 @@ const Profile = () => {
                       <Info label="Email" value={user?.email} className="sm:col-span-2 border-t pt-8 mt-4" />
                   </div>
               )}
+              {/* ... other tab views remain the same ... */}
               {activeTab === 'professional' && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
                       <Info label="Status" value={user?.occupationType} className="capitalize" />
@@ -246,7 +295,7 @@ const Profile = () => {
 
       <Footer />
 
-      {/* --- MODAL (Kept same logic, updated styling) --- */}
+      {/* --- MODAL --- */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-center justify-center p-2 md:p-4">
           <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[95vh] flex flex-col shadow-2xl overflow-hidden">
@@ -255,7 +304,6 @@ const Profile = () => {
               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-2">Identity Sync Engine</p>
             </div>
             <div className="flex-1 overflow-y-auto p-6 md:p-10 space-y-10 custom-scrollbar">
-               {/* Modal content remains same as your logic... */}
                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
                 <div className="md:col-span-2 text-sm font-black text-gray-700 uppercase border-b border-gray-100 pb-2 flex items-center gap-3">
                   <FaUserAlt className="text-primary" /> <span>1. Identity Info</span>
@@ -285,7 +333,6 @@ const Profile = () => {
                      </button>
                    ))}
                 </div>
-                {/* ... Rest of inputs ... */}
                 <CInput label="Qualification" value={formData.education} onChange={(val) => setFormData({...formData, education: val})} />
                 {formData.occupationType === 'student' ? (
                   <>

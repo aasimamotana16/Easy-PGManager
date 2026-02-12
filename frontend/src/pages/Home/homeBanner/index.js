@@ -17,7 +17,7 @@ const HomeBanner = () => {
 
   // AUTH LOGIC
   const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
-  const role = localStorage.getItem("role");
+  const role = localStorage.getItem("role")?.toLowerCase(); // Added optional chaining and lowercase for safety
   const isProfileComplete = localStorage.getItem("isProfileComplete") === "true"; 
 
   return (
@@ -29,7 +29,7 @@ const HomeBanner = () => {
           <div className="w-full lg:w-1/2 space-y-6 text-center lg:text-left order-2 lg:order-1">
             
             <motion.h1
-              /* UPDATED: Uses h1-sm for mobile and h1 for desktop [cite: 2026-02-06, 2026-02-09] */
+              /* UPDATED: Uses h1-sm for mobile and h1 for desktop */
               className="text-h1-sm lg:text-h1 leading-tight text-textPrimary"
               variants={fadeUp}
               initial="hidden"
@@ -45,7 +45,7 @@ const HomeBanner = () => {
             </motion.h1>
 
             <motion.p
-              /* UPDATED: Uses body-sm for mobile and body for desktop [cite: 2026-02-06] */
+              /* UPDATED: Uses body-sm for mobile and body for desktop */
               className="text-body-sm lg:text-body text-textSecondary max-w-xl mx-auto lg:mx-0 leading-relaxed"
               variants={fadeUp}
               initial="hidden"
@@ -110,9 +110,10 @@ const HomeBanner = () => {
                 <CButton
                   text="Complete Now"
                   className="whitespace-nowrap"
-                  onClick={() =>
-                    navigate(role === "owner" ? "/owner/dashboard/profileStatus" : "/user/dashboard/userProfile")
-                  }
+                  onClick={() => {
+                    // Debugging check: console.log("Navigating for role:", role);
+                    navigate(role === "owner" ? "/owner/dashboard/profileStatus" : "/user/userProfile");
+                  }}
                 />
               </motion.div>
             )}
