@@ -20,7 +20,6 @@ API.interceptors.request.use((req) => {
 ========================= */
 export const registerUser = (userData) => API.post("/auth/signup", userData);
 export const loginUser = (userData) => API.post("/auth/login", userData);
-export const checkAvailability = (data) => API.post("/auth/check-availability", data);
 export const sendOtp = (data) => API.post("/auth/send-otp", data);
 export const forgotPassword = (email) => API.post("/auth/forgot-password", { email });
 export const verifyOtpAndResetPassword = (data) => API.post("/auth/verify-otp-reset", data);

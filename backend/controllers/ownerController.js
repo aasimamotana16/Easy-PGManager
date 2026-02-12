@@ -129,30 +129,64 @@ const getOwnerDashboardData = async (req, res) => {
 
 const createPg = async (req, res) => {
   try {
+    console.log("Create PG Request Body:", req.body); // Debug log
+    
     const { 
-      pgName, 
-      location, 
-      price, 
-      totalRooms, 
-      propertyType, 
+      name,        // Frontend field
       forWhom, 
-      facilities, 
+      totalRooms, 
+      description,
+      city,        // Frontend field
+      area,        // Frontend field
+      address,     // Frontend field
+      pincode,     // Frontend field
+      facilities,  // Frontend sends as 'facilities'
       rules 
     } = req.body;
-    const ownerId = req.user._id; 
+    
+    const ownerId = req.user._id;
 
+    // Validate required fields from frontend
+    if (!name || !name.trim()) {
+      return res.status(400).json({ success: false, message: "Property name is required" });
+    }
+    if (!city || !city.trim()) {
+      return res.status(400).json({ success: false, message: "City is required" });
+    }
+
+    console.log("Creating PG with:", { 
+      pgName: name, 
+      location: city,
+      ownerId 
+    }); // Debug log
+
+    // Map frontend fields to backend schema
     const newPg = await Pg.create({
       ownerId,
-      pgName,
-      location,
-      price: price || 0,
-      totalRooms: totalRooms || 0,
+      pgName: name.trim(),  // Ensure trimmed string
+      location: city.trim(),  // Ensure trimmed string
+      city: city.trim(),
+      area: area || "",
+      address: address || "",
+      pincode: pincode || "",
+      price: 0,  // Will be set during room pricing
+      totalRooms: parseInt(totalRooms) || 0,
       liveListings: 0,
-      type: forWhom || "Any",
-      amenities: facilities || [],
-      description: "",
+      type: forWhom || "Any",  // Boys, Girls, Any
+      amenities: facilities || [],  // Facilities like WiFi, Food, etc
+      facilities: facilities || [],  // Both for compatibility
+      description: description || "",
+      rules: rules || {
+        smoking: false,
+        alcohol: false,
+        visitors: true,
+        pets: false,
+        curfew: ""
+      },
       status: "draft"
     });
+
+    console.log("PG Created Successfully:", newPg._id); // Debug log
 
     res.status(201).json({
       success: true,
@@ -160,8 +194,12 @@ const createPg = async (req, res) => {
       data: newPg
     });
   } catch (error) {
-    console.error("Create PG Error:", error);
-    res.status(400).json({ success: false, message: error.message });
+    console.error("Create PG Error:", error.message); // Debug log
+    console.error("Full Error:", error); // Full error details
+    res.status(400).json({ 
+      success: false, 
+      message: error.message || "Failed to create property"
+    });
   }
 };
 
@@ -220,6 +258,41 @@ const getPgById = async (req, res) => {
     });
   } catch (error) {
     console.error("Get PG Error:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// --- UPDATE PG (For room management updates) ---
+const updatePg = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const ownerId = req.user._id;
+    const { rooms, ...updateData } = req.body;
+
+    let updatePayload = { ...updateData };
+
+    // If rooms are being updated, handle them specially
+    if (rooms) {
+      updatePayload.rooms = rooms;
+    }
+
+    const updatedPg = await Pg.findOneAndUpdate(
+      { _id: id, ownerId },
+      { $set: updatePayload },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedPg) {
+      return res.status(404).json({ success: false, message: "PG not found" });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Property updated successfully",
+      data: updatedPg
+    });
+  } catch (error) {
+    console.error("Update PG Error:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -553,6 +626,7 @@ module.exports = {
   getMyPgs, 
   deletePg,
   getPgById,
+  updatePg,
   addRoom,
   updateRoomPrices, 
   addTenant, 

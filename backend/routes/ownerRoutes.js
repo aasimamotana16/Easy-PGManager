@@ -8,6 +8,7 @@ const {
   getMyPgs, 
   deletePg,
   getPgById,
+  updatePg,
   addTenant, 
   getMyTenants, 
   getMyBookings, 
@@ -34,6 +35,7 @@ router.post('/add-pg', protect, isOwner, createPg);
 router.get('/my-pgs', protect, isOwner, getMyPgs);
 router.delete('/pg/:id', protect, isOwner, deletePg);
 router.get('/pg/:id', protect, isOwner, getPgById);
+router.put('/pg/:id', protect, isOwner, updatePg);
 
 // --- ROOM FLOW ---
 router.post('/add-room', protect, isOwner, addRoom);

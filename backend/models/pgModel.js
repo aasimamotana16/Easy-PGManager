@@ -15,7 +15,12 @@ const pgSchema = new mongoose.Schema(
       type: String, 
       required: [true, "Please add a location"] 
     },
-
+    // Address Details [cite: 2026-02-12]
+    area: { type: String }, // Area or landmark
+    address: { type: String }, // Full address
+    pincode: { type: String }, // 6-digit pincode
+    city: { type: String }, // City name
+    
     // --- ADD THE NEW SEARCH FIELDS HERE ---
     price: { 
       type: Number, 
@@ -42,6 +47,23 @@ const pgSchema = new mongoose.Schema(
     },
     amenities: [String], // ["WiFi", "Laundry", "AC"] [cite: 2026-01-11]
     description: { type: String }, 
+    
+    // Rules & Facilities [cite: 2026-02-12]
+    rules: {
+      smoking: { type: Boolean, default: false },
+      alcohol: { type: Boolean, default: false },
+      visitors: { type: Boolean, default: true },
+      pets: { type: Boolean, default: false },
+      curfew: { type: String } // Gate closing time (HH:MM format)
+    },
+    
+    // Proof Documents [cite: 2026-02-12]
+    proofDocuments: {
+      aadhaar: { type: String }, // File path
+      electricityBill: { type: String },
+      propertyTax: { type: String }
+    },
+    facilities: [String], // ["WiFi", "Food", "Laundry", "Parking", "Power Backup", "AC"]
     
     totalRooms: { type: Number, default: 0 },
     liveListings: { type: Number, default: 0 },

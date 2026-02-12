@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { FaUserCircle, FaBars, FaTimes } from "react-icons/fa";
-import { ArrowLeft } from "lucide-react"; // Matching your previous request
 import axios from "axios";
 import CButton from "../../components/cButton";
 
@@ -19,9 +18,27 @@ const Navbar = () => {
 
   const role = localStorage.getItem("role");
 
+  // UPDATED: Robust name checking logic
   const checkLoginStatus = () => {
-    setIsLoggedIn(localStorage.getItem("isLoggedIn") === "true");
-    setUserName(localStorage.getItem("userName") || "User");
+    const loggedIn = localStorage.getItem("isLoggedIn") === "true";
+    setIsLoggedIn(loggedIn);
+
+    if (loggedIn) {
+      // 1. Try to get the name from a stored user object (best practice)
+      const storedUser = localStorage.getItem("user");
+      if (storedUser) {
+        try {
+          const userData = JSON.parse(storedUser);
+          setUserName(userData.name || userData.fullName || "User");
+        } catch (e) {
+          // Fallback if JSON is corrupted
+          setUserName(localStorage.getItem("userName") || "User");
+        }
+      } else {
+        // 2. Fallback to direct userName key
+        setUserName(localStorage.getItem("userName") || "User");
+      }
+    }
   };
 
   useEffect(() => {
@@ -81,7 +98,6 @@ const Navbar = () => {
     setProfileOpen(false);
   };
 
-  // UPDATED: Logic to filter links based on owner role
   const allNavLinks = [
     ["/", "Home"],
     ["/about", "About"],
@@ -93,7 +109,6 @@ const Navbar = () => {
 
   const navLinks = allNavLinks.filter(([path, label]) => {
     if (role === "owner") {
-      // Hide Services and FindMyPG for owners
       return label !== "Services" && label !== "FindMyPG";
     }
     return true;

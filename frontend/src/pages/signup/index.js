@@ -154,7 +154,7 @@ const SignUp = () => {
         
         // Short delay to let the user see the success message
         setTimeout(() => {
-          navigate("/login");
+          navigate("/loginPage");
         }, 1500);
       }
     } catch (err) {
@@ -230,16 +230,25 @@ const SignUp = () => {
           helperText={errors.email} // Moved error message inside CInput
         />
       </div>
-      <div>
-        <CInput 
-          label="Phone" 
-          type="tel" 
-          value={phone} 
-          onChange={(e) => {setPhone(e.target.value.slice(0, 10)); setErrors({...errors, phone: ""})}} 
-          error={!!errors.phone} 
-          helperText={errors.phone} // Moved error message inside CInput
-        />
-      </div>
+     <div>
+  <CInput 
+    label="Phone" 
+    type="tel" // 'tel' is great for mobile responsiveness as it opens the number pad
+    value={phone} 
+    onChange={(e) => {
+      const val = e.target.value;
+      // This Regex allows only digits (0-9)
+      if (val === "" || /^[0-9\b]+$/.test(val)) {
+        setPhone(val.slice(0, 10)); 
+        setErrors({...errors, phone: ""});
+      }
+    }} 
+    error={!!errors.phone} 
+    helperText={errors.phone} 
+    // Added: Standard HTML attribute to help mobile devices
+    inputMode="numeric" 
+  />
+</div>
     </div>
 
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

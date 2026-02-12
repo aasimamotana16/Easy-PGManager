@@ -58,19 +58,26 @@ exports.searchPGs = async (req, res) => {
     if (occupancy && occupancy !== "Any") query.occupancy = occupancy;
     if (rentCycle && rentCycle !== "Any") query.rentCycle = rentCycle;
 
-    // 3. Price Check
+    // 3. Price Check - Fixed for "Empty Strings"
     if (minBudget || maxBudget) {
       query.price = {};
-      if (minBudget) query.price.$gte = Number(minBudget);
-      if (maxBudget) query.price.$lte = Number(maxBudget);
+      
+      // Only add the filter if the value actually exists and isn't just an empty string
+      if (minBudget && minBudget !== "") {
+        query.price.$gte = Number(minBudget);
+      }
+      
+      if (maxBudget && maxBudget !== "") {
+        query.price.$lte = Number(maxBudget);
+      }
+
+      // Safety: If both were empty strings, remove the price key entirely
+      if (Object.keys(query.price).length === 0) {
+        delete query.price;
+      }
     }
 
-    // 4. Amenities Check
-    if (amenities && amenities.length > 0) {
-      const amenitiesList = amenities.split(",").map(item => item.trim());
-      query.amenities = { $all: amenitiesList };
-    }
-
+    // 4. EXECUTE THE DATABASE QUERY (THIS WAS MISSING!)
     const results = await PG.find(query);
 
     // 5. CamelCase Mapping for frontend consistency [cite: 2026-01-01]
