@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const nodemailer = require('nodemailer');
 const Pg = require('../models/pgModel');
 const User = require('../models/userModel');
 const Tenant = require('../models/tenantModel');
@@ -337,6 +338,66 @@ const addRoom = async (req, res) => {
   }
 };
 
+// --- UPLOAD PG IMAGES ---
+const uploadPgImages = async (req, res) => {
+  try {
+    console.log("=== UPLOAD PG IMAGES API CALLED ===");
+    console.log("Files:", req.files);
+    console.log("Body:", req.body);
+    console.log("Params:", req.params);
+    
+    // Get pgId from body first, then from params as fallback
+    let pgId = req.body.pgId || req.params.pgId;
+    const ownerId = req.user._id;
+
+    if (!pgId) {
+      return res.status(400).json({ success: false, message: "PG ID is required" });
+    }
+
+    // Find the PG
+    const pg = await Pg.findOne({ _id: pgId, ownerId });
+
+    if (!pg) {
+      return res.status(404).json({ success: false, message: "PG not found" });
+    }
+
+    // Handle mainImage (single file) and gallery images - multer.fields returns an object
+    // e.g. req.files = { mainImage: [File], images: [File, ...] }
+    if (req.files) {
+      // mainImage
+      if (req.files.mainImage && req.files.mainImage.length > 0) {
+        const mainFile = req.files.mainImage[0];
+        pg.mainImage = `/uploads/pgImages/${mainFile.filename}`;
+      }
+
+      // gallery images
+      if (req.files.images && req.files.images.length > 0) {
+        const imagePaths = req.files.images.map(file => `/uploads/pgImages/${file.filename}`);
+        if (!pg.images) pg.images = [];
+        pg.images.push(...imagePaths);
+      }
+    }
+
+    await pg.save();
+
+    console.log("Images uploaded successfully.");
+    console.log("MainImage:", pg.mainImage);
+    console.log("Total images:", pg.images ? pg.images.length : 0);
+
+    // Return the full updated PG document so frontend can refresh immediately
+    const updatedPg = await Pg.findById(pg._id);
+
+    res.status(200).json({ 
+      success: true, 
+      message: "Images uploaded successfully", 
+      data: updatedPg
+    });
+  } catch (error) {
+    console.error("Upload Images Error:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 // --- UPDATE ROOM PRICES (Step 2 of your flow) ---
 const updateRoomPrices = async (req, res) => {
   try {
@@ -619,6 +680,83 @@ const updateTenant = async (req, res) => {
   }
 };
 
+// --- SUBMIT PROPERTY FOR APPROVAL ---
+const submitForApproval = async (req, res) => {
+  try {
+    const { pgId } = req.params;
+    const ownerId = req.user._id;
+
+    // Find the property
+    const pg = await Pg.findOne({ _id: pgId, ownerId });
+    
+    if (!pg) {
+      return res.status(404).json({ success: false, message: "Property not found" });
+    }
+
+    // Check if property is in draft status
+    if (pg.status !== "draft") {
+      return res.status(400).json({ 
+        success: false, 
+        message: `Property is already ${pg.status}. You can only submit draft properties for approval.` 
+      });
+    }
+
+    // Update status to pending
+    pg.status = "pending";
+    await pg.save();
+
+    // Get owner details for email
+    const owner = await User.findById(ownerId);
+
+    // Send email to admin
+    const adminEmail = process.env.ADMIN_EMAIL || process.env.EMAIL_USER;
+    
+    if (adminEmail && process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+      try {
+        const transporter = nodemailer.createTransport({
+          service: "gmail",
+          auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS
+          }
+        });
+
+        const mailOptions = {
+          from: process.env.EMAIL_USER,
+          to: adminEmail,
+          subject: `New Property Approval Request - ${pg.pgName}`,
+          html: `
+            <h2>New Property Submitted for Approval</h2>
+            <p><strong>Property Name:</strong> ${pg.pgName}</p>
+            <p><strong>Location:</strong> ${pg.location}</p>
+            <p><strong>Owner Name:</strong> ${owner.fullName}</p>
+            <p><strong>Owner Email:</strong> ${owner.email}</p>
+            <p><strong>Owner Phone:</strong> ${owner.phone || 'Not provided'}</p>
+            <p><strong>Submitted Date:</strong> ${new Date().toLocaleDateString()}</p>
+            <p>Please login to the admin panel to review and approve this property.</p>
+          `
+        };
+
+        await transporter.sendMail(mailOptions);
+        console.log("Approval request email sent to admin:", adminEmail);
+      } catch (emailError) {
+        console.error("Error sending email to admin:", emailError);
+        // Continue even if email fails - the property status is already updated
+      }
+    } else {
+      console.log("Email not configured. Skipping admin notification.");
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Property submitted for approval successfully! Admin will review it shortly."
+    });
+  } catch (error) {
+    console.error("Submit for approval error:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = { 
   getOwnerProfile, 
   getOwnerDashboardData, 
@@ -628,6 +766,7 @@ module.exports = {
   getPgById,
   updatePg,
   addRoom,
+  uploadPgImages,
   updateRoomPrices, 
   addTenant, 
   getMyTenants, 
@@ -639,5 +778,6 @@ module.exports = {
   updateTenant,
   createSupportTicket,
   getMySupportTickets,
-  updateSupportTicketStatus
+  updateSupportTicketStatus,
+  submitForApproval
 };

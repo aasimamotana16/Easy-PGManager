@@ -1,6 +1,8 @@
 const User = require('../models/userModel');
+const Pg = require('../models/pgModel');
 const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken'); // You'll need this for the token
+const jwt = require('jsonwebtoken');
+const nodemailer = require('nodemailer');
 
 // Existing Admin Login
 const adminLogin = async (req, res) => {
@@ -91,12 +93,150 @@ const deleteUser = async (req, res) => {
   }
 };
 
-// Update your exports [cite: 2026-01-01]
+// @desc    Get all pending properties
+const getPendingProperties = async (req, res) => {
+  try {
+    const pendingProperties = await Pg.find({ status: 'pending' }).populate('ownerId', 'fullName email phone');
+    
+    res.status(200).json({
+      success: true,
+      count: pendingProperties.length,
+      data: pendingProperties
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching pending properties' });
+  }
+};
+
+// @desc    Approve a property
+const approveProperty = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const property = await Pg.findById(id);
+    if (!property) {
+      return res.status(404).json({ success: false, message: 'Property not found' });
+    }
+
+    // Update status to live
+    property.status = 'live';
+    await property.save();
+
+    // Get owner details for email
+    const owner = await User.findById(property.ownerId);
+
+    // Send email to owner
+    const ownerEmail = owner.email;
+    
+    if (ownerEmail && process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+      try {
+        const transporter = nodemailer.createTransport({
+          service: "gmail",
+          auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS
+          }
+        });
+
+        const mailOptions = {
+          from: process.env.EMAIL_USER,
+          to: ownerEmail,
+          subject: `Your Property "${property.pgName}" has been Approved!`,
+          html: `
+            <h2>Congratulations! Your Property has been Approved</h2>
+            <p>Dear ${owner.fullName},</p>
+            <p>Your property <strong>${property.pgName}</strong> has been approved and is now live on EasyPG Manager!</p>
+            <p>Tenants can now find and book your property.</p>
+            <p>Thank you for using EasyPG Manager.</p>
+          `
+        };
+
+        await transporter.sendMail(mailOptions);
+        console.log("Approval notification email sent to owner:", ownerEmail);
+      } catch (emailError) {
+        console.error("Error sending email to owner:", emailError);
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Property approved successfully',
+      data: property
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Error approving property' });
+  }
+};
+
+// @desc    Reject a property
+const rejectProperty = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { rejectionReason } = req.body;
+    
+    const property = await Pg.findById(id);
+    if (!property) {
+      return res.status(404).json({ success: false, message: 'Property not found' });
+    }
+
+    // Update status to rejected
+    property.status = 'rejected';
+    await property.save();
+
+    // Get owner details for email
+    const owner = await User.findById(property.ownerId);
+
+    // Send email to owner
+    const ownerEmail = owner.email;
+    
+    if (ownerEmail && process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+      try {
+        const transporter = nodemailer.createTransport({
+          service: "gmail",
+          auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS
+          }
+        });
+
+        const mailOptions = {
+          from: process.env.EMAIL_USER,
+          to: ownerEmail,
+          subject: `Your Property "${property.pgName}" has been Rejected`,
+          html: `
+            <h2>Property Review Update</h2>
+            <p>Dear ${owner.fullName},</p>
+            <p>Unfortunately, your property <strong>${property.pgName}</strong> has been rejected.</p>
+            ${rejectionReason ? `<p><strong>Reason:</strong> ${rejectionReason}</p>` : ''}
+            <p>Please login to your dashboard to make the necessary changes and resubmit.</p>
+            <p>Thank you for using EasyPG Manager.</p>
+          `
+        };
+
+        await transporter.sendMail(mailOptions);
+        console.log("Rejection notification email sent to owner:", ownerEmail);
+      } catch (emailError) {
+        console.error("Error sending email to owner:", emailError);
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Property rejected',
+      data: property
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Error rejecting property' });
+  }
+};
+
 module.exports = { 
   adminLogin, 
   getAdminDashboardStats, 
   addUser, 
   updateUser, 
-  deleteUser 
+  deleteUser,
+  getPendingProperties,
+  approveProperty,
+  rejectProperty
 };
-

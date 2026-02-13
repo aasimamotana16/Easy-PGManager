@@ -26,7 +26,6 @@ const AddProperty = () => {
   const [formData, setFormData] = useState({
     name: "",
     forWhom: "",
-    totalRooms: "",
     description: "",
     city: "",
     area: "",
@@ -175,9 +174,6 @@ const AddProperty = () => {
       newErrors.forWhom = "Please select category";
     }
     
-    const totalRoomsValue = formData.totalRooms ? String(formData.totalRooms).trim() : "";
-    if (!totalRoomsValue) newErrors.totalRooms = "Enter total rooms";
-    
     // LOCATION DETAILS
     const cityValue = formData.city ? formData.city.trim() : "";
     if (!cityValue) newErrors.city = "City is required";
@@ -241,7 +237,6 @@ const AddProperty = () => {
       const dataToSend = {
         name: formData.name,           // Maps to pgName
         forWhom: formData.forWhom,     // Maps to type
-        totalRooms: formData.totalRooms,
         description: formData.description,
         city: formData.city,
         area: formData.area,
@@ -273,10 +268,10 @@ const AddProperty = () => {
           timer: 1500,
           showConfirmButton: false,
           confirmButtonColor: "#D97706"
-        }).then(() => {
-          // Navigate to add rooms with pgId
-          navigate("/owner/dashBoard/pgManagment/addRooms", {
-            state: { pgId: pgId, propertyData: { name: formData.name } }
+          }).then(() => {
+          // Navigate to add rooms with pgId and mark that we're coming from create flow
+          navigate("/owner/dashboard/pgManagment/addRooms", {
+            state: { pgId: pgId, propertyData: { name: formData.name }, fromCreate: true }
           });
         });
       }
@@ -314,9 +309,6 @@ const AddProperty = () => {
               <div>
                 <CSelect label="For *" name="forWhom" value={formData.forWhom} onChange={handleChange} options={genderOptions} error={!!errors.forWhom} helperText={errors.forWhom} />
               </div>
-              {/*<div>
-                <CInput ref={roomsRef} label="Total Rooms *" type="number" name="totalRooms" value={formData.totalRooms} onChange={handleChange} placeholder="0" error={!!errors.totalRooms} helperText={errors.totalRooms} />
-              </div>*/}
               <div className="md:col-span-2 lg:col-span-3">
                 <CInput type="textarea" label="Description" name="description" value={formData.description} onChange={handleChange} rows={3} />
               </div>

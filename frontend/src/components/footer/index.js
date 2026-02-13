@@ -116,20 +116,11 @@ const Footer = () => {
           <div className="border-t border-white/10 my-10 max-w-7xl mx-auto" />
 
           {/* Bottom Bar */}
-          <div className="flex flex-col md:flex-row items-center justify-between text-sm gap-6 max-w-7xl mx-auto">
-            <p className="text-center md:text-left text-textLight">
-              © 2025 EasyPG Manager. All rights reserved.
-            </p>
-
-            {/* Bottom socials - hidden on mobile to avoid duplication */}
-            <div className="hidden md:flex gap-6 text-xl">
-              <SocialLink href="#" icon={FaTwitter} label="Twitter" />
-              <SocialLink href="#" icon={FaLinkedin} label="LinkedIn" />
-              <SocialLink href="#" icon={FaFacebook} label="Facebook" />
-              <SocialLink href="#" icon={FaInstagram} label="Instagram" />
-              <SocialLink href="#" icon={FaYoutube} label="YouTube" />
-            </div>
-          </div>
+          <div className="flex items-center justify-center text-sm p-4 max-w-7xl mx-auto">
+  <p className="text-center text-textLight">
+    © 2025 EasyPG Manager. All rights reserved.
+  </p>
+</div>
         </div>
       </footer>
 

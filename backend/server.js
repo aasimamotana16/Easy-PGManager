@@ -1,4 +1,6 @@
-require('dotenv').config(); // MUST BE LINE 1 [cite: 2026-01-06]
+// MUST BE LINE 1 [cite: 2026-01-06]
+require('dotenv').config({ path: __dirname + '/.env' });
+
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -13,6 +15,7 @@ const userRoutes = require("./routes/userRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
 const ownerRoutes = require('./routes/ownerRoutes');
 const reviewRoutes = require('./routes/reviewRoutes'); // New route for dynamic reviews
+const adminRoutes = require('./routes/adminRoutes'); // Admin routes
 const User = require("./models/userModel"); // Add this if you use it for countDocuments
 // 1. Import the new PG routes [cite: 2026-01-06]
 const pgRoutes = require('./routes/pgRoutes');
@@ -63,6 +66,9 @@ app.use('/api/reviews', reviewRoutes);
 
 // 2. Connect it to the /api/pg path [cite: 2026-01-06]
 app.use('/api/pg', pgRoutes);
+
+// Admin Routes
+app.use('/api/admin', adminRoutes);
 
 //3. booking
 app.use('/api/bookings', require('./routes/bookingRoutes'));

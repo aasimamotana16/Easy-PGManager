@@ -26,10 +26,10 @@ const pgSchema = new mongoose.Schema(
       type: Number, 
       required: false // Make price optional for draft PGs
     },
-    type: { 
-      type: String, 
-      enum: ["Boys", "Girls", "Any"], 
-      default: "Any" 
+    gender: {
+      type: String,
+      enum: ["Boys", "Girls", "Any"],
+      default: "Any"
     },
     occupancy: { 
       type: String, 
@@ -43,8 +43,12 @@ const pgSchema = new mongoose.Schema(
     // NEW: Fields for your "Available PGs" API [cite: 2026-01-11]
     mainImage: { 
       type: String, 
-      default: "https://via.placeholder.com/300" // Fallback image [cite: 2026-01-06]
+      default: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c" // Fallback image
     },
+    // NEW: Array to store uploaded PG/room images
+    images: [{
+      type: String
+    }],
     amenities: [String], // ["WiFi", "Laundry", "AC"] [cite: 2026-01-11]
     description: { type: String }, 
     
@@ -69,7 +73,7 @@ const pgSchema = new mongoose.Schema(
     liveListings: { type: Number, default: 0 },
     status: {
       type: String,
-      enum: ["live", "pending", "closed", "draft"],
+      enum: ["live", "pending", "closed", "draft", "rejected"],
       default: "draft"
     },
     rooms: [{

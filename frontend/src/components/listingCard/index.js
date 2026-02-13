@@ -1,3 +1,5 @@
+import { getImageUrl } from "../../utils/imageUtils";
+
 export default function ListingCard({
   name,
   location,
@@ -6,7 +8,8 @@ export default function ListingCard({
   price,
   availability,
 }) {
-  const mainImage = image || roomImages?.[0];
+  // Use getImageUrl to convert relative paths to full URLs
+  const mainImage = getImageUrl(image || roomImages?.[0]);
 
   return (
     /* Changed to flex-row for desktop, removed w-80 to fill the 50% container */

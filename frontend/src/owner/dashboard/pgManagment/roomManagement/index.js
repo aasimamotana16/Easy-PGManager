@@ -17,74 +17,70 @@ const RoomManagement = () => {
   const location = useLocation();
   const { pgId } = useParams();
   
-  // Get pgId from params or location state (from addRooms flow)
   const propertyId = pgId || location.state?.pgId || localStorage.getItem("currentPropertyId");
   
   const [pgData, setPgData] = useState(null);
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch PG and rooms data
   const fetchPgData = async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem("userToken");
-      
       if (!token) {
-        Swal.fire("Error!", "Please login to view rooms", "error");
         navigate("/loginPage");
         return;
       }
-
-      if (!propertyId) {
-        console.error("No PG ID found");
-        setRooms([]);
-        return;
-      }
-
-      console.log("Fetching PG data for ID:", propertyId);
 
       const pgResponse = await axios.get(
         `http://localhost:5000/api/owner/pg/${propertyId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      console.log("PG Response:", pgResponse.data);
-
       if (pgResponse.data.success) {
         setPgData(pgResponse.data.data);
         setRooms(pgResponse.data.data.rooms || []);
-        console.log("Rooms loaded:", pgResponse.data.data.rooms);
       }
     } catch (error) {
-      console.error("Error fetching PG data:", error);
-      Swal.fire("Error!", error.response?.data?.message || "Failed to load property details", "error");
+      Swal.fire("Error!", "Failed to load property details", "error");
     } finally {
       setLoading(false);
     }
   };
 
+  // Debug: log navigation and property id to help diagnose frontend errors
   useEffect(() => {
-    if (propertyId) {
-      fetchPgData();
-    } else {
-      setLoading(false);
-      console.warn("No PG ID available");
+    try {
+      console.log('[RoomManagement] location.state:', location.state, 'propertyId:', propertyId);
+    } catch (e) {
+      console.error('[RoomManagement] logging error', e);
     }
+  }, [location.state, propertyId]);
+
+  useEffect(() => {
+    if (propertyId) fetchPgData();
   }, [propertyId]);
+
+  const getStatusStyle = (status) => {
+    switch (status?.toLowerCase()) {
+      case 'full': return 'bg-red-100 text-red-600 border-red-200';
+      case 'maintenance': return 'bg-gray-100 text-gray-600 border-gray-200';
+      default: return 'bg-green-100 text-green-600 border-green-200';
+    }
+  };
 
   const handleViewRoom = (room) => {
     Swal.fire({
-      title: `<span class="text-orange-600">Room ${room.roomNo || room.roomType}</span>`,
+      title: `<span style="color: #D97706">Room Details</span>`,
       html: `
-        <div class="text-left space-y-2 text-sm">
-          <p><strong>Type:</strong> ${room.roomType || room.type || 'N/A'}</p>
-          <p><strong>Total Rooms:</strong> ${room.totalRooms || room.capacity || 0}</p>
-          <p><strong>Beds Per Room:</strong> ${room.bedsPerRoom || 0}</p>
-          <p><strong>Description:</strong> ${room.description || 'No description provided'}</p>
+        <div class="text-left space-y-3 p-2">
+          <div class="flex justify-between border-b pb-2"><strong>Type:</strong> <span>${room.roomType}</span></div>
+          <div class="flex justify-between border-b pb-2"><strong>Total Rooms:</strong> <span>${room.totalRooms}</span></div>
+          <div class="flex justify-between border-b pb-2"><strong>Occupancy:</strong> <span>${room.occupiedBeds || 0} / ${room.bedsPerRoom || 0} Beds</span></div>
+          <div class="flex justify-between border-b pb-2"><strong>Status:</strong> <span class="uppercase font-bold">${room.status || 'Active'}</span></div>
+          <p class="mt-2 text-gray-600"><strong>Description:</strong> ${room.description || 'N/A'}</p>
         </div>
       `,
-      icon: "info",
       confirmButtonColor: "#D97706", 
     });
   };
@@ -92,194 +88,204 @@ const RoomManagement = () => {
   const handleEditRoom = (room, index) => {
     Swal.fire({
       title: 'Edit Room Details',
+      customClass: {
+        popup: 'max-w-[95%] sm:max-w-[450px] rounded-xl',
+      },
       html: `
-        <input id="swal-roomType" class="swal2-input" placeholder="Room Type" value="${room.roomType || ''}">
-        <input id="swal-totalRooms" type="number" class="swal2-input" placeholder="Total Rooms" value="${room.totalRooms || 0}">
-        <input id="swal-bedsPerRoom" type="number" class="swal2-input" placeholder="Beds Per Room" value="${room.bedsPerRoom || 0}">
-        <textarea id="swal-description" class="swal2-input" placeholder="Description">${room.description || ''}</textarea>
+        <div class="text-left px-2">
+          <label class="block text-xs font-bold text-gray-700 mb-1">Room Type</label>
+          <input id="swal-roomType" class="swal2-input !m-0 !w-full border-gray-300 !text-sm" placeholder="Single, Double, etc." value="${room.roomType || ''}">
+
+          <div class="grid grid-cols-2 gap-3 mt-4">
+            <div>
+              <label class="block text-xs font-bold text-gray-700 mb-1">Total Rooms</label>
+              <input id="swal-totalRooms" type="number" class="swal2-input !m-0 !w-full !text-sm" value="${room.totalRooms || 0}">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-gray-700 mb-1">Beds Per Room</label>
+              <input id="swal-bedsPerRoom" type="number" class="swal2-input !m-0 !w-full !text-sm" value="${room.bedsPerRoom || 0}">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3 mt-4">
+             <div>
+              <label class="block text-xs font-bold text-gray-700 mb-1">Occupied Beds</label>
+              <input id="swal-occupiedBeds" type="number" class="swal2-input !m-0 !w-full !text-sm" value="${room.occupiedBeds || 0}">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-gray-700 mb-1">Status</label>
+              <select id="swal-status" class="swal2-input !m-0 !w-full !text-sm">
+                <option value="Active" ${room.status === 'Active' ? 'selected' : ''}>Active</option>
+                <option value="Full" ${room.status === 'Full' ? 'selected' : ''}>Full</option>
+                <option value="Maintenance" ${room.status === 'Maintenance' ? 'selected' : ''}>Maintenance</option>
+              </select>
+            </div>
+          </div>
+
+          <label class="block text-xs font-bold text-gray-700 mt-4 mb-1">Description</label>
+          <textarea id="swal-description" class="swal2-textarea !m-0 !w-full !text-sm" placeholder="Add details..." rows="2">${room.description || ''}</textarea>
+        </div>
       `,
       showCancelButton: true,
-      confirmButtonText: 'Update',
-      confirmButtonColor: "#D97706",
+      confirmButtonText: 'Save Changes',
+      confirmButtonColor: '#D97706',
+      cancelButtonColor: '#6B7280',
       preConfirm: () => {
-        const roomType = document.getElementById('swal-roomType').value;
-        const totalRooms = document.getElementById('swal-totalRooms').value;
-        const bedsPerRoom = document.getElementById('swal-bedsPerRoom').value;
-        const description = document.getElementById('swal-description').value;
-
-        if (!roomType) {
-          Swal.showValidationMessage('Room type is required');
-          return false;
-        }
-
-        return { roomType, totalRooms: parseInt(totalRooms) || 0, bedsPerRoom: parseInt(bedsPerRoom) || 0, description };
+        return {
+          roomType: document.getElementById('swal-roomType').value,
+          totalRooms: parseInt(document.getElementById('swal-totalRooms').value) || 0,
+          bedsPerRoom: parseInt(document.getElementById('swal-bedsPerRoom').value) || 0,
+          occupiedBeds: parseInt(document.getElementById('swal-occupiedBeds').value) || 0,
+          status: document.getElementById('swal-status').value,
+          description: document.getElementById('swal-description').value,
+        };
       }
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
           const token = localStorage.getItem("userToken");
-          
-          // Update the room in the rooms array
           const updatedRooms = [...rooms];
           updatedRooms[index] = { ...updatedRooms[index], ...result.value };
           
-          // Update PG with new rooms array
-          const response = await axios.put(
+          await axios.put(
             `http://localhost:5000/api/owner/pg/${propertyId}`,
             { rooms: updatedRooms },
             { headers: { Authorization: `Bearer ${token}` } }
           );
 
-          if (response.data.success) {
-            setRooms(updatedRooms);
-            Swal.fire("Updated!", "Room details updated successfully.", "success");
+          // Fetch updated PG and navigate back so PG Management reflects changes
+          try {
+            const pgResp = await axios.get(`http://localhost:5000/api/owner/pg/${propertyId}`, { headers: { Authorization: `Bearer ${token}` } });
+            if (pgResp.data && pgResp.data.success) {
+              navigate('/owner/dashboard/pgManagment', { state: { updatedPg: pgResp.data.data } });
+              return; // navigated away
+            }
+          } catch (e) {
+            console.error('Failed to fetch updated PG after edit:', e);
           }
+
+          setRooms(updatedRooms);
+          Swal.fire("Success", "Room updated successfully", "success");
         } catch (error) {
-          console.error("Error updating room:", error);
-          Swal.fire("Error!", error.response?.data?.message || "Failed to update room", "error");
+          Swal.fire("Error!", "Failed to update room", "error");
         }
       }
     });
   };
 
   const handleDeleteRoom = async (index) => {
-    Swal.fire({
+    const result = await Swal.fire({
       title: 'Delete Room?',
-      text: 'Are you sure you want to delete this room?',
+      text: "This action cannot be undone.",
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#D97706',
       cancelButtonColor: '#6B7280',
       confirmButtonText: 'Yes, delete it!'
-    }).then(async (result) => {
-      if (result.isConfirmed) {
-        try {
-          const token = localStorage.getItem("userToken");
-          
-          // Remove room from array
-          const updatedRooms = rooms.filter((_, i) => i !== index);
-          
-          // Update PG with new rooms array
-          const response = await axios.put(
-            `http://localhost:5000/api/owner/pg/${propertyId}`,
-            { rooms: updatedRooms },
-            { headers: { Authorization: `Bearer ${token}` } }
-          );
-
-          if (response.data.success) {
-            setRooms(updatedRooms);
-            Swal.fire("Deleted!", "Room deleted successfully.", "success");
-          }
-        } catch (error) {
-          console.error("Error deleting room:", error);
-          Swal.fire("Error!", error.response?.data?.message || "Failed to delete room", "error");
-        }
-      }
     });
+
+    if (result.isConfirmed) {
+      try {
+        const token = localStorage.getItem("userToken");
+        const updatedRooms = rooms.filter((_, i) => i !== index);
+        await axios.put(
+          `http://localhost:5000/api/owner/pg/${propertyId}`,
+          { rooms: updatedRooms },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        // Fetch updated PG and navigate back so PG Management reflects changes
+        try {
+          const pgResp = await axios.get(`http://localhost:5000/api/owner/pg/${propertyId}`, { headers: { Authorization: `Bearer ${token}` } });
+          if (pgResp.data && pgResp.data.success) {
+            navigate('/owner/dashboard/pgManagment', { state: { updatedPg: pgResp.data.data } });
+            return; // navigated away
+          }
+        } catch (e) {
+          console.error('Failed to fetch updated PG after delete:', e);
+        }
+
+        setRooms(updatedRooms);
+        Swal.fire("Deleted!", "Room has been removed.", "success");
+      } catch (error) {
+        Swal.fire("Error!", "Failed to delete room.", "error");
+      }
+    }
   };
 
   return (
-    <div className="p-4 md:p-6 bg-gray-200 min-h-screen">
-      
-      {/* PAGE HEADER */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-primary">
-            Room Management
-          </h1>
-          <p className="text-gray-500 text-sm md:text-base">
-            {pgData ? `Managing rooms for ${pgData.pgName || pgData.name}` : 'Property Rooms Overview'}
-          </p>
+    <div className="p-4 md:p-8 bg-[#F8F9FA] min-h-screen">
+      <div className="max-w-7xl mx-auto">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+          <div>
+            <h1 className="text-3xl font-extrabold text-[#1C1C1C]">Room Management</h1>
+            <p className="text-[#4B4B4B] mt-1 font-medium">
+              {pgData?.name ? `Property: ${pgData.name}` : 'Manage availability and status'}
+            </p>
+          </div>
+          <CButton
+            className="w-full md:w-auto bg-[#D97706] text-white flex items-center justify-center gap-2 px-8 py-3 rounded-xl shadow-lg"
+            onClick={() => navigate("/owner/dashboard/pgManagment/addRooms", { state: { pgId: propertyId } })}
+          >
+            <FaPlus /> Add New Room
+          </CButton>
         </div>
 
-        <CButton
-          className="w-full sm:w-auto text-white flex items-center justify-center gap-2 px-6 shadow-md"
-          onClick={() => navigate("/owner/dashboard/pgManagment/addRooms")}
-        >
-          <FaPlus /> Add New Room
-        </CButton>
-      </div>
+        {loading ? (
+          <div className="flex justify-center items-center h-64"><div className="animate-spin h-8 w-8 border-4 border-[#D97706] border-t-transparent rounded-full"></div></div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {rooms.map((room, index) => {
+              const occupied = room.occupiedBeds || 0;
+              const total = room.bedsPerRoom || 1;
+              const occupancyRate = (occupied / total) * 100;
+              const status = room.status || (occupied >= total ? 'Full' : 'Active');
 
-      {loading ? (
-        <div className="text-center py-10 text-gray-500 font-medium">Loading rooms...</div>
-      ) : (
-        /* ROOM LIST - Responsive Grid */
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {rooms && rooms.length > 0 ? rooms.map((room, index) => {
-            const displayRoom = {
-              roomType: room.roomType || 'Standard',
-              totalRooms: room.totalRooms || 1,
-              bedsPerRoom: room.bedsPerRoom || 1,
-              description: room.description || 'No description',
-            };
-
-            return (
-              <div
-                key={index}
-                className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow p-5 flex flex-col"
-              >
-                {/* CARD HEADER */}
-                <div className="flex justify-between items-start mb-4">
-                  <div className="flex items-center gap-2">
-                    <div className="p-2 bg-orange-50 rounded-lg">
-                        <FaBed className="text-orange-600" />
+              return (
+                <div key={index} className="bg-white rounded-2xl border border-[#E5E0D9] shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                  <div className={`h-1.5 w-full ${status === 'Full' ? 'bg-red-500' : status === 'Maintenance' ? 'bg-gray-400' : 'bg-[#D97706]'}`}></div>
+                  
+                  <div className="p-6">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="bg-[#FEF3C7] p-2 rounded-lg"><FaBed className="text-[#D97706]" /></div>
+                        <div>
+                          <h3 className="font-bold text-[#1C1C1C]">{room.roomType}</h3>
+                          <p className="text-[10px] text-gray-500 uppercase font-bold tracking-tight">{room.totalRooms} Rooms Available</p>
+                        </div>
+                      </div>
+                      <span className={`px-2 py-1 rounded-md text-[10px] font-bold border uppercase tracking-wider ${getStatusStyle(status)}`}>
+                        {status}
+                      </span>
                     </div>
-                    <div>
-                        <h3 className="font-bold text-gray-800 leading-tight">
-                        {displayRoom.roomType}
-                        </h3>
-                        <span className="text-xs text-gray-500 uppercase tracking-wider">{displayRoom.totalRooms} Room(s)</span>
+
+                    <p className="text-sm text-[#4B4B4B] mb-4 line-clamp-1">{room.description || 'No description provided'}</p>
+
+                    <div className="bg-[#F8F9FA] p-3 rounded-xl mb-4">
+                      <div className="flex justify-between items-center mb-1.5 text-xs font-bold text-[#4B4B4B]">
+                        <span>Bed Occupancy</span>
+                        <span>{occupied} / {total} Beds</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                        <div 
+                          className={`h-full transition-all duration-500 ${occupancyRate >= 100 ? 'bg-red-500' : 'bg-[#D97706]'}`} 
+                          style={{ width: `${occupancyRate}%` }}
+                        ></div>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end gap-2 pt-3 border-t border-gray-50">
+                      <button onClick={() => handleViewRoom(room)} className="p-2 bg-gray-50 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"><FaRegEye /></button>
+                      <button onClick={() => handleEditRoom(room, index)} className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"><FaEdit /></button>
+                      <button onClick={() => handleDeleteRoom(index)} className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"><FaTrash /></button>
                     </div>
                   </div>
                 </div>
-
-                {/* ROOM INFO */}
-                <div className="space-y-2 text-sm text-gray-600 mb-4">
-                    <div className="flex items-center gap-2">
-                        <FaUsers className="text-gray-400" />
-                        <span>{displayRoom.bedsPerRoom} Bed(s) per room</span>
-                    </div>
-                    <p className="text-xs text-gray-500 italic">{displayRoom.description}</p>
-                </div>
-
-                {/* ACTIONS */}
-                <div className="mt-auto grid grid-cols-3 gap-2 pt-2">
-                  <CButton
-                    variant="outlined"
-                    className="flex items-center justify-center gap-1 border-gray-300 text-gray-700 hover:bg-gray-50 text-sm py-2"
-                    onClick={() => handleViewRoom(room)}
-                  >
-                    <FaRegEye size={14} /> View
-                  </CButton>
-
-                  <CButton
-                    variant="outlined"
-                    className="flex items-center justify-center gap-1 border-orange-600 text-orange-600 hover:bg-orange-50 text-sm py-2"
-                    onClick={() => handleEditRoom(room, index)}
-                  >
-                    <FaEdit size={14} /> Edit
-                  </CButton>
-
-                  <CButton
-                    variant="outlined"
-                    className="flex items-center justify-center gap-1 border-red-400 text-red-600 hover:bg-red-50 text-sm py-2"
-                    onClick={() => handleDeleteRoom(index)}
-                  >
-                    <FaTrash size={14} />
-                  </CButton>
-                </div>
-              </div>
-            );
-          }) : (
-            <div className="col-span-full bg-white rounded-lg border border-dashed border-gray-300 p-10 text-center">
-              <p className="text-gray-500 mb-4">No rooms found.</p>
-              <CButton onClick={() => navigate("/owner/dashboard/pgManagment/addRooms", { state: { pgId: propertyId } })}>
-                <FaPlus /> Add First Room
-              </CButton>
-            </div>
-          )}
-        </div>
-      )}
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

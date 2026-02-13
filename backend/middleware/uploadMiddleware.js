@@ -6,9 +6,10 @@ const fs = require("fs");
 const uploadDir = path.resolve(__dirname, "..", "uploads");
 const profileDir = path.join(uploadDir, "profiles");
 const docDir = path.join(uploadDir, "documents");
+const pgImagesDir = path.join(uploadDir, "pgImages"); // NEW: Folder for PG images
 
-// Create both folders if they don't exist [cite: 2026-01-06]
-[profileDir, docDir].forEach(dir => {
+// Create all folders if they don't exist
+[profileDir, docDir, pgImagesDir].forEach(dir => {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
@@ -16,16 +17,25 @@ const docDir = path.join(uploadDir, "documents");
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    // Dynamic destination based on the field name [cite: 2026-01-07]
+    // Dynamic destination based on the field name
     if (file.fieldname === "image") {
-      cb(null, profileDir);
+      // Check if it's a profile image or PG image based on the route
+      if (req.originalUrl && req.originalUrl.includes('pg')) {
+        cb(null, pgImagesDir);
+      } else {
+        cb(null, profileDir);
+      }
+    } else if (file.fieldname === "images") {
+      // For PG/room images uploaded as "images" field
+      cb(null, pgImagesDir);
     } else {
       cb(null, docDir);
     }
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + path.extname(file.originalname);
-    cb(null, `${req.user._id}-${file.fieldname}-${uniqueSuffix}`);
+    const pgId = req.body.pgId || req.params.pgId || 'pg';
+    cb(null, `${pgId}-${file.fieldname}-${uniqueSuffix}`);
   },
 });
 const upload = multer({ 

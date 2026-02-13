@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const upload = require('../middleware/uploadMiddleware');
 
 // 1. Double-check that these names MATCH the bottom of ownerController.js exactly
 const { 
@@ -18,11 +19,13 @@ const {
   updateOwnerProfile,
   getOwnerProfile,
   addRoom,
+  uploadPgImages,
   getMyAgreements,
   updateTenant,
   createSupportTicket,
   getMySupportTickets,
-  updateSupportTicketStatus
+  updateSupportTicketStatus,
+  submitForApproval
 } = require('../controllers/ownerController');
 
 const { protect, isOwner } = require('../middleware/authMiddleware');
@@ -36,9 +39,11 @@ router.get('/my-pgs', protect, isOwner, getMyPgs);
 router.delete('/pg/:id', protect, isOwner, deletePg);
 router.get('/pg/:id', protect, isOwner, getPgById);
 router.put('/pg/:id', protect, isOwner, updatePg);
+router.post('/submit-for-approval/:pgId', protect, isOwner, submitForApproval);
 
 // --- ROOM FLOW ---
 router.post('/add-room', protect, isOwner, addRoom);
+router.post('/upload-images/:pgId', protect, isOwner, upload.fields([{ name: 'mainImage', maxCount: 1 }, { name: 'images', maxCount: 10 }]), uploadPgImages);
 router.post('/update-room-prices', protect, isOwner, updateRoomPrices);
 
 // --- TENANT MANAGEMENT ---

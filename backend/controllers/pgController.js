@@ -47,7 +47,7 @@ exports.searchPGs = async (req, res) => {
 
     // 1. City Check
     if (city && city !== "Any") {
-      query.city = city; 
+      query.location = { $regex: city, $options: 'i' };
     }
 
     // 2. Fix the field name! Is it 'gender' or 'type' in your Atlas? [cite: 2026-01-06]
@@ -61,12 +61,12 @@ exports.searchPGs = async (req, res) => {
     // 3. Price Check - Fixed for "Empty Strings"
     if (minBudget || maxBudget) {
       query.price = {};
-      
+
       // Only add the filter if the value actually exists and isn't just an empty string
       if (minBudget && minBudget !== "") {
         query.price.$gte = Number(minBudget);
       }
-      
+
       if (maxBudget && maxBudget !== "") {
         query.price.$lte = Number(maxBudget);
       }
@@ -77,7 +77,15 @@ exports.searchPGs = async (req, res) => {
       }
     }
 
-    // 4. EXECUTE THE DATABASE QUERY (THIS WAS MISSING!)
+    // 4. Amenities Check
+    if (amenities && amenities !== "") {
+      const amenitiesArray = amenities.split(",").filter(a => a.trim() !== "");
+      if (amenitiesArray.length > 0) {
+        query.amenities = { $in: amenitiesArray };
+      }
+    }
+
+    // 5. EXECUTE THE DATABASE QUERY (THIS WAS MISSING!)
     const results = await PG.find(query);
 
     // 5. CamelCase Mapping for frontend consistency [cite: 2026-01-01]

@@ -3,10 +3,14 @@ const crypto = require("crypto");
 const PDFDocument = require("pdfkit"); 
 const Payment = require("../models/paymentModel");
 
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET,
-});
+// Initialize Razorpay only if keys are configured
+let razorpay = null;
+if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
+  razorpay = new Razorpay({
+    key_id: process.env.RAZORPAY_KEY_ID,
+    key_secret: process.env.RAZORPAY_KEY_SECRET,
+  });
+}
 
 // 1. CREATE ORDER
 const createOrder = async (req, res) => {
@@ -15,6 +19,11 @@ const createOrder = async (req, res) => {
     
     if (!amount || !pgId) {
       return res.status(400).json({ success: false, message: "Amount and pgId are required" });
+    }
+
+    // Check if Razorpay is configured
+    if (!razorpay) {
+      return res.status(503).json({ success: false, message: "Payment gateway not configured. Please contact admin." });
     }
 
     const options = {

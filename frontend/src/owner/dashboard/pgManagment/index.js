@@ -7,7 +7,7 @@ import { FaHome, FaRegEye, FaEdit, FaTrash, FaTimes } from "react-icons/fa";
 import Swal from "sweetalert2";
 
 const PgManagement = () => {
-  const navigate = useNavigate();
+  const navigate = useNavigate(); 
   const [myPgs, setMyPgs] = useState([]);
   const [loading, setLoading] = useState(true);
 

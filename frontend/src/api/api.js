@@ -67,6 +67,14 @@ export const addPgProperty = (pgData) => API.post("/owner/add-pg", pgData);
 export const getMyPgs = () => API.get('/owner/my-pgs');
 export const updateRoomPrices = (roomPrices) => API.post('/owner/update-room-prices', { roomPrices });
 export const deleteBooking = (id) => API.delete(`/owner/delete-booking/${id}`);
+export const submitForApproval = (pgId) => API.post(`/owner/submit-for-approval/${pgId}`);
+
+/* =========================
+    ADMIN APIs 
+========================= */
+export const getPendingProperties = () => API.get("/admin/pending-properties");
+export const approveProperty = (id) => API.post(`/admin/approve-property/${id}`);
+export const rejectProperty = (id, reason) => API.post(`/admin/reject-property/${id}`, { rejectionReason: reason });
 
 /* =========================
     CITY & HOME APIs

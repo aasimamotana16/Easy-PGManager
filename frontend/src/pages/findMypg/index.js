@@ -32,7 +32,10 @@ export default function FindMyPG() {
 
   useEffect(() => {
     setIsLoading(true);
-    fetch("http://localhost:5000/api/pg/all")
+    const urlParams = new URLSearchParams(window.location.search);
+    const currentCity = urlParams.get("city") || "";
+    const queryParams = currentCity ? `?city=${encodeURIComponent(currentCity)}` : "";
+    fetch(`http://localhost:5000/api/pg/all${queryParams}`)
       .then((res) => res.json())
       .then((json) => {
         if (json.success) setPgList(json.data);
