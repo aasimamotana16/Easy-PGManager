@@ -1,4 +1,5 @@
 const User = require("../models/userModel");
+const Profile = require("../models/profileModel");
 const Agreement = require("../models/agreementModel");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
@@ -114,7 +115,8 @@ const loginUser = async (req, res) => {
 // @desc Get Dynamic Dashboard Data [cite: 2026-01-06]
 const getUserDashboard = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id).select("-password");
+    // Explicitly include profileCompletion even though it's select:false in the schema
+    const user = await User.findById(req.user._id).select("-password +profileCompletion");
     if (!user) return res.status(404).json({ message: "User not found" });
 
     const dashboardData = {
@@ -141,7 +143,8 @@ const getUserDashboard = async (req, res) => {
 // @desc Get Full Profile Details [cite: 2026-01-06]
 const getUserProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id).select("-password");
+    // Explicitly include fields that are select:false by default (profilePicture, profileCompletion)
+    const user = await User.findById(req.user._id).select("-password +profilePicture +profileCompletion");
     if (!user) return res.status(404).json({ message: "User not found" });
 
     res.status(200).json({ 
@@ -167,6 +170,82 @@ const getUserProfile = async (req, res) => {
   }
 };
 
+// Helper: recalculate profileCompletion using User + Profile models
+const recalcProfileCompletion = async (userId) => {
+  try {
+    const [user, profile] = await Promise.all([
+      User.findById(userId),
+      Profile.findOne({ userId }),
+    ]);
+    if (!user || !profile) return;
+
+    const hasAny = (obj, keys) =>
+      keys.some((k) => {
+        const v = obj?.[k];
+        return v && v !== "NOT SET";
+      });
+
+    let filledSections = 0;
+    const totalSections = 5; // personal, academic, emergency, payment, picture
+
+    if (
+      hasAny(profile.personalInfo || {}, [
+        "fullName",
+        "phone",
+        "age",
+        "bloodGroup",
+        "city",
+        "state",
+        "email",
+      ])
+    ) {
+      filledSections++;
+    }
+
+    if (
+      hasAny(profile.academicInfo || {}, [
+        "status",
+        "qualification",
+        "company",
+        "workAddress",
+      ])
+    ) {
+      filledSections++;
+    }
+
+    if (
+      hasAny(profile.emergencyContact || {}, [
+        "guardianName",
+        "relationship",
+        "guardianPhone",
+      ])
+    ) {
+      filledSections++;
+    }
+
+    if (
+      hasAny(profile.paymentDetails || {}, [
+        "holder",
+        "bank",
+        "ifsc",
+        "account",
+      ])
+    ) {
+      filledSections++;
+    }
+
+    if (user.profilePicture) {
+      filledSections++;
+    }
+
+    const completion = Math.round((filledSections / totalSections) * 100);
+    user.profileCompletion = Math.max(0, Math.min(100, completion));
+    await user.save();
+  } catch (e) {
+    console.error("Profile completion calc error:", e.message);
+  }
+};
+
 // @desc Update User Profile (Edit Info Button) [cite: 2026-01-07]
 const updateUserProfile = async (req, res) => {
   try {
@@ -189,6 +268,9 @@ const updateUserProfile = async (req, res) => {
     user.profileCompletion = 20 + (filledCount * 20); 
 
     const updatedUser = await user.save();
+
+    // Also sync completion if Profile document exists
+    await recalcProfileCompletion(user._id);
     res.status(200).json({ success: true, data: updatedUser });
   } catch (error) {
     res.status(500).json({ message: "Failed to update profile" });
@@ -204,6 +286,9 @@ const updateProfilePicture = async (req, res) => {
     user.profilePicture = `/uploads/profiles/${req.file.filename}`;
     await user.save();
 
+    // Recalculate completion including picture section
+    await recalcProfileCompletion(user._id);
+
     res.status(200).json({ success: true, profilePicture: user.profilePicture });
   } catch (error) {
     res.status(500).json({ message: "Error uploading picture" });
@@ -216,6 +301,8 @@ const removeProfilePicture = async (req, res) => {
     const user = await User.findById(req.user._id);
     user.profilePicture = ""; 
     await user.save();
+
+    await recalcProfileCompletion(user._id);
     res.status(200).json({ success: true, message: "Picture removed" });
   } catch (error) {
     res.status(500).json({ message: "Error removing picture" });

@@ -1,15 +1,16 @@
 const express = require("express");
 const router = express.Router();
+
+// Import controllers from userController
 const { 
   registerUser, 
   loginUser,
   logoutUser, 
-  getUserProfile, 
-  updateUserProfile,
-  updateProfilePicture, // Added for Upload Picture button [cite: 2026-01-07]
-  removeProfilePicture, // Added for Remove Picture button [cite: 2026-01-07]
+  updateProfilePicture, 
+  removeProfilePicture, 
   getUserDashboard, 
   getMe,
+  getUserProfile,
   getMyAgreement,
   getMyDocuments,
   uploadUserDocument,
@@ -17,73 +18,82 @@ const {
   getMyOwnerContact,
   getMyTimeline,
   downloadTenantReport,
-  sendOtp,              // <--- ADD THIS
+  sendOtp,
   verifyOtpAndRegister,
-  getMyCheckIns,   // To fetch past activities [cite: 2026-01-06]
+  getMyCheckIns,
   createCheckIn,
-  verifySecurityAction // <--- ADD THIS HERE [cite: 2026-01-07]
+  verifySecurityAction 
 } = require("../controllers/userController");
-const { protect } = require("../middleware/authMiddleware");
-const upload = require("../middleware/uploadMiddleware"); // Your Multer config [cite: 2026-01-06]
 
-// --- Public Routes (No token needed) ---
+// Import the new profile controller functions
+const { 
+  getProfile,
+  updateProfile,
+  getPersonalProfile,
+  getAcademicProfile, 
+  getEmergencyProfile, 
+  getPaymentProfile 
+} = require("../controllers/profileController");
+
+const { protect } = require("../middleware/authMiddleware");
+const upload = require("../middleware/uploadMiddleware");
+
+/* =========================
+    PUBLIC ROUTES
+========================= */
 router.post("/register", registerUser);
 router.post("/login", loginUser);
-// In userRoutes.js
-router.post("/send-otp", protect, sendOtp);
 router.post("/verify-otp-register", verifyOtpAndRegister);
 
-// --- Protected Routes (Token required) ---
-// Route for the main dashboard data
+/* =========================
+    PROTECTED ROUTES (Token Required)
+========================= */
+// Dashboard & Core User Data
 router.get("/dashboard-stats", protect, getUserDashboard);
+// Use getUserProfile so frontend /users/me receives profilePicture & completion
+router.get("/me", protect, getUserProfile);
+router.post("/send-otp", protect, sendOtp);
+router.post("/logout", protect, logoutUser);
 
-// Route for the profile page
-router.get("/profile", protect, getUserProfile);
+/* =========================
+    PROFILE ROUTES (Order is Critical)
+========================= */
+// 1. Static Section Routes FIRST (Prevents "academic" being treated as a userId) [cite: 2026-01-01]
+router.get("/profile/personal", protect, getPersonalProfile);
+router.get("/profile/academic", protect, getAcademicProfile);
+router.get("/profile/emergency", protect, getEmergencyProfile);
+router.get("/profile/payment", protect, getPaymentProfile);
 
-// PUT: Handles the "Edit Info" button clicks to save to DB [cite: 2026-01-07]
-router.put("/profile/update", protect, updateUserProfile);
+// 2. Dynamic ID Path SECOND
+// Static "me" route so frontend can call /users/profile/me without treating "me" as a userId
+router.get("/profile/me", protect, getProfile);
+router.get("/profile/:userId", protect, getProfile); 
 
-// Routes for Profile Picture management [cite: 2026-01-07]
-// Matches the "Upload Picture" button - uses Multer for the 'image' field
+// 3. Profile Updates & Images
+router.put("/profile/update", protect, updateProfile); // Changed to .put to align with standard API practices [cite: 2026-01-01]
 router.post("/profile/picture", protect, upload.single("image"), updateProfilePicture);
-
-// Matches the "Remove Picture" button
 router.delete("/profile/picture", protect, removeProfilePicture);
 
-// This allows ANY logged-in user (Owner, Tenant, or Admin) to get their own data 
-router.get("/me", protect, getMe);
-
-router.get("/agreement", protect, getMe); // Fixed: ensure this matches your intent
-
+/* =========================
+    DOCUMENTS & AGREEMENTS
+========================= */
 router.get("/agreement", protect, getMyAgreement);
-
-// In backend/routes/userRoutes.js
 router.get("/documents", protect, getMyDocuments);
-
-// DELETE: Triggered by the red trash icon in the Documents UI
-router.post("/delete-doc", protect, deleteUserDocument);
-
-// In userRoutes.js
 router.post("/upload-doc", protect, upload.single("document"), uploadUserDocument);
+router.post("/delete-doc", protect, deleteUserDocument);
+router.get("/download-report", protect, downloadTenantReport);
 
-// 3. New Route for Owner Contact Page [cite: 2026-01-07]
+/* =========================
+    ACTIVITY & CONTACTS
+========================= */
 router.get("/my-owner-contact", protect, getMyOwnerContact);
-
-// routes/userRoutes.js
 router.get("/timeline", protect, getMyTimeline);
-router.get("/download-report", protect, downloadTenantReport); // ✅ New Route for PDF
-
-// GET: Fetch list for "Past Activities" and Calendar [cite: 2026-01-06]
 router.get("/my-checkins", protect, getMyCheckIns);
-
-// POST: Triggered by the "Check In" button in UI [cite: 2026-01-06]
 router.post("/checkin-action", protect, createCheckIn);
 
-// 2. ADD THIS SPECIFIC ROUTE [cite: 2026-01-06]
-// This is what the "Verify" button on your Security Portal needs to talk to
+/* =========================
+    SECURITY
+========================= */
 router.post("/verify-security", protect, verifySecurityAction);
-
-// Add this line
-router.post("/logout", protect, logoutUser);
 
 module.exports = router;

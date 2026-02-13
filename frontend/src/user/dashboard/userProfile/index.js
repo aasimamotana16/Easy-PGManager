@@ -6,6 +6,10 @@ import Footer from "../../../components/footer";
 import Swal from "sweetalert2"; // Import SweetAlert2
 import {
   getUserProfile,
+  getPersonalProfile,
+  getAcademicProfile,
+  getEmergencyProfile,
+  getPaymentProfile,
   updateProfilePicture,
   removeProfilePicture,
   updateUserProfile,
@@ -25,8 +29,46 @@ const Profile = () => {
 
   const fetchProfile = async () => {
     try {
-      const res = await getUserProfile();
-      if (res.data.success) setUser(res.data.data);
+      const [userRes, personalRes, academicRes, emergencyRes, paymentRes] = await Promise.all([
+        getUserProfile(),
+        getPersonalProfile().catch(() => null),
+        getAcademicProfile().catch(() => null),
+        getEmergencyProfile().catch(() => null),
+        getPaymentProfile().catch(() => null),
+      ]);
+      const base = userRes?.data?.data || {};
+      const personal = personalRes?.data?.data || {};
+      const academic = academicRes?.data?.data || {};
+      const emergency = emergencyRes?.data?.data || {};
+      const payment = paymentRes?.data?.data || {};
+      setUser({
+        ...base,
+        fullName: personal.fullName ?? base.fullName,
+        phone: personal.phone ?? base.phone,
+        age: personal.age,
+        bloodGroup: personal.bloodGroup,
+        city: personal.city ?? base.city,
+        state: personal.state ?? base.state,
+        email: base.email,
+        occupationType: academic.status?.toLowerCase() || "professional",
+        education: academic.qualification,
+        collegeName: academic.company,
+        collegeYear: academic.collegeYear ?? "",
+        collegeAddress: academic.workAddress,
+        companyName: academic.company,
+        companyAddress: academic.workAddress,
+        emergencyContact: {
+          contactName: emergency.guardianName || base.emergencyContact?.contactName,
+          relationship: emergency.relationship || base.emergencyContact?.relationship,
+          phoneNumber: emergency.guardianPhone || base.emergencyContact?.phoneNumber,
+        },
+        bankDetails: {
+          holderName: payment.holder,
+          bankName: payment.bank,
+          ifsc: payment.ifsc,
+          accountNumber: payment.account,
+        },
+      });
     } catch (err) {
       console.error("Error fetching profile:", err);
     } finally {
@@ -106,9 +148,26 @@ const Profile = () => {
 
   const openEditModal = () => {
     setFormData({
-      ...user,
-      emergencyContact: { ...user?.emergencyContact },
-      bankDetails: { ...user?.bankDetails },
+      fullName: user?.fullName ?? "",
+      phone: user?.phone ?? "",
+      age: user?.age ?? "",
+      bloodGroup: user?.bloodGroup ?? "",
+      city: user?.city ?? "",
+      state: user?.state ?? "",
+      occupationType: user?.occupationType ?? "professional",
+      education: user?.education ?? "",
+      collegeName: user?.collegeName ?? "",
+      collegeYear: user?.collegeYear ?? "",
+      collegeAddress: user?.collegeAddress ?? "",
+      companyName: user?.companyName ?? "",
+      companyAddress: user?.companyAddress ?? "",
+      guardianName: user?.emergencyContact?.contactName ?? "",
+      relationship: user?.emergencyContact?.relationship ?? "",
+      guardianPhone: user?.emergencyContact?.phoneNumber ?? "",
+      holder: user?.bankDetails?.holderName ?? "",
+      bank: user?.bankDetails?.bankName ?? "",
+      ifsc: user?.bankDetails?.ifsc ?? "",
+      account: user?.bankDetails?.accountNumber ?? "",
     });
     setIsModalOpen(true);
   };
@@ -116,17 +175,55 @@ const Profile = () => {
   const handleSaveInfo = async () => {
     try {
       setLoading(true);
-      const res = await updateUserProfile(formData);
-      if (res.data.success) {
-        await fetchProfile();
-        setIsModalOpen(false);
-        Swal.fire({
-          title: "Profile Updated",
-          text: "Your information has been synced successfully.",
-          icon: "success",
-          confirmButtonColor: "#D97706",
-        });
-      }
+      const payloads = [
+        {
+          section: "personalInfo",
+          data: {
+            fullName: formData.fullName,
+            phone: formData.phone,
+            age: formData.age,
+            bloodGroup: formData.bloodGroup,
+            city: formData.city,
+            state: formData.state,
+          },
+        },
+        {
+          section: "academicInfo",
+          data: {
+            status: formData.occupationType || "professional",
+            qualification: formData.education,
+            company: formData.occupationType === "student" ? formData.collegeName : formData.companyName,
+            workAddress: formData.occupationType === "student" ? formData.collegeAddress : formData.companyAddress,
+            collegeYear: formData.occupationType === "student" ? formData.collegeYear : "",
+          },
+        },
+        {
+          section: "emergencyContact",
+          data: {
+            guardianName: formData.guardianName,
+            relationship: formData.relationship,
+            guardianPhone: formData.guardianPhone,
+          },
+        },
+        {
+          section: "paymentDetails",
+          data: {
+            holder: formData.holder,
+            bank: formData.bank,
+            ifsc: formData.ifsc,
+            account: formData.account,
+          },
+        },
+      ];
+      await Promise.all(payloads.map((p) => updateUserProfile(p)));
+      await fetchProfile();
+      setIsModalOpen(false);
+      Swal.fire({
+        title: "Profile Updated",
+        text: "Your information has been synced successfully.",
+        icon: "success",
+        confirmButtonColor: "#D97706",
+      });
     } catch (err) {
       Swal.fire({
         title: "Update Failed",
@@ -308,12 +405,37 @@ const Profile = () => {
                 <div className="md:col-span-2 text-sm font-black text-gray-700 uppercase border-b border-gray-100 pb-2 flex items-center gap-3">
                   <FaUserAlt className="text-primary" /> <span>1. Identity Info</span>
                 </div>
-                <CInput label="Full Name" value={formData.fullName} onChange={(val) => setFormData({...formData, fullName: val})} />
-                <CInput label="Phone" value={formData.phone} onChange={(val) => setFormData({...formData, phone: val})} />
-                <CInput label="Age" type="number" value={formData.age} onChange={(val) => setFormData({...formData, age: val})} />
-                <CInput label="Blood Group" value={formData.bloodGroup} onChange={(val) => setFormData({...formData, bloodGroup: val})} />
-                <CInput label="City" value={formData.city} onChange={(val) => setFormData({...formData, city: val})} />
-                <CInput label="State" value={formData.state} onChange={(val) => setFormData({...formData, state: val})} />
+                <CInput
+                  label="Full Name"
+                  value={formData.fullName}
+                  onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                />
+                <CInput
+                  label="Phone"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                />
+                <CInput
+                  label="Age"
+                  type="number"
+                  value={formData.age}
+                  onChange={(e) => setFormData({ ...formData, age: e.target.value })}
+                />
+                <CInput
+                  label="Blood Group"
+                  value={formData.bloodGroup}
+                  onChange={(e) => setFormData({ ...formData, bloodGroup: e.target.value })}
+                />
+                <CInput
+                  label="City"
+                  value={formData.city}
+                  onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                />
+                <CInput
+                  label="State"
+                  value={formData.state}
+                  onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                />
 
                 <div className="md:col-span-2 text-sm font-black text-gray-700 uppercase border-b border-gray-100 pb-2 mt-4 flex items-center gap-3">
                   <FaBriefcase className="text-primary" /> <span>2. Professional / Student</span>
@@ -333,19 +455,89 @@ const Profile = () => {
                      </button>
                    ))}
                 </div>
-                <CInput label="Qualification" value={formData.education} onChange={(val) => setFormData({...formData, education: val})} />
+                <CInput
+                  label="Qualification"
+                  value={formData.education}
+                  onChange={(e) => setFormData({ ...formData, education: e.target.value })}
+                />
                 {formData.occupationType === 'student' ? (
                   <>
-                    <CInput label="College Name" value={formData.collegeName} onChange={(val) => setFormData({...formData, collegeName: val})} />
-                    <CInput label="Year" value={formData.collegeYear} onChange={(val) => setFormData({...formData, collegeYear: val})} />
-                    <CInput label="College Address" className="md:col-span-2" value={formData.collegeAddress} onChange={(val) => setFormData({...formData, collegeAddress: val})} />
+                    <CInput
+                      label="College Name"
+                      value={formData.collegeName}
+                      onChange={(e) => setFormData({ ...formData, collegeName: e.target.value })}
+                    />
+                    <CInput
+                      label="Year"
+                      value={formData.collegeYear}
+                      onChange={(e) => setFormData({ ...formData, collegeYear: e.target.value })}
+                    />
+                    <CInput
+                      label="College Address"
+                      className="md:col-span-2"
+                      value={formData.collegeAddress}
+                      onChange={(e) => setFormData({ ...formData, collegeAddress: e.target.value })}
+                    />
                   </>
                 ) : (
                   <>
-                    <CInput label="Company Name" value={formData.companyName} onChange={(val) => setFormData({...formData, companyName: val})} />
-                    <CInput label="Work Address" className="md:col-span-2" value={formData.companyAddress} onChange={(val) => setFormData({...formData, companyAddress: val})} />
+                    <CInput
+                      label="Company Name"
+                      value={formData.companyName}
+                      onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
+                    />
+                    <CInput
+                      label="Work Address"
+                      className="md:col-span-2"
+                      value={formData.companyAddress}
+                      onChange={(e) => setFormData({ ...formData, companyAddress: e.target.value })}
+                    />
                   </>
                 )}
+
+                <div className="md:col-span-2 text-sm font-black text-gray-700 uppercase border-b border-gray-100 pb-2 mt-4 flex items-center gap-3">
+                  <FaUserShield className="text-primary" /> <span>3. Emergency Contact</span>
+                </div>
+                <CInput
+                  label="Guardian Name"
+                  value={formData.guardianName}
+                  onChange={(e) => setFormData({ ...formData, guardianName: e.target.value })}
+                />
+                <CInput
+                  label="Relationship"
+                  value={formData.relationship}
+                  onChange={(e) => setFormData({ ...formData, relationship: e.target.value })}
+                />
+                <CInput
+                  label="Guardian Phone"
+                  className="md:col-span-2"
+                  value={formData.guardianPhone}
+                  onChange={(e) => setFormData({ ...formData, guardianPhone: e.target.value })}
+                />
+
+                <div className="md:col-span-2 text-sm font-black text-gray-700 uppercase border-b border-gray-100 pb-2 mt-4 flex items-center gap-3">
+                  <FaWallet className="text-primary" /> <span>4. Payment Details</span>
+                </div>
+                <CInput
+                  label="Holder Name"
+                  value={formData.holder}
+                  onChange={(e) => setFormData({ ...formData, holder: e.target.value })}
+                />
+                <CInput
+                  label="Bank Name"
+                  value={formData.bank}
+                  onChange={(e) => setFormData({ ...formData, bank: e.target.value })}
+                />
+                <CInput
+                  label="IFSC Code"
+                  value={formData.ifsc}
+                  onChange={(e) => setFormData({ ...formData, ifsc: e.target.value })}
+                />
+                <CInput
+                  label="Account Number"
+                  value={formData.account}
+                  onChange={(e) => setFormData({ ...formData, account: e.target.value })}
+                />
               </div>
             </div>
             <div className="p-6 bg-gray-50 border-t flex flex-col sm:flex-row gap-3">
