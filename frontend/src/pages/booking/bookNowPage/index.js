@@ -173,29 +173,34 @@ const BookingPage = () => {
 
     if (result.isConfirmed) {
       setIsSubmitted(true);
-      const bookingData = {
+      const bookingPayload = {
         pgId: pg._id,
-        bookingId: `BK-${Date.now()}`,
-        roomType: pg.occupancy || "Single Sharing",
-        persons,
-        pricePerPerson,
-        securityDeposit: totalDeposit,
-        totalRent,
-        grandTotal: amountToPayNow,
-        paymentChoice: paymentOption,
-        stayDetails,
         members: personsData,
-        status: "PENDING_APPROVAL"
+        stayDetails,
+        persons,
+        roomType: pg.occupancy || "Single Sharing"
       };
 
-      Swal.fire({
-        icon: 'success',
-        title: 'Request Sent!',
-        text: 'Owner notified. You will be able to pay once approved.',
-        confirmButtonColor: "#D97706"
-      }).then(() => {
-        navigate(`/confirmBook/${pg._id}`, { state: { bookingData } });
-      });
+      try {
+        const res = await fetch("http://localhost:5000/api/bookings/create", {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(bookingPayload)
+        });
+
+        const body = await res.json();
+        if (res.ok && body.success) {
+          const created = body.booking;
+          Swal.fire({ icon: 'success', title: 'Request Sent!', text: 'Owner notified. You will be able to pay once approved.', confirmButtonColor: "#D97706" })
+            .then(() => navigate(`/confirmBook/${pg._id}`, { state: { bookingData: created } }));
+        } else {
+          throw new Error(body.message || 'Booking request failed');
+        }
+      } catch (err) {
+        console.error('Booking API error:', err);
+        setIsSubmitted(false);
+        Swal.fire({ icon: 'error', title: 'Failed', text: 'Failed to send booking request. Please try again.', confirmButtonColor: "#D97706" });
+      }
     }
   };
 

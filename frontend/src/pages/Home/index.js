@@ -4,6 +4,7 @@ import Footer from "../../components/footer";
 import HomeBanner from "./homeBanner";
 import HomeSearch from "./homeSearch";
 import HomeFeatures from "./homeFeature";
+import HomeReviews from "./homeReviews";
 
 const HomePage = () => {
   const [siteStats, setSiteStats] = useState({
@@ -76,6 +77,11 @@ const HomePage = () => {
         */}
         <section className="px-4 sm:px-6 py-10  md:py-20 max-w-7xl mx-auto">
           <HomeFeatures stats={siteStats} />
+        </section>
+
+        {/* Reviews: moved from About → Home; horizontal scroll + static data */}
+        <section className="px-4 sm:px-6 max-w-7xl mx-auto">
+          <HomeReviews />
         </section>
       </main>
 

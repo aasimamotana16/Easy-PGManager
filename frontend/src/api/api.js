@@ -82,7 +82,9 @@ export const rejectProperty = (id, reason) => API.post(`/admin/reject-property/$
 export const getCities = () => API.get("/cities");
 export const getFaqs = () => API.get("/faqs");
 export const getHomeFeatures = () => API.get("/features");
-export const getPublicReviews = () => API.get("/reviews/public");
+export const getPublicReviews = (limit) => API.get(`/reviews/public${limit ? `?limit=${limit}` : ''}`);
+export const createReview = (data) => API.post('/reviews/create', data);
+export const getReviewsByPg = (pgId) => API.get(`/reviews/pg/${pgId}`);
 
 /* =========================
     PG SEARCH & BOOKING APIs

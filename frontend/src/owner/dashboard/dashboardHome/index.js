@@ -55,10 +55,24 @@ const DashboardHome = () => {
   };
 
   const handleReviewSubmit = () => {
-    // Logic to send review to backend
-    console.log({ rating, reviewText });
-    setShowReviewModal(false);
-    // You could show a small success toast here
+    (async () => {
+      try {
+        const payload = {
+          ownerId: localStorage.getItem('userId') || null,
+          userName: localStorage.getItem('userName') || 'Owner',
+          userRole: 'owner',
+          comment: reviewText,
+          rating,
+          isOwnerCreated: true
+        };
+        await import("../../../api/api").then(m => m.createReview(payload));
+        setShowReviewModal(false);
+        setReviewText("");
+        setRating(0);
+      } catch (err) {
+        console.error('Owner review submit failed', err);
+      }
+    })();
   };
 
   const earningsData = {

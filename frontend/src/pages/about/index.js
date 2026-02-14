@@ -7,7 +7,6 @@ import AboutIntro from "./aboutIntro";
 import AboutWhoWeServe from "./aboutWhoWeServe";
 import AboutFeatures from "./aboutFeatures";
 import AboutWhyChooseUs from "./aboutWhyChooseUs";
-import AboutReviews from "./aboutReviews";
 
 const About = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -34,7 +33,6 @@ const About = () => {
         <AboutWhoWeServe />
         <AboutFeatures />
         <AboutWhyChooseUs />
-        <AboutReviews />
       </main>
 
       <Footer />

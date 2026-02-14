@@ -1,0 +1,237 @@
+import React, { useEffect, useRef, useState } from "react";
+import { motion } from "framer-motion";
+import { Quote, Star } from "lucide-react";
+import { getPublicReviews } from "../../../api/api";
+
+const fallbackReviews = [
+  { id: "s1", comment: "EasyPG made finding a PG effortless.", userRole: "student" },
+  { id: "s2", comment: "Great platform for owners.", userRole: "owner" },
+  { id: "s3", comment: "Smooth booking flow and transparent pricing.", userRole: "tenant" },
+  { id: "s4", comment: "Helpful support and quick responses.", userRole: "tenant" },
+  { id: "s5", comment: "Rooms were exactly as described.", userRole: "student" },
+  { id: "s6", comment: "Owner was cooperative during move-in.", userRole: "owner" },
+  { id: "s7", comment: "Great value for money. Recommended!", userRole: "working-professional" },
+  { id: "s8", comment: "Booking process was fast and clear.", userRole: "tenant" },
+];
+
+const HomeReviews = () => {
+  const [reviews, setReviews] = useState(fallbackReviews);
+  const [loading, setLoading] = useState(true);
+  const [paused, setPaused] = useState(false);
+  const containerRef = useRef(null);
+  const trackRef = useRef(null);
+  const [cardWidth, setCardWidth] = useState(320); // sensible default for measurement fallback
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [containerWidth, setContainerWidth] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
+  const [cardHeight, setCardHeight] = useState(220);
+  const touchStartY = useRef(null);
+
+  // shared measurement function used for centering and responsiveness
+  const measure = () => {
+    const cw = containerRef.current?.clientWidth || window.innerWidth || 0;
+    if (cw) setContainerWidth(cw);
+
+    const mobile = window.innerWidth < 768;
+    setIsMobile(mobile);
+
+    // Mobile: make card exactly half-screen minus padding so two cards visible (vertical stack)
+    if (mobile) {
+      const mobileWidth = Math.max(100, Math.floor(window.innerWidth / 2) - 20);
+      setCardWidth(mobileWidth);
+      // compute cardHeight so two cards fit vertically in viewport (approx)
+      const computedHeight = Math.max(160, Math.floor((window.innerHeight - 160) / 2));
+      setCardHeight(computedHeight);
+      return;
+    }
+
+    const firstCard = trackRef.current?.querySelector('.review-card');
+    if (firstCard) {
+      const rect = firstCard.getBoundingClientRect();
+      if (rect.width && rect.width > 0) setCardWidth(rect.width);
+    }
+  };
+
+  useEffect(() => {
+    let mounted = true;
+    const fetchReviews = async () => {
+      try {
+        const res = await getPublicReviews();
+        if (mounted && res?.data?.success && Array.isArray(res.data.data) && res.data.data.length) {
+          setReviews(res.data.data);
+        } else if (mounted) {
+          setReviews(fallbackReviews);
+        }
+      } catch (err) {
+        console.error("Failed to load reviews:", err);
+        if (mounted) setReviews(fallbackReviews);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+    fetchReviews();
+
+    // initial measurement and observer
+    setTimeout(measure, 80);
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(() => measure()) : null;
+    if (ro && containerRef.current) ro.observe(containerRef.current);
+    window.addEventListener('resize', measure);
+
+    return () => { mounted = false; window.removeEventListener('resize', measure); if (ro) ro.disconnect(); };
+  }, []);
+
+  // re-measure when reviews or loading state changes
+  useEffect(() => {
+    setTimeout(measure, 80);
+  }, [loading, reviews]);
+
+  // Auto-advance slide index
+  useEffect(() => {
+    if (paused) return;
+    const visibleCount = (loading ? fallbackReviews : reviews).length || 0;
+    if (visibleCount === 0) return;
+    const id = setInterval(() => {
+      setCurrentSlide((s) => {
+        const next = s + 1;
+        return next >= visibleCount ? 0 : next;
+      });
+    }, 3000);
+    return () => clearInterval(id);
+  }, [paused, loading, reviews]);
+
+  // debug log to help diagnose rendering/measurement issues
+  useEffect(() => {
+    // eslint-disable-next-line no-console
+    console.debug('[HomeReviews] cardWidth, currentSlide, reviewsCount ->', cardWidth, currentSlide, (loading ? fallbackReviews : reviews).length);
+  }, [cardWidth, currentSlide, loading, reviews]);
+
+  return (
+    <section className="py-8 px-6 bg-white snap-start">
+      <div className="max-w-7xl mx-auto">
+        <div className="flex flex-col mb-6">
+          <h2 className="text-h3 font-bold text-primary mb-2">What Our Users Say</h2>
+          <div className="w-20 h-1.5 bg-primary rounded-full"></div>
+        </div>
+
+        <div className="relative mt-4">
+          <div
+            ref={containerRef}
+            onMouseEnter={() => setPaused(true)}
+            onMouseLeave={() => setPaused(false)}
+            onTouchStart={(e) => { if (isMobile) touchStartY.current = e.touches[0].clientY; }}
+            onTouchEnd={(e) => {
+              if (!isMobile || touchStartY.current == null) return;
+              const endY = e.changedTouches[0].clientY;
+              const delta = touchStartY.current - endY;
+              const threshold = 30;
+              const visibleCount = (loading ? fallbackReviews : reviews).length || 0;
+              if (delta > threshold) {
+                setCurrentSlide((s) => (s + 1) % visibleCount);
+              } else if (delta < -threshold) {
+                setCurrentSlide((s) => (s - 1 + visibleCount) % visibleCount);
+              }
+              touchStartY.current = null;
+            }}
+            className="overflow-hidden py-10 px-2"
+            style={isMobile ? { height: `${cardHeight * 2 + 12}px` } : undefined}
+          >
+            <motion.div
+              ref={trackRef}
+              className={isMobile ? 'flex flex-col gap-3 items-stretch' : 'flex gap-6 items-stretch'}
+              // ensure center card overflow is visible when scaled
+              style={{ overflow: 'visible' }}
+              animate={(() => {
+                const gap = isMobile ? 12 : 24; // smaller gap on mobile
+                if (isMobile) {
+                  // vertical stacked: move by one card height + gap
+                  return { y: -(currentSlide * (cardHeight + gap)) };
+                }
+                // horizontal centering formula for larger screens
+                return { x: -(currentSlide * (cardWidth + gap)) + (containerWidth / 2) - (cardWidth / 2) };
+              })()}
+              transition={{ type: 'spring', stiffness: 120, damping: 18 }}
+            >
+            {(() => {
+              const visible = (loading ? fallbackReviews : reviews) || [];
+              const display = visible.length > 0 ? [...visible, ...visible] : visible;
+              return display.map((review, i) => {
+              const modIndex = visible.length ? i % visible.length : i;
+              const isCenter = modIndex === currentSlide;
+              return (
+              <motion.article
+                key={`review-${i}`}
+                className="review-card snap-start min-w-[260px] sm:min-w-[300px] md:min-w-[340px] lg:min-w-[360px] bg-primarySoft/10 border rounded-2xl p-6 flex-shrink-0 shadow-sm"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ scale: isCenter ? 1.05 : 0.9, opacity: isCenter ? 1 : 0.5 }}
+                transition={{ duration: 0.45 }}
+                style={{
+                  borderColor: isCenter ? '#B45309' : '#E5E0D9',
+                  width: isMobile ? '100%' : undefined,
+                  minHeight: isMobile ? `${cardHeight}px` : undefined,
+                }}
+              >
+              <div className="relative">
+                <div className="absolute -top-3 -right-3 text-primarySoft opacity-70">
+                  <Quote size={34} />
+                </div>
+
+                <div className="flex items-center gap-2 mb-3 text-primary">
+                  {[...Array(5)].map((_, idx) => (
+                    <Star key={idx} size={14} />
+                  ))}
+                </div>
+
+                <p className="text-textSecondary italic text-body-sm leading-relaxed mb-5">“{review.comment}”</p>
+
+                <div className="mt-4 flex items-center gap-3">
+                  <div className="w-10 h-10 bg-primarySoft rounded-full flex items-center justify-center text-primaryDark font-bold">
+                    {(review.userRole || 'U')?.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <p className="font-bold text-textPrimary capitalize text-sm">{(review.userRole || 'User').replace('-', ' ')}</p>
+                    <p className="text-xs text-textSecondary mt-1 opacity-70">Verified User</p>
+                  </div>
+                </div>
+              </div>
+            </motion.article>
+              );
+            });
+            })()}
+            </motion.div>
+          </div>
+
+          {/* Arrows */}
+          <button
+            aria-label="Previous review"
+            onClick={() => {
+              const visibleCount = (loading ? fallbackReviews : reviews).length || 0;
+              if (visibleCount === 0) return;
+              setPaused(true);
+              setCurrentSlide((s) => (s - 1 + visibleCount) % visibleCount);
+              setTimeout(() => setPaused(false), 1500);
+            }}
+            className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-2 rounded-full shadow-md border border-border"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-primary rotate-90" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M12.293 16.293a1 1 0 010 1.414l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L8.414 10l5.293 5.293a1 1 0 010 1.414z" clipRule="evenodd"/></svg>
+          </button>
+
+          <button
+            aria-label="Next review"
+            onClick={() => {
+              const visibleCount = (loading ? fallbackReviews : reviews).length || 0;
+              if (visibleCount === 0) return;
+              setPaused(true);
+              setCurrentSlide((s) => (s + 1) % visibleCount);
+              setTimeout(() => setPaused(false), 1500);
+            }}
+            className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-2 rounded-full shadow-md border border-border"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-primary -rotate-90" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M12.293 16.293a1 1 0 010 1.414l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L8.414 10l5.293 5.293a1 1 0 010 1.414z" clipRule="evenodd"/></svg>
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+export default HomeReviews;

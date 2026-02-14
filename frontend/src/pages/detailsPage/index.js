@@ -64,6 +64,7 @@ const PGDetails = () => {
 
   const reviewsRef = useRef(null);
   const pg = pgList?.find((item) => item._id === id);
+  const [propertyReviews, setPropertyReviews] = useState([]);
 
   useEffect(() => {
     if (pgList && pgList.length > 0) {
@@ -73,6 +74,22 @@ const PGDetails = () => {
       return () => clearTimeout(timer);
     }
   }, [pgList]);
+
+  // Load property-specific reviews (must run before any early returns)
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        if (!id) return;
+        const api = await import("../../api/api");
+        const res = await api.getReviewsByPg(id);
+        if (mounted && res?.data?.success) setPropertyReviews(res.data.data || []);
+      } catch (err) {
+        console.error('Failed to load property reviews', err);
+      }
+    })();
+    return () => { mounted = false; };
+  }, [id]);
 
   const rawGallery = [pg?.mainImage, ...(pg?.images || []), ...(pg?.roomImages || [])].filter(Boolean);
   const gallery = rawGallery.length >= 4 ? rawGallery : [...rawGallery, ...placeholders.slice(0, 4 - rawGallery.length)];
@@ -93,12 +110,13 @@ const PGDetails = () => {
   
   const displayDeposit = pg?.securityDeposit || displayStartingPrice;
 
-  const reviews = pg?.reviews?.length ? pg.reviews : [
+
+  const reviews = propertyReviews.length ? propertyReviews : [
     { user: "ABCD", rating: 5, comment: "Clean rooms and very safe environment." },
     { user: "XYZ", rating: 4, comment: "Good facilities, food quality can be improved." }
   ];
 
-  const averageRating = (reviews.reduce((sum, r) => sum + Number(r.rating), 0) / reviews.length).toFixed(1);
+  const averageRating = (reviews.length ? (reviews.reduce((sum, r) => sum + Number(r.rating || 0), 0) / reviews.length) : 0).toFixed(1);
 
   // UPDATED VALIDATION LOGIC
   const handleSubmitFeedback = () => {
@@ -108,9 +126,32 @@ const PGDetails = () => {
     }
     
     setFormError("");
-    setIsFeedbackOpen(false);
-    setRating(0);
-    setComment("");
+
+    // submit review to backend (hidden until admin approval)
+    (async () => {
+      try {
+        const payload = {
+          pgId: id,
+          userId: localStorage.getItem('userId') || null,
+          userName: editableName,
+          userEmail: localStorage.getItem('userEmail') || null,
+          userRole: role || 'tenant',
+          comment,
+          rating,
+          isOwnerCreated: false
+        };
+        await import("../../../api/api").then(m => m.createReview(payload));
+        // Inform user that review is submitted for moderation
+        setIsFeedbackOpen(false);
+        setRating(0);
+        setComment("");
+        // Optional: show toast if you have one
+        console.log('Review submitted for moderation');
+      } catch (err) {
+        console.error('Failed to submit review', err);
+        setFormError('Failed to submit review. Please try again later.');
+      }
+    })();
   };
 
   return (

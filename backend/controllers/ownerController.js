@@ -749,7 +749,8 @@ const submitForApproval = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: "Property submitted for approval successfully! Admin will review it shortly."
+      message: "Property submitted for approval successfully! Admin will review it shortly.",
+      data: pg
     });
   } catch (error) {
     console.error("Submit for approval error:", error);
