@@ -61,17 +61,25 @@ const userSchema = new mongoose.Schema(
     profilePicture: { type: String, select: false },
     // --- DOCUMENT FIELDS FOR DASHBOARD ---
     idDocument: {
-      status: { type: String, enum: ["Pending", "Uploaded"], select: false },
-      fileUrl: { type: String, select: false },
-    },
-    aadharCard: {
-      status: { type: String, enum: ["Pending", "Uploaded"], select: false },
-      fileUrl: { type: String, select: false },
-    },
-    rentalAgreementCopy: {
-      status: { type: String, enum: ["Pending", "Uploaded"], select: false },
+      status: { type: String, enum: ["Pending", "Uploaded", "Verified", "Rejected"], select: false },
       fileUrl: { type: String, select: false },
       uploadedAt: { type: Date, select: false },
+      reviewedAt: { type: Date, select: false },
+      reviewNote: { type: String, select: false },
+    },
+    aadharCard: {
+      status: { type: String, enum: ["Pending", "Uploaded", "Verified", "Rejected"], select: false },
+      fileUrl: { type: String, select: false },
+      uploadedAt: { type: Date, select: false },
+      reviewedAt: { type: Date, select: false },
+      reviewNote: { type: String, select: false },
+    },
+    rentalAgreementCopy: {
+      status: { type: String, enum: ["Pending", "Uploaded", "Verified", "Rejected"], select: false },
+      fileUrl: { type: String, select: false },
+      uploadedAt: { type: Date, select: false },
+      reviewedAt: { type: Date, select: false },
+      reviewNote: { type: String, select: false },
     },
     // --- ADD THIS HERE ---
     assignedPg: {

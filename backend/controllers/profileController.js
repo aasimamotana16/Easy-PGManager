@@ -155,7 +155,7 @@ exports.updateProfile = async (req, res) => {
     // Fetch full, updated profile and user to recalculate completion
     const [fullProfile, user] = await Promise.all([
       Profile.findOne({ userId }),
-      User.findById(userId),
+      User.findById(userId).select("+profilePicture +profileCompletion"),
     ]);
 
     if (user && fullProfile) {

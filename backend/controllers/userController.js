@@ -17,10 +17,11 @@ const { autoTable } = require('jspdf-autotable');
 
 // ✅ Temporary in-memory store for Security OTPs [cite: 2026-01-06]
 const securityOtpCache = {};
+const JWT_SECRET = process.env.JWT_SECRET || "secret";
 
 // Helper: Generate JWT [cite: 2026-01-06]
 const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET || "fallback_secret_key_for_development", {
+  return jwt.sign({ id }, JWT_SECRET, {
     expiresIn: "30d",
   });
 };
@@ -174,10 +175,10 @@ const getUserProfile = async (req, res) => {
 const recalcProfileCompletion = async (userId) => {
   try {
     const [user, profile] = await Promise.all([
-      User.findById(userId),
+      User.findById(userId).select("+profilePicture +profileCompletion"),
       Profile.findOne({ userId }),
     ]);
-    if (!user || !profile) return;
+    if (!user) return;
 
     const hasAny = (obj, keys) =>
       keys.some((k) => {
@@ -188,8 +189,9 @@ const recalcProfileCompletion = async (userId) => {
     let filledSections = 0;
     const totalSections = 5; // personal, academic, emergency, payment, picture
 
+    // Personal: use Profile first, then fallback to legacy User fields
     if (
-      hasAny(profile.personalInfo || {}, [
+      hasAny(profile?.personalInfo || {}, [
         "fullName",
         "phone",
         "age",
@@ -197,13 +199,15 @@ const recalcProfileCompletion = async (userId) => {
         "city",
         "state",
         "email",
-      ])
+      ]) ||
+      hasAny(user || {}, ["fullName", "phone", "city", "state", "email", "age", "bloodGroup"])
     ) {
       filledSections++;
     }
 
+    // Academic: profile model only
     if (
-      hasAny(profile.academicInfo || {}, [
+      hasAny(profile?.academicInfo || {}, [
         "status",
         "qualification",
         "company",
@@ -213,18 +217,21 @@ const recalcProfileCompletion = async (userId) => {
       filledSections++;
     }
 
+    // Emergency: use Profile first, then fallback to legacy User.emergencyContact
     if (
-      hasAny(profile.emergencyContact || {}, [
+      hasAny(profile?.emergencyContact || {}, [
         "guardianName",
         "relationship",
         "guardianPhone",
-      ])
+      ]) ||
+      hasAny(user?.emergencyContact || {}, ["contactName", "relationship", "phoneNumber"])
     ) {
       filledSections++;
     }
 
+    // Payment: profile model only
     if (
-      hasAny(profile.paymentDetails || {}, [
+      hasAny(profile?.paymentDetails || {}, [
         "holder",
         "bank",
         "ifsc",
@@ -363,7 +370,8 @@ const getMyAgreement = async (req, res) => {
 
 const getMyDocuments = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id);
+    const user = await User.findById(req.user._id)
+      .select("+idDocument +aadharCard +rentalAgreementCopy");
     res.status(200).json({
       success: true,
       data: {
@@ -381,13 +389,19 @@ const uploadUserDocument = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
     const fieldName = req.body.documentType; 
+    const allowedDocumentFields = ["idDocument", "aadharCard", "rentalAgreementCopy"];
 
     if (!req.file) return res.status(400).json({ message: "No file uploaded" });
+    if (!allowedDocumentFields.includes(fieldName)) {
+      return res.status(400).json({ message: "Invalid document type" });
+    }
 
     user[fieldName] = {
       status: "Uploaded",
       fileUrl: `/uploads/documents/${req.file.filename}`,
-      uploadedAt: Date.now()
+      uploadedAt: Date.now(),
+      reviewedAt: null,
+      reviewNote: ""
     };
 
     await user.save();

@@ -2,24 +2,93 @@ import React, { useState, useEffect } from "react";
 import Navbar from "../../components/navbar";
 import Footer from "../../components/footer";
 import Loader from "../../components/loader";
-import { faqs } from "../../config/staticData";
+import { faqs as fallbackFaqs } from "../../config/staticData";
+import { getFaqs } from "../../api/api";
 import { FaChevronDown } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion"; // Added for animations
 
+const CATEGORY_ORDER = [
+  "General Questions",
+  "Support Team",
+  "Miscellaneous",
+  "Billing & Payments",
+];
+
 export default function FAQ() {
+  const [faqItems, setFaqItems] = useState([]);
   const [activeCategory, setActiveCategory] = useState("General Questions");
   const [activeQuestionId, setActiveQuestionId] = useState(null);
   const [pageLoading, setPageLoading] = useState(true);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setPageLoading(false);
-    }, 800);
-    return () => clearTimeout(timer);
+    const loadFaqs = async () => {
+      try {
+        const response = await getFaqs();
+        const apiFaqs = Array.isArray(response?.data?.data) ? response.data.data : [];
+
+        const fallbackByQuestion = fallbackFaqs.reduce((acc, item) => {
+          acc[item.question?.trim().toLowerCase()] = item.category;
+          return acc;
+        }, {});
+
+        const normalizedFaqs = apiFaqs.map((faq, index) => ({
+          id: faq._id || `faq-${index}`,
+          category:
+            faq.category ||
+            fallbackByQuestion[(faq.question || "").trim().toLowerCase()] ||
+            "General Questions",
+          question: faq.question || "",
+          answer: faq.answer || ""
+        }));
+
+        if (normalizedFaqs.length > 0) {
+          const apiByQuestion = normalizedFaqs.reduce((acc, item) => {
+            const key = item.question.trim().toLowerCase();
+            if (key) acc[key] = item;
+            return acc;
+          }, {});
+
+          // Keep old section-question structure, but refresh answers from backend when available.
+          const baseFaqs = fallbackFaqs.map((item) => {
+            const key = item.question.trim().toLowerCase();
+            const apiItem = apiByQuestion[key];
+            if (!apiItem) return item;
+            return {
+              ...item,
+              answer: apiItem.answer || item.answer,
+            };
+          });
+
+          // Append backend-only FAQs (new questions not present in fallback list).
+          const fallbackQuestionSet = new Set(
+            fallbackFaqs.map((item) => item.question.trim().toLowerCase())
+          );
+          const backendExtras = normalizedFaqs.filter(
+            (item) => !fallbackQuestionSet.has(item.question.trim().toLowerCase())
+          );
+
+          setFaqItems([...baseFaqs, ...backendExtras]);
+          setActiveCategory("General Questions");
+        } else {
+          setFaqItems(fallbackFaqs);
+        }
+      } catch (error) {
+        console.error("FAQ fetch failed, using static fallback:", error);
+        setFaqItems(fallbackFaqs);
+      } finally {
+        setPageLoading(false);
+      }
+    };
+
+    loadFaqs();
   }, []);
 
-  const categories = [...new Set(faqs.map((faq) => faq.category))];
-  const filteredFaqs = faqs.filter((faq) => faq.category === activeCategory);
+  const detectedCategories = [...new Set(faqItems.map((faq) => faq.category))];
+  const categories = [
+    ...CATEGORY_ORDER,
+    ...detectedCategories.filter((c) => !CATEGORY_ORDER.includes(c)),
+  ];
+  const filteredFaqs = faqItems.filter((faq) => faq.category === activeCategory);
 
   if (pageLoading) return <Loader />;
 

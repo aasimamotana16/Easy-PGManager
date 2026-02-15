@@ -75,7 +75,9 @@ import OwnerProfile from "./owner/dashboard/profileStatus";
 const UserProtectedRoute = ({ children }) => {
   const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
   const role = localStorage.getItem("role");
-  return isLoggedIn && role === "user"
+  const token = localStorage.getItem("userToken") || localStorage.getItem("token");
+  const hasValidToken = !!token && token !== "null" && token !== "undefined";
+  return isLoggedIn && hasValidToken && role === "user"
     ? children
     : <Navigate to="/loginPage" replace />;
 };
@@ -83,14 +85,18 @@ const UserProtectedRoute = ({ children }) => {
 const OwnerProtectedRoute = ({ children }) => {
   const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
   const role = localStorage.getItem("role");
-  return isLoggedIn && role === "owner"
+  const token = localStorage.getItem("userToken") || localStorage.getItem("token");
+  const hasValidToken = !!token && token !== "null" && token !== "undefined";
+  return isLoggedIn && hasValidToken && role === "owner"
     ? children
     : <Navigate to="/loginPage" replace />;
 };
 
 const ProtectedBookingRoute = ({ children }) => {
   const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
-  return isLoggedIn ? children : <Navigate to="/loginPage" replace />;
+  const token = localStorage.getItem("userToken") || localStorage.getItem("token");
+  const hasValidToken = !!token && token !== "null" && token !== "undefined";
+  return isLoggedIn && hasValidToken ? children : <Navigate to="/loginPage" replace />;
 };
 
 /* ================= APP ================= */

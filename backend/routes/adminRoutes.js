@@ -8,7 +8,9 @@ const {
   deleteUser,
   getPendingProperties,
   approveProperty,
-  rejectProperty
+  rejectProperty,
+  getPendingDocuments,
+  reviewUserDocument
 } = require('../controllers/adminController');
 const { protect } = require('../middleware/authMiddleware');
 
@@ -22,5 +24,7 @@ router.delete('/delete-user/:id', protect, deleteUser); // Delete Button
 router.get('/pending-properties', protect, getPendingProperties);
 router.post('/approve-property/:id', protect, approveProperty);
 router.post('/reject-property/:id', protect, rejectProperty);
+router.get('/pending-documents', protect, getPendingDocuments);
+router.post('/review-document', protect, reviewUserDocument);
 
 module.exports = router;

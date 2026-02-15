@@ -1,9 +1,9 @@
-import express from "express";
-import { getFaqs, addFaq } from "../controllers/faqController.js";
+const express = require("express");
+const { getFaqs, addFaq } = require("../controllers/faqController");
 
 const router = express.Router();
 
 router.get("/", getFaqs);      // GET all FAQs
 router.post("/", addFaq);      // Add new FAQ
 
-export default router;
+module.exports = router;

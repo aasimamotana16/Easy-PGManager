@@ -11,6 +11,7 @@ const path = require("path");
 const authRoutes = require('./routes/authRoutes');
 const cityRoutes = require('./routes/cityRoutes');
 const featuresRoutes = require("./routes/featuresRoutes");
+const faqRoutes = require("./routes/faqRoutes");
 const userRoutes = require("./routes/userRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
 const ownerRoutes = require('./routes/ownerRoutes');
@@ -51,6 +52,7 @@ app.use('/api/auth', authRoutes);
 // Shared Data
 app.use('/api/cities', cityRoutes);
 app.use('/api/features', featuresRoutes);
+app.use('/api/faqs', faqRoutes);
 
 // User & Payment Logic
 app.use("/api/users", userRoutes);

@@ -3,6 +3,7 @@ const Pg = require('../models/pgModel');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
+const DOCUMENT_FIELDS = ['idDocument', 'aadharCard', 'rentalAgreementCopy'];
 
 // Existing Admin Login
 const adminLogin = async (req, res) => {
@@ -230,6 +231,93 @@ const rejectProperty = async (req, res) => {
   }
 };
 
+// @desc    Get uploaded documents for admin verification queue
+const getPendingDocuments = async (req, res) => {
+  try {
+    const users = await User.find({})
+      .select('fullName email role idDocument aadharCard rentalAgreementCopy');
+
+    const queue = [];
+    users.forEach((u) => {
+      DOCUMENT_FIELDS.forEach((field) => {
+        const doc = u[field];
+        if (doc && doc.fileUrl && (doc.status === 'Uploaded' || doc.status === 'Rejected')) {
+          queue.push({
+            userId: u._id,
+            fullName: u.fullName,
+            email: u.email,
+            role: u.role,
+            documentType: field,
+            status: doc.status,
+            fileUrl: doc.fileUrl,
+            uploadedAt: doc.uploadedAt || null,
+            reviewedAt: doc.reviewedAt || null,
+            reviewNote: doc.reviewNote || ''
+          });
+        }
+      });
+    });
+
+    queue.sort((a, b) => {
+      const aTime = a.uploadedAt ? new Date(a.uploadedAt).getTime() : 0;
+      const bTime = b.uploadedAt ? new Date(b.uploadedAt).getTime() : 0;
+      return bTime - aTime;
+    });
+
+    return res.status(200).json({
+      success: true,
+      count: queue.length,
+      data: queue
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Error fetching pending documents' });
+  }
+};
+
+// @desc    Review one user document from admin panel
+const reviewUserDocument = async (req, res) => {
+  try {
+    const { userId, documentType, status, note } = req.body;
+
+    if (!userId || !documentType || !status) {
+      return res.status(400).json({ success: false, message: 'userId, documentType and status are required' });
+    }
+    if (!DOCUMENT_FIELDS.includes(documentType)) {
+      return res.status(400).json({ success: false, message: 'Invalid documentType' });
+    }
+    if (!['Verified', 'Rejected'].includes(status)) {
+      return res.status(400).json({ success: false, message: 'Invalid status. Use Verified or Rejected' });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    if (!user[documentType] || !user[documentType].fileUrl) {
+      return res.status(404).json({ success: false, message: 'Document not found for this user' });
+    }
+
+    user[documentType].status = status;
+    user[documentType].reviewedAt = new Date();
+    user[documentType].reviewNote = note || '';
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: `Document ${status.toLowerCase()} successfully`,
+      data: {
+        userId: user._id,
+        documentType,
+        status: user[documentType].status,
+        reviewedAt: user[documentType].reviewedAt,
+        reviewNote: user[documentType].reviewNote
+      }
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Error reviewing document' });
+  }
+};
+
 module.exports = { 
   adminLogin, 
   getAdminDashboardStats, 
@@ -238,5 +326,7 @@ module.exports = {
   deleteUser,
   getPendingProperties,
   approveProperty,
-  rejectProperty
+  rejectProperty,
+  getPendingDocuments,
+  reviewUserDocument
 };

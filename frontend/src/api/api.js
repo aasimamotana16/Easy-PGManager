@@ -8,8 +8,13 @@ const API = axios.create({
 });
 
 API.interceptors.request.use((req) => {
-  const userToken = localStorage.getItem("userToken");
-  if (userToken) {
+  let userToken = localStorage.getItem("userToken") || localStorage.getItem("token");
+  if (userToken && userToken !== "null" && userToken !== "undefined") {
+    // Handle legacy token formats like quoted strings or "Bearer <token>" in storage.
+    userToken = userToken.trim().replace(/^['"]|['"]$/g, "");
+    if (userToken.toLowerCase().startsWith("bearer ")) {
+      userToken = userToken.slice(7).trim();
+    }
     req.headers.Authorization = `Bearer ${userToken}`;
   }
   return req;
