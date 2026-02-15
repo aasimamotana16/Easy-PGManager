@@ -5,11 +5,14 @@ import CButton from "../../../components/cButton";
 import CInput from "../../../components/cInput"; // Added for Modal
 import { FaHome, FaRegEye, FaEdit, FaTrash, FaTimes } from "react-icons/fa";
 import Swal from "sweetalert2";
+import { getMyPgs } from "../../../api/api";
+import { getImageUrl } from "../../../utils/imageUtils";
 
 const PgManagement = () => {
   const navigate = useNavigate(); 
   const [myPgs, setMyPgs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const toImageUrl = (imgPath) => getImageUrl(imgPath);
 
   // --- NEW MODAL STATES ---
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -19,10 +22,7 @@ const PgManagement = () => {
   // Fetch PGs from backend
   const fetchMyPgs = async () => {
     try {
-      const token = localStorage.getItem("userToken");
-      const response = await axios.get("http://localhost:5000/api/owner/my-pgs", {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await getMyPgs();
 
       if (response.data.success) {
         const transformedPgs = response.data.data.map(pg => ({
@@ -32,7 +32,7 @@ const PgManagement = () => {
           status: pg.status.charAt(0).toUpperCase() + pg.status.slice(1),
           rooms: pg.totalRooms || 0,
           beds: pg.liveListings || 0,
-          image: pg.mainImage || "https://images.unsplash.com/photo-1600585154340-be6161a56a0c",
+          image: toImageUrl(pg.mainImage),
         }));
         setMyPgs(transformedPgs);
       }
@@ -150,7 +150,19 @@ const PgManagement = () => {
               className="border border-gray-200 rounded-xl bg-white overflow-hidden flex flex-col hover:shadow-md transition-shadow"
             >
               <div className="aspect-video w-full overflow-hidden">
-                 <img src={pg.image} alt={pg.name} className="h-full w-full object-cover" />
+                 <img
+                   src={pg.image}
+                   alt={pg.name}
+                   className="h-full w-full object-cover"
+                   onError={(e) => {
+                     const currentSrc = e.currentTarget.src || "";
+                     if (currentSrc.includes("/uploads/pgImages/")) {
+                       e.currentTarget.src = currentSrc.replace("/uploads/pgImages/", "/uploads/documents/");
+                       return;
+                     }
+                     e.currentTarget.src = "https://images.unsplash.com/photo-1600585154340-be6161a56a0c";
+                   }}
+                 />
               </div>
 
               <div className="p-4 sm:p-5 flex flex-col flex-1 space-y-3">

@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const DOCUMENT_FIELDS = ['idDocument', 'aadharCard', 'rentalAgreementCopy'];
+const PROPERTY_DOCUMENT_FIELDS = ['aadhaar', 'electricityBill', 'propertyTax'];
 
 // Existing Admin Login
 const adminLogin = async (req, res) => {
@@ -236,6 +237,9 @@ const getPendingDocuments = async (req, res) => {
   try {
     const users = await User.find({})
       .select('fullName email role idDocument aadharCard rentalAgreementCopy');
+    const properties = await Pg.find({})
+      .populate('ownerId', 'fullName email role')
+      .select('pgName proofDocuments updatedAt createdAt ownerId');
 
     const queue = [];
     users.forEach((u) => {
@@ -255,6 +259,29 @@ const getPendingDocuments = async (req, res) => {
             reviewNote: doc.reviewNote || ''
           });
         }
+      });
+    });
+
+    properties.forEach((pg) => {
+      PROPERTY_DOCUMENT_FIELDS.forEach((field) => {
+        const fileUrl = pg?.proofDocuments?.[field];
+        if (!fileUrl) return;
+
+        queue.push({
+          userId: pg.ownerId?._id || null,
+          fullName: pg.ownerId?.fullName || "Unknown Owner",
+          email: pg.ownerId?.email || "",
+          role: pg.ownerId?.role || "owner",
+          propertyId: pg._id,
+          propertyName: pg.pgName || "Unknown Property",
+          documentType: `property.${field}`,
+          status: 'Uploaded',
+          fileUrl,
+          uploadedAt: pg.updatedAt || pg.createdAt || null,
+          reviewedAt: null,
+          reviewNote: '',
+          reviewable: false
+        });
       });
     });
 

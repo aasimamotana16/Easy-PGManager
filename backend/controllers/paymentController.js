@@ -66,12 +66,12 @@ const verifyPayment = async (req, res) => {
         amountPaid,
         month: month || "January 2026", // Fallback for your current demo
         transactionId: razorpay_payment_id,
-        paymentStatus: "PAID", // Matches frontend "PAID" badge
+        paymentStatus: "Success",
         paymentDate: new Date()
       });
 
       // Populate PG details so frontend has the name immediately
-      const populatedPayment = await Payment.findById(newPayment._id).populate('pgId', 'name');
+      const populatedPayment = await Payment.findById(newPayment._id).populate('pgId', 'pgName');
 
       return res.status(200).json({
         success: true,

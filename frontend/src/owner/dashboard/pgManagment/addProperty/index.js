@@ -7,7 +7,7 @@ import CFormCard from "../../../../components/cFormCard";
 import { genderOptions } from "../../../../config/staticData";
 import { FaTrash, FaEye, FaFileAlt, FaMapMarkerAlt, FaClock } from "react-icons/fa";
 import Swal from "sweetalert2";
-import { addPgProperty } from "../../../../api/api";
+import { addPgProperty, uploadPropertyDocuments } from "../../../../api/api";
 
 const facilitiesList = ["WiFi", "Food", "Laundry", "Parking", "Power Backup", "AC"];
 const rulesList = [
@@ -253,6 +253,26 @@ const AddProperty = () => {
 
       if (response.data.success) {
         const pgId = response.data.data._id;
+
+        // Upload proof documents to backend for admin verification queue.
+        const docsFormData = new FormData();
+        if (formData.proofDocuments.aadhaar) {
+          docsFormData.append("aadhaar", formData.proofDocuments.aadhaar);
+        }
+        if (formData.proofDocuments.electricityBill) {
+          docsFormData.append("electricityBill", formData.proofDocuments.electricityBill);
+        }
+        if (formData.proofDocuments.propertyTax) {
+          docsFormData.append("propertyTax", formData.proofDocuments.propertyTax);
+        }
+
+        if ([...docsFormData.keys()].length > 0) {
+          try {
+            await uploadPropertyDocuments(pgId, docsFormData);
+          } catch (docError) {
+            console.error("Property document upload failed:", docError);
+          }
+        }
         
         // Store property data for next steps
         localStorage.setItem("currentPropertyId", pgId);

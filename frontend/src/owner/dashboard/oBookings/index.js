@@ -18,24 +18,17 @@ const BookingManagement = () => {
   const [selectedPg, setSelectedPg] = useState("All Properties");
 
   const fetchBookings = async () => {
-    // Sample data for initial state
-    const sample = [
-      { _id: '1', bookingId: 'BK001', pgName: 'Green Villa', roomType: 'Single', tenantName: 'Rahul Sharma', checkInDate: '2026-01-15', checkOutDate: '2026-02-15', status: 'Confirmed', isPaid: false },
-      { _id: '2', bookingId: 'BK002', pgName: 'Sunshine Residency', roomType: 'Double', tenantName: 'Priya Patel', checkInDate: '2026-01-20', checkOutDate: '2026-02-20', status: 'Pending', isPaid: false },
-      { _id: '3', bookingId: 'BK003', pgName: 'Green Villa', roomType: 'Single', tenantName: 'Amit Kumar', checkInDate: '2026-02-01', checkOutDate: '2026-03-01', status: 'Cancelled', isPaid: false },
-    ];
-    setBookings(sample);
-
     try {
       const token = localStorage.getItem("userToken");
       const res = await axios.get("http://localhost:5000/api/owner/my-bookings", {
         headers: { Authorization: `Bearer ${token}` }
       });
-      if (res.data.success && res.data.data.length > 0) {
-        setBookings(res.data.data);
+      if (res.data.success) {
+        setBookings(res.data.data || []);
       }
     } catch (error) {
-      console.log('API failed, using sample data');
+      console.log("Failed to load bookings");
+      setBookings([]);
     }
   };
 
@@ -71,7 +64,7 @@ const BookingManagement = () => {
     if (confirm.isConfirmed) {
       try {
         const token = localStorage.getItem("userToken");
-        await axios.patch(`http://localhost:5000/api/owner/booking/${id}`, 
+        await axios.put(`http://localhost:5000/api/owner/update-booking/${id}`, 
           { status: newStatus }, 
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -89,8 +82,8 @@ const BookingManagement = () => {
     }
   };
 
-  const handleResendEmail = (id) => {
-    Swal.fire({
+  const handleResendEmail = async (id) => {
+    const result = await Swal.fire({
       title: 'Resend Payment Link?',
       text: "The tenant will receive the email again.",
       icon: 'info',
@@ -98,28 +91,36 @@ const BookingManagement = () => {
       confirmButtonColor: '#D97706',
       cancelButtonColor: '#4B4B4B',
       confirmButtonText: 'Yes, resend'
-    }).then((result) => {
-      if (result.isConfirmed) {
-        // Show a loading state while "sending"
-        Swal.fire({
-          title: 'Sending...',
-          allowOutsideClick: false,
-          didOpen: () => {
-            Swal.showLoading();
-          }
-        });
-
-        // Simulate API call
-        setTimeout(() => {
-          Swal.fire({
-            title: 'Sent!',
-            text: 'Payment link has been resent successfully.',
-            icon: 'success',
-            confirmButtonColor: '#D97706',
-          });
-        }, 1500);
-      }
     });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      const token = localStorage.getItem("userToken");
+      Swal.fire({
+        title: 'Sending...',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+      });
+
+      const res = await axios.post(`http://localhost:5000/api/owner/send-payment-link/${id}`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      Swal.fire({
+        title: 'Sent!',
+        text: res.data?.message || 'Payment link has been sent successfully.',
+        icon: 'success',
+        confirmButtonColor: '#D97706',
+      });
+    } catch (error) {
+      Swal.fire({
+        title: 'Failed',
+        text: error.response?.data?.message || 'Unable to send payment link.',
+        icon: 'error',
+        confirmButtonColor: '#D97706',
+      });
+    }
   };
 
   const handleDownload = (bookingId) => {
@@ -234,7 +235,7 @@ const BookingManagement = () => {
                     <div className="flex items-center justify-center gap-3">
                       <CSelect 
                         value={b.status}
-                        onChange={(val) => handleUpdateStatus(b._id, val)}
+                        onChange={(e) => handleUpdateStatus(b._id, e.target.value)}
                         options={[
                           { label: 'Pending', value: 'Pending' },
                           { label: 'Confirmed', value: 'Confirmed' },

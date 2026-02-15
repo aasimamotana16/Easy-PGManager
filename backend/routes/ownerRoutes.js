@@ -15,6 +15,7 @@ const {
   getMyBookings, 
   addBooking, 
   updateBookingStatus, 
+  sendPaymentLink,
   updateRoomPrices,
   updateOwnerProfile,
   getOwnerProfile,
@@ -22,10 +23,14 @@ const {
   uploadPgImages,
   getMyAgreements,
   updateTenant,
+  syncTenantLinkedData,
   createSupportTicket,
   getMySupportTickets,
   updateSupportTicketStatus,
-  submitForApproval
+  submitForApproval,
+  uploadPropertyDocuments,
+  getOwnerEarnings,
+  downloadOwnerEarningsPDF
 } = require('../controllers/ownerController');
 
 const { protect, isOwner } = require('../middleware/authMiddleware');
@@ -44,20 +49,25 @@ router.post('/submit-for-approval/:pgId', protect, isOwner, submitForApproval);
 // --- ROOM FLOW ---
 router.post('/add-room', protect, isOwner, addRoom);
 router.post('/upload-images/:pgId', protect, isOwner, upload.fields([{ name: 'mainImage', maxCount: 1 }, { name: 'images', maxCount: 10 }]), uploadPgImages);
+router.post('/upload-property-docs/:pgId', protect, isOwner, upload.fields([{ name: 'aadhaar', maxCount: 1 }, { name: 'electricityBill', maxCount: 1 }, { name: 'propertyTax', maxCount: 1 }]), uploadPropertyDocuments);
 router.post('/update-room-prices', protect, isOwner, updateRoomPrices);
 
 // --- TENANT MANAGEMENT ---
 router.post('/add-tenant', protect, isOwner, addTenant);
 router.get('/my-tenants', protect, isOwner, getMyTenants);
 router.put('/update-tenant/:id', protect, isOwner, updateTenant);
+router.post('/sync-tenant-linked-data', protect, isOwner, syncTenantLinkedData);
 
 // --- BOOKING MANAGEMENT ---
 router.get('/my-bookings', protect, isOwner, getMyBookings);
 router.post('/add-booking', protect, isOwner, addBooking);
 router.put('/update-booking/:id', protect, isOwner, updateBookingStatus);
+router.post('/send-payment-link/:id', protect, isOwner, sendPaymentLink);
 
 // --- AGREEMENT MANAGEMENT ---
 router.get('/my-agreements', protect, isOwner, getMyAgreements);
+router.get('/earnings', protect, isOwner, getOwnerEarnings);
+router.get('/earnings/pdf', protect, isOwner, downloadOwnerEarningsPDF);
 
 // --- SUPPORT TICKET MANAGEMENT ---
 router.post('/create-support-ticket', protect, isOwner, createSupportTicket);

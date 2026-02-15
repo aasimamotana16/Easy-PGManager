@@ -4,13 +4,7 @@ import CButton from "../../../../components/cButton";
 import CInput from "../../../../components/cInput";
 import CSelect from "../../../../components/cSelect";
 
-const PG_LIST = [
-  { id: 1, name: "Green Villa" },
-  { id: 2, name: "Sunshine Residency" },
-  { id: 3, name: "Metro Living" },
-];
-
-const AddTenant = ({ onClose, onSave }) => {
+const AddTenant = ({ onClose, onSave, pgOptions = [] }) => {
   const [form, setForm] = useState({
     name: "",
     phone: "",
@@ -104,8 +98,8 @@ const AddTenant = ({ onClose, onSave }) => {
               <CSelect
                 label="Select PG"
                 value={form.pgId}
-                onChange={(e) => setForm({ ...form, pgId: parseInt(e.target.value) })}
-                options={PG_LIST.map(pg => ({ value: pg.id, label: pg.name }))}
+                onChange={(e) => setForm({ ...form, pgId: e.target.value })}
+                options={pgOptions}
                 error={!!errors.pgId}
                 helperText={errors.pgId} // Integrated
               />

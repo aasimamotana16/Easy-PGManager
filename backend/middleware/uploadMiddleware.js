@@ -25,6 +25,9 @@ const storage = multer.diskStorage({
       } else {
         cb(null, profileDir);
       }
+    } else if (file.fieldname === "mainImage") {
+      // Main property image for PG flow
+      cb(null, pgImagesDir);
     } else if (file.fieldname === "images") {
       // For PG/room images uploaded as "images" field
       cb(null, pgImagesDir);

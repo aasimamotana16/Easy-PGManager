@@ -55,7 +55,7 @@ const TotalEarnings = () => {
           setLoading(false);
           return;
         }
-        const response = await axios.get("http://localhost:5000/api/users/earnings", {
+        const response = await axios.get("http://localhost:5000/api/owner/earnings", {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (response.data.success) {
@@ -112,7 +112,7 @@ const TotalEarnings = () => {
     });
 
     try {
-      const response = await axios.get(`http://localhost:5000/api/users/earnings/pdf?month=${selectedMonth}`, {
+      const response = await axios.get(`http://localhost:5000/api/owner/earnings/pdf?month=${selectedMonth}`, {
         headers: { Authorization: `Bearer ${token}` },
         responseType: 'blob'
       });

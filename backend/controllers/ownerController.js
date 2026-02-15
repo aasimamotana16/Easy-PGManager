@@ -1,11 +1,201 @@
 const mongoose = require('mongoose');
 const nodemailer = require('nodemailer');
+const path = require('path');
+const fs = require('fs');
 const Pg = require('../models/pgModel');
 const User = require('../models/userModel');
 const Tenant = require('../models/tenantModel');
 const Booking = require('../models/bookingModel');
 const Agreement = require('../models/agreementModel');
 const SupportTicket = require('../models/supportTicketModel');
+const Payment = require('../models/paymentModel');
+const PendingPayment = require('../models/pendingPaymentModel');
+const { jsPDF } = require('jspdf');
+const { autoTable } = require('jspdf-autotable');
+
+const getMonthLabel = (date) => {
+  const d = date instanceof Date ? date : new Date(date);
+  return d.toLocaleString('en-US', { month: 'short', year: 'numeric' });
+};
+
+const addMonths = (dateInput, months) => {
+  const d = new Date(dateInput);
+  d.setMonth(d.getMonth() + months);
+  return d;
+};
+
+const normalizeBaseUrl = (value, fallback = "http://localhost:3000") => {
+  const raw = String(value || "").trim();
+  const source = raw || fallback;
+  const withProtocol = /^https?:\/\//i.test(source) ? source : `http://${source}`;
+  return withProtocol.replace(/\/+$/, "");
+};
+
+const deriveRentAmount = (pg, roomValue) => {
+  const roomKey = String(roomValue || '').toLowerCase();
+  const prices = pg?.roomPrices || {};
+
+  if (roomKey.includes('single') && Number(prices.single) > 0) return Number(prices.single);
+  if (roomKey.includes('double') && Number(prices.double) > 0) return Number(prices.double);
+  if (roomKey.includes('triple') && Number(prices.triple) > 0) return Number(prices.triple);
+  if (Number(prices.other) > 0) return Number(prices.other);
+  if (Number(pg?.price) > 0) return Number(pg.price);
+
+  const allRoomPrices = Object.values(prices).map((v) => Number(v)).filter((v) => Number.isFinite(v) && v > 0);
+  if (allRoomPrices.length > 0) return Math.min(...allRoomPrices);
+
+  return 0;
+};
+
+const ensureTenantAgreementRecord = async ({ ownerId, tenant, pg, rentAmount }) => {
+  const startDate = tenant.joiningDate || new Date().toISOString().split('T')[0];
+  const endDate = addMonths(startDate, 11).toISOString().split('T')[0];
+  const agreementId = `AGR-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`;
+
+  const linkedTenantUser = tenant.email
+    ? await User.findOne({ email: tenant.email, role: 'tenant' }).select('_id')
+    : null;
+  const agreementUserId = linkedTenantUser?._id || ownerId;
+
+  const existingAgreement = await Agreement.findOne({
+    pgName: pg.pgName || "",
+    tenantName: tenant.name,
+    roomNo: tenant.room || "N/A",
+    startDate
+  });
+
+  if (existingAgreement) {
+    return { agreement: existingAgreement, agreementCreated: false };
+  }
+
+  const agreement = await Agreement.create({
+    userId: agreementUserId,
+    agreementId,
+    pgName: pg.pgName || "",
+    roomNo: tenant.room || "N/A",
+    tenantName: tenant.name,
+    rentAmount: Number(rentAmount) || 0,
+    securityDeposit: Number(rentAmount || 0) * 2,
+    startDate,
+    endDate,
+    signed: true
+  });
+
+  return { agreement, agreementCreated: true };
+};
+
+const ensureTenantLinkedRecords = async ({ ownerId, tenant, pg }) => {
+  const effectiveJoiningDate = tenant.joiningDate || new Date().toISOString().split('T')[0];
+
+  const existingBooking = await Booking.findOne({
+    ownerId,
+    pgId: pg._id,
+    tenantName: tenant.name,
+    checkInDate: effectiveJoiningDate
+  });
+
+  let booking = existingBooking;
+  let bookingCreated = false;
+  if (!existingBooking) {
+    booking = await Booking.create({
+      ownerId,
+      pgId: pg._id,
+      bookingId: `BK-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`,
+      pgName: pg.pgName || "",
+      roomType: pg.occupancy || "Single",
+      tenantName: tenant.name,
+      checkInDate: effectiveJoiningDate,
+      checkOutDate: addMonths(effectiveJoiningDate, 11).toISOString().split('T')[0],
+      seatsBooked: 1,
+      status: "Confirmed"
+    });
+    bookingCreated = true;
+  }
+
+  const rentAmount = deriveRentAmount(pg, tenant.room);
+  const joinDateObj = new Date(effectiveJoiningDate);
+  const currentMonthLabel = getMonthLabel(joinDateObj);
+  const nextMonthDate = addMonths(joinDateObj, 1);
+  const nextMonthLabel = getMonthLabel(nextMonthDate);
+
+  const linkedTenantUser = tenant.email
+    ? await User.findOne({ email: tenant.email, role: 'tenant' }).select('_id')
+    : null;
+  const paymentActorId = linkedTenantUser?._id || ownerId;
+
+  let payment = null;
+  let paymentCreated = false;
+  let pendingCreated = false;
+  let agreement = null;
+  let agreementCreated = false;
+
+  if (rentAmount > 0) {
+    const existingPayment = await Payment.findOne({
+      pgId: pg._id,
+      tenantName: tenant.name,
+      month: currentMonthLabel,
+      paymentStatus: { $in: ['Success', 'PAID', 'Paid'] }
+    });
+
+    if (!existingPayment) {
+      payment = await Payment.create({
+        user: paymentActorId,
+        pgId: pg._id,
+        pgName: pg.pgName || "",
+        tenantName: tenant.name,
+        amountPaid: rentAmount,
+        month: currentMonthLabel,
+        paymentDate: new Date(),
+        paymentMethod: "Cash",
+        paymentStatus: "Success",
+        transactionId: `AUTO-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`
+      });
+      paymentCreated = true;
+    } else {
+      payment = existingPayment;
+    }
+
+    const existingPending = await PendingPayment.findOne({
+      pg: pg._id,
+      tenantName: tenant.name,
+      month: nextMonthLabel,
+      status: { $in: ['Pending', 'Overdue'] }
+    });
+
+    if (!existingPending) {
+      await PendingPayment.create({
+        tenant: paymentActorId,
+        pg: pg._id,
+        pgName: pg.pgName || "",
+        tenantName: tenant.name,
+        amount: rentAmount,
+        dueDate: nextMonthDate,
+        status: "Pending",
+        month: nextMonthLabel
+      });
+      pendingCreated = true;
+    }
+  }
+
+  const agreementResult = await ensureTenantAgreementRecord({
+    ownerId,
+    tenant,
+    pg,
+    rentAmount
+  });
+  agreement = agreementResult.agreement;
+  agreementCreated = agreementResult.agreementCreated;
+
+  return {
+    booking,
+    payment,
+    agreement,
+    bookingCreated,
+    paymentCreated,
+    pendingCreated,
+    agreementCreated
+  };
+};
 
 const getOwnerProfile = async (req, res) => {
   try {
@@ -90,21 +280,24 @@ const updateOwnerProfile = async (req, res) => {
 
 const getOwnerDashboardData = async (req, res) => {
   try {
-    const ownerId = req.user._id; 
-    
-    // TEMPORARY: Hardcoded numbers for your guide's presentation
-    const mockTotalPgs = 5;
-    const mockTotalRooms = 30;
-    const mockLiveListings = 18;
+    const ownerId = req.user._id;
+    const ownerPgs = await Pg.find({ ownerId }).select("totalRooms liveListings status createdAt").sort({ createdAt: -1 });
+
+    const totalPgs = ownerPgs.length;
+    const totalRooms = ownerPgs.reduce((sum, pg) => sum + (Number(pg.totalRooms) || 0), 0);
+    const availablePgs = ownerPgs.reduce((sum, pg) => sum + (Number(pg.liveListings) || 0), 0);
+    const recentStatus = ownerPgs[0]?.status
+      ? ownerPgs[0].status.charAt(0).toUpperCase() + ownerPgs[0].status.slice(1)
+      : "No Properties";
 
     res.status(200).json({
       success: true,
       data: {
         stats: [
-          { label: "Total PGs", value: mockTotalPgs },
-          { label: "Total Rooms", value: mockTotalRooms },
-          { label: "Available PGs", value: mockLiveListings },
-          { label: "Recent Status", value: "Active" }
+          { label: "Total PGs", value: totalPgs },
+          { label: "Total Rooms", value: totalRooms },
+          { label: "Available PGs", value: availablePgs },
+          { label: "Recent Status", value: recentStatus }
         ],
         recentActivity: [
           { 
@@ -184,7 +377,8 @@ const createPg = async (req, res) => {
         pets: false,
         curfew: ""
       },
-      status: "draft"
+      // Keep newly-created properties visible in admin review queue.
+      status: "pending"
     });
 
     console.log("PG Created Successfully:", newPg._id); // Debug log
@@ -208,6 +402,42 @@ const getMyPgs = async (req, res) => {
   try {
     const ownerId = req.user._id;
     const pgs = await Pg.find({ ownerId });
+
+    // Backward compatibility: earlier uploads could store pg image URL under /uploads/pgImages
+    // while the file was actually written to /uploads/documents.
+    for (const pg of pgs) {
+      let mutated = false;
+
+      if (pg.mainImage && pg.mainImage.startsWith('/uploads/pgImages/')) {
+        const filename = path.basename(pg.mainImage);
+        const pgImgPath = path.join(__dirname, '..', 'uploads', 'pgImages', filename);
+        const docImgPath = path.join(__dirname, '..', 'uploads', 'documents', filename);
+
+        if (!fs.existsSync(pgImgPath) && fs.existsSync(docImgPath)) {
+          pg.mainImage = `/uploads/documents/${filename}`;
+          mutated = true;
+        }
+      }
+
+      if (Array.isArray(pg.images) && pg.images.length > 0) {
+        const repaired = pg.images.map((img) => {
+          if (!img || !img.startsWith('/uploads/pgImages/')) return img;
+          const filename = path.basename(img);
+          const pgImgPath = path.join(__dirname, '..', 'uploads', 'pgImages', filename);
+          const docImgPath = path.join(__dirname, '..', 'uploads', 'documents', filename);
+          if (!fs.existsSync(pgImgPath) && fs.existsSync(docImgPath)) {
+            mutated = true;
+            return `/uploads/documents/${filename}`;
+          }
+          return img;
+        });
+        pg.images = repaired;
+      }
+
+      if (mutated) {
+        await pg.save();
+      }
+    }
 
     res.status(200).json({
       success: true,
@@ -305,33 +535,35 @@ const addRoom = async (req, res) => {
     console.log("Request body:", req.body);
     console.log("User ID:", req.user._id);
     
-    const { roomType, totalRooms, bedsPerRoom, description } = req.body;
+    const { roomType, totalRooms, bedsPerRoom, description, pgId } = req.body;
     const ownerId = req.user._id;
 
-    const latestPg = await Pg.findOne({ ownerId }).sort({ createdAt: -1 });
+    const targetPg = pgId
+      ? await Pg.findOne({ _id: pgId, ownerId })
+      : await Pg.findOne({ ownerId }).sort({ createdAt: -1 });
 
-    if (!latestPg) {
+    if (!targetPg) {
       console.log("PG not found for owner:", ownerId);
       return res.status(404).json({ success: false, message: "PG not found" });
     }
 
-    console.log("Found PG:", latestPg.pgName);
+    console.log("Found PG:", targetPg.pgName);
 
     // Initialize rooms array if it doesn't exist
-    if (!latestPg.rooms) {
-      latestPg.rooms = [];
+    if (!targetPg.rooms) {
+      targetPg.rooms = [];
     }
 
-    latestPg.rooms.push({ roomType, totalRooms, bedsPerRoom, description });
+    targetPg.rooms.push({ roomType, totalRooms, bedsPerRoom, description });
     
     // CRITICAL: Update the main totalRooms count so the dashboard sees it
-    latestPg.totalRooms += Number(totalRooms); 
+    targetPg.totalRooms += Number(totalRooms); 
     
-    await latestPg.save();
+    await targetPg.save();
 
-    console.log("Room added successfully. Total rooms now:", latestPg.totalRooms);
+    console.log("Room added successfully. Total rooms now:", targetPg.totalRooms);
 
-    res.status(201).json({ success: true, message: "Room added", data: latestPg });
+    res.status(201).json({ success: true, message: "Room added", data: targetPg });
   } catch (error) {
     console.error("Add Room Error:", error);
     res.status(500).json({ success: false, message: error.message });
@@ -367,12 +599,16 @@ const uploadPgImages = async (req, res) => {
       // mainImage
       if (req.files.mainImage && req.files.mainImage.length > 0) {
         const mainFile = req.files.mainImage[0];
-        pg.mainImage = `/uploads/pgImages/${mainFile.filename}`;
+        const folder = path.basename(mainFile.destination || "pgImages");
+        pg.mainImage = `/uploads/${folder}/${mainFile.filename}`;
       }
 
       // gallery images
       if (req.files.images && req.files.images.length > 0) {
-        const imagePaths = req.files.images.map(file => `/uploads/pgImages/${file.filename}`);
+        const imagePaths = req.files.images.map(file => {
+          const folder = path.basename(file.destination || "pgImages");
+          return `/uploads/${folder}/${file.filename}`;
+        });
         if (!pg.images) pg.images = [];
         pg.images.push(...imagePaths);
       }
@@ -401,25 +637,27 @@ const uploadPgImages = async (req, res) => {
 // --- UPDATE ROOM PRICES (Step 2 of your flow) ---
 const updateRoomPrices = async (req, res) => {
   try {
-    const { roomPrices } = req.body;
+    const { roomPrices, pgId } = req.body;
     const ownerId = req.user._id;
 
-    const latestPg = await Pg.findOne({ ownerId }).sort({ createdAt: -1 });
+    const targetPg = pgId
+      ? await Pg.findOne({ _id: pgId, ownerId })
+      : await Pg.findOne({ ownerId }).sort({ createdAt: -1 });
 
-    if (!latestPg) {
+    if (!targetPg) {
       return res.status(404).json({ 
         success: false, 
         message: "No property found to update prices for." 
       });
     }
 
-    latestPg.roomPrices = roomPrices; 
-    await latestPg.save();
+    targetPg.roomPrices = roomPrices; 
+    await targetPg.save();
 
     res.status(200).json({
       success: true,
       message: "Room prices updated successfully",
-      data: latestPg
+      data: targetPg
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -431,33 +669,117 @@ const addTenant = async (req, res) => {
     const { name, phone, email, pgId, room, joiningDate } = req.body;
     const ownerId = req.user._id;
 
+    const pg = await Pg.findOne({ _id: pgId, ownerId }).select('pgName occupancy roomPrices price');
+    if (!pg) {
+      return res.status(404).json({ success: false, message: "Selected PG not found for this owner" });
+    }
+
+    const effectiveJoiningDate = joiningDate || new Date().toISOString().split('T')[0];
+
     const newTenant = await Tenant.create({
       ownerId,
       name,
       phone,
       email,
       pgId,
+      pgName: pg.pgName || "",
       room,
-      joiningDate: joiningDate || new Date().toISOString().split('T')[0],
+      joiningDate: effectiveJoiningDate,
       status: 'Active'
+    });
+
+    const linked = await ensureTenantLinkedRecords({
+      ownerId,
+      tenant: { name, email, room, joiningDate: effectiveJoiningDate },
+      pg
     });
 
     res.status(201).json({
       success: true,
       message: "Tenant added successfully",
-      data: newTenant
+      data: {
+        tenant: newTenant,
+        booking: linked.booking,
+        payment: linked.payment,
+        agreement: linked.agreement
+      }
     });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
   }
 };
 
+const syncTenantLinkedData = async (req, res) => {
+  try {
+    const ownerId = req.user._id;
+    const ownerPgs = await Pg.find({ ownerId }).select('_id pgName occupancy roomPrices price');
+    const pgMap = new Map(ownerPgs.map((pg) => [String(pg._id), pg]));
+
+    const tenants = await Tenant.find({ ownerId }).select('name email room joiningDate pgId');
+
+    let syncedTenants = 0;
+    let createdBookings = 0;
+    let createdPayments = 0;
+    let createdPending = 0;
+    let createdAgreements = 0;
+
+    for (const tenant of tenants) {
+      const pg = pgMap.get(String(tenant.pgId));
+      if (!pg) continue;
+
+      const linked = await ensureTenantLinkedRecords({
+        ownerId,
+        tenant,
+        pg
+      });
+
+      syncedTenants += 1;
+      if (linked.bookingCreated) createdBookings += 1;
+      if (linked.paymentCreated) createdPayments += 1;
+      if (linked.pendingCreated) createdPending += 1;
+      if (linked.agreementCreated) createdAgreements += 1;
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Tenant linked data synchronized successfully",
+      data: {
+        syncedTenants,
+        createdBookings,
+        createdPayments,
+        createdPending,
+        createdAgreements
+      }
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 const getMyTenants = async (req, res) => {
   try {
-    const tenants = await Tenant.find({ ownerId: req.user._id });
+    const tenants = await Tenant.find({ ownerId: req.user._id })
+      .populate('pgId', 'pgName location city')
+      .sort({ createdAt: -1 });
+
+    const normalized = tenants.map((t) => {
+      const pgObj = t.pgId && typeof t.pgId === "object" ? t.pgId : null;
+      return {
+        _id: t._id,
+        name: t.name,
+        phone: t.phone,
+        email: t.email,
+        pgId: pgObj?._id || t.pgId,
+        pgName: pgObj?.pgName || t.pgName || "Unknown PG",
+        room: t.room,
+        joiningDate: t.joiningDate,
+        status: t.status,
+      };
+    });
+
     res.status(200).json({
       success: true,
-      data: tenants 
+      data: normalized 
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -466,7 +788,19 @@ const getMyTenants = async (req, res) => {
 
 const getMyBookings = async (req, res) => {
   try {
-    const bookings = await Booking.find({ ownerId: req.user._id }).sort({ createdAt: -1 });
+    const ownerId = req.user._id;
+    const ownerPgs = await Pg.find({ ownerId }).select('_id pgName');
+    const pgIds = ownerPgs.map((pg) => pg._id);
+    const pgNames = ownerPgs.map((pg) => pg.pgName).filter(Boolean);
+
+    const bookings = await Booking.find({
+      $or: [
+        { ownerId },
+        { pgId: { $in: pgIds } },
+        { pgName: { $in: pgNames } }
+      ]
+    }).sort({ createdAt: -1 });
+
     res.status(200).json({ success: true, data: bookings });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -475,11 +809,26 @@ const getMyBookings = async (req, res) => {
 
 const addBooking = async (req, res) => {
   try {
-    const { bookingId, pgName, roomType, tenantName, checkInDate, checkOutDate, seatsBooked, status } = req.body;
+    const ownerId = req.user._id;
+    const { bookingId, pgId, pgName, roomType, tenantName, checkInDate, checkOutDate, seatsBooked, status } = req.body;
+
+    let ownerPg = null;
+    if (pgId && mongoose.Types.ObjectId.isValid(pgId)) {
+      ownerPg = await Pg.findOne({ _id: pgId, ownerId }).select('_id pgName');
+    } else if (pgName) {
+      ownerPg = await Pg.findOne({ ownerId, pgName }).select('_id pgName');
+    }
+
+    if (!ownerPg) {
+      return res.status(404).json({ success: false, message: "Selected PG not found for this owner" });
+    }
+
+    const generatedBookingId = bookingId || `BK-${Date.now()}`;
     const newBooking = await Booking.create({
-      ownerId: req.user._id,
-      bookingId,
-      pgName,
+      ownerId,
+      pgId: ownerPg._id,
+      bookingId: generatedBookingId,
+      pgName: ownerPg.pgName,
       roomType,
       tenantName,
       checkInDate,
@@ -497,12 +846,28 @@ const updateBookingStatus = async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body; 
+    const ownerId = req.user._id;
 
-    const updatedBooking = await Booking.findByIdAndUpdate(
-      id,
-      { status },
-      { new: true }
-    );
+    const ownerPgs = await Pg.find({ ownerId }).select('_id pgName');
+    const pgIds = ownerPgs.map((pg) => String(pg._id));
+    const pgNames = ownerPgs.map((pg) => pg.pgName).filter(Boolean);
+
+    const booking = await Booking.findById(id);
+    if (!booking) {
+      return res.status(404).json({ success: false, message: "Booking not found" });
+    }
+
+    const belongsToOwner =
+      String(booking.ownerId) === String(ownerId) ||
+      (booking.pgId && pgIds.includes(String(booking.pgId))) ||
+      pgNames.includes(booking.pgName);
+
+    if (!belongsToOwner) {
+      return res.status(403).json({ success: false, message: "You don't have permission to update this booking" });
+    }
+
+    booking.status = status;
+    const updatedBooking = await booking.save();
 
     res.status(200).json({ success: true, data: updatedBooking });
   } catch (error) {
@@ -518,33 +883,55 @@ const getMyAgreements = async (req, res) => {
     // Get all PGs owned by this owner
     const ownerPGs = await Pg.find({ ownerId });
     const pgIds = ownerPGs.map(pg => pg._id);
+    const pgNames = ownerPGs.map(pg => pg.pgName).filter(Boolean);
+    const pgById = new Map(ownerPGs.map((pg) => [String(pg._id), pg]));
     
-    // Get all users who are assigned to these PGs
-    const tenantUsers = await User.find({ assignedPg: { $in: pgIds } });
+    // Backfill missing agreements for current owner tenants.
+    const ownerTenants = await Tenant.find({ ownerId, pgId: { $in: pgIds } })
+      .select('name email phone room joiningDate pgId pgName')
+      .sort({ createdAt: -1 });
+
+    for (const tenant of ownerTenants) {
+      const pg = pgById.get(String(tenant.pgId));
+      if (!pg) continue;
+      const rentAmount = deriveRentAmount(pg, tenant.room);
+      await ensureTenantAgreementRecord({
+        ownerId,
+        tenant,
+        pg,
+        rentAmount
+      });
+    }
+
+    const tenantUsers = await User.find({ assignedPg: { $in: pgIds } }).select('_id');
     const userIds = tenantUsers.map(user => user._id);
+    const tenantDirectory = new Map();
+    ownerTenants.forEach((t) => {
+      const key = `${String(t.name || '').toLowerCase()}|${String(t.pgName || '').toLowerCase()}|${String(t.room || '').toLowerCase()}`;
+      tenantDirectory.set(key, t);
+    });
     
-    // Get all agreements for these users
-    const agreements = await Agreement.find({ userId: { $in: userIds } })
+    // Get all agreements for these users and this owner's PG names
+    const agreements = await Agreement.find({
+      $or: [
+        { userId: { $in: userIds } },
+        { pgName: { $in: pgNames } }
+      ]
+    })
       .populate('userId', 'fullName email phone')
       .sort({ createdAt: -1 });
     
     // Format the data for the frontend
-    const formattedAgreements = agreements.map((agreement, index) => {
-      // Create unique tenant info for each agreement
-      const tenantInfo = [
-        { name: 'Rahul Sharma', email: 'rahul.sharma@email.com', phone: '9876543210' },
-        { name: 'Priya Patel', email: 'priya.patel@email.com', phone: '9876543211' },
-        { name: 'Amit Kumar', email: 'amit.kumar@email.com', phone: '9876543212' }
-      ];
-      
-      const currentTenant = tenantInfo[index % tenantInfo.length];
-      
+    const formattedAgreements = agreements.map((agreement) => {
+      const tenant = agreement.userId || {};
+      const dirKey = `${String(agreement.tenantName || '').toLowerCase()}|${String(agreement.pgName || '').toLowerCase()}|${String(agreement.roomNo || '').toLowerCase()}`;
+      const tenantRecord = tenantDirectory.get(dirKey);
       return {
-        id: index + 1,
+        id: agreement._id,
         agreementId: agreement.agreementId,
-        tenant: agreement.tenantName || currentTenant.name,
-        tenantEmail: currentTenant.email,
-        tenantPhone: currentTenant.phone,
+        tenant: agreement.tenantName || tenant.fullName || "Unknown Tenant",
+        tenantEmail: tenantRecord?.email || tenant.email || "N/A",
+        tenantPhone: tenantRecord?.phone || tenant.phone || "N/A",
         property: agreement.pgName || 'Unknown',
         room: agreement.roomNo || 'Unknown',
         startDate: agreement.startDate,
@@ -653,7 +1040,7 @@ const updateSupportTicketStatus = async (req, res) => {
 const updateTenant = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, phone, email, room, status } = req.body;
+    const { name, phone, email, room, status, pgId } = req.body;
     const ownerId = req.user._id;
 
     // Find the tenant and ensure it belongs to this owner
@@ -663,9 +1050,19 @@ const updateTenant = async (req, res) => {
     }
 
     // Update tenant information
+    const payload = { name, phone, email, room, status };
+    if (pgId) {
+      const pg = await Pg.findOne({ _id: pgId, ownerId }).select('pgName');
+      if (!pg) {
+        return res.status(404).json({ success: false, message: "Selected PG not found for this owner" });
+      }
+      payload.pgId = pgId;
+      payload.pgName = pg.pgName || "";
+    }
+
     const updatedTenant = await Tenant.findByIdAndUpdate(
       id,
-      { name, phone, email, room, status },
+      payload,
       { new: true, runValidators: true }
     );
 
@@ -693,11 +1090,20 @@ const submitForApproval = async (req, res) => {
       return res.status(404).json({ success: false, message: "Property not found" });
     }
 
-    // Check if property is in draft status
+    // If already pending, treat this as idempotent success for smoother UX.
+    if (pg.status === "pending") {
+      return res.status(200).json({
+        success: true,
+        message: "Property is already submitted for approval.",
+        data: pg
+      });
+    }
+
+    // Only draft properties can be newly submitted.
     if (pg.status !== "draft") {
-      return res.status(400).json({ 
-        success: false, 
-        message: `Property is already ${pg.status}. You can only submit draft properties for approval.` 
+      return res.status(400).json({
+        success: false,
+        message: `Property is already ${pg.status}. Only draft properties can be submitted.`
       });
     }
 
@@ -758,6 +1164,320 @@ const submitForApproval = async (req, res) => {
   }
 };
 
+const getOwnerEarnings = async (req, res) => {
+  try {
+    const ownerId = req.user._id;
+    const ownerPgs = await Pg.find({ ownerId }).select('_id pgName');
+    const ownerPgIds = ownerPgs.map((pg) => pg._id);
+    const ownerPgNames = ownerPgs.map((pg) => pg.pgName).filter(Boolean);
+
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    const payments = await Payment.find({
+      paymentStatus: { $in: ['Success', 'PAID', 'Paid'] },
+      $or: [
+        { pgId: { $in: ownerPgIds } },
+        { pgName: { $in: ownerPgNames } }
+      ]
+    }).sort({ paymentDate: -1 });
+
+    const total = payments.reduce((sum, p) => sum + (Number(p.amountPaid) || 0), 0);
+    const monthly = payments
+      .filter((p) => new Date(p.paymentDate) >= monthStart)
+      .reduce((sum, p) => sum + (Number(p.amountPaid) || 0), 0);
+    const today = payments
+      .filter((p) => new Date(p.paymentDate) >= dayStart)
+      .reduce((sum, p) => sum + (Number(p.amountPaid) || 0), 0);
+
+    const monthlyMap = new Map();
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = `${d.getFullYear()}-${d.getMonth()}`;
+      const label = d.toLocaleString('en-US', { month: 'short' });
+      monthlyMap.set(key, { label, amount: 0 });
+    }
+    payments.forEach((p) => {
+      const d = new Date(p.paymentDate);
+      const key = `${d.getFullYear()}-${d.getMonth()}`;
+      if (monthlyMap.has(key)) {
+        monthlyMap.get(key).amount += Number(p.amountPaid) || 0;
+      }
+    });
+
+    const chartLabels = Array.from(monthlyMap.values()).map((v) => v.label);
+    const chartValues = Array.from(monthlyMap.values()).map((v) => v.amount);
+
+    const earningsHistory = payments.slice(0, 50).map((payment) => ({
+      date: new Date(payment.paymentDate).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }),
+      source: payment.pgName || "Unknown PG",
+      amount: Number(payment.amountPaid) || 0,
+      status: "Paid"
+    }));
+
+    const pendingPaymentsRaw = await PendingPayment.find({
+      status: { $in: ['Pending', 'Overdue'] },
+      $or: [
+        { pg: { $in: ownerPgIds } },
+        { pgName: { $in: ownerPgNames } }
+      ]
+    }).sort({ dueDate: 1 });
+
+    const pendingPayments = pendingPaymentsRaw.map((payment) => ({
+      tenant: payment.tenantName || 'Unknown Tenant',
+      pg: payment.pgName || 'Unknown PG',
+      amount: Number(payment.amount) || 0,
+      due: new Date(payment.dueDate).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' })
+    }));
+
+    res.status(200).json({
+      success: true,
+      data: {
+        stats: { total, monthly, today },
+        chartData: {
+          labels: chartLabels,
+          datasets: [
+            {
+              label: "Earnings",
+              data: chartValues,
+              borderColor: "#f97316",
+              backgroundColor: "rgba(249,115,22,0.15)",
+              tension: 0.35,
+            }
+          ]
+        },
+        earningsHistory,
+        pendingPayments
+      }
+    });
+  } catch (error) {
+    console.error('Owner earnings fetch error:', error);
+    res.status(500).json({ success: false, message: "Failed to fetch earnings data" });
+  }
+};
+
+const sendPaymentLink = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const ownerId = req.user._id;
+
+    const ownerPgs = await Pg.find({ ownerId }).select('_id pgName');
+    const pgIds = ownerPgs.map((pg) => String(pg._id));
+    const pgNames = ownerPgs.map((pg) => pg.pgName).filter(Boolean);
+
+    const booking = await Booking.findById(id);
+    if (!booking) {
+      return res.status(404).json({ success: false, message: "Booking not found" });
+    }
+
+    const belongsToOwner =
+      String(booking.ownerId) === String(ownerId) ||
+      (booking.pgId && pgIds.includes(String(booking.pgId))) ||
+      pgNames.includes(booking.pgName);
+
+    if (!belongsToOwner) {
+      return res.status(403).json({ success: false, message: "You don't have permission to send payment link for this booking" });
+    }
+
+    const tenantQuery = {
+      ownerId,
+      name: booking.tenantName,
+      $or: [
+        booking.pgId ? { pgId: booking.pgId } : null,
+        booking.pgName ? { pgName: booking.pgName } : null
+      ].filter(Boolean)
+    };
+
+    const tenantRecord = await Tenant.findOne(tenantQuery).sort({ createdAt: -1 });
+    const recipientEmail = tenantRecord?.email;
+
+    if (!recipientEmail) {
+      return res.status(404).json({
+        success: false,
+        message: "Tenant email not found. Add tenant email in tenant records first."
+      });
+    }
+
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+      return res.status(500).json({
+        success: false,
+        message: "Email service not configured on server"
+      });
+    }
+
+    const frontendUrl = normalizeBaseUrl(process.env.FRONTEND_URL || req.headers.origin || "http://localhost:3000");
+    const paymentLink = `${frontendUrl}/user/dashboard/payments?bookingId=${booking._id}`;
+    const loginLink = `${frontendUrl}/loginPage`;
+
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+      }
+    });
+
+    const subject = `Payment Link - ${booking.pgName}`;
+    const html = `
+      <h2>Rent Payment Reminder</h2>
+      <p>Dear ${booking.tenantName},</p>
+      <p>Your booking <strong>${booking.bookingId}</strong> for <strong>${booking.pgName}</strong> is confirmed.</p>
+      <p>Please complete your rent payment using the link below:</p>
+      <p><a href="${paymentLink}" target="_blank" rel="noopener noreferrer">Pay Now</a></p>
+      <p>If not logged in, login first here:</p>
+      <p><a href="${loginLink}" target="_blank" rel="noopener noreferrer">Login</a></p>
+      <p>If the button does not work, copy this URL:</p>
+      <p>${paymentLink}</p>
+    `;
+
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: recipientEmail,
+      subject,
+      html
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Payment link sent successfully",
+      data: {
+        bookingId: booking._id,
+        email: recipientEmail
+      }
+    });
+  } catch (error) {
+    console.error("Send payment link error:", error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const downloadOwnerEarningsPDF = async (req, res) => {
+  try {
+    const ownerId = req.user._id;
+    const ownerPgs = await Pg.find({ ownerId }).select('_id pgName');
+    const ownerPgIds = ownerPgs.map((pg) => pg._id);
+    const ownerPgNames = ownerPgs.map((pg) => pg.pgName).filter(Boolean);
+
+    const payments = await Payment.find({
+      paymentStatus: { $in: ['Success', 'PAID', 'Paid'] },
+      $or: [
+        { pgId: { $in: ownerPgIds } },
+        { pgName: { $in: ownerPgNames } }
+      ]
+    }).sort({ paymentDate: -1 });
+
+    const pendingPaymentsRaw = await PendingPayment.find({
+      status: { $in: ['Pending', 'Overdue'] },
+      $or: [
+        { pg: { $in: ownerPgIds } },
+        { pgName: { $in: ownerPgNames } }
+      ]
+    }).sort({ dueDate: 1 });
+
+    const total = payments.reduce((sum, p) => sum + (Number(p.amountPaid) || 0), 0);
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const monthly = payments
+      .filter((p) => new Date(p.paymentDate) >= monthStart)
+      .reduce((sum, p) => sum + (Number(p.amountPaid) || 0), 0);
+    const today = payments
+      .filter((p) => new Date(p.paymentDate) >= dayStart)
+      .reduce((sum, p) => sum + (Number(p.amountPaid) || 0), 0);
+
+    const doc = new jsPDF();
+    doc.setFontSize(16);
+    doc.text("EasyPG Manager - Owner Earnings Report", 14, 15);
+    doc.setFontSize(11);
+    doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 25);
+
+    autoTable(doc, {
+      startY: 32,
+      head: [["Metric", "Amount"]],
+      body: [
+        ["Total Earnings", `Rs. ${total.toLocaleString()}`],
+        ["This Month", `Rs. ${monthly.toLocaleString()}`],
+        ["Today", `Rs. ${today.toLocaleString()}`],
+      ],
+    });
+
+    autoTable(doc, {
+      startY: doc.lastAutoTable.finalY + 10,
+      head: [["Date", "PG", "Amount", "Status"]],
+      body: payments.slice(0, 50).map((p) => [
+        new Date(p.paymentDate).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }),
+        p.pgName || 'Unknown PG',
+        `Rs. ${(Number(p.amountPaid) || 0).toLocaleString()}`,
+        'Paid'
+      ]),
+    });
+
+    autoTable(doc, {
+      startY: doc.lastAutoTable.finalY + 10,
+      head: [["Tenant", "PG", "Amount", "Due Date"]],
+      body: pendingPaymentsRaw.map((p) => [
+        p.tenantName || 'Unknown Tenant',
+        p.pgName || 'Unknown PG',
+        `Rs. ${(Number(p.amount) || 0).toLocaleString()}`,
+        new Date(p.dueDate).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }),
+      ]),
+    });
+
+    const pdfBuffer = Buffer.from(doc.output('arraybuffer'));
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename="Owner_Earnings_Report.pdf"');
+    res.send(pdfBuffer);
+  } catch (error) {
+    console.error('Owner earnings PDF error:', error);
+    res.status(500).json({ success: false, message: "Failed to generate PDF" });
+  }
+};
+
+// --- UPLOAD PROPERTY DOCUMENTS ---
+const uploadPropertyDocuments = async (req, res) => {
+  try {
+    const { pgId } = req.params;
+    const ownerId = req.user._id;
+
+    if (!pgId) {
+      return res.status(400).json({ success: false, message: "PG ID is required" });
+    }
+
+    const pg = await Pg.findOne({ _id: pgId, ownerId });
+    if (!pg) {
+      return res.status(404).json({ success: false, message: "PG not found" });
+    }
+
+    if (!pg.proofDocuments) {
+      pg.proofDocuments = {};
+    }
+
+    const filePath = (file) => (file ? `/uploads/documents/${file.filename}` : undefined);
+
+    if (req.files?.aadhaar?.[0]) {
+      pg.proofDocuments.aadhaar = filePath(req.files.aadhaar[0]);
+    }
+    if (req.files?.electricityBill?.[0]) {
+      pg.proofDocuments.electricityBill = filePath(req.files.electricityBill[0]);
+    }
+    if (req.files?.propertyTax?.[0]) {
+      pg.proofDocuments.propertyTax = filePath(req.files.propertyTax[0]);
+    }
+
+    await pg.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Property documents uploaded successfully",
+      data: pg,
+    });
+  } catch (error) {
+    console.error("Upload property documents error:", error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = { 
   getOwnerProfile, 
   getOwnerDashboardData, 
@@ -774,11 +1494,16 @@ module.exports = {
   getMyBookings, 
   addBooking, 
   updateBookingStatus,
+  sendPaymentLink,
   updateOwnerProfile,
   getMyAgreements,
   updateTenant,
+  syncTenantLinkedData,
   createSupportTicket,
   getMySupportTickets,
   updateSupportTicketStatus,
-  submitForApproval
+  submitForApproval,
+  uploadPropertyDocuments,
+  getOwnerEarnings,
+  downloadOwnerEarningsPDF
 };

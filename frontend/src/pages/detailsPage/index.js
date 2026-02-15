@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { BackendContext } from "../../context/backendContext";
 import Navbar from "../../components/navbar";
 import Footer from "../../components/footer";
@@ -44,11 +44,14 @@ const placeholders = [
 const PGDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { pgList } = useContext(BackendContext);
+  const isOwnerPreviewRoute = location.pathname.startsWith("/owner/dashboard/pg/");
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [ownerPgData, setOwnerPgData] = useState(null);
 
   const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
   const role = localStorage.getItem("role"); 
@@ -63,17 +66,50 @@ const PGDetails = () => {
   const [formError, setFormError] = useState("");
 
   const reviewsRef = useRef(null);
-  const pg = pgList?.find((item) => item._id === id);
+  const pgFromList = pgList?.find((item) => item._id === id);
+  const pg = ownerPgData || pgFromList;
   const [propertyReviews, setPropertyReviews] = useState([]);
+  const toImageUrl = (imgPath) =>
+    imgPath && imgPath.startsWith("/uploads")
+      ? `http://localhost:5000${imgPath}`
+      : (imgPath && imgPath.startsWith("uploads/") ? `http://localhost:5000/${imgPath}` : imgPath);
 
   useEffect(() => {
+    if (ownerPgData) {
+      setLoading(false);
+      return;
+    }
+
     if (pgList && pgList.length > 0) {
+      // For owner preview route, wait for owner-specific fetch if item is not in public pgList.
+      if (isOwnerPreviewRoute && !pgFromList) return;
       setLoading(false);
     } else if (pgList && pgList.length === 0) {
+      if (isOwnerPreviewRoute) return;
       const timer = setTimeout(() => setLoading(false), 1000);
       return () => clearTimeout(timer);
     }
-  }, [pgList]);
+  }, [pgList, pgFromList, ownerPgData, isOwnerPreviewRoute]);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        if (!id || !isOwnerPreviewRoute || pgFromList) return;
+        const api = await import("../../api/api");
+        const res = await api.getOwnerPgById(id);
+        if (mounted && res?.data?.success) {
+          setOwnerPgData(res.data.data || null);
+        } else if (mounted) {
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error("Failed to load owner property details", err);
+        if (mounted) setLoading(false);
+      }
+    })();
+    return () => { mounted = false; };
+  }, [id, pgFromList, isOwnerPreviewRoute]);
 
   // Load property-specific reviews (must run before any early returns)
   useEffect(() => {
@@ -91,7 +127,9 @@ const PGDetails = () => {
     return () => { mounted = false; };
   }, [id]);
 
-  const rawGallery = [pg?.mainImage, ...(pg?.images || []), ...(pg?.roomImages || [])].filter(Boolean);
+  const rawGallery = [pg?.mainImage, ...(pg?.images || []), ...(pg?.roomImages || [])]
+    .filter(Boolean)
+    .map(toImageUrl);
   const gallery = rawGallery.length >= 4 ? rawGallery : [...rawGallery, ...placeholders.slice(0, 4 - rawGallery.length)];
 
   useEffect(() => {
@@ -140,7 +178,7 @@ const PGDetails = () => {
           rating,
           isOwnerCreated: false
         };
-        await import("../../../api/api").then(m => m.createReview(payload));
+        await import("../../api/api").then(m => m.createReview(payload));
         // Inform user that review is submitted for moderation
         setIsFeedbackOpen(false);
         setRating(0);

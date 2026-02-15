@@ -32,23 +32,18 @@ const AgreementPage = () => {
   }, []);
 
   const fetchAgreements = async () => {
-    const sampleData = [
-      { id: 1, agreementId: 'AGR001', tenant: 'Rahul Sharma', tenantEmail: 'rahul.sharma@email.com', tenantPhone: '9876543210', property: 'My Dream PG', room: '101', startDate: '2026-01-01', endDate: '2026-12-31', rent: 5000, securityDeposit: 10000, status: 'Active', signed: true },
-      { id: 2, agreementId: 'AGR002', tenant: 'Priya Patel', tenantEmail: 'priya.patel@email.com', tenantPhone: '9876543211', property: 'Sunrise Boys PG', room: '201', startDate: '2025-05-01', endDate: '2026-04-30', rent: 4500, securityDeposit: 9000, status: 'Pending Signature', signed: false },
-      { id: 3, agreementId: 'AGR003', tenant: 'Amit Kumar', tenantEmail: 'amit.kumar@email.com', tenantPhone: '9876543212', property: 'My Dream PG', room: '102', startDate: '2026-02-01', endDate: '2027-01-31', rent: 5200, securityDeposit: 10400, status: 'Active', signed: true }
-    ];
-    setAgreements(sampleData);
-    setLoading(false);
-
     try {
       const response = await axios.get("http://localhost:5000/api/owner/my-agreements", {
         headers: { Authorization: `Bearer ${authToken}` }
       });
-      if (response.data.success && response.data.data.length > 0) {
-        setAgreements(response.data.data);
+      if (response.data.success) {
+        setAgreements(response.data.data || []);
       }
     } catch (error) {
-      console.log('API failed, keeping sample data');
+      console.log('Failed to load agreements');
+      setAgreements([]);
+    } finally {
+      setLoading(false);
     }
   };
 

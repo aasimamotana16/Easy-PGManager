@@ -1,5 +1,16 @@
 const PG = require('../models/pgModel');
 
+const CITY_ALIASES = {
+  ahmedabad: ["ahmedabad", "ahemdabad", "amdavad"],
+};
+
+const buildCityMatchers = (cityRaw) => {
+  const city = String(cityRaw || "").trim();
+  if (!city || city === "-- Select --" || city === "Any") return null;
+  const key = city.toLowerCase();
+  return CITY_ALIASES[key] || [city];
+};
+
 // 1. Create a New PG Listing
 exports.createPG = async (req, res) => {
 
@@ -33,21 +44,27 @@ exports.createPG = async (req, res) => {
 // 2. Search Logic (Keep your existing filters)
 exports.searchPGs = async (req, res) => {
   try {
-    const { 
+    const {
       city,
       lookingFor, 
       occupancy, 
       minBudget, 
       maxBudget, 
+      minPrice,
+      maxPrice,
       rentCycle, 
       amenities 
     } = req.query;
 
-    let query = { status: 'live' }; 
+    let query = { status: { $in: ['live', 'pending'] } };
 
     // 1. City Check
-    if (city && city !== "Any") {
-      query.location = { $regex: city, $options: 'i' };
+    const cityMatchers = buildCityMatchers(city);
+    if (cityMatchers) {
+      query.$or = [
+        ...cityMatchers.map((name) => ({ location: { $regex: name, $options: "i" } })),
+        ...cityMatchers.map((name) => ({ city: { $regex: name, $options: "i" } })),
+      ];
     }
 
     // 2. Fix the field name! Is it 'gender' or 'type' in your Atlas? [cite: 2026-01-06]
@@ -59,16 +76,18 @@ exports.searchPGs = async (req, res) => {
     if (rentCycle && rentCycle !== "Any") query.rentCycle = rentCycle;
 
     // 3. Price Check - Fixed for "Empty Strings"
-    if (minBudget || maxBudget) {
+    const effectiveMin = minBudget ?? minPrice;
+    const effectiveMax = maxBudget ?? maxPrice;
+    if (effectiveMin || effectiveMax) {
       query.price = {};
 
       // Only add the filter if the value actually exists and isn't just an empty string
-      if (minBudget && minBudget !== "") {
-        query.price.$gte = Number(minBudget);
+      if (effectiveMin && effectiveMin !== "") {
+        query.price.$gte = Number(effectiveMin);
       }
 
-      if (maxBudget && maxBudget !== "") {
-        query.price.$lte = Number(maxBudget);
+      if (effectiveMax && effectiveMax !== "") {
+        query.price.$lte = Number(effectiveMax);
       }
 
       // Safety: If both were empty strings, remove the price key entirely
@@ -143,12 +162,16 @@ exports.getAllPgs = async (req, res) => {
     const { city, propertyType, occupancy, forCategory } = req.query; 
     
     // Start with a base query (showing only live PGs) [cite: 2026-01-06]
-    let query = { status: 'live' }; 
+    let query = { status: { $in: ['live', 'pending'] } };
 
     // 2. Filter by City (mapping to 'location' as per your createPG logic) [cite: 2026-01-06]
-    if (city && city.trim() !== "" && city !== "-- Select --" && city !== "Any") {
-      // Use regex for a case-insensitive match so "anand" matches "Anand" [cite: 2026-01-06]
-      query.location = { $regex: city.trim(), $options: 'i' }; 
+    const cityMatchers = buildCityMatchers(city);
+    if (cityMatchers) {
+      // Match against both location and city, including common spellings/aliases.
+      query.$or = [
+        ...cityMatchers.map((name) => ({ location: { $regex: name, $options: "i" } })),
+        ...cityMatchers.map((name) => ({ city: { $regex: name, $options: "i" } })),
+      ];
     }
 
     // 3. Filter by Property Type (Independent/Flat/etc.) [cite: 2026-01-07]

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import CInput from "../../../../components/cInput";
 import CButton from "../../../../components/cButton";
 import { FaTrash, FaRupeeSign, FaPlus, FaSave, FaBed } from "react-icons/fa";
@@ -7,6 +7,8 @@ import Swal from "sweetalert2";
 
 const SetRoomPrice = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const pgId = location.state?.pgId || localStorage.getItem("currentPropertyId");
 
   const [roomPrices, setRoomPrices] = useState([
     {
@@ -108,7 +110,7 @@ const SetRoomPrice = () => {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ roomPrices }),
+          body: JSON.stringify({ roomPrices, pgId }),
         }
       );
 

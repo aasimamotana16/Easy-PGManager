@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 const bookingSchema = new mongoose.Schema({
   ownerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  pgId: { type: mongoose.Schema.Types.ObjectId, ref: 'PG' },
   bookingId: { type: String, required: true }, // e.g., "101"
   pgName: { type: String, required: true },
   roomType: { type: String, required: true }, // e.g., "Single" or "Double"

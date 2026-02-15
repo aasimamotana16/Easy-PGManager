@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   FaBuilding,
@@ -25,6 +25,7 @@ import {
 } from "chart.js";
 import CButton from "../../../components/cButton";
 import { motion, AnimatePresence } from "framer-motion"; // Added AnimatePresence
+import { getOwnerDashboardStats } from "../../../api/api";
 
 ChartJS.register(
   CategoryScale,
@@ -39,6 +40,13 @@ ChartJS.register(
 const DashboardHome = () => {
   const navigate = useNavigate();
   const [user] = useState({ fullName: "Owner" });
+  const [stats, setStats] = useState({
+    totalPGs: 0,
+    totalRooms: 0,
+    liveListings: 0,
+    totalEarnings: 0,
+    totalBookings: 0,
+  });
   
   // Feedback States
   const [showReviewModal, setShowReviewModal] = useState(false);
@@ -46,13 +54,30 @@ const DashboardHome = () => {
   const [hover, setHover] = useState(0);
   const [reviewText, setReviewText] = useState("");
 
-  const stats = {
-    totalPGs: 5,
-    totalRooms: 24,
-    liveListings: 18,
-    totalEarnings: 125000,
-    totalBookings: 50,
-  };
+  useEffect(() => {
+    const fetchDashboardStats = async () => {
+      try {
+        const response = await getOwnerDashboardStats();
+        const apiStats = response?.data?.data?.stats || [];
+
+        const findValue = (label, fallback = 0) => {
+          const found = apiStats.find((item) => item.label === label);
+          return found?.value ?? fallback;
+        };
+
+        setStats((prev) => ({
+          ...prev,
+          totalPGs: Number(findValue("Total PGs", prev.totalPGs)),
+          totalRooms: Number(findValue("Total Rooms", prev.totalRooms)),
+          liveListings: Number(findValue("Available PGs", prev.liveListings)),
+        }));
+      } catch (error) {
+        console.error("Failed to fetch owner dashboard stats:", error);
+      }
+    };
+
+    fetchDashboardStats();
+  }, []);
 
   const handleReviewSubmit = () => {
     (async () => {

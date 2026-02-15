@@ -25,6 +25,7 @@ router.post("/create", async (req, res) => {
 
     const newBooking = await Booking.create({
       ownerId: owner ? owner._id : null,
+      pgId: pg._id,
       bookingId,
       pgName: pg.pgName,
       roomType: roomType || pg.occupancy || 'Single Sharing',
