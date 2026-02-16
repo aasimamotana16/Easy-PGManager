@@ -25,15 +25,41 @@ const PgManagement = () => {
       const response = await getMyPgs();
 
       if (response.data.success) {
-        const transformedPgs = response.data.data.map(pg => ({
-          id: pg._id,
-          name: pg.pgName,
-          location: pg.location,
-          status: pg.status.charAt(0).toUpperCase() + pg.status.slice(1),
-          rooms: pg.totalRooms || 0,
-          beds: pg.liveListings || 0,
-          image: toImageUrl(pg.mainImage),
-        }));
+        const transformedPgs = response.data.data.map(pg => {
+          // Compute rooms count: prefer explicit rooms array, fallback to totalRooms
+          const roomsCount = Array.isArray(pg.rooms)
+            ? pg.rooms.reduce((sum, r) => sum + (Number(r.totalRooms) || 0), 0)
+            : (pg.totalRooms || 0);
+
+          // Compute beds count by summing bedsPerRoom * totalRooms for each room type
+          let bedsCount = 0;
+          if (Array.isArray(pg.rooms)) {
+            bedsCount = pg.rooms.reduce((sum, r) => {
+              const bedsPerRoom = Number(r.bedsPerRoom) || 0;
+              const total = Number(r.totalRooms) || 0;
+              return sum + bedsPerRoom * total;
+            }, 0);
+          } else if (Array.isArray(pg.roomTypes)) {
+            bedsCount = pg.roomTypes.reduce((sum, r) => {
+              const bedsPerRoom = Number(r.bedsPerRoom) || 0;
+              const total = Number(r.totalRooms) || 0;
+              return sum + bedsPerRoom * total;
+            }, 0);
+          } else {
+            // Fallback: try liveListings or totalRooms
+            bedsCount = Number(pg.liveListings) || Number(pg.totalRooms) || 0;
+          }
+
+          return {
+            id: pg._id,
+            name: pg.pgName,
+            location: pg.location,
+            status: pg.status.charAt(0).toUpperCase() + pg.status.slice(1),
+            rooms: roomsCount,
+            beds: bedsCount,
+            image: toImageUrl(pg.mainImage),
+          };
+        });
         setMyPgs(transformedPgs);
       }
     } catch (error) {

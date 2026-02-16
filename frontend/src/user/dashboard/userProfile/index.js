@@ -1,9 +1,16 @@
 import React, { useEffect, useState, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import Swal from "sweetalert2";
+import { 
+  FaUserEdit, FaCamera, FaTrash, FaCheckCircle, 
+  FaUserShield, FaUserAlt, FaBriefcase, FaWallet, FaCreditCard 
+} from "react-icons/fa";
+
+// Components & API (Assuming these paths are correct as per your snippet)
 import CButton from "../../../components/cButton";
 import CInput from "../../../components/cInput";
 import Navbar from "../../../components/navbar";
 import Footer from "../../../components/footer";
-import Swal from "sweetalert2"; // Import SweetAlert2
 import {
   getUserProfile,
   getPersonalProfile,
@@ -14,19 +21,43 @@ import {
   removeProfilePicture,
   updateUserProfile,
 } from "../../../api/api";
-import { 
-  FaUserEdit, FaCamera, FaTrash, FaCheckCircle, 
-  FaUserShield, FaUserAlt, FaBriefcase, FaCreditCard, FaWallet
-} from "react-icons/fa";
 
 const Profile = () => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("personal");
+  const [contentVisible, setContentVisible] = useState(true);
   const [formData, setFormData] = useState({});
   const fileInputRef = useRef(null);
 
+  // --- Animation Variants ---
+  const fadeInUp = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.5 } }
+  };
+
+  const staggerContainer = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1 }
+    }
+  };
+
+  const modalOverlay = {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1 },
+    exit: { opacity: 0 }
+  };
+
+  const modalContent = {
+    hidden: { scale: 0.9, opacity: 0, y: 50 },
+    visible: { scale: 1, opacity: 1, y: 0, transition: { type: "spring", duration: 0.5 } },
+    exit: { scale: 0.9, opacity: 0, y: 50 }
+  };
+
+  // --- Logic ---
   const fetchProfile = async () => {
     try {
       const [userRes, personalRes, academicRes, emergencyRes, paymentRes] = await Promise.all([
@@ -41,6 +72,7 @@ const Profile = () => {
       const academic = academicRes?.data?.data || {};
       const emergency = emergencyRes?.data?.data || {};
       const payment = paymentRes?.data?.data || {};
+
       setUser({
         ...base,
         fullName: personal.fullName ?? base.fullName,
@@ -68,6 +100,7 @@ const Profile = () => {
           ifsc: payment.ifsc,
           accountNumber: payment.account,
         },
+        profileCompletion: base.profileCompletion
       });
     } catch (err) {
       console.error("Error fetching profile:", err);
@@ -90,58 +123,30 @@ const Profile = () => {
       const res = await updateProfilePicture(formDataObj);
       if (res.data.success) {
         await fetchProfile();
-        Swal.fire({
-          title: "Uploaded!",
-          text: "Profile picture updated successfully.",
-          icon: "success",
-          confirmButtonColor: "#D97706",
-        });
+        Swal.fire({ title: "Uploaded!", text: "Profile picture updated.", icon: "success", confirmButtonColor: "#D97706" });
       }
     } catch (err) {
-      Swal.fire({
-        title: "Error",
-        text: "Failed to upload image",
-        icon: "error",
-        confirmButtonColor: "#D97706",
-      });
+      Swal.fire({ title: "Error", text: "Upload failed", icon: "error", confirmButtonColor: "#D97706" });
     } finally {
       setLoading(false);
     }
   };
 
   const handleRemove = async () => {
-    // Replaced window.confirm with SweetAlert
     const result = await Swal.fire({
-      title: "Are you sure?",
-      text: "Do you want to remove your profile picture?",
+      title: "Remove photo?",
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#D97706",
       cancelButtonColor: "#1F1F1F",
-      confirmButtonText: "Yes, remove it!",
-      cancelButtonText: "No, keep it"
     });
-
     if (result.isConfirmed) {
       try {
-        const res = await removeProfilePicture();
-        if (res.data.success) {
-          await fetchProfile();
-          Swal.fire({
-            title: "Removed!",
-            text: "Profile picture has been removed.",
-            icon: "success",
-            confirmButtonColor: "#D97706",
-          });
-        }
+        await removeProfilePicture();
+        await fetchProfile();
+        Swal.fire({ title: "Removed!", icon: "success", confirmButtonColor: "#D97706" });
       } catch (err) {
-        console.error("Remove failed", err);
-        Swal.fire({
-          title: "Error",
-          text: "Failed to remove photo.",
-          icon: "error",
-          confirmButtonColor: "#D97706",
-        });
+        Swal.fire({ title: "Error", icon: "error" });
       }
     }
   };
@@ -176,145 +181,145 @@ const Profile = () => {
     try {
       setLoading(true);
       const payloads = [
-        {
-          section: "personalInfo",
-          data: {
-            fullName: formData.fullName,
-            phone: formData.phone,
-            age: formData.age,
-            bloodGroup: formData.bloodGroup,
-            city: formData.city,
-            state: formData.state,
-          },
-        },
-        {
-          section: "academicInfo",
-          data: {
-            status: formData.occupationType || "professional",
-            qualification: formData.education,
-            company: formData.occupationType === "student" ? formData.collegeName : formData.companyName,
-            workAddress: formData.occupationType === "student" ? formData.collegeAddress : formData.companyAddress,
-            collegeYear: formData.occupationType === "student" ? formData.collegeYear : "",
-          },
-        },
-        {
-          section: "emergencyContact",
-          data: {
-            guardianName: formData.guardianName,
-            relationship: formData.relationship,
-            guardianPhone: formData.guardianPhone,
-          },
-        },
-        {
-          section: "paymentDetails",
-          data: {
-            holder: formData.holder,
-            bank: formData.bank,
-            ifsc: formData.ifsc,
-            account: formData.account,
-          },
-        },
+        { section: "personalInfo", data: { fullName: formData.fullName, phone: formData.phone, age: formData.age, bloodGroup: formData.bloodGroup, city: formData.city, state: formData.state } },
+        { section: "academicInfo", data: { status: formData.occupationType, qualification: formData.education, company: formData.occupationType === "student" ? formData.collegeName : formData.companyName, workAddress: formData.occupationType === "student" ? formData.collegeAddress : formData.companyAddress, collegeYear: formData.occupationType === "student" ? formData.collegeYear : "" } },
+        { section: "emergencyContact", data: { guardianName: formData.guardianName, relationship: formData.relationship, guardianPhone: formData.guardianPhone } },
+        { section: "paymentDetails", data: { holder: formData.holder, bank: formData.bank, ifsc: formData.ifsc, account: formData.account } },
       ];
       await Promise.all(payloads.map((p) => updateUserProfile(p)));
       await fetchProfile();
+
+      // Update localStorage so Navbar picks up the new name immediately
+      try {
+        const updatedLocal = {
+          fullName: formData.fullName || user?.fullName,
+          name: formData.fullName || user?.fullName,
+          email: user?.email,
+          phone: formData.phone || user?.phone
+        };
+        localStorage.setItem('user', JSON.stringify(updatedLocal));
+        localStorage.setItem('userName', updatedLocal.fullName || updatedLocal.name || 'User');
+        // Trigger storage listeners in the same tab (Navbar listens for 'storage')
+        try { window.dispatchEvent(new Event('storage')); } catch (e) { /* ignore */ }
+      } catch (e) {
+        console.error('Failed updating localStorage after profile save', e);
+      }
+
       setIsModalOpen(false);
-      Swal.fire({
-        title: "Profile Updated",
-        text: "Your information has been synced successfully.",
-        icon: "success",
-        confirmButtonColor: "#D97706",
-      });
+      Swal.fire({ title: "Profile Updated", icon: "success", confirmButtonColor: "#D97706" });
     } catch (err) {
-      Swal.fire({
-        title: "Update Failed",
-        text: err.response?.data?.message || "Something went wrong.",
-        icon: "error",
-        confirmButtonColor: "#D97706",
-      });
+      Swal.fire({ title: "Update Failed", icon: "error" });
     } finally {
       setLoading(false);
     }
   };
 
-  if (loading) return <div className="p-10 text-center font-black uppercase animate-pulse">Syncing Profile...</div>;
+  if (loading) return (
+    <div className="h-screen w-full flex items-center justify-center bg-white">
+      <motion.div 
+        animate={{ scale: [1, 1.1, 1], opacity: [0.5, 1, 0.5] }}
+        transition={{ repeat: Infinity, duration: 1.5 }}
+        className="text-[#D97706] font-black uppercase tracking-tighter text-xl"
+      >
+        Syncing Profile...
+      </motion.div>
+    </div>
+  );
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50 font-poppins">
+    <div className="flex flex-col min-h-screen bg-[#ffffff] font-poppins">
       <Navbar />
 
       <div className="flex flex-col lg:flex-row flex-1">
         <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
 
         {/* --- LEFT SIDEBAR --- */}
-        <div className="w-full lg:w-80 bg-white border-b lg:border-r border-gray-100 p-6 lg:p-8 lg:h-screen lg:sticky lg:top-0">
+        <motion.div 
+          initial={{ x: -20, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          className="w-full lg:w-80 bg-white border-b lg:border-r border-[#E5E0D9] p-6 lg:p-8 lg:h-screen lg:sticky lg:top-0"
+        >
           <div className="flex flex-row lg:flex-col items-center gap-6 lg:gap-0">
             <div className="relative group">
-              <div className="w-28 h-28 lg:w-40 lg:h-40 rounded-full overflow-hidden border-4 border-primary shadow-xl">
+              <motion.div 
+                whileHover={{ scale: 1.02 }}
+                className="w-28 h-28 lg:w-40 lg:h-40 rounded-full overflow-hidden border-4 border-[#D97706] shadow-xl"
+              >
                 {user?.profilePicture ? (
                   <img src={`http://localhost:5000${user.profilePicture}`} alt="Profile" className="w-full h-full object-cover" />
                 ) : (
-                  <div className="w-full h-full bg-primary flex items-center justify-center text-3xl lg:text-5xl font-black text-white uppercase">
+                  <div className="w-full h-full bg-[#D97706] flex items-center justify-center text-3xl lg:text-5xl font-black text-white">
                     {user?.fullName?.charAt(0)}
                   </div>
                 )}
-              </div>
-              <button onClick={handleUploadClick} className="absolute bottom-0 right-0 bg-black text-white p-2 lg:p-3 rounded-full hover:bg-primary transition-colors">
+              </motion.div>
+              <button onClick={handleUploadClick} className="absolute bottom-0 right-0 bg-[#1C1C1C] text-white p-2 lg:p-3 rounded-full hover:bg-[#D97706] transition-colors shadow-lg">
                 <FaCamera size={12} />
               </button>
             </div>
             
             <div className="flex-1 lg:mt-6 text-left lg:text-center">
-              <h2 className="text-2xl lg:text-xl font-black uppercase text-[#1C1C1C] ">{user?.fullName || "User"}</h2>
-              <p className="text-sm font-bold text-gray-400 uppercase tracking-widest mt-1 truncate max-w-[150px] lg:max-w-full">{user?.email}</p>
-              <button onClick={handleRemove} className="mt-2 text-red-500 text-xs font-black uppercase hover:underline lg:hidden">Remove Photo</button>
+              <h2 className="text-xl lg:text-2xl font-bold uppercase text-[#1C1C1C]">{user?.fullName || "User"}</h2>
+              <p className="text-sm font-medium text-[#4B4B4B] mt-1">{user?.email}</p>
+              <button onClick={handleRemove} className="mt-2 text-red-500 text-xs font-bold uppercase hover:underline lg:hidden">Remove Photo</button>
             </div>
           </div>
 
-          <div className="hidden lg:block">
-              <CButton onClick={handleRemove} className="mt-6 w-full bg-gray-50 py-3 text-[10px] uppercase text-gray-600">
-                  <FaTrash className="inline mr-2" /> Remove Photo
-              </CButton>
-              <div className="w-full mt-10 bg-black rounded-3xl p-6 text-white">
-                  <div className="flex justify-between items-center mb-4">
-                      <span className="text-[10px] font-black uppercase ">Profile Strength</span>
-                      <span className="text-orange-500 font-black">{user?.profileCompletion || 0}%</span>
-                  </div>
-                  <div className="w-full bg-gray-800 h-2 rounded-full overflow-hidden">
-                      <div className="bg-orange-500 h-full transition-all duration-1000" style={{width: `${user?.profileCompletion || 0}%`}}></div>
-                  </div>
+          <div className="hidden lg:block mt-8">
+            <CButton onClick={handleRemove} className="w-full bg-white !text-[#4B4B4B] border border-[#E5E0D9] hover:bg-red-50 hover:!text-red-500 hover:border-red-200 transition-all text-[10px] uppercase">
+                <FaTrash className="inline mr-2" /> Remove Photo
+            </CButton>
+            
+            <div className="mt-10 bg-[#1F1F1F] rounded-2xl p-6 text-white shadow-2xl">
+              <div className="flex justify-between items-center mb-4">
+                <span className="text-[10px] font-bold uppercase tracking-widest opacity-60">Profile Strength</span>
+                <span className="text-[#D97706] font-bold">{user?.profileCompletion || 0}%</span>
               </div>
+              <div className="w-full bg-gray-800 h-1.5 rounded-full overflow-hidden">
+                <motion.div 
+                  initial={{ width: 0 }}
+                  animate={{ width: `${user?.profileCompletion || 0}%` }}
+                  transition={{ duration: 1, ease: "easeOut" }}
+                  className="bg-[#D97706] h-full"
+                />
+              </div>
+            </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* --- MAIN CONTENT AREA --- */}
         <div className="flex-1 p-4 lg:p-10 max-w-6xl w-full mx-auto">
-          {/* Header Section */}
-          <div className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <motion.div 
+            initial={{ opacity: 0, y: -10 }} 
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
+          >
             <div>
-              <h1 className="text-2xl lg:text-4xl font-black uppercase text-[#1C1C1C] ">Profile Settings</h1>
-              <p className="text-xs lg:text-sm font-bold text-gray-400 uppercase tracking-[0.2em]">Verified Identity Management</p>
+              <h1 className="text-2xl lg:text-4xl font-black text-[#1C1C1C] tracking-tight">Profile Settings</h1>
+              <p className="text-[10px] lg:text-xs font-bold text-[#4B4B4B] uppercase tracking-[0.2em] mt-1">Verified Identity Management</p>
             </div>
-            <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full border-2 border-primary/30 shadow">
-              <FaCheckCircle className="text-green-500" />
-              <span className="text-[10px] lg:text-xs font-black uppercase text-green-700">Verified User</span>
+            <div className="flex items-center gap-2 bg-[#FEF3C7] px-4 py-2 rounded-full border border-[#D97706]/30">
+              <FaCheckCircle className="text-[#D97706]" />
+              <span className="text-[10px] font-bold uppercase text-[#B45309]">Verified User</span>
             </div>
-          </div>
+          </motion.div>
 
+          {/* TAB NAVIGATION */}
           <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 w-full lg:w-auto">
               {[
-                {id: 'personal', label: 'Personal', icon: <FaUserAlt size={14}/>},
-                {id: 'professional', label: 'Academic', icon: <FaBriefcase size={14}/>},
-                {id: 'emergency', label: 'Emergency', icon: <FaUserShield size={14}/>},
-                {id: 'payment', label: 'Payments', icon: <FaWallet size={14}/>}
+                {id: 'personal', label: 'Personal', icon: <FaUserAlt />},
+                {id: 'professional', label: 'Academic', icon: <FaBriefcase />},
+                {id: 'emergency', label: 'Emergency', icon: <FaUserShield />},
+                {id: 'payment', label: 'Payments', icon: <FaWallet />}
               ].map(tab => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-3 px-5 py-2.5 rounded-md text-[11px] font-black uppercase transition-all whitespace-nowrap border ${
+                  className={`flex items-center gap-3 px-6 py-3 rounded-xl text-[11px] font-bold uppercase transition-all whitespace-nowrap border-2 ${
                     activeTab === tab.id 
-                    ? "bg-primary text-white border-primary shadow-md" 
-                    : "bg-white text-gray-500 border-gray-100 hover:bg-gray-50"
+                    ? "bg-[#D97706] text-white border-[#D97706] shadow-lg translate-y-[-2px]" 
+                    : "bg-white text-[#4B4B4B] border-[#E5E0D9] hover:border-[#D97706] hover:text-[#D97706]"
                   }`}
                 >
                   {tab.icon} {tab.label}
@@ -322,239 +327,194 @@ const Profile = () => {
               ))}
             </div>
 
-            <CButton onClick={openEditModal} className="text-white rounded-md text-[11px] uppercase px-6 py-2.5 flex items-center gap-2 shadow-sm">
-              <FaUserEdit size={16} /> Edit
+            <CButton onClick={openEditModal} className="w-full lg:w-auto !rounded-xl text-[11px] uppercase px-8 py-3.5 flex items-center justify-center gap-2 shadow-xl hover:bg-[#B45309]">
+              <FaUserEdit size={16} /> Edit Profile
             </CButton>
           </div>
 
-           <div className="bg-white rounded-md border-2 border-primary shadow p-6 lg:p-10 relative">
-            <h3 className="text-h2-sm lg:text-h2 font-bold text-[#1C1C1C] mb-8 border-b border-gray-50 pb-4">
-              {activeTab} Info
-            </h3>
+          {/* MAIN CARD WITH STAGGERED ANIMATION */}
+          <AnimatePresence mode="wait">
+            <motion.div 
+              key={activeTab}
+              variants={staggerContainer}
+              initial="hidden"
+              animate="visible"
+              exit={{ opacity: 0, x: -10 }}
+              className="bg-white rounded-2xl border-2 border-[#E5E0D9] shadow-sm p-6 lg:p-12 relative overflow-hidden"
+            >
+              <h3 className="text-xl lg:text-2xl font-bold text-[#1C1C1C] mb-10 border-b border-gray-50 pb-6 capitalize flex items-center gap-4">
+                <motion.span initial={{ height: 0 }} animate={{ height: 30 }} className="w-1.5 bg-[#D97706] rounded-full" />
+                {activeTab} Details
+              </h3>
 
-            <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
-              {activeTab === 'personal' && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-8 gap-x-12">
-                      <Info label="Full Name" value={user?.fullName} />
-                      <Info label="Phone" value={user?.phone} />
-                      <Info label="Age" value={user?.age} />
-                      <Info label="Blood Group" value={user?.bloodGroup} />
-                      <Info label="City" value={user?.city} />
-                      <Info label="State" value={user?.state} />
-                      <Info label="Email" value={user?.email} className="sm:col-span-2 border-t pt-8 mt-4" />
-                  </div>
-              )}
-              {/* ... other tab views remain the same ... */}
-              {activeTab === 'professional' && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                      <Info label="Status" value={user?.occupationType} className="capitalize" />
-                      <Info label="Qualification" value={user?.education} />
-                      {user?.occupationType === 'student' ? (
-                          <>
-                              <Info label="College" value={user?.collegeName} />
-                              <Info label="Year" value={user?.collegeYear} />
-                              <Info label="Address" value={user?.collegeAddress} className="sm:col-span-2" />
-                          </>
-                      ) : (
-                          <>
-                              <Info label="Company" value={user?.companyName} />
-                              <Info label="Work Address" value={user?.companyAddress} className="sm:col-span-2" />
-                          </>
-                      )}
-                  </div>
-              )}
-              {activeTab === 'emergency' && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                      <Info label="Guardian Name" value={user?.emergencyContact?.contactName} />
-                      <Info label="Relationship" value={user?.emergencyContact?.relationship} />
-                      <Info label="Guardian Phone" value={user?.emergencyContact?.phoneNumber} className="sm:col-span-2" />
-                  </div>
-              )}
-              {activeTab === 'payment' && (
-                  <div className="space-y-8">
-                      <div className="bg-gray-50 rounded-xl p-8 border-2 border-primary/30">
-                          <p className="text-[10px] font-black uppercase text-primary mb-6 flex items-center gap-2">
-                             <FaCreditCard /> Settlement Bank
-                          </p>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                              <Info label="Holder" value={user?.bankDetails?.holderName} />
-                              <Info label="Bank" value={user?.bankDetails?.bankName} />
-                              <Info label="IFSC" value={user?.bankDetails?.ifsc} />
-                              <Info label="Account" value={user?.bankDetails?.accountNumber ? `XXXXXX${user.bankDetails.accountNumber.slice(-4)}` : "Not Set"} />
-                          </div>
-                      </div>
-                  </div>
-              )}
-            </div>
-          </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-y-10 gap-x-16">
+                {activeTab === 'personal' && (
+                  <>
+                    <motion.div variants={fadeInUp}><Info label="Full Name" value={user?.fullName} /></motion.div>
+                    <motion.div variants={fadeInUp}><Info label="Phone Number" value={user?.phone} /></motion.div>
+                    <motion.div variants={fadeInUp}><Info label="Age" value={user?.age} /></motion.div>
+                    <motion.div variants={fadeInUp}><Info label="Blood Group" value={user?.bloodGroup} /></motion.div>
+                    <motion.div variants={fadeInUp}><Info label="City" value={user?.city} /></motion.div>
+                    <motion.div variants={fadeInUp}><Info label="State" value={user?.state} /></motion.div>
+                    <motion.div variants={fadeInUp} className="md:col-span-2 border-t border-gray-50 pt-8"><Info label="Email Address" value={user?.email} /></motion.div>
+                  </>
+                )}
+                
+                {activeTab === 'professional' && (
+                  <>
+                    <motion.div variants={fadeInUp}><Info label="Current Status" value={user?.occupationType} className="capitalize" /></motion.div>
+                    <motion.div variants={fadeInUp}><Info label="Qualification" value={user?.education} /></motion.div>
+                    {user?.occupationType === 'student' ? (
+                      <>
+                        <motion.div variants={fadeInUp}><Info label="College / University" value={user?.collegeName} /></motion.div>
+                        <motion.div variants={fadeInUp}><Info label="Academic Year" value={user?.collegeYear} /></motion.div>
+                        <motion.div variants={fadeInUp} className="md:col-span-2"><Info label="College Address" value={user?.collegeAddress} /></motion.div>
+                      </>
+                    ) : (
+                      <>
+                        <motion.div variants={fadeInUp}><Info label="Company Name" value={user?.companyName} /></motion.div>
+                        <motion.div variants={fadeInUp} className="md:col-span-2"><Info label="Office Address" value={user?.companyAddress} /></motion.div>
+                      </>
+                    )}
+                  </>
+                )}
+
+                {activeTab === 'emergency' && (
+                  <>
+                    <motion.div variants={fadeInUp}><Info label="Guardian Name" value={user?.emergencyContact?.contactName} /></motion.div>
+                    <motion.div variants={fadeInUp}><Info label="Relationship" value={user?.emergencyContact?.relationship} /></motion.div>
+                    <motion.div variants={fadeInUp} className="md:col-span-2"><Info label="Guardian Phone" value={user?.emergencyContact?.phoneNumber} /></motion.div>
+                  </>
+                )}
+
+                {activeTab === 'payment' && (
+                  <motion.div variants={fadeInUp} className="md:col-span-2 bg-[#FEF3C7]/50 rounded-2xl p-8 border-2 border-[#D97706]/10">
+                    <p className="text-[10px] font-bold uppercase text-[#B45309] mb-8 flex items-center gap-2">
+                       <FaCreditCard /> Linked Settlement Account
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                      <Info label="Account Holder" value={user?.bankDetails?.holderName} />
+                      <Info label="Bank Name" value={user?.bankDetails?.bankName} />
+                      <Info label="IFSC Code" value={user?.bankDetails?.ifsc} />
+                      <Info label="Account Number" value={user?.bankDetails?.accountNumber ? `●●●● ●●●● ${user.bankDetails.accountNumber.slice(-4)}` : null} />
+                    </div>
+                  </motion.div>
+                )}
+              </div>
+            </motion.div>
+          </AnimatePresence>
         </div>
       </div>
 
       <Footer />
 
-      {/* --- MODAL --- */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-center justify-center p-2 md:p-4">
-          <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[95vh] flex flex-col shadow-2xl overflow-hidden">
-            <div className="p-6 md:p-8 border-b bg-white">
-              <h3 className="text-h2-sm lg:text-h2 font-bold text-[#1C1C1C] leading-none">Update Profile</h3>
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-2">Identity Sync Engine</p>
-            </div>
-            <div className="flex-1 overflow-y-auto p-6 md:p-10 space-y-10 custom-scrollbar">
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                <div className="md:col-span-2 text-sm font-black text-gray-700 uppercase border-b border-gray-100 pb-2 flex items-center gap-3">
-                  <FaUserAlt className="text-primary" /> <span>1. Identity Info</span>
+      {/* --- ANIMATED MODAL --- */}
+      <AnimatePresence>
+        {isModalOpen && (
+          <motion.div 
+            variants={modalOverlay} initial="hidden" animate="visible" exit="exit"
+            className="fixed inset-0 bg-black/70 backdrop-blur-md z-[200] flex items-center justify-center p-4"
+          >
+            <motion.div 
+              variants={modalContent}
+              className="bg-white rounded-3xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden"
+            >
+              <div className="p-8 border-b bg-white flex justify-between items-center">
+                <div>
+                  <h3 className="text-2xl font-black text-[#1C1C1C]">Update Profile</h3>
+                  <p className="text-[10px] font-bold text-[#4B4B4B] uppercase tracking-widest mt-1">Global Data Synchronization</p>
                 </div>
-                <CInput
-                  label="Full Name"
-                  value={formData.fullName}
-                  onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                />
-                <CInput
-                  label="Phone"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                />
-                <CInput
-                  label="Age"
-                  type="number"
-                  value={formData.age}
-                  onChange={(e) => setFormData({ ...formData, age: e.target.value })}
-                />
-                <CInput
-                  label="Blood Group"
-                  value={formData.bloodGroup}
-                  onChange={(e) => setFormData({ ...formData, bloodGroup: e.target.value })}
-                />
-                <CInput
-                  label="City"
-                  value={formData.city}
-                  onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                />
-                <CInput
-                  label="State"
-                  value={formData.state}
-                  onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                />
-
-                <div className="md:col-span-2 text-sm font-black text-gray-700 uppercase border-b border-gray-100 pb-2 mt-4 flex items-center gap-3">
-                  <FaBriefcase className="text-primary" /> <span>2. Professional / Student</span>
-                </div>
-                <div className="md:col-span-2 grid grid-cols-2 gap-4">
-                   {['student', 'professional'].map(type => (
-                     <button 
-                       key={type} 
-                       onClick={() => setFormData({...formData, occupationType: type})} 
-                       className={`py-3 rounded-md font-black uppercase text-[10px] border-2 transition-all ${
-                         formData.occupationType === type 
-                         ? "border-primary bg-orange-50 text-primary" 
-                         : "border-gray-100 text-gray-400"
-                       }`}
-                     >
-                       {type}
-                     </button>
-                   ))}
-                </div>
-                <CInput
-                  label="Qualification"
-                  value={formData.education}
-                  onChange={(e) => setFormData({ ...formData, education: e.target.value })}
-                />
-                {formData.occupationType === 'student' ? (
-                  <>
-                    <CInput
-                      label="College Name"
-                      value={formData.collegeName}
-                      onChange={(e) => setFormData({ ...formData, collegeName: e.target.value })}
-                    />
-                    <CInput
-                      label="Year"
-                      value={formData.collegeYear}
-                      onChange={(e) => setFormData({ ...formData, collegeYear: e.target.value })}
-                    />
-                    <CInput
-                      label="College Address"
-                      className="md:col-span-2"
-                      value={formData.collegeAddress}
-                      onChange={(e) => setFormData({ ...formData, collegeAddress: e.target.value })}
-                    />
-                  </>
-                ) : (
-                  <>
-                    <CInput
-                      label="Company Name"
-                      value={formData.companyName}
-                      onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
-                    />
-                    <CInput
-                      label="Work Address"
-                      className="md:col-span-2"
-                      value={formData.companyAddress}
-                      onChange={(e) => setFormData({ ...formData, companyAddress: e.target.value })}
-                    />
-                  </>
-                )}
-
-                <div className="md:col-span-2 text-sm font-black text-gray-700 uppercase border-b border-gray-100 pb-2 mt-4 flex items-center gap-3">
-                  <FaUserShield className="text-primary" /> <span>3. Emergency Contact</span>
-                </div>
-                <CInput
-                  label="Guardian Name"
-                  value={formData.guardianName}
-                  onChange={(e) => setFormData({ ...formData, guardianName: e.target.value })}
-                />
-                <CInput
-                  label="Relationship"
-                  value={formData.relationship}
-                  onChange={(e) => setFormData({ ...formData, relationship: e.target.value })}
-                />
-                <CInput
-                  label="Guardian Phone"
-                  className="md:col-span-2"
-                  value={formData.guardianPhone}
-                  onChange={(e) => setFormData({ ...formData, guardianPhone: e.target.value })}
-                />
-
-                <div className="md:col-span-2 text-sm font-black text-gray-700 uppercase border-b border-gray-100 pb-2 mt-4 flex items-center gap-3">
-                  <FaWallet className="text-primary" /> <span>4. Payment Details</span>
-                </div>
-                <CInput
-                  label="Holder Name"
-                  value={formData.holder}
-                  onChange={(e) => setFormData({ ...formData, holder: e.target.value })}
-                />
-                <CInput
-                  label="Bank Name"
-                  value={formData.bank}
-                  onChange={(e) => setFormData({ ...formData, bank: e.target.value })}
-                />
-                <CInput
-                  label="IFSC Code"
-                  value={formData.ifsc}
-                  onChange={(e) => setFormData({ ...formData, ifsc: e.target.value })}
-                />
-                <CInput
-                  label="Account Number"
-                  value={formData.account}
-                  onChange={(e) => setFormData({ ...formData, account: e.target.value })}
-                />
+                <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-black transition-colors text-2xl">×</button>
               </div>
-            </div>
-            <div className="p-6 bg-gray-50 border-t flex flex-col sm:flex-row gap-3">
-              <CButton onClick={handleSaveInfo} className="flex-1">Save Changes</CButton>
-              <CButton onClick={() => setIsModalOpen(false)} className="flex-1 bg-white !text-gray-400 border-2 border-primary/30">Cancel</CButton>
-            </div>
-          </div>
-        </div>
-      )}
+
+              <div className="flex-1 overflow-y-auto p-8 md:p-12 space-y-12 custom-scrollbar">
+                {/* Section 1 */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <SectionTitle icon={<FaUserAlt />} title="1. Personal Info" />
+                  <CInput label="Full Name" value={formData.fullName} onChange={(e) => setFormData({ ...formData, fullName: e.target.value })} />
+                  <CInput label="Phone" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
+                  <CInput label="Age" type="number" value={formData.age} onChange={(e) => setFormData({ ...formData, age: e.target.value })} />
+                  <CInput label="Blood Group" value={formData.bloodGroup} onChange={(e) => setFormData({ ...formData, bloodGroup: e.target.value })} />
+                  <CInput label="City" value={formData.city} onChange={(e) => setFormData({ ...formData, city: e.target.value })} />
+                  <CInput label="State" value={formData.state} onChange={(e) => setFormData({ ...formData, state: e.target.value })} />
+                </div>
+
+                {/* Section 2 */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <SectionTitle icon={<FaBriefcase />} title="2. Academic / Work" />
+                  <div className="md:col-span-2 flex gap-4">
+                    {['student', 'professional'].map(type => (
+                      <button 
+                        key={type} 
+                        onClick={() => setFormData({...formData, occupationType: type})} 
+                        className={`flex-1 py-4 rounded-xl font-bold uppercase text-[10px] border-2 transition-all ${
+                          formData.occupationType === type 
+                          ? "border-[#D97706] bg-[#FEF3C7] text-[#B45309]" 
+                          : "border-[#E5E0D9] text-[#4B4B4B]"
+                        }`}
+                      >
+                        {type}
+                      </button>
+                    ))}
+                  </div>
+                  <CInput label="Qualification" value={formData.education} onChange={(e) => setFormData({ ...formData, education: e.target.value })} />
+                  {formData.occupationType === 'student' ? (
+                    <>
+                      <CInput label="College Name" value={formData.collegeName} onChange={(e) => setFormData({ ...formData, collegeName: e.target.value })} />
+                      <CInput label="Year" value={formData.collegeYear} onChange={(e) => setFormData({ ...formData, collegeYear: e.target.value })} />
+                      <CInput label="College Address" className="md:col-span-2" value={formData.collegeAddress} onChange={(e) => setFormData({ ...formData, collegeAddress: e.target.value })} />
+                    </>
+                  ) : (
+                    <>
+                      <CInput label="Company Name" value={formData.companyName} onChange={(e) => setFormData({ ...formData, companyName: e.target.value })} />
+                      <CInput label="Work Address" className="md:col-span-2" value={formData.companyAddress} onChange={(e) => setFormData({ ...formData, companyAddress: e.target.value })} />
+                    </>
+                  )}
+                </div>
+
+                {/* Section 3 */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <SectionTitle icon={<FaUserShield />} title="3. Emergency Contact" />
+                  <CInput label="Guardian Name" value={formData.guardianName} onChange={(e) => setFormData({ ...formData, guardianName: e.target.value })} />
+                  <CInput label="Relationship" value={formData.relationship} onChange={(e) => setFormData({ ...formData, relationship: e.target.value })} />
+                  <CInput label="Guardian Phone" className="md:col-span-2" value={formData.guardianPhone} onChange={(e) => setFormData({ ...formData, guardianPhone: e.target.value })} />
+                </div>
+
+                {/* Section 4 */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <SectionTitle icon={<FaWallet />} title="4. Payment Details" />
+                  <CInput label="Account Holder" value={formData.holder} onChange={(e) => setFormData({ ...formData, holder: e.target.value })} />
+                  <CInput label="Bank Name" value={formData.bank} onChange={(e) => setFormData({ ...formData, bank: e.target.value })} />
+                  <CInput label="IFSC Code" value={formData.ifsc} onChange={(e) => setFormData({ ...formData, ifsc: e.target.value })} />
+                  <CInput label="Account Number" value={formData.account} onChange={(e) => setFormData({ ...formData, account: e.target.value })} />
+                </div>
+              </div>
+
+              <div className="p-8 bg-gray-50 border-t flex flex-col sm:flex-row gap-4">
+                <CButton onClick={handleSaveInfo} className="flex-[2] py-4 shadow-lg">Save All Changes</CButton>
+                <CButton onClick={() => setIsModalOpen(false)} className="flex-1 bg-white !text-[#4B4B4B] border border-[#E5E0D9] hover:bg-gray-100">Cancel</CButton>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
 
+// --- Sub-Components for Cleanliness ---
 const Info = ({ label, value, className = "" }) => (
-  <div className={`flex flex-col gap-1.5 ${className}`}>
-    <p className="text-[9px] font-black uppercase tracking-widest text-gray-400">{label}</p>
-    <p className="text-sm font-black text-gray-800 break-words leading-tight uppercase">{value || "NOT SET"}</p>
+  <div className={`flex flex-col gap-2 ${className}`}>
+    <p className="text-[10px] font-bold uppercase tracking-widest text-[#4B4B4B] opacity-70">{label}</p>
+    <p className="text-base font-bold text-[#1C1C1C] break-words">
+      {value || <span className="text-gray-300 font-normal italic">Not Provided</span>}
+    </p>
+  </div>
+);
+
+const SectionTitle = ({ icon, title }) => (
+  <div className="md:col-span-2 text-xs font-black text-[#1C1C1C] uppercase tracking-wider border-b border-gray-100 pb-3 flex items-center gap-3">
+    <span className="text-[#D97706]">{icon}</span> {title}
   </div>
 );
 

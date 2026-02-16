@@ -21,6 +21,7 @@ const {
   getOwnerProfile,
   addRoom,
   uploadPgImages,
+  confirmArrival,
   getMyAgreements,
   updateTenant,
   syncTenantLinkedData,
@@ -55,6 +56,7 @@ router.post('/update-room-prices', protect, isOwner, updateRoomPrices);
 // --- TENANT MANAGEMENT ---
 router.post('/add-tenant', protect, isOwner, addTenant);
 router.get('/my-tenants', protect, isOwner, getMyTenants);
+router.put('/confirm-arrival/:id', protect, isOwner, confirmArrival);
 router.put('/update-tenant/:id', protect, isOwner, updateTenant);
 router.post('/sync-tenant-linked-data', protect, isOwner, syncTenantLinkedData);
 

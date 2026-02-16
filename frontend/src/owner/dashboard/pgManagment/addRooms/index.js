@@ -158,27 +158,18 @@ const AddRooms = () => {
             }
           }
 
-          if (fromCreate) {
-            // Auto-close the success toast and proceed to set room price
-            Swal.fire({
-              icon: "success",
-              title: "Success!",
-              text: "Room and Images saved!",
-              timer: 1200,
-              showConfirmButton: false,
-            }).then(() => {
-              navigate("/owner/dashboard/pgManagment/roomPrice", { state: { pgId } });
-            });
-          } else {
-            Swal.fire({
-              title: "Success!",
-              text: "Room and Images saved!",
-              icon: "success",
-              confirmButtonColor: "#D97706",
-            }).then(() => {
-              navigate("/owner/dashboard/pgManagment", { state: { updatedPg } });
-            });
-          }
+          // After saving a room, allow owner to set room prices.
+          // If we came from 'create property' flow we already navigate to price setup.
+          // For existing properties (manage rooms -> add room) also navigate to price setup.
+          Swal.fire({
+            icon: "success",
+            title: "Success!",
+            text: "Room and Images saved!",
+            timer: 1200,
+            showConfirmButton: false,
+          }).then(() => {
+            navigate("/owner/dashboard/pgManagment/roomPrice", { state: { pgId } });
+          });
         } catch (imageError) {
           console.error("Error uploading images:", imageError);
           const msg = imageError.response?.data?.message || imageError.message || "Failed to upload images";

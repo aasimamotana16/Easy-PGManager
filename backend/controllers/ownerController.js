@@ -35,14 +35,40 @@ const deriveRentAmount = (pg, roomValue) => {
   const roomKey = String(roomValue || '').toLowerCase();
   const prices = pg?.roomPrices || {};
 
-  if (roomKey.includes('single') && Number(prices.single) > 0) return Number(prices.single);
-  if (roomKey.includes('double') && Number(prices.double) > 0) return Number(prices.double);
-  if (roomKey.includes('triple') && Number(prices.triple) > 0) return Number(prices.triple);
-  if (Number(prices.other) > 0) return Number(prices.other);
-  if (Number(pg?.price) > 0) return Number(pg.price);
+  // If roomPrices is an array (frontend format), try to match by roomType or pick the minimum
+  if (Array.isArray(prices)) {
+    // Try exact or contains match for roomType
+    const match = prices.find((r) => {
+      if (!r || !r.roomType) return false;
+      const rt = String(r.roomType || '').toLowerCase();
+      if (!roomKey) return false;
+      return rt === roomKey || rt.includes(roomKey) || roomKey.includes(rt);
+    });
+    if (match) {
+      const month = Number(match.pricePerMonth || match.price || 0);
+      if (Number.isFinite(month) && month > 0) return month;
+    }
 
-  const allRoomPrices = Object.values(prices).map((v) => Number(v)).filter((v) => Number.isFinite(v) && v > 0);
-  if (allRoomPrices.length > 0) return Math.min(...allRoomPrices);
+    // Fallback to numeric fields in array: pick the smallest monthly price available
+    const monthValues = prices
+      .map((r) => Number(r.pricePerMonth || r.price || 0))
+      .filter((v) => Number.isFinite(v) && v > 0);
+    if (monthValues.length > 0) return Math.min(...monthValues);
+  }
+
+  // If roomPrices is an object with keys like single/double/other
+  if (prices && typeof prices === 'object' && !Array.isArray(prices)) {
+    if (roomKey.includes('single') && Number(prices.single) > 0) return Number(prices.single);
+    if (roomKey.includes('double') && Number(prices.double) > 0) return Number(prices.double);
+    if (roomKey.includes('triple') && Number(prices.triple) > 0) return Number(prices.triple);
+    if (Number(prices.other) > 0) return Number(prices.other);
+
+    const allRoomPrices = Object.values(prices).map((v) => Number(v)).filter((v) => Number.isFinite(v) && v > 0);
+    if (allRoomPrices.length > 0) return Math.min(...allRoomPrices);
+  }
+
+  // Finally fall back to the main PG price field
+  if (Number(pg?.price) > 0) return Number(pg.price);
 
   return 0;
 };
@@ -383,6 +409,40 @@ const createPg = async (req, res) => {
 
     console.log("PG Created Successfully:", newPg._id); // Debug log
 
+    // Notify admin that a new property has been created (if email configured)
+    try {
+      const adminEmail = process.env.ADMIN_EMAIL || process.env.EMAIL_USER;
+      if (adminEmail && process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+        const transporter = nodemailer.createTransport({
+          service: "gmail",
+          auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
+        });
+
+        const owner = await User.findById(ownerId).select('fullName email phone');
+
+        const mailOptions = {
+          from: process.env.EMAIL_USER,
+          to: adminEmail,
+          subject: `New Property Added - ${newPg.pgName}`,
+          html: `
+            <h2>New Property Added</h2>
+            <p><strong>Property:</strong> ${newPg.pgName}</p>
+            <p><strong>Location:</strong> ${newPg.location}</p>
+            <p><strong>Owner:</strong> ${owner?.fullName || 'Unknown'}</p>
+            <p><strong>Owner Email:</strong> ${owner?.email || ''}</p>
+            <p>Please login to admin panel to review this property.</p>
+          `
+        };
+
+        await transporter.sendMail(mailOptions);
+        console.log('Admin notified of new property:', adminEmail);
+      } else {
+        console.log('Admin email not configured; skipping notification.');
+      }
+    } catch (emailErr) {
+      console.error('Failed sending admin notification on createPg:', emailErr);
+    }
+
     res.status(201).json({
       success: true,
       message: "Property added successfully",
@@ -651,7 +711,38 @@ const updateRoomPrices = async (req, res) => {
       });
     }
 
-    targetPg.roomPrices = roomPrices; 
+    // Normalize incoming roomPrices: rename `advancePayment` -> `securityDeposit` if present
+    let normalizedPrices = roomPrices;
+    if (Array.isArray(roomPrices)) {
+      normalizedPrices = roomPrices.map(r => {
+        if (r && r.advancePayment !== undefined && r.securityDeposit === undefined) {
+          return { ...r, securityDeposit: r.advancePayment };
+        }
+        return r;
+      });
+    } else if (roomPrices && roomPrices.advancePayment !== undefined && roomPrices.securityDeposit === undefined) {
+      normalizedPrices = { ...roomPrices, securityDeposit: roomPrices.advancePayment };
+    }
+
+    targetPg.roomPrices = normalizedPrices;
+
+    // Derive a representative `price` for the PG so admin and other flows can display a value
+    try {
+      let candidatePrices = [];
+      if (Array.isArray(normalizedPrices)) {
+        candidatePrices = normalizedPrices
+          .map(r => Number(r.pricePerMonth || r.price || 0))
+          .filter(v => Number.isFinite(v) && v > 0);
+      } else if (normalizedPrices && typeof normalizedPrices === 'object') {
+        candidatePrices = Object.values(normalizedPrices).map(v => Number(v)).filter(v => Number.isFinite(v) && v > 0);
+      }
+      if (candidatePrices.length > 0) {
+        targetPg.price = Math.min(...candidatePrices);
+      }
+    } catch (e) {
+      console.error('Error deriving PG price from roomPrices:', e);
+    }
+
     await targetPg.save();
 
     res.status(200).json({
@@ -1478,6 +1569,37 @@ const uploadPropertyDocuments = async (req, res) => {
   }
 };
 
+// @desc Owner confirms tenant arrival
+const confirmArrival = async (req, res) => {
+  try {
+    const tenantId = req.params.id;
+    const ownerId = req.user._id;
+
+    const tenant = await Tenant.findById(tenantId);
+    if (!tenant) return res.status(404).json({ success: false, message: 'Tenant not found' });
+    if (String(tenant.ownerId) !== String(ownerId)) return res.status(403).json({ success: false, message: 'Not authorized' });
+
+    // Set joining date to today and mark active
+    const todayStr = new Date().toISOString().split('T')[0];
+    tenant.joiningDate = todayStr;
+    tenant.status = 'Active';
+    await tenant.save();
+
+    // Ensure linked records (booking, agreement, payments)
+    const pg = await Pg.findById(tenant.pgId);
+    try {
+      await ensureTenantLinkedRecords({ ownerId, tenant, pg });
+    } catch (e) {
+      console.warn('ensureTenantLinkedRecords warning:', e.message || e);
+    }
+
+    return res.status(200).json({ success: true, message: 'Arrival confirmed', data: tenant });
+  } catch (error) {
+    console.error('confirmArrival error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to confirm arrival' });
+  }
+};
+
 module.exports = { 
   getOwnerProfile, 
   getOwnerDashboardData, 
@@ -1504,6 +1626,7 @@ module.exports = {
   updateSupportTicketStatus,
   submitForApproval,
   uploadPropertyDocuments,
+  confirmArrival,
   getOwnerEarnings,
   downloadOwnerEarningsPDF
 };

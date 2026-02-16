@@ -95,6 +95,8 @@ export const getHomeFeatures = () => API.get("/features");
 export const getPublicReviews = (limit) => API.get(`/reviews/public${limit ? `?limit=${limit}` : ''}`);
 export const createReview = (data) => API.post('/reviews/create', data);
 export const getReviewsByPg = (pgId) => API.get(`/reviews/pg/${pgId}`);
+// Terms & Conditions
+export const getTerms = () => API.get('/terms');
 
 /* =========================
     PG SEARCH & BOOKING APIs

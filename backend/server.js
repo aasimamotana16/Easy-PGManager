@@ -40,6 +40,7 @@ require('./models/userModel'); // <--- ADD THIS
 require('./models/profileModel'); // <--- ADD THIS LINE HERE
 require('./models/agreementModel'); // <--- ADD THIS for agreement functionality
 require('./models/timelineModel'); // <--- Add this line here! [cite: 2026-01-06]
+require('./models/termsModel'); // <--- Register Terms model
 require('./models/paymentModel'); // <--- CRITICAL for tonight's payment flow [cite: 2026-01-01]
 require('./models/featureModel'); // <--- ADD THIS for features functionality
 require('./models/pendingPaymentModel'); // <--- ADD THIS for pending payments
@@ -53,6 +54,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/cities', cityRoutes);
 app.use('/api/features', featuresRoutes);
 app.use('/api/faqs', faqRoutes);
+const termsRoutes = require('./routes/termsRoutes');
+app.use('/api/terms', termsRoutes);
 
 // User & Payment Logic
 app.use("/api/users", userRoutes);

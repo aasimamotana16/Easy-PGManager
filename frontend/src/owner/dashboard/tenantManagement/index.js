@@ -1,252 +1,301 @@
 import React, { useState, useEffect } from "react";
-import { FaEdit, FaPlus, FaSearch, FaUsers } from "react-icons/fa";
-import axios from "axios";
-import AddTenant from "./addTenant";
+import { FaEdit, FaPlus, FaSearch, FaEye, FaTrash, FaSignOutAlt, FaMapMarkerAlt, FaHistory, FaClock, FaInfoCircle } from "react-icons/fa";
 import CButton from "../../../components/cButton";
 import CSelect from "../../../components/cSelect";
 import Swal from "sweetalert2";
 
 const Tenants = () => {
   const [tenants, setTenants] = useState([]);
-  const [myPgs, setMyPgs] = useState([]);
-  const [selectedPG, setSelectedPG] = useState("all");
-  const [showAddTenant, setShowAddTenant] = useState(false);
   const [search, setSearch] = useState("");
+  const [selectedPG, setSelectedPG] = useState("all");
 
-  const fetchTenants = async () => {
-    try {
-      const token = localStorage.getItem("userToken");
-      // Backfill linked booking/earnings records for already-added tenants.
-      try {
-        await axios.post("http://localhost:5000/api/owner/sync-tenant-linked-data", {}, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-      } catch (e) {
-        // Non-blocking: tenant list should still load even if sync fails.
-      }
-
-      const res = await axios.get("http://localhost:5000/api/owner/my-tenants", {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (res.data.success) {
-        setTenants(res.data.data || []);
-      }
-    } catch (error) {
-      console.log("Failed to load tenants");
-      setTenants([]);
+  const staticData = [
+    {
+      _id: "1",
+      name: "John Doe (Demo)",
+      phone: "+91 98765 43210",
+      pgName: "Sunrise Heights",
+      room: "101-A",
+      status: "Active",
+      rentDeferred: true,
+      hasMoveOutNotice: true,
+      lastDeferredDate: "2025-11-10",
+      deferredReason: "Job transition delay",
+      deferredDays: 10,
+    },
+    {
+      _id: "2",
+      name: "Rahul Sharma (New)",
+      phone: "+91 99887 76655",
+      pgName: "Sunrise Heights",
+      room: "202-B",
+      status: "Pending Arrival",
+      hasPaidRent: true,
+    },
+    {
+      _id: "3",
+      name: "Amit Patel (Old)",
+      phone: "+91 91234 56789",
+      pgName: "Sunrise Heights",
+      room: "301-C",
+      status: "Inactive",
+      securityDeposit: 5000,
+      finalRefund: 4200,
+      damageCharges: 500,
+      pendingFine: 300,
+      deductionReason: "Room paint damage and cleaning fee"
+    },
+    {
+      _id: "4",
+      name: "Suresh Kumar",
+      phone: "+91 98989 89898",
+      pgName: "Sunrise Heights",
+      room: "105-D",
+      status: "Active",
+      hasDeferralRequest: true, 
+      requestReason: "Medical emergency in family", // Details owner needs to see
+      requestDays: 7, // Details owner needs to see
     }
-  };
+  ];
 
-  const fetchMyPgs = async () => {
-    try {
-      const token = localStorage.getItem("userToken");
-      const res = await axios.get("http://localhost:5000/api/owner/my-pgs", {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (res.data.success) {
-        const list = (res.data.data || []).map((pg) => ({
-          id: pg._id,
-          name: pg.pgName,
-        }));
-        setMyPgs(list);
-      }
-    } catch (error) {
-      console.log("Failed to load owner PGs");
-      setMyPgs([]);
-    }
-  };
+  useEffect(() => { setTenants(staticData); }, []);
 
-  useEffect(() => {
-    fetchTenants();
-    fetchMyPgs();
-  }, []);
+  const filteredTenants = tenants.filter((t) =>
+    t.name.toLowerCase().includes(search.toLowerCase()) ||
+    t.pgName.toLowerCase().includes(search.toLowerCase())
+  );
 
-  const getPGName = (tenant) => tenant.pgName || "-";
-
-  const searchedTenants = tenants.filter((t) => {
-    const tenantPgId = typeof t.pgId === "object" ? t.pgId?._id : t.pgId;
-    const matchesPG = selectedPG === "all" || String(tenantPgId) === String(selectedPG);
-    const matchesSearch = t.name.toLowerCase().includes(search.toLowerCase()) ||
-      getPGName(t).toLowerCase().includes(search.toLowerCase());
-    return matchesPG && matchesSearch;
-  });
-
-  const handleAddTenant = async (form) => {
-    try {
-      const token = localStorage.getItem("userToken");
-      const res = await axios.post("http://localhost:5000/api/owner/add-tenant", form, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (res.data.success) {
-        setShowAddTenant(false);
-        fetchTenants();
-        Swal.fire({ icon: "success", title: "Tenant added successfully", confirmButtonColor: "#D97706" });
-      }
-    } catch (error) {
-      Swal.fire({
-        icon: "error",
-        title: "Failed to add tenant",
-        text: error.response?.data?.message || "Please try again.",
-        confirmButtonColor: "#D97706",
-      });
-    }
-  };
-
-  const handleEditClick = (tenant) => {
+  // ACTION: Confirm Arrival
+  const handleConfirmArrival = (id) => {
     Swal.fire({
-      title: "Update Tenant",
-      html: `
-        <div style="text-align: left; font-family: inherit;">
-          <label style="display: block; font-weight: bold; font-size: 14px; color: #1C1C1C; margin-bottom: 5px;">Room Number</label>
-          <input id="swal-room" class="swal2-input" value="${tenant.room}" style="width: 100%; margin: 0 0 15px 0; border-radius: 8px; border: 1px solid #E5E0D9;">
-          
-          <label style="display: block; font-weight: bold; font-size: 14px; color: #1C1C1C; margin-bottom: 5px;">Occupancy Status</label>
-          <select id="swal-status" class="swal2-input" style="width: 100%; margin: 0; border-radius: 8px; border: 1px solid #E5E0D9;">
-            <option value="Active" ${tenant.status === "Active" ? "selected" : ""}>Active</option>
-            <option value="Inactive" ${tenant.status === "Inactive" ? "selected" : ""}>Inactive</option>
-          </select>
-        </div>
-      `,
-      confirmButtonText: "Save Changes",
-      confirmButtonColor: "#D97706",
+      title: "Confirm Arrival?",
+      text: "Tenant has paid and is at the property. Set to Active?",
+      icon: "info",
       showCancelButton: true,
+      confirmButtonColor: "#D97706",
       cancelButtonColor: "#4B4B4B",
-      preConfirm: () => ({
-        room: document.getElementById("swal-room").value,
-        status: document.getElementById("swal-status").value
-      })
-    }).then(async (result) => {
-      if (result.isConfirmed) {
-        try {
-          const token = localStorage.getItem("userToken");
-          await axios.put(`http://localhost:5000/api/owner/update-tenant/${tenant._id}`, result.value, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          Swal.fire({ icon: "success", title: "Updated!", confirmButtonColor: "#D97706" });
-          fetchTenants();
-        } catch (e) {
-          Swal.fire({ icon: "error", title: "Update failed", confirmButtonColor: "#D97706" });
-        }
+      confirmButtonText: "Confirm Arrival"
+    }).then((res) => {
+      if (res.isConfirmed) {
+        setTenants(prev => prev.map(t => t._id === id ? { ...t, status: "Active" } : t));
+        Swal.fire({ title: "Welcome!", icon: "success", confirmButtonColor: "#D97706" });
       }
     });
   };
 
+  // ACTION: View Inactive Audit
+  const handleViewAudit = (tenant) => {
+    Swal.fire({
+      title: '<span style="color: #1C1C1C">Move-Out Settlement</span>',
+      html: `
+        <div style="text-align: left; font-family: sans-serif; font-size: 14px; color: #4B4B4B;">
+          <p><b>Deposit:</b> ₹${tenant.securityDeposit}</p>
+          <div style="background: #FEF3C7; padding: 12px; border-radius: 8px; margin: 10px 0; border: 1px solid #E5E0D9;">
+            <div style="display: flex; justify-content: space-between; color: #dc2626;"><span>Damages:</span> <span>- ₹${tenant.damageCharges}</span></div>
+            <div style="display: flex; justify-content: space-between; color: #dc2626;"><span>Fines:</span> <span>- ₹${tenant.pendingFine}</span></div>
+            <hr style="border: 0.5px solid #E5E0D9; margin: 8px 0;">
+            <div style="display: flex; justify-content: space-between; font-weight: bold; color: #1C1C1C; font-size: 16px;">
+              <span>Total Refund:</span> <span style="color: #D97706;">₹${tenant.finalRefund}</span>
+            </div>
+          </div>
+          <p style="font-size: 11px;"><b>Notes:</b> ${tenant.deductionReason}</p>
+        </div>
+      `,
+      confirmButtonColor: "#D97706",
+    });
+  };
+
+  // NEW: Handle Deferral History View (Owner sees details here after granting)
+  const handleViewDeferralInfo = (tenant) => {
+    Swal.fire({
+      title: "Rent Deferral Record",
+      html: `
+        <div style="text-align: left; font-size: 14px; color: #4B4B4B;">
+          <p><b>Last Granted:</b> ${tenant.lastDeferredDate || "N/A"}</p>
+          <p><b>Extension Given:</b> ${tenant.deferredDays || "N/A"} Days</p>
+          <p><b>Reason:</b> ${tenant.deferredReason || "General deferral request"}</p>
+          <hr style="margin: 10px 0; border-top: 1px solid #E5E0D9;">
+          <p style="margin-top: 10px; color: #B45309; font-weight: bold;">Status: 1 Time Rent Deferred</p>
+          <p style="font-size: 11px; margin-top: 5px;"><i>*This action is allowed once every 6 months.</i></p>
+        </div>
+      `,
+      confirmButtonColor: "#D97706",
+    });
+  };
+
+  // NEW: Grant Deferral Logic (Owner sees details here BEFORE granting)
+  const handleGrantDeferral = (tenant) => {
+    Swal.fire({
+      title: "Grant Rent Deferral?",
+      html: `
+        <div style="text-align: left; font-size: 14px; color: #1C1C1C; background: #FEF3C7; padding: 15px; border-radius: 10px; border: 1px solid #E5E0D9;">
+           <p style="margin-bottom: 8px;"><b>Requested Extension:</b> ${tenant.requestDays} Days</p>
+           <p><b>Tenant's Reason:</b> ${tenant.requestReason}</p>
+        </div>
+        <p style="font-size: 12px; color: #4B4B4B; margin-top: 15px;">Are you sure you want to approve this? This will be marked as their 6-month quota.</p>
+      `,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#B45309",
+      confirmButtonText: "Yes, Grant Deferral",
+      cancelButtonColor: "#4B4B4B",
+    }).then((res) => {
+      if (res.isConfirmed) {
+        setTenants(prev => prev.map(t => t._id === tenant._id ? { 
+            ...t, 
+            rentDeferred: true, 
+            hasDeferralRequest: false, 
+            deferredDays: tenant.requestDays,
+            deferredReason: tenant.requestReason,
+            lastDeferredDate: new Date().toISOString().split('T')[0] 
+        } : t));
+        Swal.fire({ title: "Granted", text: "Rent deferral has been activated.", icon: "success", confirmButtonColor: "#D97706" });
+      }
+    });
+  };
+
+  const handleEditClick = (tenant) => {
+    Swal.fire({
+      title: "Edit Room Info",
+      html: `
+        <div style="text-align: left;">
+          <label style="font-weight: bold; color: #1C1C1C; font-size: 14px;">Room Number</label>
+          <input id="swal-room" class="swal2-input" value="${tenant.room}" style="width: 85%; margin-top: 5px;">
+          <p style="font-size: 11px; color: #4B4B4B; margin-top: 15px;">
+            <i>Note: Status updates automatically based on Move-in/Move-out actions.</i>
+          </p>
+        </div>
+      `,
+      confirmButtonColor: "#D97706",
+      showCancelButton: true,
+      cancelButtonColor: "#4B4B4B",
+    });
+  };
+
   return (
-    <div className="p-4 md:p-10 bg-gray-100 min-h-screen">
+    <div className="p-4 md:p-10 bg-[#ffffff] min-h-screen">
+      {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
           <h1 className="text-4xl font-bold text-[#1C1C1C]">Tenants</h1>
-          <p className="text-[#4B4B4B] mt-2">Manage all residents across your properties</p>
+          <p className="text-[#4B4B4B] mt-2">Track arrivals, active stays, and past residents.</p>
         </div>
-        <CButton
-          text="Add New Tenant"
-          onClick={() => setShowAddTenant(true)}
-          className="flex items-center gap-2"
-        >
+        <CButton text="Add New Tenant" className="flex items-center gap-2">
           <FaPlus /> Add New Tenant
         </CButton>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-4 mb-8 bg-white p-4 rounded-xl shadow-sm border border-primary">
+      {/* Search & Filter */}
+      <div className="flex flex-col md:flex-row gap-4 mb-8 bg-white p-4 rounded-xl shadow-sm border border-[#D97706]">
         <div className="relative flex-grow">
           <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
             placeholder="Search by name or PG..."
-            className="w-full pl-12 pr-4 py-3 rounded-lg border border-[#E5E0D9] focus:outline-none focus:ring-1 focus:ring-primary text-sm"
+            className="w-full pl-12 pr-4 py-3 rounded-lg border border-[#E5E0D9] focus:outline-none focus:ring-1 focus:ring-[#D97706] text-sm"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <CSelect
-          value={selectedPG}
-          onChange={(e) => setSelectedPG(e.target.value)}
-          options={[
-            { value: "all", label: "All Properties" },
-            ...myPgs.map((pg) => ({ value: pg.id, label: pg.name }))
-          ]}
-          placeholder="All Properties"
-        />
+        <CSelect options={[{ value: "all", label: "All Properties" }]} />
       </div>
 
+      {/* Table */}
       <div className="bg-white rounded-xl shadow-sm border border-[#E5E0D9] overflow-hidden">
         <div className="p-6 border-b border-[#E5E0D9]">
-          <h2 className="text-h3-sm lg:text-h3 font-bold text-[#1C1C1C]">Current Residents</h2>
+          <h2 className="text-xl font-bold text-[#1C1C1C]">Resident List</h2>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left min-w-[900px]">
-            <thead className="bg-primarySoft text-black text-sm uppercase ">
+          <table className="w-full text-left min-w-[1000px]">
+            <thead className="bg-[#FEF3C7] text-[#1C1C1C] text-sm uppercase font-bold">
               <tr>
                 <th className="p-5">Tenant Details</th>
                 <th className="p-5">Property</th>
-                <th className="p-5 text-center">Room No.</th>
-                <th className="p-5">Joining Date</th>
+                <th className="p-5 text-center">Room</th>
                 <th className="p-5 text-center">Status</th>
                 <th className="p-5 text-center">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#E5E0D9]">
-              {searchedTenants.length > 0 ? (
-                searchedTenants.map((t) => (
-                  <tr key={t._id} className="hover:bg-gray-50 transition-colors">
-                    <td className="p-5">
-                      <div className="font-bold text-[#1C1C1C]">{t.name}</div>
-                      <div className="text-xs text-[#4B4B4B] font-mono">{t.phone}</div>
-                    </td>
-                    <td className="p-5 text-[#4B4B4B] font-medium">{getPGName(t)}</td>
-                    <td className="p-5">
-                      <div className="flex justify-center items-center">
-                        <span className="px-3 py-1 rounded border border-primary text-primaryDark text-[10px] font-bold uppercase min-w-[60px] text-center">
-                          {t.room}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="p-5 text-sm text-[#4B4B4B]">{t.joiningDate}</td>
-                    <td className="p-5 text-center">
-                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase ${
-                        t.status === "Active" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+              {filteredTenants.map((t) => (
+                <tr key={t._id} className="hover:bg-gray-50 transition-colors">
+                  <td className="p-5">
+                    <div className="font-bold text-[#1C1C1C]">{t.name}</div>
+                    <div className="text-xs text-[#4B4B4B]">{t.phone}</div>
+                  </td>
+                  <td className="p-5 text-[#4B4B4B] text-sm font-medium">{t.pgName}</td>
+                  <td className="p-5 text-center">
+                    <span className="px-3 py-1 rounded border border-[#D97706] text-[#B45309] font-bold text-[10px]">{t.room}</span>
+                  </td>
+                  <td className="p-5">
+                    <div className="flex flex-col items-center gap-2">
+                      <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${
+                        t.status === "Active" ? "bg-green-100 text-green-700" : 
+                        t.status === "Inactive" ? "bg-gray-100 text-gray-500" : "bg-amber-100 text-[#B45309]"
                       }`}>
                         {t.status}
                       </span>
-                    </td>
-                    <td className="p-5">
-                      <div className="flex items-center justify-center">
-                        <button
-                          onClick={() => handleEditClick(t)}
-                          className="p-2 text-[#4B4B4B] hover:text-primary hover:bg-primarySoft rounded-full transition-all group"
-                          title="Edit Tenant"
+                      {t.hasMoveOutNotice && t.status === "Active" && (
+                        <span className="bg-red-50 text-red-600 text-[9px] px-2 py-0.5 rounded font-bold animate-pulse">NOTICE SERVED</span>
+                      )}
+                      {t.rentDeferred && (
+                        <button 
+                          onClick={() => handleViewDeferralInfo(t)}
+                          className="bg-blue-50 text-blue-600 text-[9px] px-2 py-0.5 rounded flex items-center gap-1 font-bold border border-blue-100 hover:bg-blue-100 transition-all cursor-pointer shadow-sm"
                         >
-                          <FaEdit size={18} />
+                          <FaHistory size={8} /> 1 TIME RENT DEFERRED
                         </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="6" className="p-20 text-center">
-                    <div className="flex flex-col items-center gap-2">
-                      <div className="bg-primarySoft p-4 rounded-full text-primary">
-                        <FaUsers size={32} />
-                      </div>
-                      <p className="text-[#4B4B4B] font-medium">No tenants found.</p>
+                      )}
+                    </div>
+                  </td>
+                  <td className="p-5">
+                    <div className="flex items-center justify-center gap-3">
+                      
+                      {/* Scenario 1: Pending + Move-in Triggered */}
+                      {t.status === "Pending Arrival" && t.hasPaidRent && (
+                        <button onClick={() => handleConfirmArrival(t._id)} className="flex items-center gap-1 px-3 py-1.5 bg-[#D97706] text-white text-[10px] font-bold rounded hover:bg-[#B45309] shadow-sm">
+                          <FaMapMarkerAlt /> CONFIRM ARRIVAL
+                        </button>
+                      )}
+
+                      {/* Scenario 2: Active */}
+                      {t.status === "Active" && (
+                        <>
+                          {/* Grant Deferral: Detailed reason is shown inside handleGrantDeferral alert */}
+                          {t.hasDeferralRequest && (
+                            <button onClick={() => handleGrantDeferral(t)} className="flex items-center gap-1 px-3 py-1.5 bg-[#B45309] text-white text-[10px] font-bold rounded hover:bg-[#D97706] shadow-sm animate-bounce">
+                              <FaClock /> GRANT RENT DEFERRED
+                            </button>
+                          )}
+
+                          {t.hasMoveOutNotice && (
+                            <button className="flex items-center gap-1 px-3 py-1.5 bg-[#1C1C1C] text-white text-[10px] font-bold rounded hover:bg-black transition-all">
+                              <FaSignOutAlt /> MOVE OUT
+                            </button>
+                          )}
+                          <button onClick={() => handleEditClick(t)} className="p-2 text-[#4B4B4B] hover:text-[#D97706] rounded-full">
+                            <FaEdit size={16} />
+                          </button>
+                        </>
+                      )}
+
+                      {/* Scenario 3: Inactive */}
+                      {t.status === "Inactive" && (
+                        <button onClick={() => handleViewAudit(t)} className="p-2 text-[#1C1C1C] bg-[#FEF3C7] hover:bg-[#D97706] hover:text-white rounded-full transition-all">
+                          <FaEye size={18} />
+                        </button>
+                      )}
+                      
+                      <button className="p-2 text-[#4B4B4B] hover:text-red-600 rounded-full"><FaTrash size={16} /></button>
                     </div>
                   </td>
                 </tr>
-              )}
+              ))}
             </tbody>
           </table>
         </div>
       </div>
-
-      {showAddTenant && (
-        <AddTenant
-          onClose={() => setShowAddTenant(false)}
-          onSave={handleAddTenant}
-          pgOptions={myPgs.map((pg) => ({ value: pg.id, label: pg.name }))}
-        />
-      )}
     </div>
   );
 };

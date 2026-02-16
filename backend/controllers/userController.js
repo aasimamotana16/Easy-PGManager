@@ -944,6 +944,64 @@ const downloadEarningsPDF = async (req, res) => {
   }
 };
 
+// @desc User requests Move-In (creates a pending check-in)
+const moveIn = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    // create a pending CheckIn record (or update existing pending)
+    let checkin = await CheckIn.findOne({ userId, status: 'Pending' });
+    if (!checkin) {
+      checkin = await CheckIn.create({ userId, checkInDate: new Date(), status: 'Pending' });
+    } else {
+      checkin.checkInDate = new Date();
+      await checkin.save();
+    }
+
+    return res.status(200).json({ success: true, message: 'Move-in requested', status: 'Pending' });
+  } catch (error) {
+    console.error('moveIn error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to request move-in' });
+  }
+};
+
+// @desc User requests Move-Out (checks 60 day rule)
+const moveOut = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    // find active or pending checkin for user
+    const checkin = await CheckIn.findOne({ userId, status: { $in: ['Present', 'Pending'] } }).sort({ createdAt: -1 });
+    if (!checkin) return res.status(400).json({ success: false, message: 'No active stay found' });
+
+    const joinDate = checkin.checkInDate ? new Date(checkin.checkInDate) : null;
+    if (!joinDate) return res.status(400).json({ success: false, message: 'Joining date not found' });
+
+    const today = new Date();
+    const diffTime = Math.abs(today - joinDate);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    // Determine user's rent amount (try Agreement then user)
+    let rentAmount = 0;
+    const agreement = await Agreement.findOne({ userId });
+    if (agreement && agreement.rentAmount) rentAmount = agreement.rentAmount;
+    const user = await User.findById(userId);
+    if (!rentAmount && user && user.monthlyRent) rentAmount = user.monthlyRent;
+
+    if (diffDays < 60) {
+      return res.status(200).json({ success: false, earlyMoveOut: true, penalty: rentAmount || 0, daysStayed: diffDays });
+    }
+
+    // Allow move-out: mark checkin as Out
+    checkin.checkOutDate = today;
+    checkin.status = 'Out';
+    await checkin.save();
+
+    return res.status(200).json({ success: true, message: 'Move-out processed', earlyMoveOut: false });
+  } catch (error) {
+    console.error('moveOut error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to process move-out' });
+  }
+};
+
 module.exports = { 
   registerUser, 
   loginUser, 
@@ -967,6 +1025,8 @@ module.exports = {
   generateCaptcha,
   verifySecurityAction, 
   submitSupportTicket,
+  moveIn,
+  moveOut,
   getOwnerEarnings,
   downloadEarningsPDF,
   downloadTenantReport,

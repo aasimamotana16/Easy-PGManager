@@ -10,7 +10,9 @@ import {
   FaEye,
   FaSignal,
   FaChartLine,
-  FaStar, // Added for feedback
+  FaStar,
+  FaHourglassHalf, // Added for Extension
+  FaDoorOpen,      // Added for Checkout
 } from "react-icons/fa";
 import { Line } from "react-chartjs-2";
 import {
@@ -24,7 +26,7 @@ import {
   Filler,
 } from "chart.js";
 import CButton from "../../../components/cButton";
-import { motion, AnimatePresence } from "framer-motion"; // Added AnimatePresence
+import { motion, AnimatePresence } from "framer-motion";
 import { getOwnerDashboardStats } from "../../../api/api";
 
 ChartJS.register(
@@ -153,6 +155,47 @@ const DashboardHome = () => {
         <StatCard title="Total Rooms" value={stats.totalRooms} icon={<FaBed />} index={1} />
         <StatCard title="Available PGs" value={stats.liveListings} icon={<FaSignal />} live index={2} />
         <StatCard title="Earnings" value={`₹${(stats.totalEarnings / 1000).toFixed(0)}k`} icon={<FaMoneyBillWave />} index={3} />
+      </div>
+
+      {/* CONNECTION ALERTS (Extension & Checkout) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Extension Request Card */}
+        <div className="bg-white p-4 rounded-xl border-l-4 border-primary shadow-sm flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="bg-primarySoft p-3 rounded-full text-primary">
+              <FaHourglassHalf size={20} />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-textPrimary uppercase">Extension Requests</h3>
+              <p className="text-xs text-textSecondary">2 tenants requested extra time</p>
+            </div>
+          </div>
+          <button 
+            onClick={() => navigate("/owner/dashboard/tenantManagement", { state: { filter: 'extension' } })}
+            className="text-primary text-xs font-bold hover:underline"
+          >
+            Review
+          </button>
+        </div>
+
+        {/* Pending Checkout Card */}
+        <div className="bg-white p-4 rounded-xl border-l-4 border-[#B45309] shadow-sm flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="bg-orange-100 p-3 rounded-full text-[#B45309]">
+              <FaDoorOpen size={20} />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-textPrimary uppercase">Pending Check-outs</h3>
+              <p className="text-xs text-textSecondary">3 inspections due today</p>
+            </div>
+          </div>
+          <button 
+            onClick={() => navigate("/owner/dashboard/tenantManagement", { state: { filter: 'checkout' } })}
+            className="text-[#B45309] text-xs font-bold hover:underline"
+          >
+            Inspect
+          </button>
+        </div>
       </div>
 
       {/* QUICK ACTIONS */}

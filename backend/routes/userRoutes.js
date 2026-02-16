@@ -21,6 +21,8 @@ const {
   sendOtp,
   verifyOtpAndRegister,
   getMyCheckIns,
+    moveIn,
+    moveOut,
   createCheckIn,
   verifySecurityAction 
 } = require("../controllers/userController");
@@ -90,6 +92,9 @@ router.get("/my-owner-contact", protect, getMyOwnerContact);
 router.get("/timeline", protect, getMyTimeline);
 router.get("/my-checkins", protect, getMyCheckIns);
 router.post("/checkin-action", protect, createCheckIn);
+// Move-in / Move-out flows
+router.put("/move-in", protect, moveIn);
+router.put("/move-out", protect, moveOut);
 
 /* =========================
     SECURITY

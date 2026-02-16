@@ -1,38 +1,38 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom"; // Added for redirect
 import { Calendar } from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import CButton from "../../../components/cButton";
 import axios from "axios";
 import Swal from "sweetalert2";
-import ReCAPTCHA from "react-google-recaptcha";
 import { 
   FaHistory, 
-  FaQrcode, 
   FaSignOutAlt, 
   FaSignInAlt,
-  FaTimes,
   FaClock,
+  FaCalendarCheck,
+  FaMoneyCheckAlt
 } from "react-icons/fa";
 
 const CheckIns = () => {
+  const navigate = useNavigate(); // Hook for redirection
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [showScanner, setShowScanner] = useState(false);
-  const [activeAction, setActiveAction] = useState("");
   
-  const [otp, setOtp] = useState("");
-  const [isOtpSent, setIsOtpSent] = useState(false);
-  const [captchaToken, setCaptchaToken] = useState(null);
-  const [processing, setProcessing] = useState(false);
+  // States for Stay Management
+  // Possible statuses: "Reserved" (only deposit paid), "PendingConfirmation" (rent paid, waiting for owner), "Active"
+  const [stayStatus, setStayStatus] = useState("Reserved"); 
+  const [joiningDate, setJoiningDate] = useState(null);
+  const [rentAmount, setRentAmount] = useState(5000); 
 
   const user = JSON.parse(localStorage.getItem("user"));
-  const userEmail = user?.email;
   const authToken = localStorage.getItem("userToken");
 
   useEffect(() => {
     if (authToken) {
       fetchCheckInHistory();
+      // Logic to fetch actual stay status from backend would go here
     }
   }, [authToken]);
 
@@ -49,132 +49,169 @@ const CheckIns = () => {
     }
   };
 
-  const isPastDate = (date) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return date < today;
-  };
+  // --- LOGIC: MOVE-IN (Redirect to Payment) ---
+  const handleMoveIn = async () => {
+    const result = await Swal.fire({
+      title: 'Complete Your Move-In',
+      html: `You need to pay the first month's rent of <b>₹${rentAmount}</b> to activate your stay.<br><br><small>You will be redirected to the secure payment page.</small>`,
+      icon: 'info',
+      showCancelButton: true,
+      confirmButtonColor: '#D97706', // primary
+      confirmButtonText: 'Go to Payment',
+      cancelButtonText: 'Later'
+    });
 
-  const handleSecurityAction = async (e) => {
-    if (e) e.preventDefault();
-    
-    if (isPastDate(selectedDate)) {
-      return Swal.fire({
-        title: 'Action Denied',
-        text: 'You cannot perform check-in or check-out for past dates.',
-        icon: 'error',
-        confirmButtonColor: '#000000'
+    if (result.isConfirmed) {
+      navigate('/user/dashboard/payments', {
+        state: {
+          amount: rentAmount,
+          type: 'MOVE_IN_PAYMENT',
+          reason: 'Move-In Activation'
+        }
       });
     }
-
-    if (processing) return;
-    setProcessing(true);
-
-    try {
-      const config = { headers: { Authorization: `Bearer ${authToken}` } };
-
-      if (!isOtpSent) {
-        const res = await axios.post("http://localhost:5000/api/users/send-otp", 
-          { email: userEmail, recaptchaToken: captchaToken },
-          config
-        );
-        setIsOtpSent(true);
-        if (res.data.otp) {
-          Swal.fire({ 
-            title: 'OTP Generated', 
-            html: `Your security code is: <strong>${res.data.otp}</strong><br><small>Use this to complete your check-in/out</small>`, 
-            icon: 'info' 
-          });
-        }
-      } else {
-        const res = await axios.post("http://localhost:5000/api/users/verify-security", 
-          { email: userEmail, otp, type: activeAction },
-          config
-        );
-
-        if (res.data.success) {
-          Swal.fire({ title: 'Verified', text: `${activeAction} Successful`, icon: 'success' });
-          closeModal();
-          fetchCheckInHistory();
-        }
-      }
-    } catch (error) {
-      setCaptchaToken(null); 
-      Swal.fire('Error', error.response?.data?.message || 'Verification failed', 'error');
-    } finally {
-      setProcessing(false);
-    }
   };
 
-  const closeModal = () => {
-    setShowScanner(false);
-    setIsOtpSent(false);
-    setOtp("");
-    setCaptchaToken(null);
+  // --- LOGIC: MOVE-OUT (2-Month Penalty Rule) ---
+  const handleMoveOut = () => {
+    const today = new Date();
+    // Logic to check if stay is less than 60 days
+    const diffTime = joiningDate ? Math.abs(today - joiningDate) : 0;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    let penaltyMessage = "";
+    if (diffDays < 60) {
+      penaltyMessage = `
+        <div style="color: #B45309; background: #FEF3C7; padding: 12px; border-radius: 8px; margin-top: 15px; border: 1px solid #D97706; text-align: left; font-size: 14px;">
+          <strong>Early Move-out Warning:</strong><br>
+          You have stayed for only ${diffDays} days. As per policy (minimum 60 days), <b>1 month's rent (₹${rentAmount})</b> will be deducted as a fine.
+        </div>`;
+    }
+
+    Swal.fire({
+      title: 'Initiate Permanent Move-Out?',
+      html: `Are you sure you want to end your stay permanently?${penaltyMessage}`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#1C1C1C',
+      cancelButtonColor: '#4B4B4B',
+      confirmButtonText: 'Confirm Move-Out'
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          const token = localStorage.getItem("userToken");
+          const resp = await axios.put("http://localhost:5000/api/users/move-out", {}, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+
+          if (resp.data?.earlyMoveOut) {
+            Swal.fire({
+              title: 'Early Move-Out Penalty',
+              html: `You have stayed only ${resp.data.daysStayed} days. A 1 month rent penalty of <b>₹${resp.data.penalty}</b> will be applied.`,
+              icon: 'warning',
+              confirmButtonColor: '#D97706'
+            });
+          } else if (resp.data?.success) {
+            setStayStatus('Inactive');
+            Swal.fire({ title: 'Move-Out Processed', text: resp.data.message || 'Move-out completed', icon: 'success', confirmButtonColor: '#D97706' });
+          } else {
+            Swal.fire({ title: 'Error', text: resp.data?.message || 'Failed to move-out', icon: 'error', confirmButtonColor: '#D97706' });
+          }
+        } catch (e) {
+          console.error('Move-out API error', e);
+          Swal.fire({ title: 'Error', text: 'Failed to request move-out', icon: 'error', confirmButtonColor: '#D97706' });
+        }
+      }
+    });
+  };
+
+  const handleExtension = () => {
+    Swal.fire({
+      title: 'Request Extension',
+      text: 'Send a request to the owner to extend your current stay agreement?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#D97706',
+    }).then((res) => {
+      if(res.isConfirmed) {
+        Swal.fire({ title: 'Request Sent', icon: 'success', confirmButtonColor: '#D97706' });
+      }
+    });
   };
 
   const tileClassName = ({ date, view }) => {
-    if (view === "month") {
+    if (view === "month" && joiningDate) {
       const dateStr = date.toISOString().split('T')[0];
-      const dayEntries = history.filter((entry) => {
-        const rawDate = entry.checkInDate || entry.createdAt || entry.date;
-        if (!rawDate) return false;
-        const entryDateObj = new Date(rawDate);
-        if (isNaN(entryDateObj.getTime())) return false;
-        return entryDateObj.toISOString().split('T')[0] === dateStr;
-      });
-
-      if (dayEntries.length > 0) {
-        const hasCheckOut = dayEntries.some(e => {
-            const type = (e.activityType || e.actionType || "").toLowerCase();
-            return type.includes("out") || e.status === "Completed";
-        });
-        return hasCheckOut ? "transparent-orange-tile" : "transparent-black-tile";
-      }
+      const joinStr = joiningDate.toISOString().split('T')[0];
+      if (dateStr === joinStr) return "transparent-black-tile";
     }
   };
 
   return (
-    <div className="relative min-h-screen bg-gray-200 text-black">
+    <div className="relative min-h-screen bg-[#ffffff] text-[#1C1C1C]">
       <div className="p-4 sm:p-6 lg:p-8 space-y-6">
         
         <div className="px-1 text-center md:text-left">
-          <h1 className="text-xl sm:text-3xl md:text-5xl lg:text-4xl font-bold text-[#1C1C1C]"> Attendance Control</h1>
-          <p className="text-xs sm:text-lg md:text-3xl lg:text-xl text-[#4B4B4B]">
-            Verify Security Code to Log Daily Entry & Exit
-          </p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#1C1C1C]">Stay Management</h1>
+          <p className="text-sm sm:text-lg text-[#4B4B4B]">Manage your move-in, move-out, and billing history</p>
         </div>
 
+        {/* --- MAIN ACTION CARDS --- */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-white  rounded-md p-6 shadow flex flex-col items-center text-center space-y-4">
-            <div className="w-12 h-12 bg-gray-100 text-black rounded-full flex items-center justify-center">
-              <FaSignInAlt size={22} />
+          
+          {/* STATE 1: Reserved but Rent not paid */}
+          {stayStatus === "Reserved" && (
+            <div className="md:col-span-2 bg-white rounded-xl p-8 shadow-sm border border-[#E5E0D9] flex flex-col items-center text-center">
+              <div className="w-16 h-16 bg-[#FEF3C7] text-[#D97706] rounded-full flex items-center justify-center mb-4">
+                <FaMoneyCheckAlt size={30} />
+              </div>
+              <h2 className="text-xl font-bold uppercase tracking-tight">Activate Your Stay</h2>
+              <p className="text-[#4B4B4B] mb-6 max-w-sm">Your room is reserved. Please pay the first month's rent to enable Move-In and notify the owner.</p>
+              <CButton onClick={handleMoveIn} className="max-w-md w-full py-4 text-lg font-bold shadow-md">
+                Pay Rent & Move-In
+              </CButton>
             </div>
-            <h3 className="font-black uppercase text-sm md:text-3xl lg:text-lg">Check-In</h3>
-            <CButton 
-              className="w-full bg-black text-white py-3 text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 md:text-xl lg:text-sm"
-              onClick={() => { setActiveAction("Check-In"); setShowScanner(true); }}
-            >
-              <FaQrcode className="text-white" /> Check-In Now
-            </CButton>
-          </div>
+          )}
 
-          <div className="bg-white  rounded-md p-6 shadow flex flex-col items-center text-center space-y-4">
-            <div className="w-12 h-12 bg-orange-50 text-orange-600 rounded-full flex items-center justify-center">
-              <FaSignOutAlt size={22}  />
+          {/* STATE 2: Rent Paid, Waiting for Owner "Confirm Arrival" */}
+          {stayStatus === "PendingConfirmation" && (
+            <div className="md:col-span-2 bg-[#FEF3C7] rounded-xl p-8 shadow-sm flex flex-col items-center text-center border-2 border-dashed border-[#D97706] animate-pulse">
+              <FaClock size={40} className="text-[#D97706] mb-3" />
+              <h2 className="text-xl font-bold uppercase text-[#B45309]">Awaiting Owner Confirmation</h2>
+              <p className="text-[#B45309] max-w-sm">Payment successful! Please inform the owner to click <b>"Confirm Arrival"</b> in their app to activate your dashboard.</p>
             </div>
-            <h3 className="font-black uppercase text-sm md:text-3xl lg:text-lg">Check-Out</h3>
-            <CButton 
-              className="w-full bg-orange-500 text-white py-3 text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 md:text-xl lg:text-sm"
-              onClick={() => { setActiveAction("Check-Out"); setShowScanner(true); }}
-            >
-              <FaSignOutAlt /> Check-Out Now
-            </CButton>
-          </div>
+          )}
+
+          {/* STATE 3: Fully Active Stay */}
+          {stayStatus === "Active" && (
+            <>
+              <div className="bg-white rounded-xl p-6 shadow-sm flex flex-col items-center space-y-4 border border-[#E5E0D9] border-l-4 border-green-500">
+                <FaSignInAlt size={22} className="text-green-600" />
+                <h3 className="font-bold uppercase text-sm">Stay Active</h3>
+                <p className="text-xs text-[#4B4B4B]">Joined On: {joiningDate?.toLocaleDateString()}</p>
+                <CButton onClick={handleExtension} className="w-full bg-[#1C1C1C] text-white py-3 text-[10px] font-bold uppercase tracking-widest">
+                   Request Extension
+                </CButton>
+              </div>
+
+              <div className="bg-white rounded-xl p-6 shadow-sm flex flex-col items-center space-y-4 border border-[#E5E0D9] border-l-4 border-red-500">
+                <FaSignOutAlt size={22} className="text-red-600" />
+                <h3 className="font-bold uppercase text-sm">Permanent Move-Out</h3>
+                <p className="text-xs text-[#4B4B4B]">End your stay and settle dues</p>
+                <CButton onClick={handleMoveOut} className="w-full bg-red-600 hover:bg-red-700 text-white py-3 text-[10px] font-bold uppercase tracking-widest">
+                  Initiate Move-Out
+                </CButton>
+              </div>
+            </>
+          )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div className="lg:col-span-7 bg-white rounded-md shadow border-2 border-primary p-2 sm:p-5">
+          {/* CALENDAR */}
+          <div className="lg:col-span-7 bg-white rounded-xl shadow-sm border border-[#E5E0D9] p-4 sm:p-6">
+            <h3 className="pb-4 font-bold text-xs uppercase text-[#4B4B4B] flex items-center gap-2">
+               <FaCalendarCheck className="text-[#D97706]"/> Stay Calendar
+            </h3>
             <Calendar
               onChange={setSelectedDate}
               value={selectedDate}
@@ -183,116 +220,48 @@ const CheckIns = () => {
             />
           </div>
 
-          <div className="lg:col-span-5 bg-white rounded-md shadow border-2 border-primary flex flex-col h-[400px]">
-            <div className="p-4 border-b border-gray-100 font-black uppercase tracking-widest text-[10px] flex items-center gap-2">
-              <FaHistory className="text-orange-500" /> Recent Activity
+          {/* HISTORY */}
+          <div className="lg:col-span-5 bg-white rounded-xl shadow-sm border border-[#E5E0D9] flex flex-col h-[450px]">
+            <div className="p-4 border-b border-[#E5E0D9] font-bold uppercase tracking-widest text-[10px] flex items-center gap-2">
+              <FaHistory className="text-[#D97706]" /> Previous Stay Records
             </div>
-            <div className="p-4 overflow-y-auto space-y-3 custom-scrollbar flex-grow">
-              {loading ? (
-                <div className="text-center py-10 animate-pulse text-gray-400">Syncing...</div>
-              ) : history.length === 0 ? (
-                <div className="text-center py-10 text-gray-400 text-xs">No records found</div>
+            <div className="p-4 overflow-y-auto space-y-3 flex-grow custom-scrollbar">
+              {history.length === 0 ? (
+                <div className="text-center py-24">
+                  <FaClock className="mx-auto text-[#E5E0D9] mb-2" size={40} />
+                  <p className="text-[#4B4B4B] text-xs font-bold uppercase tracking-tighter">No History Found</p>
+                </div>
               ) : (
-                history.map((entry) => {
-                  const rawDate = entry.checkInDate || entry.createdAt || entry.date;
-                  const dateObj = new Date(rawDate);
-                  const isValid = rawDate && !isNaN(dateObj.getTime());
-
-                  const formattedDate = isValid 
-                    ? dateObj.toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })
-                    : "Invalid Date";
-
-                  const formattedTime = isValid 
-                    ? dateObj.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true })
-                    : "--:--";
-
-                  const typeValue = (entry.activityType || entry.actionType || "").toLowerCase();
-                  const isCheckOut = typeValue.includes("out") || entry.status === "Completed";
-                  
-                  // UPDATED: Use backend variables while keeping camelCase [cite: 2026-01-01]
-                  const displayTitle = entry.title || (isCheckOut ? "Check-Out" : "Check-In");
-                  const displayTime = entry.time || formattedTime; 
-
-                  return (
-                    <div key={entry.id || entry._id} className="border-l-4 border-black bg-gray-50 p-4 rounded-r-md flex justify-between items-center text-xs">
+                history.map((entry) => (
+                   <div key={entry._id} className="border-l-4 border-[#1C1C1C] bg-gray-50 p-4 rounded-r-lg flex justify-between items-center text-xs">
                       <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-md ${isCheckOut ? 'bg-orange-100 text-orange-600' : 'bg-gray-200 text-black'}`}>
-                          <FaClock size={12}/>
-                        </div>
-                        <div>
-                          <p className="font-black">{formattedDate}</p>
-                          {/* UPDATED: shows real time like 11:20 PM */}
-                          <p className="text-[10px] font-bold text-gray-400 uppercase">{displayTime}</p>
-                        </div>
+                         <div className="p-2 rounded-md bg-[#FEF3C7] text-[#D97706]">
+                            <FaClock size={12}/>
+                         </div>
+                         <div>
+                            <p className="font-bold">{entry.pgName || "Nadiad PG"}</p>
+                            <p className="text-[10px] text-[#4B4B4B]">{entry.date || "2026-02-15"}</p>
+                         </div>
                       </div>
-                      <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded ${isCheckOut ? 'bg-orange-100' : 'bg-gray-200'}`}>
-                        {/* UPDATED: shows real status from backend */}
-                        {displayTitle}
+                      <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded bg-[#E5E0D9]">
+                        Completed
                       </span>
-                    </div>
-                  );
-                })
+                   </div>
+                ))
               )}
             </div>
           </div>
         </div>
       </div>
 
-      {showScanner && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={closeModal}></div>
-          <div className="relative bg-white w-[90%] max-w-md rounded-2xl overflow-hidden shadow-2xl z-10">
-            <div className="p-4 bg-primary text-white flex justify-between items-center">
-              <span className="text-sm font-black uppercase tracking-tight">Security Portal: {activeAction}</span>
-              <button onClick={closeModal} className="text-white hover:text-orange-400 transition-colors">
-                <FaTimes size={20} />
-              </button>
-            </div>
-            <div className="p-8">
-              <form onSubmit={handleSecurityAction} className="space-y-6 text-center">
-                {!isOtpSent ? (
-                  <div className="flex flex-col items-center gap-4">
-                    <div className="inline-block bg-gray-50 p-2 rounded-lg border-2 border-primary/30">
-                      <ReCAPTCHA
-                        sitekey="6LfT_lksAAAAAOanKI3_z06JdciUMm5vg3emlZgL"
-                        onChange={(token) => setCaptchaToken(token)}
-                      />
-                    </div>
-                    <p className="text-[10px] text-gray-400 font-bold uppercase">Confirm you are human to receive code</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <h4 className="text-xs font-black uppercase text-gray-800">Enter Security Code</h4>
-                    <input 
-                      type="text" 
-                      placeholder="· · · · · ·"
-                      className="w-full bg-gray-50 border-2 border-gray-200 p-4 rounded-xl text-center font-black text-2xl tracking-[0.3em] focus:border-orange-500 focus:bg-white transition-all outline-none"
-                      value={otp}
-                      onChange={(e) => setOtp(e.target.value)}
-                    />
-                  </div>
-                )}
-                <CButton 
-                  className={` font-black uppercase tracking-widest transition-all ${isPastDate(selectedDate) ? 'bg-gray-400 text-white cursor-not-allowed' : 'bg-black text-white shadow-lg'}`}
-                  type="submit"
-                  disabled={(!captchaToken && !isOtpSent) || processing || isPastDate(selectedDate)}
-                >
-                  {processing ? "Processing..." : (isOtpSent ? `Verify & ${activeAction}` : "Get Security Code")}
-                </CButton>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
-
       <style jsx global>{`
-        .react-calendar { width: 100% !important; border: none !important; background: transparent !important; }
-        .transparent-black-tile { background: rgba(0, 0, 0, 0.08) !important; color: black !important; border-radius: 6px; }
-        .transparent-orange-tile { background: rgba(249, 115, 22, 0.08) !important; color: #f97316 !important; border-radius: 6px; }
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 10px; }
-        .react-calendar__tile--now { background: #fff7ed !important; color: #f97316 !important; font-weight: bold; border-radius: 6px; }
-        .react-calendar__tile--active { background: #000 !important; color: #fff !important; border-radius: 6px; }
+        .react-calendar { width: 100% !important; border: none !important; font-family: inherit; }
+        .transparent-black-tile { background: #D97706 !important; color: white !important; border-radius: 8px; }
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #E5E0D9; border-radius: 10px; }
+        .react-calendar__tile--now { background: #FEF3C7 !important; color: #D97706 !important; font-weight: bold; border-radius: 8px; }
+        .react-calendar__tile--active { background: #1C1C1C !important; color: #fff !important; border-radius: 8px; }
+        .react-calendar__navigation button:enabled:hover { background-color: #FEF3C7; border-radius: 8px; }
       `}</style>
     </div>
   );

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import CInput from "../../../../components/cInput";
+import CSelect from "../../../../components/cSelect";
 import CButton from "../../../../components/cButton";
 import { FaTrash, FaRupeeSign, FaPlus, FaSave, FaBed } from "react-icons/fa";
 import Swal from "sweetalert2";
@@ -15,7 +16,7 @@ const SetRoomPrice = () => {
       roomType: "Single",
       pricePerMonth: "",
       pricePerYear: "",
-      advancePayment: "",
+      securityDeposit: "",
     },
   ]);
 
@@ -54,7 +55,7 @@ const SetRoomPrice = () => {
         roomType: "",
         pricePerMonth: "",
         pricePerYear: "",
-        advancePayment: "",
+        securityDeposit: "",
       },
     ]);
   };
@@ -185,12 +186,23 @@ const SetRoomPrice = () => {
             {/* CARD BODY */}
             <div className="p-6 md:p-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <div className="lg:col-span-1">
-                <CInput
-                  label="Room Category Name"
-                  placeholder="e.g., Double Sharing"
+                <CSelect
+                  label="Room Category"
+                  name={`roomType-${index}`}
                   value={room.roomType}
                   onChange={(e) => handleChange(index, "roomType", e.target.value)}
+                  options={["Single","Double","Triple","Quad","Other"]}
                 />
+                {/* If user chooses Other or empty, show a free-text input for custom name */}
+                {(room.roomType === "Other" || !room.roomType) && (
+                  <div className="mt-2">
+                    <CInput
+                      placeholder="Custom category name (e.g., Double Sharing)"
+                      value={room.roomType === "Other" ? "" : room.roomType}
+                      onChange={(e) => handleChange(index, "roomType", e.target.value)}
+                    />
+                  </div>
+                )}
                 <ErrorLabel name={`${index}-roomType`} />
               </div>
 
@@ -217,11 +229,11 @@ const SetRoomPrice = () => {
 
               <div>
                 <CInput
-                  label="Advance Payment (₹)"
+                  label="Security Deposit (₹)"
                   type="number"
                   placeholder="0"
-                  value={room.advancePayment}
-                  onChange={(e) => handleChange(index, "advancePayment", e.target.value)}
+                  value={room.securityDeposit}
+                  onChange={(e) => handleChange(index, "securityDeposit", e.target.value)}
                 />
               </div>
             </div>
