@@ -1,7 +1,6 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import CButton from "../../../components/cButton";
-import CInput from "../../../components/cInput";
 import CSelect from "../../../components/cSelect"; 
 import {
   genderOptions,
@@ -9,6 +8,10 @@ import {
   rentCycleOptions,
   amenitiesList,
 } from "../../../config/staticData";
+
+const BUDGET_MIN = 0;
+const BUDGET_MAX = 30000;
+const BUDGET_STEP = 500;
 
 export default function Filters({
   filters,
@@ -18,8 +21,23 @@ export default function Filters({
 }) {
   const [isAmenityOpen, setIsAmenityOpen] = useState(false);
 
-  const handleNumberScroll = (e) => {
-    e.preventDefault(); 
+  useEffect(() => {
+    if (filters.maxPrice === "" || filters.maxPrice === null || filters.maxPrice === undefined) {
+      handleFilterChange("maxPrice", BUDGET_MAX);
+    }
+  }, [filters.maxPrice, handleFilterChange]);
+
+  const rawBudget =
+    filters.maxPrice === "" || Number.isNaN(Number(filters.maxPrice))
+      ? BUDGET_MAX
+      : Number(filters.maxPrice);
+
+  const budget = Math.max(BUDGET_MIN, Math.min(rawBudget, BUDGET_MAX));
+
+  const handleBudgetChange = (value) => {
+    const nextBudget = Number(value);
+    handleFilterChange("minPrice", "");
+    handleFilterChange("maxPrice", nextBudget);
   };
 
   return (
@@ -50,23 +68,20 @@ export default function Filters({
         </div>
 
         {/* 2. Budget Section */}
-        <div className="grid grid-cols-2 gap-4">
-          <CInput
-            type="number"
-            label="Min Budget"
-            placeholder="0"
-            value={filters.minPrice}
-            onWheel={handleNumberScroll} 
-            onChange={(e) => handleFilterChange("minPrice", e.target.value)}
-          />
-          <CInput
-            type="number"
-            label="Max Budget"
-            placeholder="No Max"
-            value={filters.maxPrice}
-            onWheel={handleNumberScroll}
-            onChange={(e) => handleFilterChange("maxPrice", e.target.value)}
-          />
+        <div className="space-y-2">
+          <label className="text-sm font-bold text-[#1C1C1C]">Budget</label>
+          <div className="w-full rounded-xl border border-[#E5E0D9] px-3 py-2">
+            <p className="text-sm font-semibold text-[#4B4B4B]">Rs {budget.toLocaleString()}</p>
+            <input
+              type="range"
+              min={BUDGET_MIN}
+              max={BUDGET_MAX}
+              step={BUDGET_STEP}
+              value={budget}
+              onChange={(e) => handleBudgetChange(e.target.value)}
+              className="w-full accent-[#D97706]"
+            />
+          </div>
         </div>
 
         {/* 3. Rent Cycle */}

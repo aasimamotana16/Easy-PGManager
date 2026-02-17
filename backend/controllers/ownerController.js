@@ -236,13 +236,7 @@ const getOwnerProfile = async (req, res) => {
         address: owner.address || "Add your address",
         role: "Owner",
         profileImage: owner.profileImage || "/images/profileImages/profile1.jpg",
-        memberId: owner._id.toString().slice(-6).toUpperCase(),
-        socialLinks: {
-          facebook: owner.facebook || "#",
-          instagram: owner.instagram || "#",
-          linkedin: owner.linkedin || "#",
-          twitter: owner.twitter || "#",
-        }
+        memberId: owner._id.toString().slice(-6).toUpperCase()
       }
     });
   } catch (error) {
@@ -288,14 +282,7 @@ const updateOwnerProfile = async (req, res) => {
         phone: updatedUser.phone || "Not provided",
         address: updatedUser.address || "Add your address",
         profileImage: updatedUser.profileImage || "/images/profileImages/profile1.jpg",
-        memberId: updatedUser._id.toString().slice(-6).toUpperCase(),
-        // Social links remain as they are or pulled from user model
-        socialLinks: {
-          facebook: updatedUser.facebook || "#",
-          instagram: updatedUser.instagram || "#",
-          linkedin: updatedUser.linkedin || "#",
-          twitter: updatedUser.twitter || "#",
-        }
+        memberId: updatedUser._id.toString().slice(-6).toUpperCase()
       }
     });
   } catch (error) {
