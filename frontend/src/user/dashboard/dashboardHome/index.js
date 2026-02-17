@@ -12,6 +12,7 @@ import {
   FaDownload
 } from "react-icons/fa";
 import CButton from "../../../components/cButton";
+import PayNowButton from '../../../components/payNowButton';
 import { getUserProfile, getUserDashboard, getMyAgreement } from "../../../api/api";
 import axios from "axios";
 import Swal from "sweetalert2";
@@ -284,13 +285,9 @@ const DashboardHome = () => {
           <div className="bg-black text-white p-4 sm:p-6 rounded-md shadow-md">
             <p className="text-[10px] sm:text-xs md:text-2xl lg:text-sm text-white uppercase font-medium mb-1">Rent Due</p>
             <p className="text-2xl sm:text-3xl md:text-5xl lg:text-3xl text-orange-500 mb-4">₹{monthlyRent.toLocaleString()}</p>
-            <CButton
-              onClick={handleDirectPayment}
-              disabled={isProcessing || (monthlyRent <= 0)}
-              className="w-full"
-            >
+            <PayNowButton amount={monthlyRent} pgId={dashboardData?.currentBooking?.pgId || user?.bookedPgId} className="w-full" onSuccess={() => loadData()}>
               {isProcessing ? "INITIALIZING..." : "PAY NOW"}
-            </CButton>
+            </PayNowButton>
           </div>
         </div>
       </div>

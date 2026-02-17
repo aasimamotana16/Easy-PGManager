@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useLocation } from 'react-router-dom';
 import { FaHistory, FaDownload, FaWallet, FaCheckCircle, FaExclamationTriangle } from "react-icons/fa";
 import CButton from "../../../components/cButton";
+import PayNowButton from '../../../components/payNowButton';
 import Swal from "sweetalert2";
 
 const Payments = () => {
@@ -194,17 +195,17 @@ const Payments = () => {
             <FaWallet className="text-3xl" style={{ color: colors.primary }} />
           </div>
 
-          <div className="mt-8 flex flex-col sm:flex-row justify-between items-end gap-4">
+            <div className="mt-8 flex flex-col sm:flex-row justify-between items-end gap-4">
             <div className="text-white">
-              <p className="text-sm opacity-80">Rent for {monthLabel}</p>
-              <p className="text-xs opacity-60 uppercase font-bold">Due Date: {dueDateLabel}</p>
+              <p className="text-sm text-white">Rent for {monthLabel}</p>
+              <p className="text-xs text-white uppercase font-bold">Due Date: {dueDateLabel}</p>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
               {showPayNow && (
-                <CButton onClick={handlePayNow} disabled={isProcessing} className="bg-white text-black hover:bg-gray-200">
+                <PayNowButton amount={(intentAmount != null ? intentAmount : (paymentData.nextPayment?.amount || 8500)) + (paymentData.lateFine || 0)} pgId={paymentData.nextPayment?.pgId || ""} intentType={intentType || (stayStatus === 'Active' ? "MONTHLY_RENT" : "MOVE_IN_PAYMENT")} className="bg-white text-black hover:bg-gray-200" onSuccess={() => { fetchPaymentDetails(); fetchAgreementStatus(); }}>
                   {isProcessing ? "PROCESSING..." : "PAY NOW"}
-                </CButton>
+                </PayNowButton>
               )}
 
               {showExtendStay && (
@@ -214,9 +215,9 @@ const Payments = () => {
               )}
 
               {!showPayNow && !showExtendStay && (
-                <CButton onClick={handlePayNow} disabled={isProcessing || stayStatus === 'Pending'} style={{ backgroundColor: stayStatus === 'Pending' ? '#6B7280' : colors.primary }} className="w-full sm:w-64">
+                <PayNowButton amount={(intentAmount != null ? intentAmount : (paymentData.nextPayment?.amount || 8500)) + (paymentData.lateFine || 0)} pgId={paymentData.nextPayment?.pgId || ""} intentType={(intentType || (stayStatus !== 'Active')) ? 'MOVE_IN_PAYMENT' : 'MONTHLY_RENT'} className="w-full sm:w-64" onSuccess={() => { fetchPaymentDetails(); fetchAgreementStatus(); }}>
                   {stayStatus === 'Pending' ? "AWAITING CONFIRMATION" : (isProcessing ? "PROCESSING..." : "PAY & MOVE-IN")}
-                </CButton>
+                </PayNowButton>
               )}
             </div>
           </div>

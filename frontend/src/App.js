@@ -22,6 +22,7 @@ import DemoBook from "./pages/Home/demoBook";
 import BookingPage from "./pages/booking/bookNowPage";
 import ConfirmBooking from "./pages/booking/confirmBook";
 import UserAgreement from "./pages/booking/agreement";
+import PayNow from "./pages/booking/payNow";
 
 /* ================= PG DETAILS ================= */
 import PGDetails from "./pages/detailsPage";
@@ -141,6 +142,10 @@ function App() {
               <UserAgreement />
             </ProtectedBookingRoute>
           } />
+
+          {/* ===== PAY NOW (email link) ===== */}
+          <Route path="/paynow" element={<PayNow />} />
+          <Route path="/paynow/:bookingId" element={<PayNow />} />
 
           {/* ===== CANCELLATION ===== */}
           <Route path="/cancel/:id" element={<ProtectedBookingRoute><CancelBooking /></ProtectedBookingRoute>} />

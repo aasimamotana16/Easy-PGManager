@@ -3,11 +3,15 @@ import { FaEdit, FaPlus, FaSearch, FaEye, FaTrash, FaSignOutAlt, FaMapMarkerAlt,
 import CButton from "../../../components/cButton";
 import CSelect from "../../../components/cSelect";
 import Swal from "sweetalert2";
+import AddTenant from "./addTenant";
+import { getMyTenants, addTenant as apiAddTenant, getMyPgs, deleteTenant as apiDeleteTenant } from "../../../api/api";
 
 const Tenants = () => {
   const [tenants, setTenants] = useState([]);
   const [search, setSearch] = useState("");
   const [selectedPG, setSelectedPG] = useState("all");
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [pgOptions, setPgOptions] = useState([]);
 
   const staticData = [
     {
@@ -58,7 +62,33 @@ const Tenants = () => {
     }
   ];
 
-  useEffect(() => { setTenants(staticData); }, []);
+  useEffect(() => {
+    fetchTenants();
+    fetchPgs();
+  }, []);
+
+  const fetchTenants = async () => {
+    try {
+      const res = await getMyTenants();
+      if (res.data && res.data.success) setTenants(res.data.data || []);
+      else setTenants([]);
+    } catch (error) {
+      console.error("fetchTenants err", error);
+      Swal.fire({ title: "Error", text: error.message || "Failed to load tenants", icon: "error", confirmButtonColor: "#D97706" });
+    }
+  };
+
+  const fetchPgs = async () => {
+    try {
+      const res = await getMyPgs();
+      if (res.data && res.data.success) {
+        const opts = (res.data.data || []).map((p) => ({ value: p._id, label: p.pgName }));
+        setPgOptions(opts);
+      }
+    } catch (error) {
+      console.error("fetchPgs err", error);
+    }
+  };
 
   const filteredTenants = tenants.filter((t) =>
     t.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -172,6 +202,32 @@ const Tenants = () => {
     });
   };
 
+  const handleDelete = (id) => {
+    Swal.fire({
+      title: 'Delete Tenant?',
+      text: 'This will permanently remove the tenant record.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#D97706',
+      cancelButtonColor: '#4B4B4B',
+      confirmButtonText: 'Delete'
+    }).then(async (res) => {
+      if (res.isConfirmed) {
+        try {
+          const r = await apiDeleteTenant(id);
+          if (r.data && r.data.success) {
+            Swal.fire({ title: 'Deleted', icon: 'success', confirmButtonColor: '#D97706' });
+            fetchTenants();
+          } else {
+            Swal.fire({ title: 'Error', text: r.data?.message || 'Could not delete tenant', icon: 'error' });
+          }
+        } catch (err) {
+          Swal.fire({ title: 'Error', text: err.response?.data?.message || err.message || 'Failed to delete tenant', icon: 'error' });
+        }
+      }
+    });
+  };
+
   return (
     <div className="p-4 md:p-10 bg-[#ffffff] min-h-screen">
       {/* Header */}
@@ -180,7 +236,7 @@ const Tenants = () => {
           <h1 className="text-4xl font-bold text-[#1C1C1C]">Tenants</h1>
           <p className="text-[#4B4B4B] mt-2">Track arrivals, active stays, and past residents.</p>
         </div>
-        <CButton text="Add New Tenant" className="flex items-center gap-2">
+        <CButton onClick={() => setShowAddModal(true)} text="Add New Tenant" className="flex items-center gap-2">
           <FaPlus /> Add New Tenant
         </CButton>
       </div>
@@ -287,7 +343,7 @@ const Tenants = () => {
                         </button>
                       )}
                       
-                      <button className="p-2 text-[#4B4B4B] hover:text-red-600 rounded-full"><FaTrash size={16} /></button>
+                      <button onClick={() => handleDelete(t._id)} className="p-2 text-[#4B4B4B] hover:text-red-600 rounded-full"><FaTrash size={16} /></button>
                     </div>
                   </td>
                 </tr>
@@ -296,6 +352,26 @@ const Tenants = () => {
           </table>
         </div>
       </div>
+      {showAddModal && (
+        <AddTenant
+          onClose={() => setShowAddModal(false)}
+          onSave={async (form) => {
+            try {
+              const res = await apiAddTenant(form);
+              if (res.data && res.data.success) {
+                Swal.fire({ title: "Tenant added", icon: "success", confirmButtonColor: "#D97706" });
+                setShowAddModal(false);
+                fetchTenants();
+              } else {
+                Swal.fire({ title: "Error", text: res.data?.message || "Could not add tenant", icon: "error" });
+              }
+            } catch (err) {
+              Swal.fire({ title: "Error", text: err.response?.data?.message || err.message || "Failed to add tenant", icon: "error" });
+            }
+          }}
+          pgOptions={pgOptions}
+        />
+      )}
     </div>
   );
 };

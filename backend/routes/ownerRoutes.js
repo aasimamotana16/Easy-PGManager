@@ -24,6 +24,7 @@ const {
   confirmArrival,
   getMyAgreements,
   updateTenant,
+  deleteTenant,
   syncTenantLinkedData,
   createSupportTicket,
   getMySupportTickets,
@@ -56,6 +57,7 @@ router.post('/update-room-prices', protect, isOwner, updateRoomPrices);
 // --- TENANT MANAGEMENT ---
 router.post('/add-tenant', protect, isOwner, addTenant);
 router.get('/my-tenants', protect, isOwner, getMyTenants);
+router.delete('/tenant/:id', protect, isOwner, deleteTenant);
 router.put('/confirm-arrival/:id', protect, isOwner, confirmArrival);
 router.put('/update-tenant/:id', protect, isOwner, updateTenant);
 router.post('/sync-tenant-linked-data', protect, isOwner, syncTenantLinkedData);

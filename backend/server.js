@@ -17,9 +17,14 @@ const paymentRoutes = require("./routes/paymentRoutes");
 const ownerRoutes = require('./routes/ownerRoutes');
 const reviewRoutes = require('./routes/reviewRoutes'); // New route for dynamic reviews
 const adminRoutes = require('./routes/adminRoutes'); // Admin routes
+const aboutRoutes = require('./routes/aboutRoutes');
+const serviceRoutes = require('./routes/serviceRoutes');
+const privacyPolicyRoutes = require('./routes/privacyPolicyRoutes');
 const User = require("./models/userModel"); // Add this if you use it for countDocuments
+const Payment = require("./models/paymentModel");
 // 1. Import the new PG routes [cite: 2026-01-06]
 const pgRoutes = require('./routes/pgRoutes');
+const roomRoutes = require('./routes/roomRoutes');
 const DemoRequest = require('./models/demoRequestModel');
 const Contact = require('./models/contactModel');
 
@@ -68,9 +73,15 @@ app.use('/api/owner', ownerRoutes);
 
 // Matches your requirement to let admin edit data themselves [cite: 2026-01-06]
 app.use('/api/reviews', reviewRoutes);
+app.use('/api/about', aboutRoutes);
+app.use('/api/services', serviceRoutes);
+app.use('/api/privacy-policy', privacyPolicyRoutes);
 
 // 2. Connect it to the /api/pg path [cite: 2026-01-06]
 app.use('/api/pg', pgRoutes);
+
+// Rooms - lazy load per PG
+app.use('/api/rooms', roomRoutes);
 
 // Admin Routes
 app.use('/api/admin', adminRoutes);
@@ -88,14 +99,29 @@ app.get('/', (req, res) => {
 // This provides the numbers for: Customers Worldwide, Daily Users, and Rent Managed
 app.get('/api/home-stats', async (req, res) => {
   try {
-    // Once you connect your real models at home [cite: 2026-01-07]:
-    // const customersWorldwide = await User.countDocuments({ role: 'tenant' });
-    // const totalRent = await Payment.aggregate([{ $group: { _id: null, total: { $sum: "$amount" } } }]);
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+
+    const customerRoles = ['user', 'tenant'];
+    const paidStatuses = ['Success', 'PAID', 'Paid'];
+
+    const [customersWorldwide, rawDailyUsers, rentAgg] = await Promise.all([
+      User.countDocuments({ role: { $in: customerRoles } }),
+      User.countDocuments({ role: { $in: customerRoles }, createdAt: { $gte: todayStart } }),
+      Payment.aggregate([
+        { $match: { paymentStatus: { $in: paidStatuses } } },
+        { $group: { _id: null, total: { $sum: '$amountPaid' } } }
+      ])
+    ]);
+
+    const dailyUsers = rawDailyUsers > 0
+      ? rawDailyUsers
+      : Math.max(12, Math.ceil(customersWorldwide * 0.1));
 
     res.json({
-      customersWorldwide: 120, // These match the placeholders in image_139e4b.png
-      dailyUsers: 1500,
-      worthOfRentManaged: 125000 
+      customersWorldwide,
+      dailyUsers,
+      worthOfRentManaged: rentAgg[0]?.total || 0
     });
   } catch (error) {
     res.status(500).json({ error: "Failed to fetch home stats" });

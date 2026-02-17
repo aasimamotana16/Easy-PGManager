@@ -111,71 +111,11 @@ const AddRooms = () => {
     if (!validateForm()) return;
 
     try {
-      const token = localStorage.getItem("userToken");
-      
-      const roomResponse = await axios.post(
-        "http://localhost:5000/api/owner/add-room",
-        {
-          roomType: roomData.roomType,
-          totalRooms: parseInt(roomData.totalRooms),
-          bedsPerRoom: parseInt(roomData.bedsPerRoom),
-          description: roomData.description,
-          pgId: pgId 
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      if (roomResponse.data.success) {
-        const formData = new FormData();
-        formData.append("pgId", pgId);
-
-        // Only append mainImage if it exists (which only happens in fromCreate flow)
-        if (roomData.mainImage) {
-          formData.append("mainImage", roomData.mainImage);
-        }
-
-        if (roomData.subImages && roomData.subImages.length > 0) {
-          roomData.subImages.forEach((file) => formData.append("images", file));
-        }
-
-        try {
-          let updatedPg = roomResponse.data.data;
-
-          if ((roomData.mainImage) || (roomData.subImages && roomData.subImages.length > 0)) {
-            const imgResp = await axios.post(
-              `http://localhost:5000/api/owner/upload-images/${pgId}`,
-              formData,
-              {
-                headers: {
-                  Authorization: `Bearer ${token}`,
-                  "Content-Type": "multipart/form-data",
-                },
-              }
-            );
-
-            if (imgResp.data && imgResp.data.success) {
-              updatedPg = imgResp.data.data || updatedPg;
-            }
-          }
-
-          // After saving a room, allow owner to set room prices.
-          // If we came from 'create property' flow we already navigate to price setup.
-          // For existing properties (manage rooms -> add room) also navigate to price setup.
-          Swal.fire({
-            icon: "success",
-            title: "Success!",
-            text: "Room and Images saved!",
-            timer: 1200,
-            showConfirmButton: false,
-          }).then(() => {
-            navigate("/owner/dashboard/pgManagment/roomPrice", { state: { pgId } });
-          });
-        } catch (imageError) {
-          console.error("Error uploading images:", imageError);
-          const msg = imageError.response?.data?.message || imageError.message || "Failed to upload images";
-          Swal.fire({ title: "Image Upload Failed", text: msg, icon: "error", confirmButtonColor: "#D97706" });
-        }
-      }
+      // Instead of creating the room immediately, navigate user to pricing
+      // flow where they must set a price. The actual room creation will
+      // occur after pricing is saved. Pass the collected roomData so the
+      // pricing page can pre-fill variant label and handle image upload.
+      navigate("/owner/dashboard/pgManagment/roomPrice", { state: { pgId, fromCreate, roomData, createRoomFlow: true } });
     } catch (error) {
       Swal.fire({
         title: "Error!",

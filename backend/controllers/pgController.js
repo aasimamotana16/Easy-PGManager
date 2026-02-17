@@ -75,25 +75,26 @@ exports.searchPGs = async (req, res) => {
     if (occupancy && occupancy !== "Any") query.occupancy = occupancy;
     if (rentCycle && rentCycle !== "Any") query.rentCycle = rentCycle;
 
-    // 3. Price Check - Fixed for "Empty Strings"
-    const effectiveMin = minBudget ?? minPrice;
-    const effectiveMax = maxBudget ?? maxPrice;
-    if (effectiveMin || effectiveMax) {
+    // 3. Budget Range Check (min/max)
+    const parseBudget = (value) => {
+      if (value === undefined || value === null || value === "") return null;
+      const num = Number(value);
+      if (!Number.isFinite(num) || num < 0) return null;
+      return num;
+    };
+
+    let min = parseBudget(minBudget ?? minPrice);
+    let max = parseBudget(maxBudget ?? maxPrice);
+
+    // If user enters max lower than min, normalize to a valid range.
+    if (min !== null && max !== null && min > max) {
+      [min, max] = [max, min];
+    }
+
+    if (min !== null || max !== null) {
       query.price = {};
-
-      // Only add the filter if the value actually exists and isn't just an empty string
-      if (effectiveMin && effectiveMin !== "") {
-        query.price.$gte = Number(effectiveMin);
-      }
-
-      if (effectiveMax && effectiveMax !== "") {
-        query.price.$lte = Number(effectiveMax);
-      }
-
-      // Safety: If both were empty strings, remove the price key entirely
-      if (Object.keys(query.price).length === 0) {
-        delete query.price;
-      }
+      if (min !== null) query.price.$gte = min;
+      if (max !== null) query.price.$lte = max;
     }
 
     // 4. Amenities Check
@@ -220,10 +221,20 @@ exports.getPgById = async (req, res) => {
       return res.status(404).json({ success: false, message: "PG not found" });
     }
     // Mapping fields to match frontend expectations [cite: 2026-01-06]
+    // Also include Room documents for this PG so frontend can show room-specific images
+    let roomDocs = [];
+    try {
+      const Room = require('../models/roomModel');
+      roomDocs = await Room.find({ pgId: pg._id }).lean();
+    } catch (e) {
+      console.error('Failed to load Room docs for PG:', e.message);
+    }
+
     const responseData = {
       ...pg._doc,
       name: pg.pgName, // Fixes missing name on card [cite: 2026-01-01]
-      rent: pg.price   // Fixes 0 price if frontend looks for 'rent' [cite: 2026-01-06]
+      rent: pg.price,  // Fixes 0 price if frontend looks for 'rent' [cite: 2026-01-06]
+      roomDocs
     };
     res.status(200).json({ success: true, data: responseData });
   } catch (error) {

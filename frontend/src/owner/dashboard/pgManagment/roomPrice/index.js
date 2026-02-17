@@ -1,264 +1,328 @@
 import React, { useState, useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom"; // For page navigation
+import axios from "axios";
+import { motion, AnimatePresence } from "framer-motion";
+import { updateRoomPrices } from "../../../../api/api";
+import { FaTrash, FaPlus, FaSave, FaCheck, FaSnowflake, FaTree, FaToilet, FaCalendarAlt, FaFan } from "react-icons/fa";
+import Swal from "sweetalert2"; // Standard Swal import
 import CInput from "../../../../components/cInput";
-import CSelect from "../../../../components/cSelect";
 import CButton from "../../../../components/cButton";
-import { FaTrash, FaRupeeSign, FaPlus, FaSave, FaBed } from "react-icons/fa";
-import Swal from "sweetalert2";
 
 const SetRoomPrice = () => {
   const navigate = useNavigate();
-  const location = useLocation();
-  const pgId = location.state?.pgId || localStorage.getItem("currentPropertyId");
-
+    const location = useLocation();
+    const fromCreate = location.state?.fromCreate === true;
+    const incomingPgId = location.state?.pgId;
   const [roomPrices, setRoomPrices] = useState([
     {
-      roomType: "Single",
-      pricePerMonth: "",
-      pricePerYear: "",
+      variantName: "",
+      price: "",
+      billingCycle: "Month",
       securityDeposit: "",
+      acType: "AC", 
+      features: { balcony: false, attachedWashroom: true }
     },
   ]);
 
   const [errors, setErrors] = useState({});
+  const [isSaving, setIsSaving] = useState(false);
+  const billingOptions = ["Month", "Quarter", "Year"];
+  const incomingRoomData = location.state?.roomData || null;
+  const createRoomFlow = location.state?.createRoomFlow === true;
 
-  // --- BULLETPROOF SCROLL FIX FOR NUMBER INPUTS ---
   useEffect(() => {
-    const handleWheel = (e) => {
-      if (e.target.type === "number" && document.activeElement === e.target) {
-        e.preventDefault();
-      }
-    };
-    window.addEventListener("wheel", handleWheel, { passive: false });
-    return () => window.removeEventListener("wheel", handleWheel);
-  }, []);
+    if (incomingRoomData) {
+      // Prefill the first variant with the room specification's type
+      setRoomPrices(prev => {
+        const copy = [...prev];
+        copy[0] = {
+          ...copy[0],
+          variantName: incomingRoomData.roomType || copy[0].variantName,
+          price: copy[0].price || "",
+        };
+        return copy;
+      });
+    }
+  }, [incomingRoomData]);
+
+  const toggleFeature = (index, feature) => {
+    const updated = [...roomPrices];
+    updated[index].features[feature] = !updated[index].features[feature];
+    setRoomPrices(updated);
+  };
 
   const handleChange = (index, field, value) => {
     const updated = [...roomPrices];
     updated[index][field] = value;
     setRoomPrices(updated);
-
-    const errorKey = `${index}-${field}`;
-    if (errors[errorKey]) {
-      setErrors((prev) => {
-        const newErrors = { ...prev };
-        delete newErrors[errorKey];
-        return newErrors;
-      });
+    if (errors[`${index}-${field}`]) {
+      const newErrors = { ...errors };
+      delete newErrors[`${index}-${field}`];
+      setErrors(newErrors);
     }
   };
 
-  const addRoomType = () => {
-    setRoomPrices((prev) => [
-      ...prev,
-      {
-        roomType: "",
-        pricePerMonth: "",
-        pricePerYear: "",
-        securityDeposit: "",
-      },
-    ]);
+  const addPriceCard = () => {
+    setRoomPrices([...roomPrices, {
+      variantName: "",
+      price: "",
+      billingCycle: "Month",
+      securityDeposit: "",
+      acType: "Non-AC",
+      features: { balcony: false, attachedWashroom: false }
+    }]);
   };
 
-  const removeRoomType = (index) => {
-    if (roomPrices.length === 1) {
-      Swal.fire({
-        title: "Note",
-        text: "At least one room category is required.",
-        icon: "info",
-        confirmButtonColor: "#D97706"
-      });
-      return;
-    }
-    const updated = roomPrices.filter((_, i) => i !== index);
-    setRoomPrices(updated);
-    
-    const newErrors = { ...errors };
-    Object.keys(newErrors).forEach(key => {
-        if (key.startsWith(`${index}-`)) delete newErrors[key];
-    });
-    setErrors(newErrors);
-  };
-
-  const validate = () => {
+  const handleSavePricing = async () => {
     const newErrors = {};
     roomPrices.forEach((room, index) => {
-      if (!room.roomType.trim()) newErrors[`${index}-roomType`] = "Category name required";
-      if (!room.pricePerMonth) newErrors[`${index}-pricePerMonth`] = "Monthly price required";
+      if (!room.variantName) newErrors[`${index}-variantName`] = "Required";
+      if (!room.price) newErrors[`${index}-price`] = "Required";
     });
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
 
-  const handleSubmit = async (e) => {
-    if (e) e.preventDefault();
-    if (!validate()) return;
-
+    setIsSaving(true);
     try {
-      Swal.fire({
-        title: "Saving Prices...",
-        allowOutsideClick: false,
-        didOpen: () => { Swal.showLoading(); },
-      });
+      const pgId = incomingPgId || localStorage.getItem("currentPropertyId");
+      const resp = await updateRoomPrices(roomPrices, pgId);
+      setIsSaving(false);
 
-      const token = localStorage.getItem("userToken");
-      const response = await fetch(
-        "http://localhost:5000/api/owner/update-room-prices",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ roomPrices, pgId }),
+      if (resp?.data?.success) {
+        // If this flow was started from AddRooms, create the room now
+        if (createRoomFlow && incomingRoomData) {
+          try {
+            const token = localStorage.getItem("userToken");
+            const roomResp = await axios.post(
+              "http://localhost:5000/api/owner/add-room",
+              {
+                roomType: incomingRoomData.roomType,
+                totalRooms: parseInt(incomingRoomData.totalRooms || 0),
+                bedsPerRoom: parseInt(incomingRoomData.bedsPerRoom || 0),
+                description: incomingRoomData.description || "",
+                pgId: pgId,
+                // Attach pricing from the variants the owner just saved
+                rent: Number(roomPrices[0]?.price || 0),
+                securityDeposit: Number(roomPrices[0]?.securityDeposit || 0),
+                variantLabel: roomPrices[0]?.variantName || incomingRoomData.roomType || ''
+              },
+              { headers: { Authorization: `Bearer ${token}` } }
+            );
+
+            if (roomResp.data && roomResp.data.success) {
+              // Upload images if provided
+              const createdRoom = roomResp.data.data && roomResp.data.data.room;
+              if (incomingRoomData.mainImage || (incomingRoomData.subImages && incomingRoomData.subImages.length > 0)) {
+                const formData = new FormData();
+                if (incomingRoomData.mainImage) formData.append("mainImage", incomingRoomData.mainImage);
+                (incomingRoomData.subImages || []).forEach(f => formData.append("images", f));
+                formData.append("pgId", pgId);
+                if (createdRoom && createdRoom._id) formData.append("roomId", createdRoom._id);
+
+                await axios.post(`http://localhost:5000/api/owner/upload-images/${pgId}`, formData, {
+                  headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" }
+                });
+              }
+            }
+          } catch (err) {
+            console.error('Failed to create room after saving pricing', err);
+          }
         }
-      );
-
-      const result = await response.json();
-
-      if (result.success) {
         Swal.fire({
+          title: 'Pricing Saved!',
+          text: "Your room variants have been recorded successfully.",
           icon: "success",
-          title: "Prices Saved!",
-          text: "Your room pricing has been updated.",
-          timer: 1500,
-          showConfirmButton: false,
-        }).then(() => {
-          navigate("/owner/dashboard/pgManagment/submitApproval");
+          confirmButtonColor: "#D97706",
+          confirmButtonText: fromCreate ? "Proceed to Approval" : "OK",
+          background: "#ffffff",
+          customClass: {
+            popup: 'rounded-3xl border-none font-poppins',
+            confirmButton: 'rounded-xl px-10 py-3 text-xs font-medium tracking-widest'
+          }
+        }).then((result) => {
+          if (fromCreate) {
+            if (result.isConfirmed) {
+              navigate("/owner/dashboard/pgManagment/submitApproval");
+            }
+          } else {
+            navigate("/owner/dashboard/pgManagment");
+          }
         });
       } else {
-        Swal.fire({
-          icon: "error",
-          title: "Update Failed",
-          text: result.message || "Something went wrong.",
-          confirmButtonColor: "#D97706"
-        });
+        Swal.fire({ title: 'Error', text: resp?.data?.message || 'Failed to save pricing', icon: 'error', confirmButtonColor: '#D97706' });
       }
-    } catch (error) {
-      Swal.fire({
-        icon: "error",
-        title: "Server Error",
-        text: "Could not connect to the server.",
-        confirmButtonColor: "#D97706"
-      });
+    } catch (err) {
+      setIsSaving(false);
+      console.error('Error updating room prices:', err);
+      Swal.fire({ title: 'Error', text: err.response?.data?.message || err.message || 'Failed to save pricing', icon: 'error', confirmButtonColor: '#D97706' });
     }
   };
 
-  const ErrorLabel = ({ name }) => (
-    errors[name] ? <p className="text-red-500 text-[10px] mt-1 font-bold uppercase tracking-tight">{errors[name]}</p> : null
-  );
-
   return (
-    <div className="p-4 md:p-10 bg-gray-100 min-h-screen">
-      {/* HEADER SECTION */}
-      <div className="max-w-5xl mx-auto mb-8">
-        <h1 className="text-4xl font-bold text-[#1C1C1C]">Set Room Prices</h1>
-        <p className="text-[#4B4B4B] mt-2">
-          Define pricing for each room category. These prices apply to all rooms of that type.
-        </p>
-      </div>
+    <div className="p-6 md:p-10 bg-[#ffffff] min-h-screen font-poppins text-[#1C1C1C]">
+      <div className="max-w-6xl mx-auto">
+        <header className="mb-10">
+          <h1 className="text-4xl font-light uppercase tracking-tighter italic">Pricing & <span className="font-semibold not-italic">Features</span></h1>
+          <p className="text-[#4B4B4B] font-normal mt-2 text-lg italic opacity-80">Define costs and payment cycles for each room variant.</p>
+        </header>
 
-      <div className="max-w-5xl mx-auto space-y-8 mt-6">
-        {roomPrices.map((room, index) => (
-          <div key={index} className="bg-white rounded-xl shadow-sm border border-[#E5E0D9] overflow-hidden">
-            {/* CARD HEADER */}
-            <div className="p-4 bg-[#FEF3C7]/40 border-b border-[#E5E0D9] flex justify-between items-center">
-              <div className="flex items-center gap-3">
-                <div className="bg-primary p-2 rounded-lg text-white">
-                  <FaRupeeSign size={14} />
-                </div>
-                <h3 className="text-lg font-bold text-[#1C1C1C]">
-                  Pricing Category {index + 1}
-                </h3>
-              </div>
-              {roomPrices.length > 1 && (
-                <button 
-                  onClick={() => removeRoomType(index)}
-                  className="text-red-500 hover:text-white hover:bg-red-500 p-2 rounded-lg transition-all border border-red-200"
-                  title="Remove Category"
-                >
-                  <FaTrash size={14} />
-                </button>
-              )}
-            </div>
+        <div className="space-y-8">
+          <AnimatePresence>
+            {roomPrices.map((room, index) => (
+              <motion.div 
+                key={index}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white rounded-3xl border-2 border-[#E5E0D9] overflow-hidden hover:border-[#D97706] transition-all"
+              >
+                <div className="flex flex-col lg:flex-row">
+                  
+                  {/* LEFT: FEATURE SELECTION */}
+                  <div className="lg:w-80 p-8 bg-gray-50/50 border-r border-[#E5E0D9] space-y-4">
+                    <label className="text-xs font-semibold uppercase text-[#4B4B4B] tracking-widest mb-4 block">Room Inclusions</label>
+                    
+                    <div className="flex gap-2 mb-4">
+                        <button 
+                            type="button"
+                            onClick={() => handleChange(index, 'acType', 'AC')}
+                            className={`flex-1 flex flex-col items-center p-4 rounded-xl border-2 transition-all ${room.acType === 'AC' ? 'bg-white border-[#D97706] text-[#D97706] shadow-sm' : 'bg-transparent border-transparent opacity-40 grayscale'}`}
+                        >
+                            <FaSnowflake size={18} className="mb-1" />
+                            <span className="text-[10px] font-medium uppercase tracking-wider">AC</span>
+                        </button>
+                        <button 
+                            type="button"
+                            onClick={() => handleChange(index, 'acType', 'Non-AC')}
+                            className={`flex-1 flex flex-col items-center p-4 rounded-xl border-2 transition-all ${room.acType === 'Non-AC' ? 'bg-white border-[#D97706] text-[#D97706] shadow-sm' : 'bg-transparent border-transparent opacity-40 grayscale'}`}
+                        >
+                            <FaFan size={18} className="mb-1" />
+                            <span className="text-[10px] font-medium uppercase tracking-wider">Non-AC</span>
+                        </button>
+                    </div>
 
-            {/* CARD BODY */}
-            <div className="p-6 md:p-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="lg:col-span-1">
-                <CSelect
-                  label="Room Category"
-                  name={`roomType-${index}`}
-                  value={room.roomType}
-                  onChange={(e) => handleChange(index, "roomType", e.target.value)}
-                  options={["Single","Double","Triple","Quad","Other"]}
-                />
-                {/* If user chooses Other or empty, show a free-text input for custom name */}
-                {(room.roomType === "Other" || !room.roomType) && (
-                  <div className="mt-2">
-                    <CInput
-                      placeholder="Custom category name (e.g., Double Sharing)"
-                      value={room.roomType === "Other" ? "" : room.roomType}
-                      onChange={(e) => handleChange(index, "roomType", e.target.value)}
-                    />
+                    <FeatureToggle label="Private Balcony" icon={<FaTree />} active={room.features.balcony} onClick={() => toggleFeature(index, 'balcony')} />
+                    <FeatureToggle label="Attached Bath" icon={<FaToilet />} active={room.features.attachedWashroom} onClick={() => toggleFeature(index, 'attachedWashroom')} />
                   </div>
-                )}
-                <ErrorLabel name={`${index}-roomType`} />
-              </div>
 
-              <div>
-                <CInput
-                  label="Price /Month (₹)"
-                  type="number"
-                  placeholder="0"
-                  value={room.pricePerMonth}
-                  onChange={(e) => handleChange(index, "pricePerMonth", e.target.value)}
-                />
-                <ErrorLabel name={`${index}-pricePerMonth`} />
-              </div>
+                  {/* RIGHT: PRICING FORM */}
+                  <div className="flex-1 p-8 flex flex-col justify-center">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-10">
+                      
+                      <div className="md:col-span-2">
+                        <CInput 
+                          label="Variant Label" 
+                          placeholder="e.g. Single Occupancy"
+                          value={room.variantName}
+                          onChange={(e) => handleChange(index, 'variantName', e.target.value)}
+                          error={errors[`${index}-variantName`]}
+                          className="text-lg font-normal"
+                          readOnly={Boolean(incomingRoomData)}
+                        />
+                        {incomingRoomData && (
+                          <p className="text-xs text-textSecondary mt-1">Using room type from specification — change it in Room Specifications if needed.</p>
+                        )}
+                      </div>
 
-              <div>
-                <CInput
-                  label="Price /Year (Optional)"
-                  type="number"
-                  placeholder="0"
-                  value={room.pricePerYear}
-                  onChange={(e) => handleChange(index, "pricePerYear", e.target.value)}
-                />
-              </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-[#4B4B4B] mb-2 block uppercase tracking-wide">Rent (₹)</label>
+                        <div className="flex h-14">
+                          <div className="flex-1">
+                            <input 
+                                type="number" 
+                                value={room.price} 
+                                onChange={(e) => handleChange(index, 'price', e.target.value)}
+                                className={`w-full h-full bg-white border-2 ${errors[`${index}-price`] ? 'border-red-400' : 'border-[#E5E0D9]'} border-r-0 rounded-l-xl px-4 text-lg font-normal focus:border-[#D97706] outline-none transition-all`}
+                            />
+                          </div>
+                          <select 
+                            value={room.billingCycle}
+                            onChange={(e) => handleChange(index, 'billingCycle', e.target.value)}
+                            className="h-full bg-gray-50 border-2 border-[#E5E0D9] rounded-r-xl px-4 text-sm font-semibold text-[#1C1C1C] focus:border-[#D97706] outline-none transition-all cursor-pointer min-w-[120px]"
+                          >
+                            {billingOptions.map(opt => <option key={opt} value={opt}>{opt}ly</option>)}
+                          </select>
+                        </div>
+                      </div>
 
-              <div>
-                <CInput
-                  label="Security Deposit (₹)"
-                  type="number"
-                  placeholder="0"
-                  value={room.securityDeposit}
-                  onChange={(e) => handleChange(index, "securityDeposit", e.target.value)}
-                />
-              </div>
-            </div>
-          </div>
-        ))}
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-[#4B4B4B] mb-2 block uppercase tracking-wide">Security Deposit (₹)</label>
+                        <input 
+                            type="number" 
+                            placeholder="One-time collection" 
+                            value={room.securityDeposit} 
+                            onChange={(e) => handleChange(index, 'securityDeposit', e.target.value)}
+                            className="w-full h-14 bg-white border-2 border-[#E5E0D9] rounded-xl px-4 text-lg font-normal focus:border-[#D97706] outline-none transition-all"
+                        />
+                      </div>
 
-        {/* BOTTOM ACTIONS */}
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-6 rounded-xl border border-[#E5E0D9] shadow-sm mb-10">
+                      <div className="md:col-span-2 bg-[#FEF3C7]/20 p-5 rounded-2xl border border-[#D97706]/10 flex items-start gap-4">
+                         <div className="bg-[#D97706] p-2 rounded-lg text-white mt-1"><FaCalendarAlt size={14}/></div>
+                         <div>
+                            <p className="text-[10px] font-semibold text-[#B45309] uppercase mb-1 tracking-widest">Owner Note</p>
+                            <p className="text-sm text-[#4B4B4B] font-normal leading-relaxed">
+                               Maintenance is handled by the user. Electricity charges are extra per unit.
+                            </p>
+                         </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {roomPrices.length > 1 && (
+                    <button 
+                      type="button"
+                      onClick={() => setRoomPrices(roomPrices.filter((_, i) => i !== index))}
+                      className="p-8 bg-red-50 text-red-300 hover:text-red-500 transition-all border-l border-[#E5E0D9]"
+                    >
+                      <FaTrash size={18} />
+                    </button>
+                  )}
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+
           <button 
-            onClick={addRoomType} 
-            className="w-full md:w-auto flex items-center justify-center gap-2 border-2 border-primary text-primary hover:bg-primarySoft px-6 py-3 rounded-lg font-bold transition-all"
+            type="button"
+            onClick={addPriceCard} 
+            className="w-full py-8 border-2 border-dashed border-[#E5E0D9] rounded-2xl text-[#4B4B4B] font-medium uppercase text-[10px] tracking-[0.4em] hover:border-[#D97706] hover:text-[#D97706] transition-all bg-white"
           >
-            <FaPlus size={14} /> Add Another Category
+            + Add New Price Variant
           </button>
+        </div>
 
+        <div className="mt-16 flex justify-end">
           <CButton 
-            onClick={handleSubmit} 
-            className="w-full md:w-auto flex items-center justify-center gap-2 bg-primary hover:bg-primaryDark text-white px-10 py-3 rounded-lg font-bold shadow-lg transition-all"
+            onClick={handleSavePricing}
+            className="!bg-[#D97706] !px-16 !py-4 shadow-xl !rounded-xl !text-white !font-medium !uppercase !text-xs !tracking-widest transition-all hover:bg-[#B45309]"
           >
-            <FaSave /> Save & Finish Setup
+            {isSaving ? "Processing..." : <><FaSave className="inline mr-2" /> Save Pricing Details</>}
           </CButton>
         </div>
       </div>
     </div>
   );
 };
+
+const FeatureToggle = ({ label, icon, active, onClick }) => (
+  <button 
+    type="button"
+    onClick={onClick}
+    className={`w-full flex items-center justify-between p-4 rounded-2xl border-2 transition-all ${active ? 'bg-white border-[#D97706] shadow-sm' : 'bg-transparent border-transparent grayscale opacity-30'}`}
+  >
+    <div className="flex items-center gap-4">
+      <div className={`p-2 rounded-xl ${active ? 'bg-[#FEF3C7] text-[#D97706]' : 'bg-gray-200 text-gray-500'}`}>
+        {icon}
+      </div>
+      <span className={`text-[10px] font-semibold uppercase tracking-wider ${active ? 'text-[#1C1C1C]' : 'text-gray-400'}`}>
+        {label}
+      </span>
+    </div>
+    {active && <FaCheck className="text-[#D97706]" size={10} />}
+  </button>
+);
 
 export default SetRoomPrice;

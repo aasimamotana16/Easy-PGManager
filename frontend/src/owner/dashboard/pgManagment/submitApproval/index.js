@@ -47,10 +47,14 @@ const SubmitApproval = () => {
           const response = await submitForApproval(propertyId);
           
           if (response.data.success) {
+            const adminNotified = response.data.emailSent === true;
+            const adminEmail = response.data.adminEmail || 'admin@yourdomain.com';
+            const extra = adminNotified ? `<p>Admin notified at <strong>${adminEmail}</strong>.</p>` : `<p>Admin notification could not be sent automatically.</p>`;
+
             Swal.fire({
               icon: "success",
               title: "Submitted Successfully!",
-              text: response.data.message || "Your property is now under review. This usually takes 24–48 hours.",
+              html: `${response.data.message || "Your property is now under review. This usually takes 24–48 hours."}${extra}`,
               confirmButtonColor: "#d97706",
             }).then(() => {
               // Clear the property ID from localStorage

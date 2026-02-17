@@ -71,13 +71,17 @@ export const getOwnerDashboardStats = () => API.get("/owner/dashboard-summary");
 export const addPgProperty = (pgData) => API.post("/owner/add-pg", pgData);
 export const getMyPgs = () => API.get('/owner/my-pgs');
 export const getOwnerPgById = (pgId) => API.get(`/owner/pg/${pgId}`);
+export const getPgById = (pgId) => API.get(`/pg/${pgId}`);
 export const uploadPropertyDocuments = (pgId, formData) =>
   API.post(`/owner/upload-property-docs/${pgId}`, formData, {
     headers: { "Content-Type": "multipart/form-data" },
   });
-export const updateRoomPrices = (roomPrices) => API.post('/owner/update-room-prices', { roomPrices });
+export const updateRoomPrices = (roomPrices, pgId) => API.post('/owner/update-room-prices', { roomPrices, pgId });
 export const deleteBooking = (id) => API.delete(`/owner/delete-booking/${id}`);
 export const submitForApproval = (pgId) => API.post(`/owner/submit-for-approval/${pgId}`);
+export const addTenant = (tenantData) => API.post('/owner/add-tenant', tenantData);
+export const getMyTenants = () => API.get('/owner/my-tenants');
+export const deleteTenant = (id) => API.delete(`/owner/tenant/${id}`);
 
 /* =========================
     ADMIN APIs 
@@ -111,6 +115,7 @@ export const createBooking = (bookingData) => API.post("/bookings/create", booki
 export const getAllRooms = () => API.get("/rooms/all");
 export const getRoom = (roomId) => API.get(`/rooms/${roomId}`);
 export const createRoom = (roomData) => API.post("/rooms/create", roomData);
+export const getRoomsByPg = (pgId) => API.get(`/rooms/pg/${pgId}`);
 export const payRent = (paymentData) => API.post("/payments/pay-rent", paymentData);
 export const getAllPayments = () => API.get("/payments/all");
 
