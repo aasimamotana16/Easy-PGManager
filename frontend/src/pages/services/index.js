@@ -4,19 +4,39 @@ import Footer from "../../components/footer";
 import ServiceCard from "../../components/sCard";
 import CButton from "../../components/cButton";
 import Loader from "../../components/loader";
-import { services } from "../../config/staticData";
+import { services as staticServices } from "../../config/staticData";
+import { getServicesPageData } from "../../api/api";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion"; // Add this import
 
 export default function Services() {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
+  const [serviceList, setServiceList] = useState(staticServices);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 800);
-    return () => clearTimeout(timer);
+    let mounted = true;
+
+    const loadServices = async () => {
+      try {
+        const res = await getServicesPageData();
+        if (mounted && res?.data?.success && Array.isArray(res.data.data)) {
+          setServiceList(res.data.data);
+        }
+      } catch (error) {
+        console.error("Services API failed, using static fallback:", error);
+      } finally {
+        if (mounted) {
+          setTimeout(() => setIsLoading(false), 300);
+        }
+      }
+    };
+
+    loadServices();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   // Animation Variants
@@ -66,7 +86,7 @@ export default function Services() {
             animate="visible"
             className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 mb-16 md:mb-24"
           >
-            {services.map((service, idx) => (
+            {serviceList.map((service, idx) => (
               <motion.div key={idx} variants={itemVariants} className="h-full">
                 <ServiceCard {...service} />
               </motion.div>

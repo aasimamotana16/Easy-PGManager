@@ -16,19 +16,39 @@ import { getUserProfile, getUserDashboard, getMyAgreement } from "../../../api/a
 import axios from "axios";
 import Swal from "sweetalert2";
 
+const formatDueDate = (dateValue) => {
+  if (!(dateValue instanceof Date) || Number.isNaN(dateValue.getTime())) return null;
+  return dateValue.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
+
+const getUpcomingDueDate = (rawDate) => {
+  const parsed = rawDate ? new Date(rawDate) : null;
+  if (!(parsed instanceof Date) || Number.isNaN(parsed.getTime())) return null;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const due = new Date(parsed);
+  due.setHours(0, 0, 0, 0);
+
+  // If due date is already past, roll it month-by-month to the next upcoming cycle.
+  while (due < today) {
+    due.setMonth(due.getMonth() + 1);
+  }
+
+  return formatDueDate(due);
+};
+
 const DashboardHome = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
-
-  // Mock data for the Recent Payments table
-  const recentPayments = [
-    { id: 1, month: "january 2026", amount: 8500, status: "Paid", date: "29 jan" },
-    { id: 2, month: "December 2025", amount: 8500, status: "Paid", date: "02 Dec" },
-    { id: 3, month: "November 2025", amount: 8500, status: "Paid", date: "05 Nov" },
-  ];
 
   const loadData = async () => {
     try {
@@ -189,8 +209,10 @@ const DashboardHome = () => {
   const roomNo = dashboardData?.currentBooking?.roomNo || user?.roomNo || "N/A";
   const monthlyRent = dashboardData?.currentBooking?.monthlyRent || user?.monthlyRent || 0;
   const bookingStatus = dashboardData?.currentBooking?.status || user?.bookingStatus || "Inactive";
-  const nextPaymentDate = dashboardData?.nextPayment?.dueDate || user?.paymentDueDate || "29 feb 2026";
+  const rawDueDate = dashboardData?.nextPayment?.dueDate || user?.paymentDueDate || null;
+  const nextPaymentDate = getUpcomingDueDate(rawDueDate) || (monthlyRent > 0 ? "Due date not available" : "No due");
   const completionPercentage = dashboardData?.profileCompletion || user?.profileCompletion || 0;
+  const recentPayments = dashboardData?.recentPayments || [];
 
   return (
     <div className="p-3 sm:p-6 lg:p-8 bg-gray-200 min-h-screen space-y-5 sm:space-y-8">

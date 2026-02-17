@@ -34,7 +34,7 @@ const AboutIntro = () => {
             transition={{ delay: 0.3 }}
             className="text-primary uppercase tracking-[0.3em] font-bold mb-4 text-sm sm:text-xl"
           >
-            Since 2026
+            Since 2025
           </motion.p>
 
           {/* MAIN HEADING - Responsive Text Scaling */}
