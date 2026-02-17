@@ -1587,7 +1587,32 @@ const confirmArrival = async (req, res) => {
   }
 };
 
-module.exports = { 
+// --- DELETE TENANT ---
+const deleteTenant = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const ownerId = req.user._id;
+
+    // Find the tenant and ensure it belongs to this owner
+    const tenant = await Tenant.findOne({ _id: id, ownerId });
+    if (!tenant) {
+      return res.status(404).json({ success: false, message: "Tenant not found or you don't have permission to delete this tenant" });
+    }
+
+    // Delete the tenant
+    await Tenant.findByIdAndDelete(id);
+
+    res.status(200).json({
+      success: true,
+      message: "Tenant deleted successfully"
+    });
+  } catch (error) {
+    console.error('Error deleting tenant:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+module.exports = {
   getOwnerProfile, 
   getOwnerDashboardData, 
   createPg, 
@@ -1607,6 +1632,7 @@ module.exports = {
   updateOwnerProfile,
   getMyAgreements,
   updateTenant,
+  deleteTenant,
   syncTenantLinkedData,
   createSupportTicket,
   getMySupportTickets,

@@ -285,13 +285,12 @@ const SetRoomPrice = () => {
             ))}
           </AnimatePresence>
 
-          <button 
-            type="button"
+          <CButton 
             onClick={addPriceCard} 
             className="w-full py-8 border-2 border-dashed border-[#E5E0D9] rounded-2xl text-[#4B4B4B] font-medium uppercase text-[10px] tracking-[0.4em] hover:border-[#D97706] hover:text-[#D97706] transition-all bg-white"
           >
             + Add New Price Variant
-          </button>
+          </CButton>
         </div>
 
         <div className="mt-16 flex justify-end">

@@ -264,7 +264,7 @@ const Tenants = () => {
 
         <div className="overflow-x-auto">
           <table className="w-full text-left min-w-[1000px]">
-            <thead className="bg-[#FEF3C7] text-[#1C1C1C] text-sm uppercase font-bold">
+            <thead className="bg-primarySoft text-[#1C1C1C] text-sm uppercase font-bold">
               <tr>
                 <th className="p-5">Tenant Details</th>
                 <th className="p-5">Property</th>

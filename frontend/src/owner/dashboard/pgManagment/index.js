@@ -218,13 +218,13 @@ const PgManagement = () => {
                     </button>
 
                     {/* UPDATED EDIT BUTTON */}
-                    <button 
+                    <CButton 
                       onClick={() => openEditModal(pg)} 
                       className="text-gray-500 hover:text-primary transition-colors" 
                       title="Edit PG"
                     >
                       <FaEdit className="text-xl sm:text-2xl" />
-                    </button>
+                    </CButton>
 
                     <button onClick={() => handleDeletePg(pg.id)} className="text-red-400 hover:text-red-600 transition-colors" title="Delete PG">
                       <FaTrash className="text-lg sm:text-xl" />
