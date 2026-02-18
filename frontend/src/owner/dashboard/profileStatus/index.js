@@ -88,7 +88,7 @@ const ProfileStatus = () => {
       <motion.div 
         animate={{ scale: [1, 1.1, 1], opacity: [0.5, 1, 0.5] }}
         transition={{ repeat: Infinity, duration: 1.5 }}
-        className="text-[#D97706] font-black uppercase tracking-tighter text-xl"
+        className="text-primary font-black uppercase tracking-tighter text-xl"
       >
         Authenticating Identity...
       </motion.div>
@@ -115,14 +115,14 @@ const ProfileStatus = () => {
           
           <div className="flex gap-3 w-full md:w-auto">
             <CButton 
-              className={`${editMode ? 'bg-green-600 hover:bg-green-700' : 'bg-[#D97706] hover:bg-[#B45309]'} text-white py-3.5 px-8 rounded-xl shadow-lg transition-all w-full md:w-auto font-bold uppercase text-[11px] tracking-wider`}
+              className={`${editMode ? 'bg-green-600 hover:bg-green-700' : 'bg-primary hover:bg-primaryDark'} text-white py-3.5 px-8 rounded-md shadow-lg transition-all w-full md:w-auto font-bold uppercase text-[11px] tracking-wider`}
               onClick={editMode ? handleSave : () => setEditMode(true)}
             >
               {editMode ? "Save Changes" : "Edit Profile"}
             </CButton>
             {editMode && (
               <CButton 
-                className="bg-white text-[#4B4B4B] border border-[#E5E0D9] font-bold py-3.5 px-8 rounded-xl w-full md:w-auto uppercase text-[11px] tracking-wider"
+                className="bg-white text-[#4B4B4B] border border-[#E5E0D9] font-bold py-3.5 px-8 rounded-md w-full md:w-auto uppercase text-[11px] tracking-wider"
                 onClick={() => setEditMode(false)}
               >
                 Cancel
@@ -146,7 +146,7 @@ const ProfileStatus = () => {
                 <motion.button 
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
-                  className="absolute bottom-2 right-2 bg-[#D97706] p-4 rounded-full text-white shadow-xl transition-colors hover:bg-[#B45309]"
+                  className="absolute bottom-2 right-2 bg-primary p-4 rounded-full text-white shadow-xl transition-colors hover:bg-[#B45309]"
                   onClick={() => fileInputRef.current.click()}
                 >
                   <FaCamera size={18} />
@@ -154,9 +154,9 @@ const ProfileStatus = () => {
                 <input type="file" ref={fileInputRef} className="hidden" accept="image/*" />
               </div>
 
-              <div className="inline-flex items-center gap-2 bg-[#FEF3C7] px-4 py-2 rounded-full mb-6">
-                <FaShieldAlt className="text-[#D97706]" size={12}/>
-                <span className="text-[10px] font-black uppercase text-[#B45309] tracking-[0.15em]">
+              <div className="inline-flex items-center gap-2 bg-primarySoft px-4 py-2 rounded-full mb-6">
+                <FaShieldAlt className="text-primary" size={12}/>
+                <span className="text-[10px] font-black uppercase text-primaryDark tracking-[0.15em]">
                   {profileData.isVerified ? "Verified Owner" : "Pending Verification"}
                 </span>
               </div>
@@ -172,7 +172,7 @@ const ProfileStatus = () => {
                 <div className="w-[1px] h-8 bg-[#E5E0D9]"></div>
                 <div className="text-center">
                   <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Type</p>
-                  <p className="text-sm font-bold text-[#D97706] mt-1 uppercase">Owner</p>
+                  <p className="text-sm font-bold text-primary mt-1 uppercase">Owner</p>
                 </div>
               </div>
             </div>
@@ -185,7 +185,7 @@ const ProfileStatus = () => {
                 <motion.span 
                   initial={{ height: 0 }}
                   animate={{ height: 24 }}
-                  className="w-1.5 bg-[#D97706] rounded-full"
+                  className="w-1.5 bg-primary rounded-full"
                 />
                 Identity Profile
               </h3>
@@ -253,7 +253,7 @@ const ProfileStatus = () => {
               <motion.div whileHover={{ x: 5 }}>
                 <CButton 
                   onClick={() => Swal.fire({ title: 'Protected', text: 'Please contact support to delete account', icon: 'warning', confirmButtonColor: '#D97706'})}
-                  className="!bg-white !text-red-500 border border-red-200 hover:!bg-red-500 hover:!text-white flex items-center gap-2 px-8 py-3.5 rounded-xl text-[10px] font-black tracking-widest transition-all shadow-sm"
+                  className="!bg-white !text-red-500 border border-red-200 hover:!bg-red-500 hover:!text-white flex items-center gap-2 px-8 py-3.5 rounded-md text-[10px] font-black tracking-widest transition-all shadow-sm"
                 >
                   <FaTrash size={12}/> DELETE ACCOUNT
                 </CButton>
@@ -275,7 +275,7 @@ const InputField = ({ label, value, onChange, editMode, placeholder, icon, upper
     className="space-y-3"
   >
     <label className="text-[10px] uppercase text-[#4B4B4B] font-black tracking-widest flex items-center gap-2 opacity-60">
-      <span className="text-[#D97706]">{icon}</span> {label}
+      <span className="text-primary">{icon}</span> {label}
     </label>
     
     <div className="min-h-[50px] flex items-center">
@@ -283,7 +283,7 @@ const InputField = ({ label, value, onChange, editMode, placeholder, icon, upper
         <motion.input 
           initial={{ opacity: 0, x: -10 }}
           animate={{ opacity: 1, x: 0 }}
-          className={`w-full bg-[#FEF3C7]/10 border border-[#E5E0D9] rounded-xl px-5 py-4 outline-none focus:border-[#D97706] focus:ring-4 focus:ring-[#FEF3C7] transition-all text-[#1C1C1C] font-semibold ${uppercase ? 'uppercase' : ''}`}
+          className={`w-full bg-primarySoft/10 border border-[#E5E0D9] rounded-md px-5 py-4 outline-none focus:border-[#D97706] focus:ring-4 focus:ring-[#FEF3C7] transition-all text-[#1C1C1C] font-semibold ${uppercase ? 'uppercase' : ''}`}
           value={value || ""} 
           onChange={onChange} 
           placeholder={placeholder}

@@ -139,7 +139,7 @@ const HomeFeatures = ({ stats, userRole = "guest" }) => {
                 { label: "Worth of Rent Managed", value: `₹${(stats?.worthOfRentManaged || 125000).toLocaleString()}` }
               ].map((stat, i) => (
                 <div key={i} className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-lg bg-primarySoft text-primary flex items-center justify-center font-bold">
+                  <div className="w-12 h-12 rounded-md bg-primarySoft text-primary flex items-center justify-center font-bold">
                     {i === 2 ? "₹" : stat.value}
                   </div>
                   <div className="text-left">

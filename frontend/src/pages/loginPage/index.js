@@ -141,7 +141,7 @@ const Login = () => {
       </div>
 
       <div className="relative z-10 w-full px-4 lg:ml-20 flex justify-center lg:justify-start">
-        <CFormCard className="relative bg-white p-4 sm:p-6 rounded-xl shadow-xl border-2 border-[#D97706] w-full max-w-[340px] lg:max-w-[500px] animate-fadeIn">
+        <CFormCard className="relative bg-white p-4 sm:p-6 rounded-md shadow-xl border border-[#D97706] w-full max-w-[340px] lg:max-w-[500px] animate-fadeIn">
           <img src="/logos/logo1.png" alt="logo" className="h-16 mx-auto mb-2" />
           <h1 className="text-2xl font-bold text-center mb-4 text-[#D97706]">
             Login – EasyPG <span className="text-black"> Manager</span>

@@ -155,7 +155,7 @@ const TotalEarnings = () => {
       </div>
 
       {/* FILTER + DOWNLOAD */}
-      <div className="bg-white p-4 rounded-md shadow border-2 border-primary flex flex-col sm:flex-row gap-4 justify-between items-center w-full">
+      <div className="bg-white p-4 rounded-md shadow-lg flex flex-col sm:flex-row gap-4 justify-between items-center w-full">
         <CSelect
           value={selectedMonth}
           onChange={(e) => setSelectedMonth(e.target.value)}
@@ -172,7 +172,7 @@ const TotalEarnings = () => {
       </div>
 
       {/* GRAPH */}
-      <div className="bg-white p-4 md:p-6 border-2 border-primary rounded-md shadow">
+      <div className="bg-white p-4 md:p-6 border border-primary rounded-md shadow">
         <h2 className="text-base md:text-lg font-semibold mb-4 text-dark">
           Monthly Earnings ({selectedMonth})
         </h2>
@@ -257,7 +257,7 @@ const TableSection = ({ title, icon, headers, rows, page, totalPages, setPage, a
     {/* Mobile View (Cards) */}
     <div className="md:hidden space-y-4">
       {rows.length > 0 ? rows.map((row, i) => (
-        <div key={i} className="border rounded-lg p-4 space-y-2 bg-gray-50">
+        <div key={i} className="border rounded-md p-4 space-y-2 bg-gray-50">
           <div className="flex justify-between items-start">
             <span className="text-xs font-bold text-gray-500 uppercase">{headers[0]}: {row[0]}</span>
             {status && <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-[10px] font-bold uppercase">{row[3]}</span>}

@@ -31,7 +31,7 @@ export default function Profile() {
     /* This is where you insert your Dashboard UI code */
     <div className="max-w-4xl mx-auto p-4">
       {/* 1. Header Section */}
-      <div className="flex items-center gap-4 bg-white p-6 rounded-xl shadow-sm mb-6">
+      <div className="flex items-center gap-4 bg-white p-6 rounded-md shadow-sm mb-6">
         <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center text-2xl  text-amber-600">
           {user?.fullName?.charAt(0)}
         </div>
@@ -42,7 +42,7 @@ export default function Profile() {
       </div>
 
       {/* 2. Personal Information Section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-white p-6 rounded-xl shadow-sm mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-white p-6 rounded-md shadow-sm mb-6">
          <div>
            <label className="text-xs text-gray-400">Full Name</label>
            <p className="font-medium">{user?.fullName}</p>
@@ -54,7 +54,7 @@ export default function Profile() {
       </div>
 
       {/* 3. Emergency Contact Section */}
-      <div className="bg-white p-6 rounded-xl shadow-sm">
+      <div className="bg-white p-6 rounded-md shadow-sm">
         <h3 className=" mb-4">Emergency Contact</h3>
         <div className="grid grid-cols-3 gap-4">
           <div>

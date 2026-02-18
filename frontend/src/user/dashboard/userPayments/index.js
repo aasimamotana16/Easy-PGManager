@@ -16,6 +16,7 @@ const Payments = () => {
   const [intentType, setIntentType] = useState(null);
   const [intentAmount, setIntentAmount] = useState(null);
 
+  // Your specific color theme
   const colors = {
     primary: "#D97706",
     primaryDark: "#B45309",
@@ -57,7 +58,12 @@ const Payments = () => {
       const response = await fetch("http://localhost:5000/api/payments/user-stats", { headers: { Authorization: `Bearer ${token}` } });
       const data = await response.json();
       if (data.success) {
-        setPaymentData({ nextPayment: data.nextPayment, totalPaid: data.totalPaid, history: data.history, lateFine: data.lateFine || 0 });
+        setPaymentData({ 
+          nextPayment: data.nextPayment, 
+          totalPaid: data.totalPaid, 
+          history: data.history, 
+          lateFine: data.lateFine || 0 
+        });
       }
     } catch (error) {
       console.error("Fetch error:", error);
@@ -66,109 +72,35 @@ const Payments = () => {
     }
   };
 
-  const handlePayNow = async () => {
-    const token = localStorage.getItem("userToken");
-    if (!token || token === "null") {
-      return Swal.fire({ title: "Session Expired", text: "Please log in again.", icon: "warning", confirmButtonColor: colors.primary });
-    }
-
-    setIsProcessing(true);
-    try {
-      const orderResponse = await fetch("http://localhost:5000/api/payments/create-order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ 
-          amount: ((intentAmount != null ? intentAmount : (paymentData.nextPayment?.amount || 8500)) + (paymentData.lateFine || 0)), 
-          pgId: paymentData.nextPayment?.pgId || "", 
-          type: intentType || (stayStatus === 'Active' ? "MONTHLY_RENT" : "MOVE_IN_PAYMENT") 
-        })
-      });
-
-      if (!orderResponse.ok) throw new Error("Failed to create order");
-      const { order } = await orderResponse.json();
-
-      const options = {
-        key: "rzp_test_S9ZmF0zUNli8eT",
-        amount: order.amount,
-        currency: "INR",
-        name: "EasyPG Manager",
-        description: `Rent payment for ${paymentData.nextPayment?.month || 'Current Month'}`,
-        order_id: order.id,
-        handler: async (response) => {
-          try {
-            const verifyRes = await fetch("http://localhost:5000/api/payments/verify", {
-              method: "POST",
-              headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-              body: JSON.stringify({ 
-                razorpay_order_id: response.razorpay_order_id, 
-                razorpay_payment_id: response.razorpay_payment_id, 
-                razorpay_signature: response.razorpay_signature, 
-                amountPaid: order.amount / 100 
-              })
-            });
-
-            const result = await verifyRes.json();
-            if (result.success) {
-              Swal.fire({ 
-                title: "Payment Successful!", 
-                text: intentType === 'MOVE_IN_PAYMENT' ? "Move-in initiated! Waiting for owner confirmation." : (stayStatus === 'Active' ? "Rent updated." : "Payment successful."), 
-                icon: "success", 
-                confirmButtonColor: colors.primary 
-              });
-              fetchPaymentDetails();
-              fetchAgreementStatus();
-              
-              if ((intentType || (stayStatus !== 'Active')) === 'MOVE_IN_PAYMENT') {
-                await fetch('http://localhost:5000/api/users/move-in', { method: 'PUT', headers: { Authorization: `Bearer ${token}` } });
-              }
-            }
-          } catch (err) {
-            console.error('Verification error', err);
-            Swal.fire({ title: "Error", text: "Verification failed", icon: "error" });
-          }
-        },
-        theme: { color: colors.primary }
-      };
-
-      const rzp = new window.Razorpay(options);
-      rzp.open();
-    } catch (error) {
-      console.error("Payment Error:", error);
-      Swal.fire({ title: "Error", text: "Transaction failed", icon: "error" });
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
   if (loading) return <div className="p-8 text-center">Loading...</div>;
 
-  // Derived visibility logic
+  // Derived Logic for UI
   const today = new Date();
   const agreementEnd = agreementInfo && agreementInfo.endDate ? new Date(agreementInfo.endDate) : null;
   const agreementExpired = agreementEnd ? agreementEnd < today : false;
-  const dueAmount = paymentData.nextPayment?.amount || 0;
+  
+  // Logic: Use intent amount (from link) or calculated due amount
+  const baseDue = paymentData.nextPayment?.amount || 0;
+  const totalDue = (intentAmount != null ? intentAmount : baseDue) + (paymentData.lateFine || 0);
 
   let showPayNow = false;
   let showExtendStay = false;
 
   if (agreementExpired) {
-    if (extensionApproved) {
+    if (extensionApproved || totalDue > 0) {
       showPayNow = true;
-      showExtendStay = false;
-    } else if (dueAmount === 0) {
-      showExtendStay = true;
-      showPayNow = false;
     } else {
-      showPayNow = true;
-      showExtendStay = false;
+      showExtendStay = true;
     }
   } else if (stayStatus === 'Active') {
-    showPayNow = true;
+    if (totalDue > 0) showPayNow = true;
     showExtendStay = true;
+  } else {
+    // If not active and no specific logic, default to Move-in check
+    showPayNow = totalDue > 0;
   }
 
-  const totalDue = (paymentData.nextPayment?.amount || 0) + (paymentData.lateFine || 0);
-  const monthLabel = paymentData.nextPayment?.month || 'N/A';
+  const monthLabel = paymentData.nextPayment?.month || 'Current Cycle';
   const dueDateLabel = paymentData.nextPayment?.dueDate || 'N/A';
   const statusLabel = stayStatus ? stayStatus.toUpperCase() : 'UNKNOWN';
 
@@ -181,7 +113,7 @@ const Payments = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Main Due Card */}
-        <div className="md:col-span-2 p-8 rounded-xl shadow-lg border-b-4" style={{ backgroundColor: colors.backgroundDark, borderColor: colors.primary }}>
+        <div className="md:col-span-2 p-8 rounded-md shadow-lg border-b-4 flex flex-col justify-between" style={{ backgroundColor: colors.backgroundDark, borderColor: colors.primary }}>
           <div className="flex justify-between items-start">
             <div>
               <p className="font-bold uppercase text-xs" style={{ color: colors.primary }}>Current Due</p>
@@ -195,37 +127,61 @@ const Payments = () => {
             <FaWallet className="text-3xl" style={{ color: colors.primary }} />
           </div>
 
-            <div className="mt-8 flex flex-col sm:flex-row justify-between items-end gap-4">
+          <div className="mt-8 flex flex-col sm:flex-row justify-between items-end gap-4">
             <div className="text-white">
-              <p className="text-sm text-white">Rent for {monthLabel}</p>
-              <p className="text-xs text-white uppercase font-bold">Due Date: {dueDateLabel}</p>
+              <p className="text-sm opacity-80">Rent for {monthLabel}</p>
+              <p className="text-xs uppercase font-bold">Due Date: {dueDateLabel}</p>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
               {showPayNow && (
-                <PayNowButton amount={(intentAmount != null ? intentAmount : (paymentData.nextPayment?.amount || 8500)) + (paymentData.lateFine || 0)} pgId={paymentData.nextPayment?.pgId || ""} intentType={intentType || (stayStatus === 'Active' ? "MONTHLY_RENT" : "MOVE_IN_PAYMENT")} className="bg-white text-black hover:bg-gray-200" onSuccess={() => { fetchPaymentDetails(); fetchAgreementStatus(); }}>
+                <PayNowButton 
+                  amount={totalDue} 
+                  pgId={paymentData.nextPayment?.pgId || ""} 
+                  intentType={intentType || (stayStatus === 'Active' ? "MONTHLY_RENT" : "MOVE_IN_PAYMENT")} 
+                  className="px-8 py-3 rounded-md font-bold text-white shadow-lg transition-transform active:scale-95"
+                  style={{ backgroundColor: colors.primary }}
+                  onSuccess={() => { fetchPaymentDetails(); fetchAgreementStatus(); }}
+                >
                   {isProcessing ? "PROCESSING..." : "PAY NOW"}
                 </PayNowButton>
               )}
 
               {showExtendStay && (
-                <CButton onClick={() => Swal.fire({ title: 'Extend Stay', text: 'Request extension?', showCancelButton: true, confirmButtonColor: colors.primary })} style={{ backgroundColor: colors.primary }}>
+                <CButton 
+                  onClick={() => Swal.fire({ 
+                    title: 'Extend Stay', 
+                    text: 'Would you like to request an extension for your stay?', 
+                    icon: 'question',
+                    showCancelButton: true, 
+                    confirmButtonColor: colors.primary 
+                  })} 
+                  style={{ backgroundColor: totalDue > 0 ? 'transparent' : colors.primary, border: totalDue > 0 ? `1px solid ${colors.primary}` : 'none' }}
+                  className={`px-8 py-3 rounded-md ${totalDue > 0 ? 'text-[#D97706]' : 'text-white'}`}
+                >
                   EXTEND STAY
                 </CButton>
               )}
 
-              {!showPayNow && !showExtendStay && (
-                <PayNowButton amount={(intentAmount != null ? intentAmount : (paymentData.nextPayment?.amount || 8500)) + (paymentData.lateFine || 0)} pgId={paymentData.nextPayment?.pgId || ""} intentType={(intentType || (stayStatus !== 'Active')) ? 'MOVE_IN_PAYMENT' : 'MONTHLY_RENT'} className="w-full sm:w-64" onSuccess={() => { fetchPaymentDetails(); fetchAgreementStatus(); }}>
-                  {stayStatus === 'Pending' ? "AWAITING CONFIRMATION" : (isProcessing ? "PROCESSING..." : "PAY & MOVE-IN")}
+              {!showPayNow && !showExtendStay && stayStatus !== 'Active' && (
+                <PayNowButton 
+                  amount={totalDue} 
+                  pgId={paymentData.nextPayment?.pgId || ""} 
+                  intentType="MOVE_IN_PAYMENT"
+                  className="px-8 py-3 rounded-md font-bold text-white"
+                  style={{ backgroundColor: colors.primary }}
+                  onSuccess={() => { fetchPaymentDetails(); fetchAgreementStatus(); }}
+                >
+                  {stayStatus === 'Pending' ? "AWAITING CONFIRMATION" : "PAY & MOVE-IN"}
                 </PayNowButton>
               )}
             </div>
           </div>
         </div>
 
-        {/* Stats Card */}
-        <div className="bg-white p-8 rounded-xl border flex flex-col items-center justify-center text-center shadow-sm" style={{ borderColor: colors.border }}>
-          <FaCheckCircle className="text-3xl mb-3" style={{ color: colors.primary }} />
+        {/* Lifetime Stats Card */}
+        <div className="bg-white p-8 rounded-md border flex flex-col items-center justify-center text-center shadow-sm" style={{ borderColor: colors.border }}>
+          <FaCheckCircle className="text-4xl mb-3" style={{ color: colors.primary }} />
           <p className="text-xs font-bold uppercase" style={{ color: colors.textSecondary }}>Lifetime Paid</p>
           <p className="text-3xl font-black" style={{ color: colors.textPrimary }}>₹{paymentData.totalPaid}</p>
           <div className="mt-4 px-4 py-1 rounded-full text-[10px] font-bold border" style={{ borderColor: colors.primary, color: colors.primary }}>
@@ -234,8 +190,8 @@ const Payments = () => {
         </div>
       </div>
 
-      {/* History Table */}
-      <div className="bg-white rounded-xl shadow-sm border overflow-hidden" style={{ borderColor: colors.border }}>
+      {/* Payment History Table */}
+      <div className="bg-white rounded-md shadow-sm border overflow-hidden" style={{ borderColor: colors.border }}>
         <div className="p-6 border-b flex items-center gap-2" style={{ borderColor: colors.border }}>
           <FaHistory style={{ color: colors.primary }} />
           <h2 className="font-bold">Payment History</h2>
@@ -252,15 +208,16 @@ const Payments = () => {
               </tr>
             </thead>
             <tbody>
-              {paymentData.history.map((pay) => {
-                const statusClass = (pay.status && String(pay.status).toLowerCase() === 'paid') ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700';
-                return (
+              {paymentData.history.length > 0 ? (
+                paymentData.history.map((pay) => (
                   <tr key={pay.id} className="border-b hover:bg-gray-50 transition-colors">
                     <td className="p-5 font-bold">{pay.month}</td>
                     <td className="p-5 text-sm" style={{ color: colors.textSecondary }}>{pay.date}</td>
                     <td className="p-5 font-black">₹{pay.amount}</td>
                     <td className="p-5">
-                      <span className={"px-3 py-1 rounded text-[10px] font-bold uppercase " + statusClass}>
+                      <span className={`px-3 py-1 rounded text-[10px] font-bold uppercase ${
+                        pay.status?.toLowerCase() === 'paid' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
+                      }`}>
                         {pay.status}
                       </span>
                     </td>
@@ -270,8 +227,12 @@ const Payments = () => {
                       </button>
                     </td>
                   </tr>
-                );
-              })}
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="5" className="p-10 text-center text-gray-400">No payment history available.</td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

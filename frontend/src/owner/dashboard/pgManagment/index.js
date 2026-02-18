@@ -132,7 +132,7 @@ const PgManagement = () => {
 
       {/* PAGE HEADER */}
       <div className="space-y-1">
-        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-black text-primary">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-black">
           PG Management
         </h1>
         <p className="text-sm sm:text-base lg:text-lg text-gray-500">
@@ -141,7 +141,7 @@ const PgManagement = () => {
       </div>
 
       {/* ADD NEW PROPERTY */}
-      <div className="bg-white p-5 sm:p-8 rounded-md shadow border-2 border-primary flex flex-col items-center text-center max-w-4xl mx-auto">
+      <div className="bg-white p-5 sm:p-8 rounded-md shadow border border-primary flex flex-col items-center text-center max-w-4xl mx-auto">
         <FaHome size={42} className="text-orange-500 mb-4" />
         <h3 className="text-lg sm:text-xl font-semibold mb-2 text-gray-800">
           Add New Property
@@ -159,7 +159,7 @@ const PgManagement = () => {
       </div>
 
       {/* MY UPLOADED PGs */}
-      <div className="bg-white p-4 sm:p-6 border border-primary rounded-md shadow">
+      <div className="bg-white p-4 sm:p-6  rounded-md shadow">
         <div className="mb-6">
           <h3 className="text-lg sm:text-xl md:text-2xl font-semibold text-gray-800">
             My Uploaded PGs
@@ -173,7 +173,7 @@ const PgManagement = () => {
           {myPgs.map((pg) => (
             <div
               key={pg.id}
-              className="border border-gray-200 rounded-xl bg-white overflow-hidden flex flex-col hover:shadow-md transition-shadow"
+              className="border border-gray-200 rounded-md bg-white overflow-hidden flex flex-col hover:shadow-md transition-shadow"
             >
               <div className="aspect-video w-full overflow-hidden">
                  <img
@@ -218,13 +218,13 @@ const PgManagement = () => {
                     </button>
 
                     {/* UPDATED EDIT BUTTON */}
-                    <CButton 
+                  <button 
                       onClick={() => openEditModal(pg)} 
                       className="text-gray-500 hover:text-primary transition-colors" 
                       title="Edit PG"
                     >
                       <FaEdit className="text-xl sm:text-2xl" />
-                    </CButton>
+                    </button>
 
                     <button onClick={() => handleDeletePg(pg.id)} className="text-red-400 hover:text-red-600 transition-colors" title="Delete PG">
                       <FaTrash className="text-lg sm:text-xl" />
@@ -262,7 +262,7 @@ const PgManagement = () => {
           ></div>
           
           {/* Modal Content */}
-          <div className="bg-white rounded-xl shadow-2xl z-[100000] w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+          <div className="bg-white rounded-md shadow-2xl z-[100000] w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
             <div className="bg-primary p-4 flex justify-between items-center text-white">
               <h2 className="font-bold text-lg">Edit PG Basic Info</h2>
               <button 

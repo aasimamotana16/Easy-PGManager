@@ -128,7 +128,7 @@ export default function FAQ() {
                       setActiveCategory(category);
                       setActiveQuestionId(null);
                     }}
-                    className={`whitespace-nowrap lg:whitespace-normal text-left px-5 py-3.5 rounded-xl transition-all duration-200 flex-shrink-0 border ${
+                    className={`whitespace-nowrap lg:whitespace-normal text-left px-5 py-3.5 rounded-md transition-all duration-200 flex-shrink-0 border ${
                       activeCategory === category
                         ? "bg-primary text-textLight border-primary font-bold shadow-lg shadow-primary/20"
                         : "bg-white text-textSecondary border-border hover:border-primary/50"

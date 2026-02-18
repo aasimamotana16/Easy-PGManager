@@ -321,7 +321,7 @@ const DashboardHome = () => {
 const ActionButton = ({ label, icon, onClick }) => (
   <CButton
     onClick={onClick}
-    className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-3 text-[11px] sm:text-sm md:text-3xl lg:text-lg py-4 px-2 w-full transition-all border-2 border-primary/30 hover:border-primary"
+    className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-3 text-[11px] sm:text-sm md:text-3xl lg:text-lg py-4 px-2 w-full transition-all border border-primary/30 hover:border-primary"
   >
     <span className="text-lg sm:text-xl md:text-4xl lg:text-xl">{icon}</span>
     {label}

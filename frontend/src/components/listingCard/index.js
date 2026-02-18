@@ -65,7 +65,7 @@ export default function ListingCard({
 
         {/* View Button - Styled with your primary colors */}
         <div className="mt-6">
-          <button className="bg-[#D97706] text-white font-bold py-2.5 px-6 rounded-xl hover:bg-[#B45309] transition-all active:scale-95 w-full md:w-max">
+          <button className="bg-[#D97706] text-white font-bold py-2.5 px-6 rounded-md hover:bg-[#B45309] transition-all active:scale-95 w-full md:w-max">
             View Details
           </button>
         </div>

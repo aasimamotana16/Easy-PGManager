@@ -171,7 +171,7 @@ export default function FindMyPG() {
                 <PGListings list={filteredPGs} />
               </div>
             ) : (
-              <div className="text-center py-20 bg-[#FEF3C7]/20 rounded-md border-2 border-dashed border-[#E5E0D9] px-6">
+              <div className="text-center py-20 bg-[#FEF3C7]/20 rounded-md border border-dashed border-[#E5E0D9] px-6">
                 <SearchX size={60} className="mx-auto text-[#4B4B4B]/30 mb-4" />
                 <h3 className="text-xl font-bold text-[#1C1C1C]">No Matching stays found</h3>
                 <p className="text-[#4B4B4B] mt-2 mb-6">Try changing your location or filters.</p>

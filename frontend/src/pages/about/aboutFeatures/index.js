@@ -42,10 +42,10 @@ const AboutFeatures = () => {
             transition={{ duration: 0.4, delay: i * 0.1 }}
             viewport={{ once: true }}
             // Updated border and background to match theme [cite: 2026-02-09]
-            className="bg-background border border-border rounded-xl shadow-sm hover:shadow-md p-6 flex flex-col items-start transition-all"
+            className="bg-background border border-border rounded-md shadow-sm hover:shadow-md p-6 flex flex-col items-start transition-all"
           >
             {/* Icon container uses primarySoft background [cite: 2026-02-09] */}
-            <div className="text-primary mb-4 bg-primarySoft p-3 rounded-lg">
+            <div className="text-primary mb-4 bg-primarySoft p-3 rounded-md">
               {feature.icon}
             </div>
             <h4 className="text-xl font-bold text-textPrimary mb-2">

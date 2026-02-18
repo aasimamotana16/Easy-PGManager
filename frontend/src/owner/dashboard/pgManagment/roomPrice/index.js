@@ -141,7 +141,7 @@ const SetRoomPrice = () => {
           background: "#ffffff",
           customClass: {
             popup: 'rounded-3xl border-none font-poppins',
-            confirmButton: 'rounded-xl px-10 py-3 text-xs font-medium tracking-widest'
+            confirmButton: 'rounded-md px-10 py-3 text-xs font-medium tracking-widest'
           }
         }).then((result) => {
           if (fromCreate) {
@@ -177,7 +177,7 @@ const SetRoomPrice = () => {
                 key={index}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-white rounded-3xl border-2 border-[#E5E0D9] overflow-hidden hover:border-[#D97706] transition-all"
+                className="bg-white rounded-3xl border border-[#E5E0D9] overflow-hidden hover:border-[#D97706] transition-all"
               >
                 <div className="flex flex-col lg:flex-row">
                   
@@ -189,7 +189,7 @@ const SetRoomPrice = () => {
                         <button 
                             type="button"
                             onClick={() => handleChange(index, 'acType', 'AC')}
-                            className={`flex-1 flex flex-col items-center p-4 rounded-xl border-2 transition-all ${room.acType === 'AC' ? 'bg-white border-[#D97706] text-[#D97706] shadow-sm' : 'bg-transparent border-transparent opacity-40 grayscale'}`}
+                            className={`flex-1 flex flex-col items-center p-4 rounded-md border transition-all ${room.acType === 'AC' ? 'bg-white border-[#D97706] text-[#D97706] shadow-sm' : 'bg-transparent border-transparent opacity-40 grayscale'}`}
                         >
                             <FaSnowflake size={18} className="mb-1" />
                             <span className="text-[10px] font-medium uppercase tracking-wider">AC</span>
@@ -197,7 +197,7 @@ const SetRoomPrice = () => {
                         <button 
                             type="button"
                             onClick={() => handleChange(index, 'acType', 'Non-AC')}
-                            className={`flex-1 flex flex-col items-center p-4 rounded-xl border-2 transition-all ${room.acType === 'Non-AC' ? 'bg-white border-[#D97706] text-[#D97706] shadow-sm' : 'bg-transparent border-transparent opacity-40 grayscale'}`}
+                            className={`flex-1 flex flex-col items-center p-4 rounded-md border transition-all ${room.acType === 'Non-AC' ? 'bg-white border-[#D97706] text-[#D97706] shadow-sm' : 'bg-transparent border-transparent opacity-40 grayscale'}`}
                         >
                             <FaFan size={18} className="mb-1" />
                             <span className="text-[10px] font-medium uppercase tracking-wider">Non-AC</span>
@@ -235,13 +235,13 @@ const SetRoomPrice = () => {
                                 type="number" 
                                 value={room.price} 
                                 onChange={(e) => handleChange(index, 'price', e.target.value)}
-                                className={`w-full h-full bg-white border-2 ${errors[`${index}-price`] ? 'border-red-400' : 'border-[#E5E0D9]'} border-r-0 rounded-l-xl px-4 text-lg font-normal focus:border-[#D97706] outline-none transition-all`}
+                                className={`w-full h-full bg-white border ${errors[`${index}-price`] ? 'border-red-400' : 'border-[#E5E0D9]'} border-r-0 rounded-l-xl px-4 text-lg font-normal focus:border-[#D97706] outline-none transition-all`}
                             />
                           </div>
                           <select 
                             value={room.billingCycle}
                             onChange={(e) => handleChange(index, 'billingCycle', e.target.value)}
-                            className="h-full bg-gray-50 border-2 border-[#E5E0D9] rounded-r-xl px-4 text-sm font-semibold text-[#1C1C1C] focus:border-[#D97706] outline-none transition-all cursor-pointer min-w-[120px]"
+                            className="h-full bg-gray-50 border border-[#E5E0D9] rounded-r-xl px-4 text-sm font-semibold text-[#1C1C1C] focus:border-[#D97706] outline-none transition-all cursor-pointer min-w-[120px]"
                           >
                             {billingOptions.map(opt => <option key={opt} value={opt}>{opt}ly</option>)}
                           </select>
@@ -255,14 +255,14 @@ const SetRoomPrice = () => {
                             placeholder="One-time collection" 
                             value={room.securityDeposit} 
                             onChange={(e) => handleChange(index, 'securityDeposit', e.target.value)}
-                            className="w-full h-14 bg-white border-2 border-[#E5E0D9] rounded-xl px-4 text-lg font-normal focus:border-[#D97706] outline-none transition-all"
+                            className="w-full h-14 bg-white border border-[#E5E0D9] rounded-md px-4 text-lg font-normal focus:border-primary outline-none transition-all"
                         />
                       </div>
 
-                      <div className="md:col-span-2 bg-[#FEF3C7]/20 p-5 rounded-2xl border border-[#D97706]/10 flex items-start gap-4">
-                         <div className="bg-[#D97706] p-2 rounded-lg text-white mt-1"><FaCalendarAlt size={14}/></div>
+                      <div className="md:col-span-2 bg-primarySoft/20 p-5 rounded-2xl border border-primary/10 flex items-start gap-4">
+                         <div className="bg-primary p-2 rounded-md text-white mt-1"><FaCalendarAlt size={14}/></div>
                          <div>
-                            <p className="text-[10px] font-semibold text-[#B45309] uppercase mb-1 tracking-widest">Owner Note</p>
+                            <p className="text-[10px] font-semibold text-primarydarkDark uppercase mb-1 tracking-widest">Owner Note</p>
                             <p className="text-sm text-[#4B4B4B] font-normal leading-relaxed">
                                Maintenance is handled by the user. Electricity charges are extra per unit.
                             </p>
@@ -287,7 +287,7 @@ const SetRoomPrice = () => {
 
           <CButton 
             onClick={addPriceCard} 
-            className="w-full py-8 border-2 border-dashed border-[#E5E0D9] rounded-2xl text-[#4B4B4B] font-medium uppercase text-[10px] tracking-[0.4em] hover:border-[#D97706] hover:text-[#D97706] transition-all bg-white"
+            className="w-full py-8 border border-dashed border-[#E5E0D9] rounded-2xl text-[#4B4B4B] font-medium uppercase text-[10px] tracking-[0.4em] hover:border-[#D97706] hover:text-[#D97706] transition-all bg-white"
           >
             + Add New Price Variant
           </CButton>
@@ -296,7 +296,7 @@ const SetRoomPrice = () => {
         <div className="mt-16 flex justify-end">
           <CButton 
             onClick={handleSavePricing}
-            className="!bg-[#D97706] !px-16 !py-4 shadow-xl !rounded-xl !text-white !font-medium !uppercase !text-xs !tracking-widest transition-all hover:bg-[#B45309]"
+            className="!bg-primary !px-16 !py-4 shadow-xl !rounded-md !text-white !font-medium !uppercase !text-xs !tracking-widest transition-all hover:bg-[#B45309]"
           >
             {isSaving ? "Processing..." : <><FaSave className="inline mr-2" /> Save Pricing Details</>}
           </CButton>
@@ -310,17 +310,17 @@ const FeatureToggle = ({ label, icon, active, onClick }) => (
   <button 
     type="button"
     onClick={onClick}
-    className={`w-full flex items-center justify-between p-4 rounded-2xl border-2 transition-all ${active ? 'bg-white border-[#D97706] shadow-sm' : 'bg-transparent border-transparent grayscale opacity-30'}`}
+    className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all ${active ? 'bg-white border-[#D97706] shadow-sm' : 'bg-transparent border-transparent grayscale opacity-30'}`}
   >
     <div className="flex items-center gap-4">
-      <div className={`p-2 rounded-xl ${active ? 'bg-[#FEF3C7] text-[#D97706]' : 'bg-gray-200 text-gray-500'}`}>
+      <div className={`p-2 rounded-md ${active ? 'bg-[#FEF3C7] text-primary' : 'bg-gray-200 text-gray-500'}`}>
         {icon}
       </div>
       <span className={`text-[10px] font-semibold uppercase tracking-wider ${active ? 'text-[#1C1C1C]' : 'text-gray-400'}`}>
         {label}
       </span>
     </div>
-    {active && <FaCheck className="text-[#D97706]" size={10} />}
+    {active && <FaCheck className="text-primary" size={10} />}
   </button>
 );
 

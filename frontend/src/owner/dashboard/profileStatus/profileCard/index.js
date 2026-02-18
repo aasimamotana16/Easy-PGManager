@@ -76,7 +76,7 @@ const ProfileCard = ({ profileData, setProfileData }) => {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow p-6 flex flex-col md:flex-row items-center gap-6 relative">
+    <div className="bg-white rounded-md shadow p-6 flex flex-col md:flex-row items-center gap-6 relative">
       <img 
         src={profileData.profileImage} 
         alt="Profile" 
@@ -139,7 +139,7 @@ const ProfileCard = ({ profileData, setProfileData }) => {
         {/* ===== Settings Modal ===== */}
         {settingsOpen && (
           <div className="fixed inset-0 bg-black/40 flex justify-center items-start pt-20 z-50">
-            <div className="bg-white rounded-lg w-[90%] max-w-xl shadow-lg p-6 relative">
+            <div className="bg-white rounded-md w-[90%] max-w-xl shadow-lg p-6 relative">
               <button 
                 className="absolute top-4 right-4 text-gray-500 text-xl"
                 onClick={() => setSettingsOpen(false)}

@@ -36,7 +36,7 @@ export default function FilterBar({ onFilterChange }) {
   };
 
   return (
-    <div className="p-6 bg-card rounded-xl shadow-card space-y-6">
+    <div className="p-6 bg-card rounded-md shadow-card space-y-6">
 
       {/* Gender */}
       <CInput

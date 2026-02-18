@@ -148,7 +148,7 @@ const downloadTimelinePDF = async () => {
         </div>
 
         {/* MONTH FILTER */}
-        <div className="flex items-center gap-3 bg-white p-2 rounded-md border-2 border-primary/30 shadow">
+        <div className="flex items-center gap-3 bg-white p-2 rounded-md border border-primary/30 shadow">
           <FaFilter className="text-gray-400 ml-2" />
           <select 
             className="bg-transparent font-bold text-xs md:text-sm uppercase outline-none cursor-pointer"
@@ -165,9 +165,9 @@ const downloadTimelinePDF = async () => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           
           {/* LEFT COLUMN: EVENTS */}
-          <div className="lg:col-span-5 bg-white rounded-md border-2 border-primary shadow p-6 md:p-8">
+          <div className="lg:col-span-5 bg-white rounded-md border border-primary shadow p-6 md:p-8">
             <div className="flex justify-between items-center mb-8">
-              <h3 className="text-base md:text-3xl lg:text-2xl font-black uppercase tracking-tight text-gray-800">
+              <h3 className="text-xl font-black uppercase tracking-tight text-gray-800">
                 Key Events
               </h3>
               <div className="flex items-center gap-2">
@@ -179,7 +179,7 @@ const downloadTimelinePDF = async () => {
             <div className="relative space-y-8 before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:ml-[22px] before:h-full before:w-0.5 before:bg-gradient-to-b before:from-orange-500 before:via-gray-200 before:to-transparent">
               {timelineEvents.map((event, index) => (
                 <div key={index} className="relative flex items-center gap-6 group">
-                  <div className="flex h-10 w-10 md:h-12 md:w-12 shrink-0 items-center justify-center rounded-md bg-white border-2 border-orange-500 shadow-sm z-10 group-hover:scale-110 transition-transform">
+                  <div className="flex h-10 w-10 md:h-12 md:w-12 shrink-0 items-center justify-center rounded-md bg-white border border-orange-500 shadow-sm z-10 group-hover:scale-110 transition-transform">
                     <span className="text-lg md:text-xl">{event.icon}</span>
                   </div>
                   <div className="flex flex-col">
@@ -203,9 +203,9 @@ const downloadTimelinePDF = async () => {
           </div>
 
           {/* RIGHT COLUMN: GRAPH */}
-          <div className="lg:col-span-7 bg-white rounded-md border-2 border-primary shadow p-6 md:p-8">
+          <div className="lg:col-span-7 bg-white rounded-md  shadow p-6 md:p-8">
             <div className="mb-6">
-              <h3 className="text-base md:text-3xl lg:text-2xl font-black uppercase tracking-tight text-gray-800">
+              <h3 className="text-xl font-black uppercase tracking-tight text-gray-800">
                 Monthly Activity
               </h3>
               <div className="flex gap-4 mt-2">

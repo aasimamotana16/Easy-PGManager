@@ -60,7 +60,7 @@ const AboutWhyChooseUs = () => {
                 key={index} 
                 variants={itemVariants}
                 /* Swapped orange-50 for primarySoft [cite: 2026-02-09] */
-                className="flex items-start gap-3 p-4 rounded-xl hover:bg-primarySoft transition-colors duration-300"
+                className="flex items-start gap-3 p-4 rounded-md hover:bg-primarySoft transition-colors duration-300"
               >
                 <CheckCircle className="text-primary mt-1 flex-shrink-0" size={24} />
                 <div>

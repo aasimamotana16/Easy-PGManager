@@ -144,7 +144,7 @@ const Contact = () => {
           animate="visible"
           className="flex-1 flex justify-center"
         >
-          <CFormCard className="w-full max-w-2xl md:max-w-3xl border-[#D97706] p-8 lg:p-12">
+          <CFormCard className="w-full max-w-2xl rounded-md md:max-w-3xl border-[#D97706] p-8 lg:p-12">
             <h2 className="text-center mb-8 text-3xl sm:text-4xl font-bold text-[#D97706] tracking-tight">
               Get in Touch
             </h2>
@@ -201,7 +201,7 @@ const Contact = () => {
                   text={loading ? "Sending..." : "Send Message"} 
                   disabled={loading} 
                   variant="contained" 
-                  className="w-full py-4 text-lg font-bold shadow-md bg-[#D97706]" 
+                  className="w-full py-4 text-lg font-bold shadow-md bg-primary" 
                 />
               </motion.div>
             </form>
@@ -216,7 +216,7 @@ const Contact = () => {
           transition={{ delay: 0.2 }}
           className="flex-1 flex flex-col gap-8"
         >
-          <div className="bg-white p-8 rounded-md shadow-lg border border-[#D97706]">
+          <div className="bg-white p-8 rounded-md shadow-lg border border-primary">
             <h3 className="text-2xl md:text-3xl font-bold text-[#1C1C1C] mb-4">
               How can We Help?
             </h3>
@@ -224,19 +224,19 @@ const Contact = () => {
               Get in touch with our support team for demos, onboarding help, or product questions.
             </p>
             <ul className="space-y-4 text-lg font-medium">
-              <li className="flex items-center gap-3"><span className="text-[#D97706] font-bold">✔</span> Request a demo</li>
-              <li className="flex items-center gap-3"><span className="text-[#D97706] font-bold">✔</span> Choose the right plan</li>
-              <li className="flex items-center gap-3"><span className="text-[#D97706] font-bold">✔</span> Get onboarding help</li>
+              <li className="flex items-center gap-3"><span className="text-primary font-bold">✔</span> Request a demo</li>
+              <li className="flex items-center gap-3"><span className="text-primary font-bold">✔</span> Choose the right plan</li>
+              <li className="flex items-center gap-3"><span className="text-primary font-bold">✔</span> Get onboarding help</li>
             </ul>
             
             <div className="mt-10">
               <motion.div 
                 whileHover={{ scale: 1.02 }}
-                className="bg-[#FEF3C7] p-8 rounded-xl shadow border border-[#E5E0D9]"
+                className="bg-primarySoft p-8 rounded-md shadow border border-[#E5E0D9]"
               >
                 <h4 className="text-[#1C1C1C] mb-2 text-xl font-bold">General Communication</h4>
                 <p className="text-[#4B4B4B] mb-1">Email us at:</p>
-                <p className="font-semibold text-[#B45309] break-all text-xl underline decoration-[#D97706]/30">
+                <p className="font-semibold text-primaryDark break-all text-xl underline decoration-primary/30">
                   support@easyPGmanager.com
                 </p>
               </motion.div>

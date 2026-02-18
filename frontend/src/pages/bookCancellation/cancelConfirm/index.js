@@ -5,7 +5,7 @@ const CancelConfirmModal = ({ onClose, onConfirm }) => {
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 backdrop-blur-sm px-4">
       {/* Background set to your theme's default white [cite: 2026-02-09] */}
-      <div className="bg-background rounded-xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-border animate-in fade-in zoom-in duration-200">
+      <div className="bg-background rounded-md p-6 sm:p-8 max-w-md w-full shadow-2xl border border-border animate-in fade-in zoom-in duration-200">
         
         {/* Responsive Heading [cite: 2026-02-06] */}
         <h3 className="text-h3-sm lg:text-h3 font-bold text-textPrimary mb-2">

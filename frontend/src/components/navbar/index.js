@@ -62,6 +62,19 @@ const Navbar = () => {
     return () => window.removeEventListener("storage", checkLoginStatus);
   }, []);
 
+  useEffect(() => {
+    const handleProfileUpdate = (event) => {
+      if (event.key === "user" || event.key === "userName") {
+        checkLoginStatus();
+      }
+    };
+
+    window.addEventListener("storage", handleProfileUpdate);
+    return () => {
+      window.removeEventListener("storage", handleProfileUpdate);
+    };
+  }, []);
+
   const handleLogout = async () => {
     try {
       const token = localStorage.getItem("userToken");
@@ -164,7 +177,7 @@ const Navbar = () => {
               </button>
               
               {profileOpen && (
-                <div className="absolute right-0 top-12 w-48 bg-white rounded-lg shadow-xl z-[110] overflow-hidden border border-[#E5E0D9]">
+                <div className="absolute right-0 top-12 w-48 bg-white rounded-md shadow-xl z-[110] overflow-hidden border border-[#E5E0D9]">
                   <div className="py-1">
                     <button onClick={goToDashboard} className="w-full px-4 py-2 hover:bg-[#FEF3C7] text-[#1C1C1C] text-sm text-left">Dashboard</button>
                     <button onClick={goToProfile} className="w-full px-4 py-2 hover:bg-[#FEF3C7] text-[#1C1C1C] text-sm text-left">My Profile</button>
@@ -233,7 +246,7 @@ const Navbar = () => {
               </>
             ) : (
               <div className="flex flex-col items-center py-4 animate-in zoom-in duration-300">
-                <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-4xl mb-4 border-2 border-green-200">
+                <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-4xl mb-4 border border-green-200">
                   ✓
                 </div>
                 <h3 className="text-2xl font-bold text-[#1C1C1C]">Success!</h3>

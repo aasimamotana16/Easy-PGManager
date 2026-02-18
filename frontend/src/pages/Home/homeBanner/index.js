@@ -82,7 +82,7 @@ const HomeBanner = () => {
 
               <div className="w-full sm:w-auto">
                 <CButton
-                  className="font-bold border-2 border-border text-textSecondary hover:bg-gray-50 transition-colors"
+                  className="font-bold border border-border text-textSecondary hover:bg-gray-50 transition-colors"
                   variant="outlined"
                   onClick={() => navigate("/about")}
                 >

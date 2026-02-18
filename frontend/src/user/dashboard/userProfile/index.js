@@ -243,7 +243,7 @@ const Profile = () => {
             <div className="relative group">
               <motion.div 
                 whileHover={{ scale: 1.02 }}
-                className="w-28 h-28 lg:w-40 lg:h-40 rounded-full overflow-hidden border-4 border-[#D97706] shadow-xl"
+                className="w-28 h-28 lg:w-40 lg:h-40 rounded-md overflow-hidden border-4 border-[#D97706] shadow-xl"
               >
                 {user?.profilePicture ? (
                   <img src={`http://localhost:5000${user.profilePicture}`} alt="Profile" className="w-full h-full object-cover" />
@@ -253,7 +253,7 @@ const Profile = () => {
                   </div>
                 )}
               </motion.div>
-              <button onClick={handleUploadClick} className="absolute bottom-0 right-0 bg-[#1C1C1C] text-white p-2 lg:p-3 rounded-full hover:bg-[#D97706] transition-colors shadow-lg">
+              <button onClick={handleUploadClick} className="absolute bottom-0 right-0 bg-[#1C1C1C] text-white p-2 lg:p-3 rounded-md hover:bg-[#D97706] transition-colors shadow-lg">
                 <FaCamera size={12} />
               </button>
             </div>
@@ -270,7 +270,7 @@ const Profile = () => {
                 <FaTrash className="inline mr-2" /> Remove Photo
             </CButton>
             
-            <div className="mt-10 bg-[#1F1F1F] rounded-2xl p-6 text-white shadow-2xl">
+            <div className="mt-10 bg-[#1F1F1F] rounded-md p-6 text-white shadow-2xl">
               <div className="flex justify-between items-center mb-4">
                 <span className="text-[10px] font-bold uppercase tracking-widest opacity-60">Profile Strength</span>
                 <span className="text-[#D97706] font-bold">{user?.profileCompletion || 0}%</span>
@@ -298,7 +298,7 @@ const Profile = () => {
               <h1 className="text-2xl lg:text-4xl font-black text-[#1C1C1C] tracking-tight">Profile Settings</h1>
               <p className="text-[10px] lg:text-xs font-bold text-[#4B4B4B] uppercase tracking-[0.2em] mt-1">Verified Identity Management</p>
             </div>
-            <div className="flex items-center gap-2 bg-[#FEF3C7] px-4 py-2 rounded-full border border-[#D97706]/30">
+            <div className="flex items-center gap-2 bg-[#FEF3C7] px-4 py-2 rounded-md border border-[#D97706]/30">
               <FaCheckCircle className="text-[#D97706]" />
               <span className="text-[10px] font-bold uppercase text-[#B45309]">Verified User</span>
             </div>
@@ -316,7 +316,7 @@ const Profile = () => {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-3 px-6 py-3 rounded-xl text-[11px] font-bold uppercase transition-all whitespace-nowrap border-2 ${
+                  className={`flex items-center gap-3 px-6 py-3 rounded-md text-[11px] font-bold uppercase transition-all whitespace-nowrap border ${
                     activeTab === tab.id 
                     ? "bg-[#D97706] text-white border-[#D97706] shadow-lg translate-y-[-2px]" 
                     : "bg-white text-[#4B4B4B] border-[#E5E0D9] hover:border-[#D97706] hover:text-[#D97706]"
@@ -327,7 +327,7 @@ const Profile = () => {
               ))}
             </div>
 
-            <CButton onClick={openEditModal} className="w-full lg:w-auto !rounded-xl text-[11px] uppercase px-8 py-3.5 flex items-center justify-center gap-2 shadow-xl hover:bg-[#B45309]">
+            <CButton onClick={openEditModal} className="w-full lg:w-auto !rounded-md text-[11px] uppercase px-8 py-3.5 flex items-center justify-center gap-2 shadow-xl hover:bg-[#B45309]">
               <FaUserEdit size={16} /> Edit Profile
             </CButton>
           </div>
@@ -340,7 +340,7 @@ const Profile = () => {
               initial="hidden"
               animate="visible"
               exit={{ opacity: 0, x: -10 }}
-              className="bg-white rounded-2xl border-2 border-[#E5E0D9] shadow-sm p-6 lg:p-12 relative overflow-hidden"
+              className="bg-white rounded-md border border-[#E5E0D9] shadow-sm p-6 lg:p-12 relative overflow-hidden"
             >
               <h3 className="text-xl lg:text-2xl font-bold text-[#1C1C1C] mb-10 border-b border-gray-50 pb-6 capitalize flex items-center gap-4">
                 <motion.span initial={{ height: 0 }} animate={{ height: 30 }} className="w-1.5 bg-[#D97706] rounded-full" />
@@ -388,7 +388,7 @@ const Profile = () => {
                 )}
 
                 {activeTab === 'payment' && (
-                  <motion.div variants={fadeInUp} className="md:col-span-2 bg-[#FEF3C7]/50 rounded-2xl p-8 border-2 border-[#D97706]/10">
+                  <motion.div variants={fadeInUp} className="md:col-span-2 bg-[#FEF3C7]/50 rounded-md p-8 border border-[#D97706]/10">
                     <p className="text-[10px] font-bold uppercase text-[#B45309] mb-8 flex items-center gap-2">
                        <FaCreditCard /> Linked Settlement Account
                     </p>
@@ -447,7 +447,7 @@ const Profile = () => {
                       <button 
                         key={type} 
                         onClick={() => setFormData({...formData, occupationType: type})} 
-                        className={`flex-1 py-4 rounded-xl font-bold uppercase text-[10px] border-2 transition-all ${
+                        className={`flex-1 py-4 rounded-md font-bold uppercase text-[10px] border transition-all ${
                           formData.occupationType === type 
                           ? "border-[#D97706] bg-[#FEF3C7] text-[#B45309]" 
                           : "border-[#E5E0D9] text-[#4B4B4B]"

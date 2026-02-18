@@ -142,7 +142,7 @@ const BookingManagement = () => {
   };
 
   return (
-    <div className="p-4 md:p-10 bg-gray-100 min-h-screen">
+    <div className="p-4 md:p-10 bg-gray-200 min-h-screen">
       {/* HEADER SECTION */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
@@ -152,13 +152,13 @@ const BookingManagement = () => {
       </div>
 
       {/* SEARCH AND FILTER */}
-      <div className="flex flex-col md:flex-row gap-4 mb-8 bg-white p-4 rounded-xl shadow-sm border border-[#D97706]">
+      <div className="flex flex-col md:flex-row gap-4 mb-8 bg-white p-4 rounded-md shadow-sm border border-[#D97706]">
         <div className="relative flex-grow">
-          <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+          <FaSearch className="absolute left-4 top-1/3 -translate-y-1/2 text-gray-400" />
           <input 
             type="text"
             placeholder="Search by name, ID, or PG..." 
-            className="w-full pl-12 pr-4 py-3 rounded-lg border border-[#E5E0D9] focus:outline-none focus:ring-1 focus:ring-[#D97706] text-sm"
+            className="w-full pl-12 pr-4 py-3 rounded-md border border-[#E5E0D9] focus:outline-none focus:ring-1 focus:ring-[#D97706] text-sm"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -172,7 +172,7 @@ const BookingManagement = () => {
       </div>
 
       {/* TABLE */}
-      <div className="bg-white rounded-xl shadow-sm border border-[#E5E0D9] overflow-hidden">
+      <div className="bg-white rounded-md shadow-sm border border-[#E5E0D9] overflow-hidden">
         <div className="p-6 border-b border-[#E5E0D9]">
            <h2 className="text-h3-sm lg:text-h3 font-bold text-[#1C1C1C]">Bookings List</h2>
         </div>
@@ -199,7 +199,7 @@ const BookingManagement = () => {
                   <td className="p-5 text-[#4B4B4B] font-medium">{b.pgName}</td>
                   <td className="p-5">
                     <div className="flex justify-center">
-                      <span className="px-3 py-1 rounded border border-[#D97706] text-[#B45309] text-[10px] font-bold uppercase min-w-[80px] text-center">
+                      <span className="px-3 py-1 rounded-md border border-[#D97706] text-[#B45309] text-[10px] font-bold uppercase min-w-[80px] text-center">
                         {b.roomType}
                       </span>
                     </div>
@@ -214,7 +214,7 @@ const BookingManagement = () => {
                   </td>
                   <td className="p-5">
                     <div className="flex flex-col items-center justify-center gap-1">
-                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase ${
+                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-[10px] font-bold uppercase ${
                         b.status === "Pending" ? "bg-yellow-100 text-yellow-700" :
                         b.status === "Confirmed" ? "bg-green-100 text-green-700" : 
                         "bg-red-100 text-red-700"
@@ -245,7 +245,7 @@ const BookingManagement = () => {
                       {b.status === "Confirmed" && !b.isPaid && (
                         <button 
                           onClick={() => handleResendEmail(b._id)}
-                          className="p-2 text-[#D97706] hover:bg-[#FEF3C7] rounded-full transition-all"
+                          className="p-2 text-[#D97706] hover:bg-[#FEF3C7] rounded-md transition-all"
                           title="Resend Payment Link"
                         >
                           <FaRegPaperPlane size={16} />
@@ -253,7 +253,7 @@ const BookingManagement = () => {
                       )}
                       <button 
                         onClick={() => handleDownload(b.bookingId)}
-                        className="p-2 text-[#4B4B4B] hover:text-[#D97706] hover:bg-[#FEF3C7] rounded-full transition-all"
+                        className="p-2 text-[#4B4B4B] hover:text-[#D97706] hover:bg-[#FEF3C7] rounded-md transition-all"
                         title="Download Confirmation"
                       >
                         <LuDownload size={20} />

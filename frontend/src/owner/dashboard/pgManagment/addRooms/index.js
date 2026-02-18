@@ -131,14 +131,14 @@ const AddRooms = () => {
       <div className="max-w-5xl mx-auto mb-8">
         <h1 className="text-4xl font-bold text-[#1C1C1C]">Add Rooms</h1>
         <p className="text-[#4B4B4B] mt-2">
-          Adding rooms for <span className="font-bold text-[#D97706]">{pgData?.name || 'Your Property'}</span>
+          Adding rooms for <span className="font-bold text-primary">{pgData?.name || 'Your Property'}</span>
         </p>
       </div>
 
-      <CFormCard className="max-w-5xl mx-auto bg-white border border-[#E5E0D9] shadow-sm rounded-xl overflow-hidden">
-        <div className="p-6 border-b border-[#E5E0D9] bg-[#FEF3C7]/40">
+      <CFormCard className="max-w-5xl mx-auto bg-white border border-[#E5E0D9] shadow-sm rounded-md overflow-hidden">
+        <div className="p-6 border-b border-[#E5E0D9] bg-primarysoft/40">
           <h2 className="text-h2-sm lg:text-h2 font-bold text-[#1C1C1C] flex items-center gap-2">
-            <FaDoorOpen className="text-[#D97706]" /> Room Specifications
+            <FaDoorOpen className="text-primary" /> Room Specifications
           </h2>
         </div>
 
@@ -160,21 +160,21 @@ const AddRooms = () => {
             {fromCreate && (
               <div className="md:col-span-2 border-t pt-6">
                 <label className="block text-sm font-bold text-[#1C1C1C] mb-3 flex items-center gap-2">
-                  <FaStar className="text-[#D97706] text-xs" /> Main Room Photo <span className="text-xs font-normal text-gray-500">(This will be shown first)</span>
+                  <FaStar className="text-primary text-xs" /> Main Room Photo <span className="text-xs font-normal text-gray-500">(This will be shown first)</span>
                 </label>
                 
                 {!roomData.mainImage ? (
-                  <div className="p-8 bg-gray-50 rounded-xl border-2 border-dashed border-[#E5E0D9] hover:border-[#D97706] transition-all text-center">
+                  <div className="p-8 bg-gray-50 rounded-md border border-dashed border-[#E5E0D9] hover:border-primary transition-all text-center">
                     <input type="file" accept="image/*" onChange={handleMainImageUpload} className="hidden" id="main-img" />
                     <label htmlFor="main-img" className="cursor-pointer group">
-                      <FaImage className="mx-auto text-3xl text-gray-300 mb-2 group-hover:text-[#D97706]" />
-                      <span className="text-[#D97706] font-bold">Upload Main Image</span>
+                      <FaImage className="mx-auto text-3xl text-gray-300 mb-2 group-hover:text-primary" />
+                      <span className="text-primary font-bold">Upload Main Image</span>
                     </label>
                   </div>
                 ) : (
-                  <div className="flex items-center justify-between p-4 border-2 border-[#D97706] rounded-lg bg-[#FEF3C7]/20">
+                  <div className="flex items-center justify-between p-4 border border-primary rounded-md bg-primarySoft/20">
                     <div className="flex items-center gap-3 overflow-hidden">
-                      <div className="bg-[#D97706] p-2 rounded-md"><FaImage className="text-white" /></div>
+                      <div className="bg-primary p-2 rounded-md"><FaImage className="text-white" /></div>
                       <span className="text-sm font-bold text-[#1C1C1C] truncate">{roomData.mainImage.name}</span>
                     </div>
                     <div className="flex gap-1">
@@ -190,14 +190,14 @@ const AddRooms = () => {
             {/* SECTION 2: SUB IMAGES (GALLERY) */}
             <div className="md:col-span-2 border-t pt-6">
               <label className="block text-sm font-bold text-[#1C1C1C] mb-3">
-                Room Gallery {!fromCreate && <span className="text-[#D97706]">(Max 3 photos)</span>}
+                Room Gallery {!fromCreate && <span className="text-primary">(Max 3 photos)</span>}
               </label>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {roomData.subImages.map((file, index) => (
-                  <div key={index} className="flex items-center justify-between p-4 border border-[#E5E0D9] rounded-lg bg-white shadow-sm">
+                  <div key={index} className="flex items-center justify-between p-4 border border-[#E5E0D9] rounded-md bg-white shadow-sm">
                     <div className="flex items-center gap-3 overflow-hidden">
-                      <div className="bg-[#FEF3C7] p-2 rounded-md"><FaImage className="text-[#D97706]" /></div>
+                      <div className="bg-[#FEF3C7] p-2 rounded-md"><FaImage className="text-primary" /></div>
                       <span className="text-sm text-[#1C1C1C] truncate">{file.name}</span>
                     </div>
                     <div className="flex gap-1">
@@ -209,11 +209,11 @@ const AddRooms = () => {
 
                 {/* Hide Plus Button if limit reached for existing PGs */}
                 {(!fromCreate && roomData.subImages.length < 3) || fromCreate ? (
-                  <label htmlFor="sub-img" className="flex items-center justify-center p-4 border-2 border-dashed border-[#E5E0D9] hover:border-[#D97706] rounded-lg cursor-pointer transition-all group bg-gray-50">
+                  <label htmlFor="sub-img" className="flex items-center justify-center p-4 border border-dashed border-[#E5E0D9] hover:border-[#D97706] rounded-md cursor-pointer transition-all group bg-gray-50">
                     <input type="file" accept="image/*" multiple onChange={handleSubImagesUpload} className="hidden" id="sub-img" />
                     <div className="flex items-center gap-2">
-                      <span className="text-xl font-bold text-gray-400 group-hover:text-[#D97706]">+</span>
-                      <span className="text-sm font-bold text-gray-400 group-hover:text-[#D97706]">Add Gallery Photo</span>
+                      <span className="text-xl font-bold text-gray-400 group-hover:text-primary">+</span>
+                      <span className="text-sm font-bold text-gray-400 group-hover:text-primary">Add Gallery Photo</span>
                     </div>
                   </label>
                 ) : null}
@@ -222,7 +222,7 @@ const AddRooms = () => {
           </div>
 
           <div className="mt-12 border-t pt-8">
-            <CButton onClick={handleSaveRoom} className="w-full md:w-auto px-12 py-4 bg-[#D97706] hover:bg-[#B45309] text-white font-bold rounded-lg shadow-lg">
+            <CButton onClick={handleSaveRoom} className="w-full md:w-auto px-12 py-4 bg-primary hover:bg-primaryDark text-white font-bold rounded-md shadow-lg">
               Save Room & Continue
             </CButton>
           </div>

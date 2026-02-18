@@ -17,7 +17,7 @@ export default function PGListings({ list: filteredList }) {
 
   if (!displayList || displayList.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-24 bg-[#FEF3C7]/10 rounded-md border-2 border-dashed border-[#E5E0D9]">
+      <div className="flex flex-col items-center justify-center py-24 bg-[#FEF3C7]/10 rounded-md border border-dashed border-[#E5E0D9]">
         <SearchX size={56} className="text-[#4B4B4B]/20 mb-4" />
         <h3 className="text-lg font-semibold text-[#1C1C1C]">No PGs Found</h3>
         <p className="text-[#4B4B4B] text-sm">Try adjusting your filters or search area.</p>

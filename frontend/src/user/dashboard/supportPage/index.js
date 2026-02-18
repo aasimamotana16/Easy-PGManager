@@ -57,7 +57,7 @@ const Support = () => {
   };
 
   return (
-    <div className="space-y-8 p-6">
+    <div className="space-y-8 p-6 bg-gray-200 min-h-screen">
       <div className="space-y-2">
         <h2 className="text-2xl font-semibold text-primary">Support</h2>
         <p className="text-gray-600 text-md">
@@ -127,7 +127,7 @@ const Support = () => {
 
 // Fixed Info Component
 const Info = ({ label, value }) => (
-  <div className="bg-gray-50 rounded-md p-4 text-center border-2 border-primary">
+  <div className="bg-gray-50 rounded-md p-4 text-center border border-primary">
     <p className="text-[#4B4B4B] text-xs uppercase tracking-wider mb-1">{label}</p>
     <p className="text-[#1C1C1C] font-semibold">{value}</p>
   </div>

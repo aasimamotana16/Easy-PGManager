@@ -125,7 +125,7 @@ const AddTenant = ({ onClose, onSave, pgOptions = [] }) => {
               </label>
               <input
                 type="date"
-                className={`w-full border rounded-xl p-3 text-sm outline-none transition-all ${
+                className={`w-full border rounded-md p-3 text-sm outline-none transition-all ${
                   errors.name ? 'border-red-500' : 'border-border focus:border-primary'
                 }`}
                 value={form.joiningDate}

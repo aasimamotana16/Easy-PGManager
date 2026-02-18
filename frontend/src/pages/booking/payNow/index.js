@@ -70,7 +70,7 @@ const PayNow = () => {
             <p style={{ color: colors.textSecondary }}>Review your stay details and complete the payment to move in.</p>
           </div>
 
-          <div className="p-6 rounded-md border-2" style={{ borderColor: colors.border }}>
+          <div className="p-6 rounded-md border" style={{ borderColor: colors.border }}>
             <h2 className="text-xl font-bold mb-2">{booking.propertyName}</h2>
             <div className="flex items-center gap-2 mb-6 text-sm" style={{ color: colors.textSecondary }}>
               <MapPinIcon className="h-4 w-4" style={{ color: colors.primary }} />

@@ -70,7 +70,7 @@ export default function Filters({
         {/* 2. Budget Section */}
         <div className="space-y-2">
           <label className="text-sm font-bold text-[#1C1C1C]">Budget</label>
-          <div className="w-full rounded-xl border border-[#E5E0D9] px-3 py-2">
+          <div className="w-full rounded-md border border-[#E5E0D9] px-3 py-2">
             <p className="text-sm font-semibold text-[#4B4B4B]">Rs {budget.toLocaleString()}</p>
             <input
               type="range"
@@ -79,7 +79,7 @@ export default function Filters({
               step={BUDGET_STEP}
               value={budget}
               onChange={(e) => handleBudgetChange(e.target.value)}
-              className="w-full accent-[#D97706]"
+              className="w-full accent-primary"
             />
           </div>
         </div>
@@ -95,7 +95,7 @@ export default function Filters({
         </div>
 
         {/* 4. Amenities Dropdown */}
-        <div className="border border-[#E5E0D9] rounded-xl overflow-hidden">
+        <div className="border border-[#E5E0D9] rounded-md overflow-hidden">
           <button 
             type="button"
             onClick={() => setIsAmenityOpen(!isAmenityOpen)}
@@ -120,7 +120,7 @@ export default function Filters({
                       key={amenity}
                       type="button"
                       onClick={() => toggleAmenity(amenity)}
-                      className={`text-left px-3 py-2 rounded-lg text-xs font-semibold border transition-all
+                      className={`text-left px-3 py-2 rounded-md text-xs font-semibold border transition-all
                         ${selected 
                           ? "bg-[#FEF3C7] text-[#D97706] border-[#D97706]" 
                           : "bg-white text-[#4B4B4B] border-[#E5E0D9]"

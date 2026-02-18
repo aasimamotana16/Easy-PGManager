@@ -194,7 +194,7 @@ const SignUp = () => {
       </div>
 
       <div className="relative z-10 w-full px-4 lg:ml-20 flex justify-center lg:justify-start">
-        <CFormCard className="bg-white border border-gray-100 rounded-xl p-5 sm:p-8 w-full max-w-[360px] lg:max-w-none lg:w-[700px] animate-fadeIn shadow-none">  
+        <CFormCard className="bg-white border border-gray-100 rounded-md p-5 sm:p-8 w-full max-w-[360px] lg:max-w-none lg:w-[700px] animate-fadeIn shadow-none">  
   <div className="mb-2 flex justify-center">
     <img src="/logos/logo1.png" alt="Logo" className="h-10 md:h-14 w-auto" />
   </div>

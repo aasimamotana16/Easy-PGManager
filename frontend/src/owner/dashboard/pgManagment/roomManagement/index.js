@@ -89,7 +89,7 @@ const RoomManagement = () => {
     Swal.fire({
       title: 'Edit Room Details',
       customClass: {
-        popup: 'max-w-[95%] sm:max-w-[450px] rounded-xl',
+        popup: 'max-w-[95%] sm:max-w-[450px] rounded-md',
       },
       html: `
         <div class="text-left px-2">
@@ -224,7 +224,7 @@ const RoomManagement = () => {
             </p>
           </div>
           <CButton
-            className="w-full md:w-auto bg-[#D97706] text-white flex items-center justify-center gap-2 px-8 py-3 rounded-xl shadow-lg"
+            className="w-full md:w-auto bg-[#D97706] text-white flex items-center justify-center gap-2 px-8 py-3 rounded-md shadow-lg"
             onClick={() => navigate("/owner/dashboard/pgManagment/addRooms", { state: { pgId: propertyId } })}
           >
             <FaPlus /> Add New Room
@@ -232,7 +232,7 @@ const RoomManagement = () => {
         </div>
 
         {loading ? (
-          <div className="flex justify-center items-center h-64"><div className="animate-spin h-8 w-8 border-4 border-[#D97706] border-t-transparent rounded-full"></div></div>
+          <div className="flex justify-center items-center h-64"></div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {rooms.map((room, index) => {
@@ -242,13 +242,20 @@ const RoomManagement = () => {
               const status = room.status || (occupied >= total ? 'Full' : 'Active');
 
               return (
-                <div key={index} className="bg-white rounded-2xl border border-[#E5E0D9] shadow-sm overflow-hidden hover:shadow-md transition-shadow">
-                  <div className={`h-1.5 w-full ${status === 'Full' ? 'bg-red-500' : status === 'Maintenance' ? 'bg-gray-400' : 'bg-[#D97706]'}`}></div>
-                  
+                <div 
+                  key={index} 
+                  className="bg-white rounded-md border shadow-sm overflow-hidden transition-shadow hover:shadow-md" 
+                  style={{ 
+                    border: '2px solid #E5E0D9', 
+                    borderRadius: '1rem',
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.border = '2px solid #D97706'}
+                  onMouseLeave={(e) => e.currentTarget.style.border = '2px solid #E5E0D9'}
+                >
                   <div className="p-6">
                     <div className="flex justify-between items-start mb-4">
                       <div className="flex items-center gap-3">
-                        <div className="bg-[#FEF3C7] p-2 rounded-lg"><FaBed className="text-[#D97706]" /></div>
+                        <div className="bg-[#FEF3C7] p-2 rounded-md"><FaBed className="text-[#D97706]" /></div>
                         <div>
                           <h3 className="font-bold text-[#1C1C1C]">{room.roomType}</h3>
                           <p className="text-[10px] text-gray-500 uppercase font-bold tracking-tight">{room.totalRooms} Rooms Available</p>
@@ -261,12 +268,12 @@ const RoomManagement = () => {
 
                     <p className="text-sm text-[#4B4B4B] mb-4 line-clamp-1">{room.description || 'No description provided'}</p>
 
-                    <div className="bg-[#F8F9FA] p-3 rounded-xl mb-4">
+                    <div className="bg-[#F8F9FA] p-3 rounded-md mb-4">
                       <div className="flex justify-between items-center mb-1.5 text-xs font-bold text-[#4B4B4B]">
                         <span>Bed Occupancy</span>
                         <span>{occupied} / {total} Beds</span>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                      <div className="w-full bg-gray-200 rounded-md h-2 overflow-hidden">
                         <div 
                           className={`h-full transition-all duration-500 ${occupancyRate >= 100 ? 'bg-red-500' : 'bg-[#D97706]'}`} 
                           style={{ width: `${occupancyRate}%` }}
@@ -275,9 +282,9 @@ const RoomManagement = () => {
                     </div>
 
                     <div className="flex justify-end gap-2 pt-3 border-t border-gray-50">
-                      <button onClick={() => handleViewRoom(room)} className="p-2 bg-gray-50 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"><FaRegEye /></button>
-                      <button onClick={() => handleEditRoom(room, index)} className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"><FaEdit /></button>
-                      <button onClick={() => handleDeleteRoom(index)} className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"><FaTrash /></button>
+                      <button onClick={() => handleViewRoom(room)} className="p-2 bg-gray-50 text-gray-600 rounded-md hover:bg-gray-100 transition-colors"><FaRegEye /></button>
+                      <button onClick={() => handleEditRoom(room, index)} className="p-2 bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 transition-colors"><FaEdit /></button>
+                      <button onClick={() => handleDeleteRoom(index)} className="p-2 bg-red-50 text-red-600 rounded-md hover:bg-red-100 transition-colors"><FaTrash /></button>
                     </div>
                   </div>
                 </div>

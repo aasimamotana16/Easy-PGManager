@@ -170,7 +170,7 @@ const UserSidebar = ({ isOpen, closeSidebar }) => {
               </>
             ) : (
               <div className="flex flex-col items-center py-4 animate-in zoom-in duration-300">
-                <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-4xl mb-4 border-2 border-green-200">
+                <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-4xl mb-4 border border-green-200">
                   ✓
                 </div>
                 <h3 className="text-h2-sm lg:text-h2 font-bold text-[#1C1C1C]">Success!</h3>

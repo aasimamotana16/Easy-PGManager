@@ -11,7 +11,7 @@ const CCheckbox = ({ label, checked, onChange, className = "", error = false, he
             checked={checked}
             onChange={onChange}
             /* Themed border changes to danger color if there is an error [cite: 2026-02-09] */
-            className={`peer h-5 w-5 rounded border-2 transition-all cursor-pointer accent-primary 
+            className={`peer h-5 w-5 rounded border transition-all cursor-pointer accent-primary 
               ${error ? "border-danger" : "border-border"} 
               text-primary focus:ring-primarySoft`}
           />

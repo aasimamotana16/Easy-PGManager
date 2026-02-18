@@ -205,7 +205,7 @@ const DemoBook = ({ isOpen, onClose }) => {
                       type="submit"
                       variant="contained"
                       disabled={isSubmitting}
-                      className="w-full h-12 text-base font-bold rounded-xl bg-[#D97706] text-white hover:bg-[#B45309] transition-all shadow-md"
+                      className="w-full h-12 text-base font-bold rounded-md bg-[#D97706] text-white hover:bg-[#B45309] transition-all shadow-md"
                     />
                   </motion.div>
                 </div>

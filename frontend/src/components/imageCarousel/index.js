@@ -22,7 +22,7 @@ const ImageCarousel1 = () => {
   return (
     <Box
       component="div"
-      className="w-[140%] h-[300px] sm:h-[400px] md:h-[500px] flex items-center justify-center bg-background-default transition-all duration-500 ease-in-out rounded-lg shadow-md overflow-hidden"
+      className="w-[140%] h-[300px] sm:h-[400px] md:h-[500px] flex items-center justify-center bg-background-default transition-all duration-500 ease-in-out rounded-md shadow-md overflow-hidden"
     >
       <Box
         component="img"

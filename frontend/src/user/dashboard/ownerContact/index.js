@@ -55,7 +55,7 @@ const OwnerContact = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-xl border-2 border-primary/30 shadow self-start">
+        <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-md border border-primary/30 shadow self-start">
           <FaCheckCircle className="text-green-500" />
           <span className="text-[10px] md:text-xs font-black uppercase text-green-700 tracking-tighter">
             Verified Profile
@@ -66,7 +66,7 @@ const OwnerContact = () => {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10">
 
         {/* RIGHT COLUMN: DETAILS CARD - Matched to Timeline Data Style */}
-        <div className="lg:col-span-8 md:text-4xl lg:text-lg bg-white rounded-md border-2 border-primary shadow p-6 md:p-8 lg:p-12">
+        <div className="lg:col-span-8 md:text-4xl lg:text-lg bg-white rounded-md border border-primary shadow p-6 md:p-8 lg:p-12">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
             <Info icon={<FaUser />} label="Owner Name" value={ownerData.name} />
             <Info icon={<FaPhoneAlt />} label="Phone Number" value={ownerData.phone} />

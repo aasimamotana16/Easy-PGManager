@@ -54,7 +54,7 @@ const TermsConditions = () => {
         </div>
 
         {/* Content Container - Using border: #E5E0D9 */}
-        <div className="bg-white border border-[#E5E0D9] rounded-xl shadow-sm overflow-hidden">
+        <div className="bg-white border border-[#E5E0D9] rounded-md shadow-sm overflow-hidden">
           <div className="p-6 sm:p-10">
             {(loadingTerms ? [] : termsData).map((item, index) => (
               <section 

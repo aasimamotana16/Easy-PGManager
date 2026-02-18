@@ -99,9 +99,9 @@ export default function Services() {
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
-            className="max-w-4xl mx-auto bg-white rounded-2xl shadow-xl border-2 border-primary p-6 sm:p-10 lg:p-12 text-center overflow-hidden"
+            className="max-w-4xl mx-auto bg-white rounded-2xl shadow-xl border border-primary p-6 sm:p-10 lg:p-12 text-center overflow-hidden"
           >
-            <div className="relative group mb-8 overflow-hidden rounded-xl">
+            <div className="relative group mb-8 overflow-hidden rounded-md">
               <motion.img
                 whileHover={{ scale: 1.05 }}
                 transition={{ duration: 0.4 }}
