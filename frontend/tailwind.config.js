@@ -24,16 +24,16 @@ module.exports = {
       /* ================= TYPOGRAPHY WITH MOBILE (SM) TOKENS ================= */
       fontSize: {
         // Desktop Sizes
-        h1: ["60px", { lineHeight: "70px", fontWeight: "700" }], 
-        h2: ["45px", { lineHeight: "52px", fontWeight: "600" }], 
-        h3: ["28px", { lineHeight: "40px", fontWeight: "600" }], 
-        body: ["18px", { lineHeight: "30px", fontWeight: "400" }], 
+        'h1': ["60px", { lineHeight: "60px", fontWeight: "700" }], 
+        'h2': ["45px", { lineHeight: "40px", fontWeight: "600" }], 
+        'h3': ["23px", { lineHeight: "40px", fontWeight: "600" }], 
+        'body': ["18px", { lineHeight: "30px", fontWeight: "400" }], 
 
         // Mobile (sm) specific sizes for better responsiveness [cite: 2026-02-06]
-        "h1-sm": ["36px", { lineHeight: "42px", fontWeight: "400" }],
-        "h2-sm": ["28px", { lineHeight: "34px", fontWeight: "400" }],
-        "h3-sm": ["22px", { lineHeight: "28px", fontWeight: "400" }],
-        "body-sm": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+        'h1-sm': ["36px", { lineHeight: "42px", fontWeight: "400" }],
+        'h2-sm': ["28px", { lineHeight: "34px", fontWeight: "400" }],
+        'h3-sm': ["22px", { lineHeight: "28px", fontWeight: "400" }],
+        'body-sm': ["16px", { lineHeight: "24px", fontWeight: "400" }],
       },
     },
   },

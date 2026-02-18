@@ -139,12 +139,12 @@ const downloadTimelinePDF = async () => {
       {/* HEADER */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-2">
-          <h1 className="text-xl md:text-3xl font-black uppercase tracking-tight flex items-center gap-3">
+          <h2 className=" flex items-center gap-3">
             <FaHistory className="text-orange-500" /> Stay Timeline
-          </h1>
-          <p className="text-[10px] sm:text-xs md:text-lg text-[#4B4B4B] uppercase tracking-[0.2em]">
+          </h2>
+          <h3 className=" text-[#4B4B4B] ">
             Real-time activity & Transaction logs
-          </p>
+          </h3>
         </div>
 
         {/* MONTH FILTER */}

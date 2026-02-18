@@ -9,6 +9,7 @@ import {
   FaTrash
 } from "react-icons/fa";
 import { uploadUserDocument, getMyDocuments, deleteUserDocument } from "../../../api/api";
+import { Heading3 } from "lucide-react";
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
@@ -150,17 +151,21 @@ const Documents = () => {
   return (
     <div className="p-4 sm:p-6 lg:p-10 space-y-12 bg-gray-200 min-h-screen">
       {/* 🟢 Loader overlay removed from here as it is handled by the Layout/Sidebar */}
+      <div className="px-1">
+          <div>
+        <h2 className="  text-[#1C1C1C]"> Documents </h2>
+        </div>
+</div>
       
       <input type="file" accept=".pdf,.jpg,.png,.jpeg" className="hidden" ref={fileInputRef} onChange={handleFileChange} />
 
       {/* SECTION 1: PENDING DOCUMENTS */}
       <div className="space-y-6">
-        <div className="px-1">
-          <h2 className="text-xl md:text-3xl font-bold text-gray-800 flex items-center gap-3">
+          <h3 className=" text-gray-800 flex items-center gap-3">
             <FaExclamationCircle className="text-orange-500" /> Pending Action
-          </h2>
+          </h3>
           <p className="text-gray-500 text-sm">Documents required to complete your profile</p>
-        </div>
+
 
         <div className="grid grid-cols-1 gap-4">
           {pendingDocs.length > 0 ? pendingDocs.map((doc) => (
@@ -186,9 +191,9 @@ const Documents = () => {
       {/* SECTION 2: UPLOADED / RECENT DOCUMENTS */}
       <div className="space-y-6">
         <div className="px-1">
-          <h2 className="text-xl md:text-3xl font-bold text-gray-800 flex items-center gap-3">
+          <h3 className=" text-gray-800 flex items-center gap-3">
             <FaFileImport className="text-blue-500" /> Uploaded Documents
-          </h2>
+          </h3>
           <p className="text-gray-500 text-sm">View or update your existing legal records</p>
         </div>
 

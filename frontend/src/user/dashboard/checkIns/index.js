@@ -180,8 +180,8 @@ const CheckIns = () => {
       <div className="p-4 sm:p-6 lg:p-8 space-y-6">
         
         <div className="px-1 text-center md:text-left">
-          <h1 className="text-2xl sm:text-3xl font-bold text-[#1C1C1C]">Stay Management</h1>
-          <p className="text-sm sm:text-lg text-[#4B4B4B]">Manage your move-in, move-out, and billing history</p>
+          <h2 className=" font-bold text-[#1C1C1C]">Stay Management</h2>
+          <h3 className=" text-[#4B4B4B]">Manage your move-in, move-out, and billing history</h3>
         </div>
 
         {/* --- MAIN ACTION CARDS --- */}

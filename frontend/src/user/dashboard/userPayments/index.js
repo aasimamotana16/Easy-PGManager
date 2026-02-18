@@ -107,8 +107,8 @@ const Payments = () => {
   return (
     <div className="p-4 sm:p-8 bg-gray-100 min-h-screen space-y-6">
       <header>
-        <h1 className="text-3xl font-bold" style={{ color: colors.textPrimary }}>Payments & Invoices</h1>
-        <p style={{ color: colors.textSecondary }}>Track your rent cycle and receipts.</p>
+        <h2 className="" style={{ color: colors.textPrimary }}>Payments & Invoices</h2>
+        <h3 style={{ color: colors.textSecondary }}>Track your rent cycle and receipts.</h3>
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -194,7 +194,7 @@ const Payments = () => {
       <div className="bg-white rounded-md shadow-sm border overflow-hidden" style={{ borderColor: colors.border }}>
         <div className="p-6 border-b flex items-center gap-2" style={{ borderColor: colors.border }}>
           <FaHistory style={{ color: colors.primary }} />
-          <h2 className="font-bold">Payment History</h2>
+          <h3 className="font-bold">Payment History</h3>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left">

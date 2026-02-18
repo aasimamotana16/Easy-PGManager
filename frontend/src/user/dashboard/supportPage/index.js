@@ -59,10 +59,10 @@ const Support = () => {
   return (
     <div className="space-y-8 p-6 bg-gray-200 min-h-screen">
       <div className="space-y-2">
-        <h2 className="text-2xl font-semibold text-primary">Support</h2>
-        <p className="text-gray-600 text-md">
+        <h2 className=" text-primary">Support</h2>
+        <h3 className="text-gray-600 text-md">
           Need help? Contact our support team or submit your query below.
-        </p>
+        </h3>
       </div>
 
       <div className="bg-white rounded-2xl shadow p-6 space-y-5">

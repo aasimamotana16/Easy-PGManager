@@ -83,25 +83,27 @@ const HomeFeatures = ({ stats, userRole = "guest" }) => {
             variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true }}
           >
             {filteredFeatures.map((feature, index) => (
-              <motion.div key={index} variants={fadeUp} className="w-full">
-                <CFormCard className="h-full flex flex-col items-start p-10 rounded-[2.5rem] border border-border shadow-sm hover:shadow-xl transition-all duration-300 group bg-background">
-                  <div className="mb-6 transition-transform group-hover:scale-110">
-                    {getFeatureIcon(feature.title)}
-                  </div>
-                  {/* Card Title stays as standard xl on all screens but respects theme color */}
-                  <h3 className="text-xl font-bold text-textPrimary mb-3 group-hover:text-primary">
-                    {feature.title}
-                  </h3>
-                  {/* Card Body text is now responsive [cite: 2026-02-06] */}
-                  <p className="text-textSecondary text-body-sm lg:text-body leading-relaxed">
-                    {feature.desc}
-                  </p>
-                  {feature.role === "owner" && (
-                    <span className="mt-4 px-3 py-1 bg-primarySoft text-primary text-[10px] font-bold rounded-full uppercase tracking-widest">
-                      Owner Feature
-                    </span>
-                  )}
-                </CFormCard>
+              <motion.div key={index} variants={fadeUp} className="w-full px-1">
+                <div className="h-full rounded-[2.5rem] bg-gradient-to-r from-orange-500 via-orange-400 to-black p-[1px] shadow-sm hover:shadow-xl transition-all duration-300 group">
+                  <CFormCard className="h-full flex flex-col items-start p-10 rounded-[2.5rem] bg-background">
+                    <div className="mb-6 transition-transform group-hover:scale-110">
+                      {getFeatureIcon(feature.title)}
+                    </div>
+                    {/* Card Title stays as standard xl on all screens but respects theme color */}
+                    <h3 className="text-xl font-bold text-textPrimary mb-3 group-hover:text-primary">
+                      {feature.title}
+                    </h3>
+                    {/* Card Body text is now responsive [cite: 2026-02-06] */}
+                    <p className="text-textSecondary text-body-sm lg:text-body leading-relaxed">
+                      {feature.desc}
+                    </p>
+                    {feature.role === "owner" && (
+                      <span className="mt-4 px-3 py-1 bg-primarySoft text-primary text-[10px] font-bold rounded-full uppercase tracking-widest">
+                        Owner Feature
+                      </span>
+                    )}
+                  </CFormCard>
+                </div>
               </motion.div>
             ))}
           </motion.div>

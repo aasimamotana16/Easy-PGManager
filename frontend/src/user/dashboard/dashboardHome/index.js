@@ -220,12 +220,12 @@ const DashboardHome = () => {
       
       {/* HEADER */}
       <div className="px-1">
-        <h1 className="text-xl sm:text-3xl md:text-5xl lg:text-4xl font-bold text-[#1C1C1C]">
+        <h2 className="font-bold text-[#1C1C1C]">
           User Dashboard
-        </h1>
-        <p className="text-xs sm:text-lg md:text-3xl lg:text-xl text-[#4B4B4B]">
+        </h2>
+        <h3 className=" text-[#4B4B4B]">
           Welcome back, <span className="text-primary font-medium">{user?.fullName}</span>
-        </p>
+        </h3>
       </div>
 
       {/* STATS GRID */}

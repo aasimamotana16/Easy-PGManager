@@ -47,12 +47,12 @@ const OwnerContact = () => {
       {/* HEADER - Matched to Timeline */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-2">
-          <h1 className="text-xl md:text-3xl lg:text-4xl font-black uppercase tracking-tight flex items-center gap-3 text-[#1C1C1C]">
+          <h2 className="  flex items-center gap-3 text-[#1C1C1C]">
              Owner Contact
-          </h1>
-          <p className="text-[10px] md:text-sm lg:text-lg text-gray-700 uppercase ">
+          </h2>
+          <h3 className=" text-gray-700  ">
             Property Management & Support Details
-          </p>
+          </h3>
         </div>
 
         <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-md border border-primary/30 shadow self-start">

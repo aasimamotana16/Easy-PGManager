@@ -123,7 +123,7 @@ const Agreements = () => {
   );
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 bg-white min-h-screen space-y-6">
+    <div className="p-4 sm:p-6 lg:p-8 bg-gray-200 min-h-screen space-y-6">
       
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-1">
