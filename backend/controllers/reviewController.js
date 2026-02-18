@@ -1,5 +1,13 @@
 const Review = require("../models/reviewModel");
 
+const ensureAdmin = (req, res) => {
+  if (!req.user || req.user.role !== "admin") {
+    res.status(403).json({ success: false, message: "Access denied. Admin only." });
+    return false;
+  }
+  return true;
+};
+
 // 1. GET ALL (For About Page - only shows visible ones)
 exports.getPublicReviews = async (req, res) => {
   try {
@@ -41,16 +49,61 @@ exports.upsertReview = async (req, res) => {
   }
 };
 
-// Create a review (owner or user). Owner-submitted reviews should be visible immediately.
+// Create a review (owner or user). Admin approval required before it is public.
 exports.createReview = async (req, res) => {
   try {
-    const { pgId, ownerId, userId, userName, userEmail, userRole, comment, rating, isOwnerCreated } = req.body;
+    const { pgId, ownerId, userId, userName, userEmail, userRole, comment, rating } = req.body;
     const payload = { pgId, ownerId, userId, userName, userEmail, userRole, comment, rating };
-    // Owner-created reviews become visible immediately
-    payload.isVisible = !!isOwnerCreated;
+    // Reviews are hidden by default and should be explicitly approved by admin.
+    payload.isVisible = false;
 
     const created = await Review.create(payload);
     res.status(201).json({ success: true, data: created });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+// Admin: list all pending reviews
+exports.getPendingReviews = async (req, res) => {
+  try {
+    if (!ensureAdmin(req, res)) return;
+    const reviews = await Review.find({ isVisible: false }).sort({ createdAt: -1 });
+    res.status(200).json({ success: true, data: reviews });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Admin: approve a review so it appears publicly
+exports.approveReview = async (req, res) => {
+  try {
+    if (!ensureAdmin(req, res)) return;
+    const { id } = req.params;
+    const updated = await Review.findByIdAndUpdate(
+      id,
+      { isVisible: true },
+      { new: true }
+    );
+    if (!updated) {
+      return res.status(404).json({ success: false, message: "Review not found" });
+    }
+    res.status(200).json({ success: true, data: updated });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+// Admin: reject review (delete from queue)
+exports.rejectReview = async (req, res) => {
+  try {
+    if (!ensureAdmin(req, res)) return;
+    const { id } = req.params;
+    const deleted = await Review.findByIdAndDelete(id);
+    if (!deleted) {
+      return res.status(404).json({ success: false, message: "Review not found" });
+    }
+    res.status(200).json({ success: true, message: "Review rejected and removed" });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
   }

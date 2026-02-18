@@ -10,6 +10,7 @@ import {
 import Navbar from "../../../components/navbar";
 import Footer from "../../../components/footer";
 import CButton from "../../../components/cButton";
+import { deleteOwnerAccount } from "../../../api/api";
 
 const ProfileStatus = () => {
   const [loading, setLoading] = useState(true);
@@ -69,6 +70,48 @@ const ProfileStatus = () => {
       }
     } catch (error) {
       Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to update profile.', confirmButtonColor: '#D97706' });
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    const confirm = await Swal.fire({
+      icon: "warning",
+      title: "Delete Account?",
+      text: "This will permanently remove your account and all related owner data.",
+      showCancelButton: true,
+      confirmButtonText: "Yes, Delete",
+      cancelButtonText: "Cancel",
+      confirmButtonColor: "#DC2626"
+    });
+
+    if (!confirm.isConfirmed) return;
+
+    try {
+      const res = await deleteOwnerAccount();
+      if (res?.data?.success) {
+        localStorage.removeItem("userToken");
+        localStorage.removeItem("token");
+        localStorage.removeItem("role");
+        localStorage.removeItem("isLoggedIn");
+        localStorage.removeItem("userName");
+        localStorage.removeItem("user");
+
+        await Swal.fire({
+          icon: "success",
+          title: "Account Deleted",
+          text: "Your owner account has been removed.",
+          confirmButtonColor: "#D97706"
+        });
+
+        window.location.href = "/login";
+      }
+    } catch (error) {
+      Swal.fire({
+        icon: "error",
+        title: "Delete Failed",
+        text: error?.response?.data?.message || "Could not delete account.",
+        confirmButtonColor: "#D97706"
+      });
     }
   };
 
@@ -252,7 +295,7 @@ const ProfileStatus = () => {
               </div>
               <motion.div whileHover={{ x: 5 }}>
                 <CButton 
-                  onClick={() => Swal.fire({ title: 'Protected', text: 'Please contact support to delete account', icon: 'warning', confirmButtonColor: '#D97706'})}
+                  onClick={handleDeleteAccount}
                   className="!bg-white !text-red-500 border border-red-200 hover:!bg-red-500 hover:!text-white flex items-center gap-2 px-8 py-3.5 rounded-md text-[10px] font-black tracking-widest transition-all shadow-sm"
                 >
                   <FaTrash size={12}/> DELETE ACCOUNT

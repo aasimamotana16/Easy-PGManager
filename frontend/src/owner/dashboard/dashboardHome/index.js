@@ -57,6 +57,9 @@ const DashboardHome = () => {
   const [rating, setRating] = useState(0);
   const [hover, setHover] = useState(0);
   const [reviewText, setReviewText] = useState("");
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewError, setReviewError] = useState("");
+  const [reviewSuccess, setReviewSuccess] = useState("");
 
   useEffect(() => {
     const fetchDashboardStats = async () => {
@@ -73,6 +76,14 @@ const DashboardHome = () => {
         const findValue = (label, fallback = 0) => {
           const found = apiStats.find((item) => item.label === label);
           return found?.value ?? fallback;
+        };
+
+        const findValueFromLabels = (labels, fallback = 0) => {
+          for (const label of labels) {
+            const value = findValue(label, null);
+            if (value !== null && value !== undefined) return value;
+          }
+          return fallback;
         };
 
         const isPendingExtension = (tenant) => {
@@ -134,6 +145,8 @@ const DashboardHome = () => {
           totalPGs: Number(findValue("Total PGs", prev.totalPGs)),
           totalRooms: Number(findValue("Total Rooms", prev.totalRooms)),
           liveListings: Number(findValue("Available PGs", prev.liveListings)),
+          totalEarnings: Number(findValueFromLabels(["Total Earnings", "Total Revenue", "Earnings"], prev.totalEarnings)),
+          totalBookings: Number(findValueFromLabels(["Total Bookings", "Bookings"], prev.totalBookings)),
           extensionRequests: tenants.filter(isPendingExtension).length,
           pendingCheckouts: pendingCheckoutsCount,
         }));
@@ -145,32 +158,58 @@ const DashboardHome = () => {
     fetchDashboardStats();
   }, []);
 
+  useEffect(() => {
+    if (!reviewSuccess) return undefined;
+    const timer = setTimeout(() => setReviewSuccess(""), 4000);
+    return () => clearTimeout(timer);
+  }, [reviewSuccess]);
+
   const handleReviewSubmit = () => {
     (async () => {
+      const comment = String(reviewText || "").trim();
+      if (!comment) {
+        setReviewError("Please write your review before submitting.");
+        return;
+      }
+      if (!rating || rating < 1) {
+        setReviewError("Please select a rating.");
+        return;
+      }
+
       try {
+        setReviewSubmitting(true);
+        setReviewError("");
         const payload = {
           ownerId: localStorage.getItem('userId') || null,
           userName: localStorage.getItem('userName') || 'Owner',
           userRole: 'owner',
-          comment: reviewText,
+          comment,
           rating,
-          isOwnerCreated: true
+          // Owner reviews should be approved by admin before appearing publicly.
+          isOwnerCreated: false
         };
         await import("../../../api/api").then(m => m.createReview(payload));
         setShowReviewModal(false);
         setReviewText("");
         setRating(0);
+        setReviewSuccess("Review submitted successfully. It will appear after admin approval.");
       } catch (err) {
         console.error('Owner review submit failed', err);
+        setReviewError("Could not submit review. Please try again.");
+      } finally {
+        setReviewSubmitting(false);
       }
     })();
   };
 
+  const monthLabels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul"];
+  const chartValue = Number(stats.totalEarnings || 0);
+
   const earningsData = {
-    labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul"],
+    labels: monthLabels,
     datasets: [
       {
-        data: [15000, 20000, 22000, 25000, 27000, 30000, 32000],
+        data: monthLabels.map(() => chartValue),
         borderColor: "#D97706",
         backgroundColor: "rgba(217, 119, 6, 0.1)",
         tension: 0.4,
@@ -193,7 +232,12 @@ const DashboardHome = () => {
     },
     scales: {
       x: { grid: { display: false }, ticks: { color: '#4B4B4B' } },
-      y: { grid: { color: "#E5E0D9" }, ticks: { color: '#4B4B4B' } },
+      y: {
+        beginAtZero: true,
+        suggestedMax: chartValue > 0 ? chartValue : 10,
+        grid: { color: "#E5E0D9" },
+        ticks: { color: '#4B4B4B' }
+      },
     },
   };
 
@@ -314,7 +358,10 @@ const DashboardHome = () => {
               Your feedback helps us make PG management better for everyone.
             </p>
             <button 
-              onClick={() => setShowReviewModal(true)}
+              onClick={() => {
+                setReviewError("");
+                setShowReviewModal(true);
+              }}
               className="w-full bg-primary text-white py-2 rounded-md text-xs font-bold hover:bg-primaryDark transition-colors shadow-sm"
             >
               Write a Review
@@ -360,10 +407,16 @@ const DashboardHome = () => {
                   value={reviewText}
                   onChange={(e) => setReviewText(e.target.value)}
                 />
+                {reviewError && (
+                  <p className="text-xs text-red-600 text-left">{reviewError}</p>
+                )}
 
                 <div className="flex gap-3 pt-2">
                   <button 
-                    onClick={() => setShowReviewModal(false)}
+                    onClick={() => {
+                      setReviewError("");
+                      setShowReviewModal(false);
+                    }}
                     className="flex-1 py-2 text-sm font-bold text-textSecondary hover:bg-gray-100 rounded-md transition-colors"
                   >
                     Later
@@ -371,7 +424,8 @@ const DashboardHome = () => {
                   <CButton 
                     className="flex-1"
                     onClick={handleReviewSubmit}
-                    text="Submit"
+                    disabled={reviewSubmitting}
+                    text={reviewSubmitting ? "Submitting..." : "Submit"}
                   />
                 </div>
               </div>
@@ -379,6 +433,11 @@ const DashboardHome = () => {
           </div>
         )}
       </AnimatePresence>
+      {reviewSuccess && (
+        <div className="fixed bottom-4 right-4 bg-green-100 border border-green-300 text-green-800 px-4 py-2 rounded-md shadow-sm z-[1000]">
+          {reviewSuccess}
+        </div>
+      )}
     </motion.div>
   );
 };

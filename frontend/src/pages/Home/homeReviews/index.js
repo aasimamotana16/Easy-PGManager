@@ -4,14 +4,14 @@ import { Quote, Star } from "lucide-react";
 import { getPublicReviews } from "../../../api/api";
 
 const fallbackReviews = [
-  { id: "s1", comment: "EasyPG made finding a PG effortless.", userRole: "student" },
-  { id: "s2", comment: "Great platform for owners.", userRole: "owner" },
-  { id: "s3", comment: "Smooth booking flow and transparent pricing.", userRole: "tenant" },
-  { id: "s4", comment: "Helpful support and quick responses.", userRole: "tenant" },
-  { id: "s5", comment: "Rooms were exactly as described.", userRole: "student" },
-  { id: "s6", comment: "Owner was cooperative during move-in.", userRole: "owner" },
-  { id: "s7", comment: "Great value for money. Recommended!", userRole: "working-professional" },
-  { id: "s8", comment: "Booking process was fast and clear.", userRole: "tenant" },
+  { id: "s1", comment: "EasyPG made finding a PG effortless.", userRole: "student", rating: 5 },
+  { id: "s2", comment: "Great platform for owners.", userRole: "owner", rating: 4 },
+  { id: "s3", comment: "Smooth booking flow and transparent pricing.", userRole: "tenant", rating: 5 },
+  { id: "s4", comment: "Helpful support and quick responses.", userRole: "tenant", rating: 4 },
+  { id: "s5", comment: "Rooms were exactly as described.", userRole: "student", rating: 5 },
+  { id: "s6", comment: "Owner was cooperative during move-in.", userRole: "owner", rating: 4 },
+  { id: "s7", comment: "Great value for money. Recommended!", userRole: "working-professional", rating: 5 },
+  { id: "s8", comment: "Booking process was fast and clear.", userRole: "tenant", rating: 4 },
 ];
 
 const HomeReviews = () => {
@@ -160,30 +160,48 @@ const HomeReviews = () => {
               return (
               <motion.article
                 key={`review-${i}`}
-                className="review-card snap-start min-w-[260px] sm:min-w-[300px] md:min-w-[340px] lg:min-w-[360px] bg-primarySoft/10 border rounded-2xl p-6 flex-shrink-0 shadow-sm"
+                className="review-card snap-start w-[260px] sm:w-[300px] md:w-[340px] lg:w-[360px] min-w-[260px] sm:min-w-[300px] md:min-w-[340px] lg:min-w-[360px] bg-primarySoft/10 border rounded-2xl p-6 flex-shrink-0 shadow-sm flex flex-col"
                 initial={{ opacity: 0, y: 20 }}
-                animate={{ scale: isCenter ? 1.05 : 0.9, opacity: isCenter ? 1 : 0.5 }}
+                animate={{ scale: 1, opacity: isCenter ? 1 : 0.6 }}
                 transition={{ duration: 0.45 }}
                 style={{
                   borderColor: isCenter ? '#B45309' : '#E5E0D9',
                   width: isMobile ? '100%' : undefined,
-                  minHeight: isMobile ? `${cardHeight}px` : undefined,
+                  minHeight: isMobile ? `${cardHeight}px` : '260px',
+                  height: isMobile ? `${cardHeight}px` : '260px',
                 }}
               >
-              <div className="relative">
+              <div className="relative flex h-full flex-col">
                 <div className="absolute -top-3 -right-3 text-primarySoft opacity-70">
                   <Quote size={34} />
                 </div>
 
-                <div className="flex items-center gap-2 mb-3 text-primary">
-                  {[...Array(5)].map((_, idx) => (
-                    <Star key={idx} size={14} />
-                  ))}
+                <div className="flex items-center gap-2 mb-3">
+                  {[...Array(5)].map((_, idx) => {
+                    const selected = idx < Number(review?.rating || 0);
+                    return (
+                      <Star
+                        key={idx}
+                        size={14}
+                        className={selected ? "text-primary" : "text-gray-300"}
+                        fill={selected ? "currentColor" : "none"}
+                      />
+                    );
+                  })}
                 </div>
 
-                <p className="text-textSecondary italic text-body-sm leading-relaxed mb-5">“{review.comment}”</p>
+                <p
+                  className="text-textSecondary italic text-body-sm leading-relaxed mb-5 overflow-hidden"
+                  style={{
+                    display: '-webkit-box',
+                    WebkitLineClamp: 3,
+                    WebkitBoxOrient: 'vertical',
+                  }}
+                >
+                  “{review.comment}”
+                </p>
 
-                <div className="mt-4 flex items-center gap-3">
+                <div className="mt-auto flex items-center gap-3">
                   <div className="w-10 h-10 bg-primarySoft rounded-full flex items-center justify-center text-primaryDark font-bold">
                     {(review.userRole || 'U')?.charAt(0).toUpperCase()}
                   </div>

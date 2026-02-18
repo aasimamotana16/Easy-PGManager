@@ -11,6 +11,8 @@ const SupportTicket = require('../models/supportTicketModel');
 const Payment = require('../models/paymentModel');
 const PendingPayment = require('../models/pendingPaymentModel');
 const CheckIn = require('../models/checkInModel');
+const Room = require('../models/roomModel');
+const Review = require('../models/reviewModel');
 const { jsPDF } = require('jspdf');
 const { autoTable } = require('jspdf-autotable');
 
@@ -191,7 +193,8 @@ const ensureTenantLinkedRecords = async ({ ownerId, tenant, pg }) => {
       checkInDate: effectiveJoiningDate,
       checkOutDate: addMonths(effectiveJoiningDate, 11).toISOString().split('T')[0],
       seatsBooked: 1,
-      status: "Confirmed"
+      status: "Confirmed",
+      bookingSource: "tenant_sync"
     });
     bookingCreated = true;
   }
@@ -283,7 +286,7 @@ const ensureTenantLinkedRecords = async ({ ownerId, tenant, pg }) => {
 
 const getOwnerProfile = async (req, res) => {
   try {
-    const owner = await User.findById(req.user._id).select('-password');
+    const owner = await User.findById(req.user._id).select('-password +address');
 
     res.status(200).json({
       success: true,
@@ -291,10 +294,16 @@ const getOwnerProfile = async (req, res) => {
         name: owner.fullName,
         email: owner.email,
         phone: owner.phone || "Not provided",
+        emergencyPhone: owner?.emergencyContact?.phoneNumber || "",
+        businessName: owner.businessName || "",
         address: owner.address || "Add your address",
         role: "Owner",
         profileImage: owner.profileImage || "/images/profileImages/profile1.jpg",
-        memberId: owner._id.toString().slice(-6).toUpperCase()
+        memberId: owner._id.toString().slice(-6).toUpperCase(),
+        isVerified: Boolean(owner.isVerified),
+        memberSince: owner.createdAt
+          ? new Date(owner.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+          : "N/A"
       }
     });
   } catch (error) {
@@ -306,7 +315,7 @@ const getOwnerProfile = async (req, res) => {
 const updateOwnerProfile = async (req, res) => {
   try {
     const ownerId = req.user._id;
-    const { name, email, phone, address } = req.body;
+    const { name, email, phone, address, businessName, emergencyPhone } = req.body;
 
     // Update the user document
     const updatedUser = await User.findByIdAndUpdate(
@@ -316,11 +325,13 @@ const updateOwnerProfile = async (req, res) => {
           fullName: name,
           email,
           phone,
-          address
+          address,
+          businessName: businessName || "",
+          "emergencyContact.phoneNumber": emergencyPhone || ""
         }
       },
       { new: true, runValidators: true }
-    ).select("-password");
+    ).select("-password +address");
 
     if (!updatedUser) {
       return res.status(404).json({ success: false, message: "User not found" });
@@ -338,9 +349,15 @@ const updateOwnerProfile = async (req, res) => {
         }) : "N/A",
         email: updatedUser.email,
         phone: updatedUser.phone || "Not provided",
+        emergencyPhone: updatedUser?.emergencyContact?.phoneNumber || "",
+        businessName: updatedUser.businessName || "",
         address: updatedUser.address || "Add your address",
         profileImage: updatedUser.profileImage || "/images/profileImages/profile1.jpg",
-        memberId: updatedUser._id.toString().slice(-6).toUpperCase()
+        memberId: updatedUser._id.toString().slice(-6).toUpperCase(),
+        isVerified: Boolean(updatedUser.isVerified),
+        memberSince: updatedUser.createdAt
+          ? new Date(updatedUser.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+          : "N/A"
       }
     });
   } catch (error) {
@@ -352,11 +369,21 @@ const updateOwnerProfile = async (req, res) => {
 const getOwnerDashboardData = async (req, res) => {
   try {
     const ownerId = req.user._id;
-    const ownerPgs = await Pg.find({ ownerId }).select("totalRooms liveListings status createdAt").sort({ createdAt: -1 });
+    const ownerPgs = await Pg.find({ ownerId }).select("totalRooms liveListings status approvalStatus createdAt").sort({ createdAt: -1 });
 
     const totalPgs = ownerPgs.length;
     const totalRooms = ownerPgs.reduce((sum, pg) => sum + (Number(pg.totalRooms) || 0), 0);
-    const availablePgs = ownerPgs.reduce((sum, pg) => sum + (Number(pg.liveListings) || 0), 0);
+    const availablePgs = ownerPgs.reduce((sum, pg) => {
+      const explicitListings = Number(pg.liveListings);
+      if (Number.isFinite(explicitListings) && explicitListings > 0) {
+        return sum + explicitListings;
+      }
+
+      const status = String(pg.status || "").toLowerCase();
+      const approvalStatus = String(pg.approvalStatus || "").toLowerCase();
+      const isPubliclyAvailable = status === "live" || approvalStatus === "confirmed";
+      return sum + (isPubliclyAvailable ? 1 : 0);
+    }, 0);
     const recentStatus = ownerPgs[0]?.status
       ? ownerPgs[0].status.charAt(0).toUpperCase() + ownerPgs[0].status.slice(1)
       : "No Properties";
@@ -1019,6 +1046,61 @@ const getMyTenants = async (req, res) => {
   }
 };
 
+// delete owner account and owner-linked data
+const deleteOwnerAccount = async (req, res) => {
+  try {
+    const ownerId = req.user?._id;
+    if (!ownerId) {
+      return res.status(401).json({ success: false, message: "Not authorized" });
+    }
+
+    const owner = await User.findById(ownerId).select("_id role");
+    if (!owner || owner.role !== "owner") {
+      return res.status(404).json({ success: false, message: "Owner account not found" });
+    }
+
+    const ownerPgs = await Pg.find({ ownerId }).select("_id pgName");
+    const pgIds = ownerPgs.map((pg) => pg._id);
+    const pgNames = ownerPgs.map((pg) => pg.pgName).filter(Boolean);
+
+    await Promise.all([
+      Tenant.deleteMany({ ownerId }),
+      Booking.deleteMany({ $or: [{ ownerId }, { pgId: { $in: pgIds } }, { pgName: { $in: pgNames } }] }),
+      Agreement.deleteMany({
+        $or: [
+          { ownerId },
+          { userId: ownerId },
+          { pgId: { $in: pgIds } },
+          { pgName: { $in: pgNames } }
+        ]
+      }),
+      SupportTicket.deleteMany({ ownerId }),
+      Room.deleteMany({ $or: [{ ownerId }, { pgId: { $in: pgIds } }] }),
+      Review.deleteMany({
+        $or: [
+          { ownerId },
+          { userId: ownerId },
+          { pgId: { $in: pgIds } }
+        ]
+      }),
+      Payment.deleteMany({ $or: [{ user: ownerId }, { pgId: { $in: pgIds } }, { pgName: { $in: pgNames } }] }),
+      PendingPayment.deleteMany({ $or: [{ tenant: ownerId }, { pg: { $in: pgIds } }, { pgName: { $in: pgNames } }] }),
+      CheckIn.deleteMany({ userId: ownerId }),
+      Pg.deleteMany({ ownerId })
+    ]);
+
+    await User.findByIdAndDelete(ownerId);
+
+    return res.status(200).json({
+      success: true,
+      message: "Owner account and related data deleted successfully"
+    });
+  } catch (error) {
+    console.error("deleteOwnerAccount error:", error);
+    return res.status(500).json({ success: false, message: "Failed to delete owner account" });
+  }
+};
+
 const approveExtensionRequest = async (req, res) => {
   try {
     const { id } = req.params;
@@ -1118,6 +1200,31 @@ const getMyBookings = async (req, res) => {
     const ownerPgs = await Pg.find({ ownerId }).select('_id pgName');
     const pgIds = ownerPgs.map((pg) => pg._id);
     const pgNames = ownerPgs.map((pg) => pg.pgName).filter(Boolean);
+    const ownerTenants = await Tenant.find({ ownerId }).select('name pgId pgName joiningDate');
+
+    const tenantKeysByPgId = new Set();
+    const tenantKeysByPgName = new Set();
+    ownerTenants.forEach((t) => {
+      const tenantName = String(t.name || '').trim().toLowerCase();
+      if (!tenantName) return;
+      if (t.pgId) tenantKeysByPgId.add(`${String(t.pgId)}|${tenantName}`);
+      if (t.pgName) tenantKeysByPgName.add(`${String(t.pgName).trim().toLowerCase()}|${tenantName}`);
+    });
+
+    const tenantSyncKeysByPgId = new Set();
+    const tenantSyncKeysByPgName = new Set();
+    ownerTenants.forEach((t) => {
+      const tenantKey = String(t.name || '').trim().toLowerCase();
+      const joinKey = String(t.joiningDate || '').trim();
+      if (!tenantKey || !joinKey) return;
+
+      if (t.pgId) {
+        tenantSyncKeysByPgId.add(`${String(t.pgId)}|${tenantKey}|${joinKey}`);
+      }
+      if (t.pgName) {
+        tenantSyncKeysByPgName.add(`${String(t.pgName).trim().toLowerCase()}|${tenantKey}|${joinKey}`);
+      }
+    });
 
     const bookings = await Booking.find({
       $or: [
@@ -1127,7 +1234,41 @@ const getMyBookings = async (req, res) => {
       ]
     }).sort({ createdAt: -1 });
 
-    res.status(200).json({ success: true, data: bookings });
+    const filteredBookings = bookings.filter((b) => {
+      const tenantName = String(b.tenantName || '').trim().toLowerCase();
+      const pgIdKey = b.pgId ? String(b.pgId) : '';
+      const pgNameKey = String(b.pgName || '').trim().toLowerCase();
+
+      // Hard rule: once tenant exists in resident list, do not duplicate in bookings list.
+      if (
+        tenantName &&
+        ((pgIdKey && tenantKeysByPgId.has(`${pgIdKey}|${tenantName}`)) ||
+          (pgNameKey && tenantKeysByPgName.has(`${pgNameKey}|${tenantName}`)))
+      ) {
+        return false;
+      }
+
+      const source = String(b.bookingSource || '').toLowerCase();
+      if (source === 'tenant_sync') return false;
+
+      // Backward-compatibility: older auto-synced bookings may not have bookingSource.
+      if (!source && String(b.status || '').toLowerCase() === 'confirmed') {
+        const tenantKey = tenantName;
+        const joinKey = String(b.checkInDate || '').trim();
+        if (!tenantKey || !joinKey) return true;
+
+        if (pgIdKey && tenantSyncKeysByPgId.has(`${pgIdKey}|${tenantKey}|${joinKey}`)) {
+          return false;
+        }
+        if (pgNameKey && tenantSyncKeysByPgName.has(`${pgNameKey}|${tenantKey}|${joinKey}`)) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+
+    res.status(200).json({ success: true, data: filteredBookings });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -1161,7 +1302,8 @@ const addBooking = async (req, res) => {
       checkInDate: resolvedDates.checkInDate,
       checkOutDate: resolvedDates.checkOutDate,
       seatsBooked,
-      status: status || "Pending"
+      status: status || "Pending",
+      bookingSource: "owner_manual"
     });
 
     const linkedUser = await User.findOne({ fullName: tenantName }).select('_id');
@@ -2011,6 +2153,7 @@ module.exports = {
   uploadPropertyDocuments,
   uploadAgreementTemplate,
   confirmArrival,
+  deleteOwnerAccount,
   getOwnerEarnings,
   downloadOwnerEarningsPDF
 };

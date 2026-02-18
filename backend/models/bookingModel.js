@@ -10,7 +10,12 @@ const bookingSchema = new mongoose.Schema({
   checkInDate: { type: String, required: true },
   checkOutDate: { type: String, required: true },
   seatsBooked: { type: Number, required: true },
-  status: { type: String, enum: ['Pending', 'Confirmed', 'Cancelled'], default: 'Pending' }
+  status: { type: String, enum: ['Pending', 'Confirmed', 'Cancelled'], default: 'Pending' },
+  bookingSource: {
+    type: String,
+    enum: ['tenant_request', 'owner_manual', 'tenant_sync'],
+    default: 'tenant_request'
+  }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Booking', bookingSchema);

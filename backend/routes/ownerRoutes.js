@@ -34,6 +34,7 @@ const {
   submitForApproval,
   uploadPropertyDocuments,
   uploadAgreementTemplate,
+  deleteOwnerAccount,
   getOwnerEarnings,
   downloadOwnerEarningsPDF
 } = require('../controllers/ownerController');
@@ -87,5 +88,6 @@ router.put('/update-support-ticket/:id', protect, isOwner, updateSupportTicketSt
 // Route for Save Profile button
 router.get('/profile', protect, isOwner, getOwnerProfile);
 router.put('/update-profile', protect, isOwner, updateOwnerProfile);
+router.delete('/delete-account', protect, isOwner, deleteOwnerAccount);
 
 module.exports = router;

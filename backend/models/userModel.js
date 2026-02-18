@@ -24,6 +24,10 @@ const userSchema = new mongoose.Schema(
     phone: {
       type: String,
     },
+    businessName: {
+      type: String,
+      default: "",
+    },
     city: { type: String, select: false },
     state: { type: String, select: false },
     address: { type: String, select: false },

@@ -94,6 +94,7 @@ export const completeMoveOut = (id, payload) => API.put(`/owner/complete-move-ou
 export const createOwnerSupportTicket = (payload) => API.post('/owner/create-support-ticket', payload);
 export const getOwnerSupportTickets = () => API.get('/owner/my-support-tickets');
 export const updateOwnerSupportTicket = (id, payload) => API.put(`/owner/update-support-ticket/${id}`, payload);
+export const deleteOwnerAccount = () => API.delete('/owner/delete-account');
 
 /* =========================
     ADMIN APIs 
@@ -117,6 +118,9 @@ export const getServicesPageData = () => API.get("/services");
 export const getPublicReviews = (limit) => API.get(`/reviews/public${limit ? `?limit=${limit}` : ''}`);
 export const createReview = (data) => API.post('/reviews/create', data);
 export const getReviewsByPg = (pgId) => API.get(`/reviews/pg/${pgId}`);
+export const getPendingReviews = () => API.get('/reviews/pending');
+export const approveReview = (id) => API.put(`/reviews/approve/${id}`);
+export const rejectReview = (id) => API.delete(`/reviews/reject/${id}`);
 // Terms & Conditions
 export const getTerms = () => API.get('/terms');
 

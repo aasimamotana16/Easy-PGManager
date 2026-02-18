@@ -36,7 +36,8 @@ router.post("/create", async (req, res) => {
       checkInDate,
       checkOutDate,
       seatsBooked: Number(persons) || 1,
-      status: 'Pending'
+      status: 'Pending',
+      bookingSource: 'tenant_request'
     });
 
     const linkedUser = tenantEmail
