@@ -179,8 +179,8 @@ const Navbar = () => {
               {profileOpen && (
                 <div className="absolute right-0 top-12 w-48 bg-white rounded-md shadow-xl z-[110] overflow-hidden border border-[#E5E0D9]">
                   <div className="py-1">
-                    <button onClick={goToDashboard} className="w-full px-4 py-2 hover:bg-[#FEF3C7] text-[#1C1C1C] text-sm text-left">Dashboard</button>
-                    <button onClick={goToProfile} className="w-full px-4 py-2 hover:bg-[#FEF3C7] text-[#1C1C1C] text-sm text-left">My Profile</button>
+                    <button onClick={goToDashboard} className="w-full px-4 py-2 hover:bg-primarySoft text-[#1C1C1C] text-sm text-left">Dashboard</button>
+                    <button onClick={goToProfile} className="w-full px-4 py-2 hover:bg-primarySoft text-[#1C1C1C] text-sm text-left">My Profile</button>
                     <button 
                       onClick={() => { setProfileOpen(false); setIsLogoutModalOpen(true); }} 
                       className="w-full px-4 py-2 text-red-600 hover:bg-red-50 text-sm text-left font-medium"

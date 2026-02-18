@@ -156,7 +156,36 @@ const AddProperty = () => {
   };
 
   const removeFile = (key) => {
-    setFormData((prev) => ({ ...prev, proofDocuments: { ...prev.proofDocuments, [key]: null } }));
+    // Get document name for display
+    const docNames = {
+      aadhaar: "Aadhaar Card",
+      electricityBill: "Electricity Bill",
+      propertyTax: "Property Tax Receipt",
+      agreementPdf: "Agreement"
+    };
+    
+    Swal.fire({
+      title: "Delete Document?",
+      text: `Are you sure you want to delete ${docNames[key] || "this document"}?`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#dc2626",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Yes, delete it!",
+      cancelButtonText: "Cancel"
+    }).then((result) => {
+      if (result.isConfirmed) {
+        setFormData((prev) => ({ ...prev, proofDocuments: { ...prev.proofDocuments, [key]: null } }));
+        Swal.fire({
+          title: "Deleted!",
+          text: "Document has been removed.",
+          icon: "success",
+          timer: 1500,
+          showConfirmButton: false,
+          confirmButtonColor: "#D97706"
+        });
+      }
+    });
   };
 
   const viewFile = (key) => {
