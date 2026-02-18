@@ -150,8 +150,8 @@ const OwnerSidebar = ({ isOpen, closeSidebar }) => {
           <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center transition-all animate-in zoom-in duration-200">
             {!isLogoutSuccessful ? (
               <>
-                <h3 className="text-2xl font-bold text-gray-800">Confirm Logout</h3>
-                <p className="text-black my-4 font-medium">Are you sure you want to end your session?</p>
+                <h3 className="  text-gray-800">Confirm Logout</h3>
+                <p className="text-primary my-4 font-medium">Are you sure you want to end your session?</p>
                 <div className="flex gap-3 mt-6">
                   <CButton 
                     text="No"
@@ -171,7 +171,7 @@ const OwnerSidebar = ({ isOpen, closeSidebar }) => {
                 <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-4xl mb-4 border border-green-200">
                   ✓
                 </div>
-                <h3 className="text-2xl font-bold text-gray-800">Success!</h3>
+                <h3 className=" text-gray-800">Success!</h3>
                 <p className="text-primary mt-2 font-medium">Logged out successfully.</p>
               </div>
             )}

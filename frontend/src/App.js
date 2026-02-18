@@ -49,10 +49,7 @@ import {
   CheckIns,
   Documents,
   Timeline,
-  Rebook,
   OwnerContact,
-  Support,
-  ExplorePage,
 } from "./user/dashboard";
 
 /* ================= OWNER DASHBOARD ================= */
@@ -184,8 +181,6 @@ function App() {
             <Route path="documents" element={<Documents />} />
             <Route path="timeline" element={<Timeline />} />
             <Route path="owner-contact" element={<OwnerContact />} />
-            <Route path="support" element={<Support />} />
-            <Route path="explorePage" element={<ExplorePage />} />
           </Route>
 
           {/* ===== OWNER PROFILE & EARNINGS (NO SIDEBAR) ===== */}

@@ -136,11 +136,11 @@ const TotalEarnings = () => {
     <div className="p-4 md:p-6 bg-gray-200 min-h-screen space-y-6">
       
       {/* HEADER - Matched to Support Page */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 ">
         <div>
-<h1 className="text-2xl sm:text-4xl font-bold text-textPrimary">
+<h2 className=" text-textPrimary ">
           Earnings Overview
-        </h1>          <p className="text-xs md:text-base text-gray-500">
+        </h2>          <p className=" text-primary">
             Track your income and pending payments
             {loading && <span className="ml-2 text-orange-500 animate-pulse">(Loading...)</span>}
           </p>

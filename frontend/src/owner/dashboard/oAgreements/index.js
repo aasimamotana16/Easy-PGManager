@@ -52,8 +52,8 @@ const AgreementPage = () => {
     <div className="h-screen w-full bg-gray-200 flex flex-col overflow-hidden">
       <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
         <div>
-          <h1 className="text-2xl sm:text-4xl font-bold text-textPrimary">Agreements</h1>
-          <p className="text-gray-500 text-sm">Agreement records for your tenants.</p>
+          <h2 className=" font-bold text-textPrimary">Agreements</h2>
+          <p className="text-primary">Agreement records for your tenants.</p>
         </div>
 
         <div className="bg-white p-4 md:p-5 rounded-md border border-primary shadow-sm flex flex-col md:flex-row gap-4">

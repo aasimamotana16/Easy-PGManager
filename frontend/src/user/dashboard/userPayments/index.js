@@ -108,7 +108,7 @@ const Payments = () => {
     <div className="p-4 sm:p-8 bg-gray-100 min-h-screen space-y-6">
       <header>
         <h2 className="" style={{ color: colors.textPrimary }}>Payments & Invoices</h2>
-        <h3 style={{ color: colors.textSecondary }}>Track your rent cycle and receipts.</h3>
+        <h3 style={{ color: colors.primary }}>Track your rent cycle and receipts.</h3>
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

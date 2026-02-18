@@ -336,8 +336,8 @@ const Tenants = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
-          <h1 className="text-4xl font-bold text-[#1C1C1C]">Tenants</h1>
-          <p className="text-[#4B4B4B] mt-2">Track arrivals, active stays, and past residents.</p>
+          <h2 className=" text-[#1C1C1C]">Tenants</h2>
+          <p className="text-primary">Track arrivals, active stays, and past residents.</p>
         </div>
         <CButton onClick={() => setShowAddModal(true)} text="Add New Tenant" className="flex items-center gap-2">
           <FaPlus /> Add New Tenant
@@ -347,7 +347,7 @@ const Tenants = () => {
       <div className="flex flex-wrap gap-2 mb-4">
         <button
           onClick={() => setActiveFilter("all")}
-          className={`px-4 py-2 text-xs font-bold rounded-full border transition-colors ${
+          className={`px-4 py-2 text-xs font-bold rounded-md border transition-colors ${
             activeFilter === "all"
               ? "bg-[#D97706] text-white border-[#D97706]"
               : "bg-white text-[#4B4B4B] border-[#E5E0D9] hover:border-[#D97706]"
@@ -357,7 +357,7 @@ const Tenants = () => {
         </button>
         <button
           onClick={() => setActiveFilter("extension")}
-          className={`px-4 py-2 text-xs font-bold rounded-full border transition-colors ${
+          className={`px-4 py-2 text-xs font-bold rounded-md border transition-colors ${
             activeFilter === "extension"
               ? "bg-[#D97706] text-white border-[#D97706]"
               : "bg-white text-[#4B4B4B] border-[#E5E0D9] hover:border-[#D97706]"
@@ -367,7 +367,7 @@ const Tenants = () => {
         </button>
         <button
           onClick={() => setActiveFilter("checkout")}
-          className={`px-4 py-2 text-xs font-bold rounded-full border transition-colors ${
+          className={`px-4 py-2 text-xs font-bold rounded-md border transition-colors ${
             activeFilter === "checkout"
               ? "bg-[#D97706] text-white border-[#D97706]"
               : "bg-white text-[#4B4B4B] border-[#E5E0D9] hover:border-[#D97706]"
@@ -379,8 +379,8 @@ const Tenants = () => {
 
       {/* Search & Filter */}
       <div className="flex flex-col md:flex-row gap-4 mb-8 bg-white p-4 rounded-md shadow-sm border border-[#D97706]">
-        <div className="relative flex-grow ">
-          <FaSearch className="absolute left-4 top-1/3 -translate-y-1/2 text-gray-400" />
+        <div className="relative flex-grow mt-3 mb-3">
+          <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
             placeholder="Search by name or PG..."
@@ -393,6 +393,7 @@ const Tenants = () => {
           value={selectedPG}
           onChange={(e) => setSelectedPG(e.target.value)}
           options={[{ value: "all", label: "All Properties" }, ...pgOptions]}
+          className="mt-3"
         />
       </div>
 

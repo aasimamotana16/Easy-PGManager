@@ -218,8 +218,8 @@ const RoomManagement = () => {
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
           <div>
-            <h1 className="text-3xl font-extrabold text-[#1C1C1C]">Room Management</h1>
-            <p className="text-[#4B4B4B] mt-1 font-medium">
+            <h2 className=" text-[#1C1C1C]">Room Management</h2>
+            <p className="text-primary ">
               {pgData?.name ? `Property: ${pgData.name}` : 'Manage availability and status'}
             </p>
           </div>

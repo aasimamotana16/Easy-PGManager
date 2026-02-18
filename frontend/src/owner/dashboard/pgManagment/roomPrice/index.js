@@ -163,11 +163,11 @@ const SetRoomPrice = () => {
   };
 
   return (
-    <div className="p-6 md:p-10 bg-[#ffffff] min-h-screen font-poppins text-[#1C1C1C]">
+    <div className="p-6 md:p-10 bg-gray-200 min-h-screen ">
       <div className="max-w-6xl mx-auto">
         <header className="mb-10">
-          <h1 className="text-4xl font-light uppercase tracking-tighter italic">Pricing & <span className="font-semibold not-italic">Features</span></h1>
-          <p className="text-[#4B4B4B] font-normal mt-2 text-lg italic opacity-80">Define costs and payment cycles for each room variant.</p>
+          <h2 className="">Pricing & <span className="">Features</span></h2>
+          <p className="text-primary">Define costs and payment cycles for each room variant.</p>
         </header>
 
         <div className="space-y-8">
@@ -177,7 +177,7 @@ const SetRoomPrice = () => {
                 key={index}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-white rounded-3xl border border-[#E5E0D9] overflow-hidden hover:border-[#D97706] transition-all"
+                className="bg-white rounded-md border border-[#E5E0D9] overflow-hidden hover:border-[#D97706] transition-all"
               >
                 <div className="flex flex-col lg:flex-row">
                   
@@ -287,7 +287,7 @@ const SetRoomPrice = () => {
 
           <CButton 
             onClick={addPriceCard} 
-            className="w-full py-8 border border-dashed border-[#E5E0D9] rounded-2xl text-[#4B4B4B] font-medium uppercase text-[10px] tracking-[0.4em] hover:border-[#D97706] hover:text-[#D97706] transition-all bg-white"
+            className=" bg-primary"
           >
             + Add New Price Variant
           </CButton>

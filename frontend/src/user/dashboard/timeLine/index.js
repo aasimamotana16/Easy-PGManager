@@ -126,23 +126,23 @@ const downloadTimelinePDF = async () => {
       doc.save(`Stay_Report_${selectedMonth}.pdf`);
     }
   };
-  if (loading) {
+  {/*if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[60vh]">
         <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-orange-500"></div>
       </div>
     );
-  }
+  }*/}
 
   return (
     <div className="p-4 sm:p-6 lg:p-10 space-y-8 bg-gray-200 min-h-screen">
       {/* HEADER */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-2">
-          <h2 className=" flex items-center gap-3">
-            <FaHistory className="text-orange-500" /> Stay Timeline
+          <h2 className=" flex  text-textPrimary">
+             Stay Timeline
           </h2>
-          <h3 className=" text-[#4B4B4B] ">
+          <h3 className=" text-primary ">
             Real-time activity & Transaction logs
           </h3>
         </div>

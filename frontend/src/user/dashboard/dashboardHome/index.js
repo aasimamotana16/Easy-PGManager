@@ -198,14 +198,6 @@ const DashboardHome = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-primary"></div>
-      </div>
-    );
-  }
-
   const pgName = dashboardData?.currentBooking?.pgName || user?.bookedPgName || "No PG Booked";
   const roomNo = dashboardData?.currentBooking?.roomNo || user?.roomNo || "N/A";
   const monthlyRent = dashboardData?.currentBooking?.monthlyRent || user?.monthlyRent || 0;
@@ -220,7 +212,7 @@ const DashboardHome = () => {
       
       {/* HEADER */}
       <div className="px-1">
-        <h2 className="font-bold text-[#1C1C1C]">
+        <h2 className="font-bold text-textPrimary">
           User Dashboard
         </h2>
         <h3 className=" text-[#4B4B4B]">

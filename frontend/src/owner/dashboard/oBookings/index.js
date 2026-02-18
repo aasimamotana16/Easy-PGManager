@@ -146,8 +146,8 @@ const BookingManagement = () => {
       {/* HEADER SECTION */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
-          <h1 className="text-4xl font-bold text-[#1C1C1C]">Bookings</h1>
-          <p className="text-[#4B4B4B] mt-2">Manage and track all tenant booking requests</p>
+          <h2 className=" text-textPrimary">Bookings</h2>
+          <p className="text-primary ">Manage and track all tenant booking requests</p>
         </div>
       </div>
 

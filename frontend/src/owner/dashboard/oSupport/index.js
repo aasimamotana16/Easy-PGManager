@@ -78,8 +78,8 @@ const SupportPage = () => {
     <div className="p-4 md:p-6 bg-gray-200 min-h-screen space-y-6">
       <div className="flex items-center gap-3">
         <div>
-          <h1 className="text-2xl sm:text-4xl font-bold text-textPrimary">Support</h1>
-          <p className="text-xs md:text-base text-gray-500">Raise and track support tickets</p>
+          <h2 className=" text-textPrimary">Support</h2>
+          <p className=" text-primary">Raise and track support tickets</p>
         </div>
       </div>
 

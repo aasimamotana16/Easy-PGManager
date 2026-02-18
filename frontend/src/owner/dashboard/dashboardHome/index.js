@@ -249,11 +249,11 @@ const DashboardHome = () => {
     >
       {/* HEADER */}
       <div className="px-1">
-        <h1 className="text-2xl sm:text-4xl font-bold text-textPrimary">
+        <h2 className=" text-textPrimary">
           Owner Dashboard
-        </h1>
-        <p className="text-sm sm:text-xl text-textSecondary">
-          Welcome back, <span className="text-primary font-medium">{user.fullName}</span>
+        </h2>
+        <p className=" text-textPrimary">
+          Welcome back, <span className="text-primary ">{user.fullName}</span>
         </p>
       </div>
 

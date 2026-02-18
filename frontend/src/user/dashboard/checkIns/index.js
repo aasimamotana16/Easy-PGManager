@@ -180,8 +180,8 @@ const CheckIns = () => {
       <div className="p-4 sm:p-6 lg:p-8 space-y-6">
         
         <div className="px-1 text-center md:text-left">
-          <h2 className=" font-bold text-[#1C1C1C]">Stay Management</h2>
-          <h3 className=" text-[#4B4B4B]">Manage your move-in, move-out, and billing history</h3>
+          <h2 className=" font-bold text-textPrimary">Stay Management</h2>
+          <h3 className=" text-primary">Manage your move-in, move-out, and billing history</h3>
         </div>
 
         {/* --- MAIN ACTION CARDS --- */}
@@ -236,7 +236,7 @@ const CheckIns = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* CALENDAR */}
-          <div className="lg:col-span-7 bg-white rounded-md shadow-sm border border-[#E5E0D9] p-4 sm:p-6">
+          <div className="lg:col-span-7 bg-white rounded-md shadow-sm border border-primary p-4 sm:p-6">
             <h3 className="pb-4 font-bold text-lg uppercase text-[#4B4B4B] flex items-center gap-2">
                <FaCalendarCheck className=" text-lg text-[#D97706]"/> Stay Calendar
             </h3>
@@ -249,7 +249,7 @@ const CheckIns = () => {
           </div>
 
           {/* HISTORY */}
-          <div className="lg:col-span-5 bg-white rounded-md shadow-sm border border-[#E5E0D9] flex flex-col h-[450px]">
+          <div className="lg:col-span-5 bg-white rounded-md shadow-sm border border-primary flex flex-col h-[450px]">
             <div className="p-4 border-b border-[#E5E0D9] font-bold uppercase tracking-widest text-lg flex items-center gap-2">
               <FaHistory className=" text-lg text-[#D97706]" /> Previous Stay Records
             </div>

@@ -132,10 +132,10 @@ const PgManagement = () => {
 
       {/* PAGE HEADER */}
       <div className="space-y-1">
-        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-black">
+        <h2 className=" text-black">
           PG Management
-        </h1>
-        <p className="text-sm sm:text-base lg:text-lg text-gray-500">
+        </h2>
+        <p className="text-primary">
           Manage your PG properties, rooms, and approvals
         </p>
       </div>

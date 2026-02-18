@@ -127,10 +127,10 @@ const AddRooms = () => {
   };
 
   return (
-    <div className="p-4 md:p-10 bg-gray-100 min-h-screen">
+    <div className="p-4 md:p-10 bg-gray-200 min-h-screen">
       <div className="max-w-5xl mx-auto mb-8">
-        <h1 className="text-4xl font-bold text-[#1C1C1C]">Add Rooms</h1>
-        <p className="text-[#4B4B4B] mt-2">
+        <h2 className="  text-[#1C1C1C]">Add Rooms</h2>
+        <p className="text-[#4B4B4B] ">
           Adding rooms for <span className="font-bold text-primary">{pgData?.name || 'Your Property'}</span>
         </p>
       </div>

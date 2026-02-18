@@ -154,6 +154,8 @@ const Documents = () => {
       <div className="px-1">
           <div>
         <h2 className="  text-[#1C1C1C]"> Documents </h2>
+                  <p className="text-gray-500 ">Documents required to complete your profile</p>
+
         </div>
 </div>
       
@@ -161,18 +163,16 @@ const Documents = () => {
 
       {/* SECTION 1: PENDING DOCUMENTS */}
       <div className="space-y-6">
-          <h3 className=" text-gray-800 flex items-center gap-3">
+          <p className=" text-2xl text-gray-800 flex items-center gap-3">
             <FaExclamationCircle className="text-orange-500" /> Pending Action
-          </h3>
-          <p className="text-gray-500 text-sm">Documents required to complete your profile</p>
-
+          </p>
 
         <div className="grid grid-cols-1 gap-4">
           {pendingDocs.length > 0 ? pendingDocs.map((doc) => (
-            <div key={doc.id} className="bg-white rounded-md border border-dashed border-gray-300 p-5 flex items-center justify-between shadow-sm">
+            <div key={doc.id} className="bg-white rounded-md border border-dashed border-primary p-5 flex items-center justify-between shadow-sm">
               <div>
-                <h3 className="font-bold text-gray-700 uppercase tracking-tight">{doc.name}</h3>
-                <p className="text-xs text-gray-400 italic">{doc.guidance}</p>
+                <p className="font-bold text-gray-700 uppercase tracking-tight">{doc.name}</p>
+                <p className=" text-gray-400 italic">{doc.guidance}</p>
               </div>
               <button onClick={() => handleUploadClick(doc.id)} className="text-orange-500 hover:scale-110 transition-transform">
                 <FaCloudUploadAlt size={35} />
@@ -191,10 +191,10 @@ const Documents = () => {
       {/* SECTION 2: UPLOADED / RECENT DOCUMENTS */}
       <div className="space-y-6">
         <div className="px-1">
-          <h3 className=" text-gray-800 flex items-center gap-3">
+          <h3 className=" text-2xl text-gray-800 flex items-center gap-3">
             <FaFileImport className="text-blue-500" /> Uploaded Documents
           </h3>
-          <p className="text-gray-500 text-sm">View or update your existing legal records</p>
+          <p className="text-gray-500 ">View or update your existing legal records</p>
         </div>
 
         <div className="grid grid-cols-1 gap-5">
@@ -211,9 +211,9 @@ const Documents = () => {
                 </div>
                 
                 <div className="flex items-center gap-3">
-                  <button onClick={() => handleView(doc)} title="View" className="text-blue-500 hover:scale-110 transition-all"><FaEye size={24} /></button>
-                  <button onClick={() => handleUploadClick(doc.id)} title="Update/Replace" className="text-orange-500 hover:scale-110 transition-all"><FaCloudUploadAlt size={24} /></button>
-                  <button onClick={() => handleDelete(doc)} title="Delete" className="text-red-400 hover:text-red-600 transition-all"><FaTrash size={20} /></button>
+                  <button onClick={() => handleView(doc)} title="View" className="text-blue-500 hover:scale-110 transition-all"><FaEye size={18} /></button>
+                  <button onClick={() => handleUploadClick(doc.id)} title="Update/Replace" className="text-orange-500 hover:scale-110 transition-all"><FaCloudUploadAlt size={18} /></button>
+                  <button onClick={() => handleDelete(doc)} title="Delete" className="text-red-400 hover:text-red-600 transition-all"><FaTrash size={18} /></button>
                 </div>
               </div>
             </div>

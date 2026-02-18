@@ -116,11 +116,11 @@ const Agreements = () => {
     };
   };
 
-  if (loading) return (
+  {/*if (loading) return (
     <div className="flex justify-center items-center min-h-[60vh]">
       <div className="animate-spin rounded-md h-10 w-10 border-t-2 border-[#D97706]"></div>
     </div>
-  );
+  );*/}
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 bg-gray-200 min-h-screen space-y-6">
@@ -128,8 +128,8 @@ const Agreements = () => {
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-1">
         <div>
-          <h1 className="text-3xl md:text-4xl font-bold text-[#1C1C1C]"> Digital Agreement </h1>
-          <p className="text-sm md:text-lg text-[#4B4B4B] mt-1"> Verified Legal Document • E-Signed </p>
+          <h2 className=" font-bold text-textPrimary"> Digital Agreement </h2>
+          <h3 className=" text-primary "> Verified Legal Document • E-Signed </h3>
         </div>
         <div className={`self-start md:self-center px-4 py-2 rounded-md text-xs font-bold border ${
           agreementInfo?.status === 'Active' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-orange-50 text-[#D97706] border-orange-200'

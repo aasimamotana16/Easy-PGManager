@@ -355,8 +355,7 @@ const AddProperty = () => {
   return (
     <div className="p-4 sm:p-8 bg-gray-200 min-h-screen">
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-3xl font-bold text-primary mb-2">Add New Property</h1>
-        <p className="text-textSecondary mb-8">Fields marked with <span className="text-red-500">*</span> are mandatory.</p>
+        <h2 className="  text-textprimary mb-8">Add New Property</h2>
 
         <form onSubmit={handleSubmit} className="space-y-8">
           {/* 1. BASIC DETAILS */}
