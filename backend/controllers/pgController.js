@@ -15,6 +15,14 @@ const buildCityMatchers = (cityRaw) => {
 exports.createPG = async (req, res) => {
 
   try {
+    const requestedCategory = String(req.body.forWhom || req.body.type || req.body.gender || "Any").trim();
+    const normalizedGender = (() => {
+      const key = requestedCategory.toLowerCase();
+      if (key === "boys" || key === "boy") return "Boys";
+      if (key === "girls" || key === "girl") return "Girls";
+      return "Any";
+    })();
+
     // DATA MAPPING: Ensuring frontend 'rent' or 'name' matches backend 'price' or 'pgName'
     const pgData = {
       ...req.body,
@@ -24,7 +32,14 @@ exports.createPG = async (req, res) => {
       // 3. FIXED: Mapping 'city' to 'location' to match your pgSchema
       location: req.body.location || req.body.city,
       price: req.body.price || req.body.rent,   // Support both [cite: 2026-01-06]
-      status: 'live' // Ensures it appears in search results
+      gender: normalizedGender,
+      type: requestedCategory || "Any",
+      roomType: req.body.roomType || req.body.occupancy || "Any",
+      occupancy: req.body.occupancy || req.body.roomType || "Any",
+      securityDeposit: Number(req.body.securityDeposit || req.body.deposit || 0) || 0,
+      approvalStatus: req.body.approvalStatus || "pending",
+      operationalStatus: req.body.operationalStatus || "active",
+      status: 'draft'
     };
     const newPg = await PG.create(pgData);
     res.status(201).json({
@@ -56,7 +71,7 @@ exports.searchPGs = async (req, res) => {
       amenities 
     } = req.query;
 
-    let query = { status: { $in: ['live', 'pending'] } };
+    let query = { status: 'live' };
 
     // 1. City Check
     const cityMatchers = buildCityMatchers(city);
@@ -112,7 +127,12 @@ exports.searchPGs = async (req, res) => {
     const mappedResults = results.map(pg => ({
       ...pg._doc,
       name: pg.pgName,
-      rent: pg.price
+      rent: pg.price,
+      rentPerMonth: pg.price,
+      deposit: pg.securityDeposit || 0,
+      roomType: pg.roomType || pg.occupancy || "Any",
+      type: pg.type || pg.gender || "Any",
+      approval: pg.approvalStatus || (pg.status === "live" ? "confirmed" : "pending")
     }));
 
     res.status(200).json({ 
@@ -163,7 +183,7 @@ exports.getAllPgs = async (req, res) => {
     const { city, propertyType, occupancy, forCategory } = req.query; 
     
     // Start with a base query (showing only live PGs) [cite: 2026-01-06]
-    let query = { status: { $in: ['live', 'pending'] } };
+    let query = { status: 'live' };
 
     // 2. Filter by City (mapping to 'location' as per your createPG logic) [cite: 2026-01-06]
     const cityMatchers = buildCityMatchers(city);
@@ -197,6 +217,11 @@ exports.getAllPgs = async (req, res) => {
       ...pg._doc,
       name: pg.pgName, 
       rent: pg.price,
+      rentPerMonth: pg.price,
+      deposit: pg.securityDeposit || 0,
+      roomType: pg.roomType || pg.occupancy || "Any",
+      type: pg.type || pg.gender || "Any",
+      approval: pg.approvalStatus || (pg.status === "live" ? "confirmed" : "pending"),
       city: pg.location // Send back as 'city' for the frontend dropdowns to update [cite: 2026-01-06]
     }));
 
@@ -216,7 +241,7 @@ exports.getAllPgs = async (req, res) => {
 // Get single PG details for booking page [cite: 2026-01-06]
 exports.getPgById = async (req, res) => {
   try {
-    const pg = await PG.findById(req.params.id);
+    const pg = await PG.findOne({ _id: req.params.id, status: 'live' });
     if (!pg) {
       return res.status(404).json({ success: false, message: "PG not found" });
     }
@@ -234,6 +259,11 @@ exports.getPgById = async (req, res) => {
       ...pg._doc,
       name: pg.pgName, // Fixes missing name on card [cite: 2026-01-01]
       rent: pg.price,  // Fixes 0 price if frontend looks for 'rent' [cite: 2026-01-06]
+      rentPerMonth: pg.price,
+      deposit: pg.securityDeposit || 0,
+      roomType: pg.roomType || pg.occupancy || "Any",
+      type: pg.type || pg.gender || "Any",
+      approval: pg.approvalStatus || (pg.status === "live" ? "confirmed" : "pending"),
       roomDocs
     };
     res.status(200).json({ success: true, data: responseData });

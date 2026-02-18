@@ -9,6 +9,8 @@ const nodemailer = require("nodemailer");
 const axios = require("axios");
 const CheckIn = require("../models/checkInModel");
 const Timeline = require("../models/timelineModel");
+const Tenant = require("../models/tenantModel");
+const PendingPayment = require("../models/pendingPaymentModel");
 const fs = require('fs');
 const path = require('path');
 // Moved to top to avoid redundant requiring during PDF generation
@@ -24,6 +26,14 @@ const generateToken = (id) => {
   return jwt.sign({ id }, JWT_SECRET, {
     expiresIn: "30d",
   });
+};
+
+const resolveTenantForUser = async (userDoc) => {
+  if (!userDoc) return null;
+  const email = String(userDoc.email || "").toLowerCase().trim();
+  if (!email) return null;
+
+  return Tenant.findOne({ email: new RegExp(`^${email}$`, "i") }).sort({ createdAt: -1 });
 };
 
 // @desc Generate Custom CAPTCHA (Function kept but logic cleared to avoid errors)
@@ -328,38 +338,32 @@ const getMe = async (req, res) => {
 const getMyAgreement = async (req, res) => {
   try {
     const userId = new mongoose.Types.ObjectId(req.user._id);
-    let agreement = await Agreement.findOne({ userId: userId });
-    const user = await User.findById(userId);
+    const agreement = await Agreement.findOne({ userId }).sort({ createdAt: -1 });
 
-    // If no agreement exists, create a sample one for demo purposes
     if (!agreement) {
-      const sampleAgreement = {
-        userId: userId,
-        agreementId: `AGR${Date.now()}`,
-        pgName: "Green Villa PG",
-        roomNo: "A-101",
-        tenantName: user ? (user.name || user.fullName) : "Demo User",
-        rentAmount: 8000,
-        securityDeposit: 16000,
-        startDate: "2024-01-01",
-        endDate: "2024-12-31",
-        signed: true
-      };
-      
-      agreement = await Agreement.create(sampleAgreement);
+      return res.status(404).json({
+        success: false,
+        message: "No agreement available yet. It will appear after booking confirmation."
+      });
     }
 
     res.status(200).json({
       success: true,
       data: {
-        pgName: agreement.pgName || (user ? user.bookedPgName : "N/A"),
-        roomNo: agreement.roomNo || (user ? user.roomNo : "N/A"),
-        tenantName: user ? (user.name || user.fullName) : "N/A",
+        pgName: agreement.pgName || "N/A",
+        roomNo: agreement.roomNo || "N/A",
+        tenantName: agreement.tenantName || "N/A",
         rentAmount: agreement.rentAmount,
         securityDeposit: agreement.securityDeposit,
         agreementId: agreement.agreementId,
+        bookingId: agreement.bookingId,
         startDate: agreement.startDate,
         endDate: agreement.endDate,
+        checkInDate: agreement.checkInDate || agreement.startDate,
+        checkOutDate: agreement.checkOutDate || agreement.endDate,
+        isLongTerm: agreement.isLongTerm || String(agreement.endDate || "").toLowerCase() === "long term",
+        fileUrl: agreement.fileUrl || "",
+        ownerSignatureUrl: agreement.ownerSignatureUrl || "",
         status: agreement.signed ? "Active" : "Pending Signature"
       }
     });
@@ -968,37 +972,103 @@ const moveIn = async (req, res) => {
 const moveOut = async (req, res) => {
   try {
     const userId = req.user._id;
-    // find active or pending checkin for user
+    const user = await User.findById(userId).select("email");
+    const tenant = await resolveTenantForUser(user);
+    if (!tenant) {
+      return res.status(404).json({ success: false, message: "Tenant record not found. Contact owner." });
+    }
+
+    // find active or pending checkin for user for 60-day rule info
     const checkin = await CheckIn.findOne({ userId, status: { $in: ['Present', 'Pending'] } }).sort({ createdAt: -1 });
-    if (!checkin) return res.status(400).json({ success: false, message: 'No active stay found' });
-
-    const joinDate = checkin.checkInDate ? new Date(checkin.checkInDate) : null;
-    if (!joinDate) return res.status(400).json({ success: false, message: 'Joining date not found' });
-
+    const joinDate = checkin?.checkInDate ? new Date(checkin.checkInDate) : new Date(tenant.joiningDate);
     const today = new Date();
     const diffTime = Math.abs(today - joinDate);
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-    // Determine user's rent amount (try Agreement then user)
     let rentAmount = 0;
-    const agreement = await Agreement.findOne({ userId });
-    if (agreement && agreement.rentAmount) rentAmount = agreement.rentAmount;
-    const user = await User.findById(userId);
-    if (!rentAmount && user && user.monthlyRent) rentAmount = user.monthlyRent;
+    const agreement = await Agreement.findOne({ userId }).sort({ createdAt: -1 });
+    if (agreement?.rentAmount) rentAmount = Number(agreement.rentAmount) || 0;
 
-    if (diffDays < 60) {
-      return res.status(200).json({ success: false, earlyMoveOut: true, penalty: rentAmount || 0, daysStayed: diffDays });
-    }
+    tenant.hasMoveOutNotice = true;
+    tenant.moveOutRequested = true;
+    tenant.moveOutRequestedAt = new Date();
+    await tenant.save();
 
-    // Allow move-out: mark checkin as Out
-    checkin.checkOutDate = today;
-    checkin.status = 'Out';
-    await checkin.save();
-
-    return res.status(200).json({ success: true, message: 'Move-out processed', earlyMoveOut: false });
+    return res.status(200).json({
+      success: true,
+      message: "Move-out request sent to owner for inspection and settlement.",
+      moveOutRequested: true,
+      earlyMoveOut: diffDays < 60,
+      penalty: diffDays < 60 ? rentAmount : 0,
+      daysStayed: diffDays
+    });
   } catch (error) {
     console.error('moveOut error:', error);
-    return res.status(500).json({ success: false, message: 'Failed to process move-out' });
+    return res.status(500).json({ success: false, message: 'Failed to request move-out' });
+  }
+};
+
+// @desc User requests payment-extension and pauses late fine till selected date
+const requestExtension = async (req, res) => {
+  try {
+    const { untilDate, reason } = req.body || {};
+    if (!untilDate) {
+      return res.status(400).json({ success: false, message: "untilDate is required" });
+    }
+
+    const targetDate = new Date(untilDate);
+    if (Number.isNaN(targetDate.getTime())) {
+      return res.status(400).json({ success: false, message: "Invalid untilDate" });
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const endDate = new Date(targetDate);
+    endDate.setHours(0, 0, 0, 0);
+    if (endDate < today) {
+      return res.status(400).json({ success: false, message: "Extension date cannot be in the past" });
+    }
+
+    const user = await User.findById(req.user._id).select("email");
+    const tenant = await resolveTenantForUser(user);
+    if (!tenant) {
+      return res.status(404).json({ success: false, message: "Tenant record not found. Contact owner." });
+    }
+
+    const diffDays = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24));
+    tenant.hasDeferralRequest = true;
+    tenant.extensionRequested = true;
+    tenant.extensionRequestedAt = new Date();
+    tenant.extensionUntil = endDate;
+    tenant.extensionReason = reason || "";
+    tenant.deferredDays = Math.max(diffDays, 0);
+    tenant.deferredReason = reason || "";
+    await tenant.save();
+
+    // keep pending payment as pending while extension window is active
+    await PendingPayment.updateMany(
+      {
+        tenantName: tenant.name,
+        status: { $in: ["Pending", "Overdue"] },
+        $or: [
+          { pg: tenant.pgId },
+          { pgName: tenant.pgName || "" }
+        ]
+      },
+      { $set: { status: "Pending" } }
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Extension request sent. Late fine is paused till requested date.",
+      data: {
+        extensionUntil: endDate,
+        pauseFinePerDay: 100
+      }
+    });
+  } catch (error) {
+    console.error("requestExtension error:", error);
+    return res.status(500).json({ success: false, message: "Failed to request extension" });
   }
 };
 
@@ -1027,6 +1097,7 @@ module.exports = {
   submitSupportTicket,
   moveIn,
   moveOut,
+  requestExtension,
   getOwnerEarnings,
   downloadEarningsPDF,
   downloadTenantReport,

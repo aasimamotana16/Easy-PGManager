@@ -1,10 +1,24 @@
 const User = require('../models/userModel');
 const Pg = require('../models/pgModel');
+const SupportTicket = require('../models/supportTicketModel');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const DOCUMENT_FIELDS = ['idDocument', 'aadharCard', 'rentalAgreementCopy'];
 const PROPERTY_DOCUMENT_FIELDS = ['aadhaar', 'electricityBill', 'propertyTax'];
+const PROPERTY_TEMPLATE_FIELDS = [
+  { key: 'agreementFileUrl', type: 'property.agreementTemplatePdf' },
+  { key: 'ownerSignatureUrl', type: 'property.ownerSignature' }
+];
+const REQUIRED_PROPERTY_DOCS = ['aadhaar', 'electricityBill', 'propertyTax'];
+
+const getPropertyDocStatus = (pg, key) => {
+  return pg?.proofDocumentMeta?.[key]?.status || (pg?.proofDocuments?.[key] ? 'Uploaded' : 'Pending');
+};
+
+const getTemplateDocStatus = (pg, key) => {
+  return pg?.agreementTemplateMeta?.[key]?.status || (pg?.agreementTemplate?.[key] ? 'Uploaded' : 'Pending');
+};
 
 // Existing Admin Login
 const adminLogin = async (req, res) => {
@@ -120,8 +134,40 @@ const approveProperty = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Property not found' });
     }
 
+    const missingRequiredDocs = REQUIRED_PROPERTY_DOCS.filter((field) => !property?.proofDocuments?.[field]);
+    if (missingRequiredDocs.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: `Upload required documents first: ${missingRequiredDocs.join(', ')}`
+      });
+    }
+
+    const unverifiedRequiredDocs = REQUIRED_PROPERTY_DOCS.filter(
+      (field) => getPropertyDocStatus(property, field) !== 'Verified'
+    );
+    if (unverifiedRequiredDocs.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: `Verify all required documents before confirming PG: ${unverifiedRequiredDocs.join(', ')}`
+      });
+    }
+
+    const uploadedTemplateKeys = PROPERTY_TEMPLATE_FIELDS
+      .map((tpl) => tpl.key)
+      .filter((key) => Boolean(property?.agreementTemplate?.[key]));
+    const unverifiedUploadedTemplates = uploadedTemplateKeys.filter(
+      (key) => getTemplateDocStatus(property, key) !== 'Verified'
+    );
+    if (unverifiedUploadedTemplates.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Verify uploaded agreement documents before confirming PG"
+      });
+    }
+
     // Update status to live
     property.status = 'live';
+    property.approvalStatus = 'confirmed';
     await property.save();
 
     // Get owner details for email
@@ -183,44 +229,10 @@ const rejectProperty = async (req, res) => {
 
     // Update status to rejected
     property.status = 'rejected';
+    property.approvalStatus = 'rejected';
     await property.save();
 
-    // Get owner details for email
-    const owner = await User.findById(property.ownerId);
-
-    // Send email to owner
-    const ownerEmail = owner.email;
-    
-    if (ownerEmail && process.env.EMAIL_USER && process.env.EMAIL_PASS) {
-      try {
-        const transporter = nodemailer.createTransport({
-          service: "gmail",
-          auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASS
-          }
-        });
-
-        const mailOptions = {
-          from: process.env.EMAIL_USER,
-          to: ownerEmail,
-          subject: `Your Property "${property.pgName}" has been Rejected`,
-          html: `
-            <h2>Property Review Update</h2>
-            <p>Dear ${owner.fullName},</p>
-            <p>Unfortunately, your property <strong>${property.pgName}</strong> has been rejected.</p>
-            ${rejectionReason ? `<p><strong>Reason:</strong> ${rejectionReason}</p>` : ''}
-            <p>Please login to your dashboard to make the necessary changes and resubmit.</p>
-            <p>Thank you for using EasyPG Manager.</p>
-          `
-        };
-
-        await transporter.sendMail(mailOptions);
-        console.log("Rejection notification email sent to owner:", ownerEmail);
-      } catch (emailError) {
-        console.error("Error sending email to owner:", emailError);
-      }
-    }
+    // No owner email before full approval as per product rule.
 
     res.status(200).json({
       success: true,
@@ -239,7 +251,7 @@ const getPendingDocuments = async (req, res) => {
       .select('fullName email role idDocument aadharCard rentalAgreementCopy');
     const properties = await Pg.find({})
       .populate('ownerId', 'fullName email role')
-      .select('pgName proofDocuments updatedAt createdAt ownerId');
+      .select('pgName proofDocuments proofDocumentMeta agreementTemplate agreementTemplateMeta updatedAt createdAt ownerId');
 
     const queue = [];
     users.forEach((u) => {
@@ -275,12 +287,33 @@ const getPendingDocuments = async (req, res) => {
           propertyId: pg._id,
           propertyName: pg.pgName || "Unknown Property",
           documentType: `property.${field}`,
-          status: 'Uploaded',
+          status: getPropertyDocStatus(pg, field),
           fileUrl,
           uploadedAt: pg.updatedAt || pg.createdAt || null,
-          reviewedAt: null,
-          reviewNote: '',
-          reviewable: false
+          reviewedAt: pg?.proofDocumentMeta?.[field]?.reviewedAt || null,
+          reviewNote: pg?.proofDocumentMeta?.[field]?.reviewNote || '',
+          reviewable: true
+        });
+      });
+
+      PROPERTY_TEMPLATE_FIELDS.forEach((tpl) => {
+        const fileUrl = pg?.agreementTemplate?.[tpl.key];
+        if (!fileUrl) return;
+
+        queue.push({
+          userId: pg.ownerId?._id || null,
+          fullName: pg.ownerId?.fullName || "Unknown Owner",
+          email: pg.ownerId?.email || "",
+          role: pg.ownerId?.role || "owner",
+          propertyId: pg._id,
+          propertyName: pg.pgName || "Unknown Property",
+          documentType: tpl.type,
+          status: getTemplateDocStatus(pg, tpl.key),
+          fileUrl,
+          uploadedAt: pg?.agreementTemplate?.uploadedAt || pg.updatedAt || pg.createdAt || null,
+          reviewedAt: pg?.agreementTemplateMeta?.[tpl.key]?.reviewedAt || null,
+          reviewNote: pg?.agreementTemplateMeta?.[tpl.key]?.reviewNote || '',
+          reviewable: true
         });
       });
     });
@@ -304,16 +337,66 @@ const getPendingDocuments = async (req, res) => {
 // @desc    Review one user document from admin panel
 const reviewUserDocument = async (req, res) => {
   try {
-    const { userId, documentType, status, note } = req.body;
+    const { userId, propertyId, documentType, status, note } = req.body;
 
-    if (!userId || !documentType || !status) {
-      return res.status(400).json({ success: false, message: 'userId, documentType and status are required' });
-    }
-    if (!DOCUMENT_FIELDS.includes(documentType)) {
-      return res.status(400).json({ success: false, message: 'Invalid documentType' });
+    if (!documentType || !status) {
+      return res.status(400).json({ success: false, message: 'documentType and status are required' });
     }
     if (!['Verified', 'Rejected'].includes(status)) {
       return res.status(400).json({ success: false, message: 'Invalid status. Use Verified or Rejected' });
+    }
+
+    if (String(documentType || '').startsWith('property.')) {
+      const effectivePropertyId = propertyId || userId;
+      if (!effectivePropertyId) {
+        return res.status(400).json({ success: false, message: 'propertyId is required for property document review' });
+      }
+
+      const pg = await Pg.findById(effectivePropertyId);
+      if (!pg) {
+        return res.status(404).json({ success: false, message: 'Property not found' });
+      }
+
+      const now = new Date();
+      const reviewNote = note || '';
+
+      if (!pg.proofDocumentMeta) pg.proofDocumentMeta = {};
+      if (!pg.agreementTemplateMeta) pg.agreementTemplateMeta = {};
+
+      if (documentType === 'property.aadhaar' || documentType === 'property.electricityBill' || documentType === 'property.propertyTax') {
+        const field = documentType.replace('property.', '');
+        if (!pg?.proofDocuments?.[field]) {
+          return res.status(404).json({ success: false, message: 'Property document not found' });
+        }
+        pg.proofDocumentMeta[field] = { status, reviewedAt: now, reviewNote };
+      } else if (documentType === 'property.agreementTemplatePdf') {
+        if (!pg?.agreementTemplate?.agreementFileUrl) {
+          return res.status(404).json({ success: false, message: 'Agreement template PDF not found' });
+        }
+        pg.agreementTemplateMeta.agreementFileUrl = { status, reviewedAt: now, reviewNote };
+      } else if (documentType === 'property.ownerSignature') {
+        if (!pg?.agreementTemplate?.ownerSignatureUrl) {
+          return res.status(404).json({ success: false, message: 'Owner signature not found' });
+        }
+        pg.agreementTemplateMeta.ownerSignatureUrl = { status, reviewedAt: now, reviewNote };
+      } else {
+        return res.status(400).json({ success: false, message: 'Invalid property documentType' });
+      }
+
+      await pg.save();
+
+      return res.status(200).json({
+        success: true,
+        message: `Property document ${status.toLowerCase()} successfully`,
+        data: { propertyId: pg._id, documentType, status, reviewedAt: now, reviewNote }
+      });
+    }
+
+    if (!userId) {
+      return res.status(400).json({ success: false, message: 'userId is required for user document review' });
+    }
+    if (!DOCUMENT_FIELDS.includes(documentType)) {
+      return res.status(400).json({ success: false, message: 'Invalid documentType' });
     }
 
     const user = await User.findById(userId);
@@ -345,6 +428,52 @@ const reviewUserDocument = async (req, res) => {
   }
 };
 
+// @desc    Get all support tickets (owner/user) for admin panel
+const getSupportTickets = async (req, res) => {
+  try {
+    const tickets = await SupportTicket.find({})
+      .populate('ownerId', 'fullName email phone')
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      count: tickets.length,
+      data: tickets
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Error fetching support tickets' });
+  }
+};
+
+// @desc    Update support ticket status from admin panel
+const updateSupportTicketByAdmin = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    const allowedStatuses = ['Open', 'In Progress', 'Closed'];
+
+    if (!allowedStatuses.includes(status)) {
+      return res.status(400).json({ success: false, message: 'Invalid status' });
+    }
+
+    const ticket = await SupportTicket.findById(id);
+    if (!ticket) {
+      return res.status(404).json({ success: false, message: 'Ticket not found' });
+    }
+
+    ticket.status = status;
+    await ticket.save();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Ticket status updated successfully',
+      data: ticket
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Error updating support ticket' });
+  }
+};
+
 module.exports = { 
   adminLogin, 
   getAdminDashboardStats, 
@@ -355,5 +484,7 @@ module.exports = {
   approveProperty,
   rejectProperty,
   getPendingDocuments,
-  reviewUserDocument
+  reviewUserDocument,
+  getSupportTickets,
+  updateSupportTicketByAdmin
 };

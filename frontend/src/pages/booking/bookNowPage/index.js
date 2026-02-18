@@ -1,5 +1,5 @@
 import React, { useState, useContext, useRef, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { BackendContext } from "../../../context/backendContext";
 import CButton from "../../../components/cButton";
 import CInput from "../../../components/cInput";
@@ -9,6 +9,7 @@ import Swal from "sweetalert2";
 const BookingPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { pgList, loading: backendLoading } = useContext(BackendContext);
 
   const pg = pgList?.find((item) => String(item._id) === String(id));
@@ -50,9 +51,46 @@ const BookingPage = () => {
   if (pageLoading || backendLoading) return <Loader />;
   if (!pg) return <div className="text-center mt-20 text-textPrimary">PG not found</div>;
 
+  const selectedRoom = location.state?.selectedRoom || null;
+  const roomTypeKey = String(selectedRoom?.type || "").toLowerCase();
+  const parseNum = (v) => {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : 0;
+  };
+  const deriveRoomVariantPrice = () => {
+    if (selectedRoom?.price) return parseNum(selectedRoom.price);
+    if (Array.isArray(pg.roomPrices) && pg.roomPrices.length > 0) {
+      const exact = pg.roomPrices.find((r) => {
+        const key = String(r.variantName || r.variantLabel || r.roomType || r.type || "").toLowerCase();
+        return roomTypeKey && (key === roomTypeKey || key.includes(roomTypeKey) || roomTypeKey.includes(key));
+      });
+      if (exact) return parseNum(exact.price || exact.rent || exact.pricePerMonth || exact.monthlyRent);
+      return parseNum(pg.roomPrices[0]?.price || pg.roomPrices[0]?.rent || pg.roomPrices[0]?.pricePerMonth || pg.roomPrices[0]?.monthlyRent);
+    }
+    if (pg.roomPrices && typeof pg.roomPrices === "object") {
+      if (roomTypeKey.includes("single")) return parseNum(pg.roomPrices.single);
+      if (roomTypeKey.includes("double")) return parseNum(pg.roomPrices.double);
+      if (roomTypeKey.includes("triple")) return parseNum(pg.roomPrices.triple);
+      return parseNum(pg.roomPrices.other);
+    }
+    return 0;
+  };
+  const deriveRoomVariantDeposit = () => {
+    if (selectedRoom?.securityDeposit) return parseNum(selectedRoom.securityDeposit);
+    if (Array.isArray(pg.roomPrices) && pg.roomPrices.length > 0) {
+      const exact = pg.roomPrices.find((r) => {
+        const key = String(r.variantName || r.variantLabel || r.roomType || r.type || "").toLowerCase();
+        return roomTypeKey && (key === roomTypeKey || key.includes(roomTypeKey) || roomTypeKey.includes(key));
+      });
+      if (exact) return parseNum(exact.securityDeposit || exact.deposit);
+      return parseNum(pg.roomPrices[0]?.securityDeposit || pg.roomPrices[0]?.deposit);
+    }
+    return 0;
+  };
+
   // Calculation Logic
-  const pricePerPerson = Number(pg.roomPrices?.singleSharing || pg.startingPrice || pg.rent || pg.price || 0);
-  const securityDepositPerPerson = Number(pg.securityDeposit || pricePerPerson); 
+  const pricePerPerson = deriveRoomVariantPrice() || Number(pg.startingPrice || pg.rent || pg.price || 0);
+  const securityDepositPerPerson = deriveRoomVariantDeposit() || Number(pg.securityDeposit || pricePerPerson); 
   const maxBeds = pg.availableBeds || 5;
   
   const totalRent = pricePerPerson * persons;
@@ -178,7 +216,7 @@ const BookingPage = () => {
         members: personsData,
         stayDetails,
         persons,
-        roomType: pg.occupancy || "Single Sharing"
+        roomType: selectedRoom?.type || pg.occupancy || "Single Sharing"
       };
 
       try {
@@ -214,7 +252,7 @@ const BookingPage = () => {
           <div className="lg:col-span-2 space-y-6">
             {personsData.map((person, index) => (
               <div key={index} ref={(el) => (personRefs.current[index] = el)} 
-                   className="bg-background rounded-xl p-6 shadow-sm border border-border">
+                   className="bg-background rounded-md p-6 shadow-sm border border-border">
                 <h3 className="font-bold text-textPrimary text-lg mb-4">Person {index + 1} (Tenant)</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <CInput label="Full Name" required error={errors[`fullName_${index}`]} value={person.fullName} onChange={(e) => handleChange(index, "fullName", e.target.value)} />
@@ -229,7 +267,7 @@ const BookingPage = () => {
               </div>
             ))}
 
-            <div className="bg-background rounded-xl p-6 shadow-sm border border-border">
+            <div className="bg-background rounded-md p-6 shadow-sm border border-border">
               <h3 className="font-bold text-textPrimary text-lg mb-4">Stay Details</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <CInput type="date" label="Check-in Date" required error={errors.checkIn} min={today} value={stayDetails.checkIn} onChange={(e) => setStayDetails({ ...stayDetails, checkIn: e.target.value })} />
@@ -239,11 +277,11 @@ const BookingPage = () => {
           </div>
 
           {/* SUMMARY SIDEBAR */}
-          <div className="bg-background rounded-xl p-6 shadow-md h-fit sticky top-10 border border-border">
+          <div className="bg-background rounded-md p-6 shadow-md h-fit sticky top-10 border border-border">
             <h3 className="text-lg font-bold text-textPrimary mb-4">Summary</h3>
             <div className="flex justify-between items-center mb-4">
               <span className="text-primaryDark font-medium">{maxBeds} Beds Available</span>
-              <div className="flex items-center gap-3 bg-primarySoft p-1 rounded-lg">
+              <div className="flex items-center gap-3 bg-primarySoft p-1 rounded-md">
                 <button onClick={decrease} className="w-8 h-8 flex items-center justify-center bg-background rounded-md text-primary font-bold shadow-sm" disabled={isSubmitted}>−</button>
                 <span className="w-4 text-center font-bold text-textPrimary">{persons}</span>
                 <button onClick={increase} className="w-8 h-8 flex items-center justify-center bg-background rounded-md text-primary font-bold shadow-sm" disabled={isSubmitted}>+</button>

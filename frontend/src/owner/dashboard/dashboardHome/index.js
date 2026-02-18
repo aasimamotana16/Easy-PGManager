@@ -27,7 +27,7 @@ import {
 } from "chart.js";
 import CButton from "../../../components/cButton";
 import { motion, AnimatePresence } from "framer-motion";
-import { getOwnerDashboardStats } from "../../../api/api";
+import { getOwnerDashboardStats, getMyTenants, getMyBookings } from "../../../api/api";
 
 ChartJS.register(
   CategoryScale,
@@ -48,6 +48,8 @@ const DashboardHome = () => {
     liveListings: 0,
     totalEarnings: 0,
     totalBookings: 0,
+    extensionRequests: 0,
+    pendingCheckouts: 0,
   });
   
   // Feedback States
@@ -59,19 +61,81 @@ const DashboardHome = () => {
   useEffect(() => {
     const fetchDashboardStats = async () => {
       try {
-        const response = await getOwnerDashboardStats();
-        const apiStats = response?.data?.data?.stats || [];
+        const [summaryResponse, tenantsResponse, bookingsResponse] = await Promise.all([
+          getOwnerDashboardStats(),
+          getMyTenants(),
+          getMyBookings(),
+        ]);
+        const apiStats = summaryResponse?.data?.data?.stats || [];
+        const tenants = tenantsResponse?.data?.data || [];
+        const bookings = bookingsResponse?.data?.data || [];
 
         const findValue = (label, fallback = 0) => {
           const found = apiStats.find((item) => item.label === label);
           return found?.value ?? fallback;
         };
 
+        const isPendingExtension = (tenant) => {
+          const status = String(tenant?.status || "").toLowerCase();
+          return (
+            tenant?.hasDeferralRequest === true ||
+            tenant?.extensionRequested === true ||
+            status.includes("extension") ||
+            status.includes("deferral")
+          );
+        };
+
+        const parseDate = (value) => {
+          if (!value || String(value).toLowerCase() === "long term") return null;
+          const date = new Date(value);
+          return Number.isNaN(date.getTime()) ? null : date;
+        };
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const endOfToday = new Date(today);
+        endOfToday.setHours(23, 59, 59, 999);
+
+        const pendingCheckoutsFromBookings = bookings.filter((booking) => {
+          const bookingStatus = String(booking?.status || "").toLowerCase();
+          const hasCheckoutRequest =
+            booking?.isCheckoutPending === true ||
+            booking?.checkoutRequested === true ||
+            bookingStatus.includes("checkout");
+
+          if (hasCheckoutRequest) return true;
+
+          const checkOutDate = parseDate(booking?.checkOutDate);
+          if (!checkOutDate) return false;
+          return (
+            bookingStatus === "confirmed" &&
+            checkOutDate >= today &&
+            checkOutDate <= endOfToday
+          );
+        }).length;
+
+        const pendingCheckoutsFromTenants = tenants.filter((tenant) => {
+          const tenantStatus = String(tenant?.status || "").toLowerCase();
+          return (
+            tenant?.hasMoveOutNotice === true ||
+            tenant?.moveOutRequested === true ||
+            tenantStatus.includes("move-out") ||
+            tenantStatus.includes("checkout")
+          );
+        }).length;
+
+        const pendingCheckoutsCount = Math.max(
+          pendingCheckoutsFromBookings,
+          pendingCheckoutsFromTenants
+        );
+
         setStats((prev) => ({
           ...prev,
           totalPGs: Number(findValue("Total PGs", prev.totalPGs)),
           totalRooms: Number(findValue("Total Rooms", prev.totalRooms)),
           liveListings: Number(findValue("Available PGs", prev.liveListings)),
+          extensionRequests: tenants.filter(isPendingExtension).length,
+          pendingCheckouts: pendingCheckoutsCount,
         }));
       } catch (error) {
         console.error("Failed to fetch owner dashboard stats:", error);
@@ -160,14 +224,18 @@ const DashboardHome = () => {
       {/* CONNECTION ALERTS (Extension & Checkout) */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Extension Request Card */}
-        <div className="bg-white p-4 rounded-xl border-l-4 border-primary shadow-sm flex items-center justify-between">
+        <div className="bg-white p-4 rounded-md border-l-4 border-primary shadow-sm flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="bg-primarySoft p-3 rounded-full text-primary">
               <FaHourglassHalf size={20} />
             </div>
             <div>
               <h3 className="text-sm font-bold text-textPrimary uppercase">Extension Requests</h3>
-              <p className="text-xs text-textSecondary">2 tenants requested extra time</p>
+              <p className="text-xs text-textSecondary">
+                {stats.extensionRequests > 0
+                  ? `${stats.extensionRequests} tenant${stats.extensionRequests > 1 ? "s" : ""} requested extra time`
+                  : "No extension requests right now"}
+              </p>
             </div>
           </div>
           <button 
@@ -179,14 +247,18 @@ const DashboardHome = () => {
         </div>
 
         {/* Pending Checkout Card */}
-        <div className="bg-white p-4 rounded-xl border-l-4 border-[#B45309] shadow-sm flex items-center justify-between">
+        <div className="bg-white p-4 rounded-md border-l-4 border-[#B45309] shadow-sm flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="bg-orange-100 p-3 rounded-full text-[#B45309]">
               <FaDoorOpen size={20} />
             </div>
             <div>
               <h3 className="text-sm font-bold text-textPrimary uppercase">Pending Check-outs</h3>
-              <p className="text-xs text-textSecondary">3 inspections due today</p>
+              <p className="text-xs text-textSecondary">
+                {stats.pendingCheckouts > 0
+                  ? `${stats.pendingCheckouts} inspection${stats.pendingCheckouts > 1 ? "s" : ""} due today`
+                  : "No check-outs due today"}
+              </p>
             </div>
           </div>
           <button 
@@ -199,7 +271,7 @@ const DashboardHome = () => {
       </div>
 
       {/* QUICK ACTIONS */}
-      <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-primary space-y-4">
+      <div className="bg-white p-4 sm:p-6 rounded-md shadow-sm border border-primary space-y-4">
         <h2 className="text-base sm:text-xl text-textPrimary uppercase font-semibold">
           Quick Actions
         </h2>
@@ -213,7 +285,7 @@ const DashboardHome = () => {
 
       {/* CHART & SUMMARY */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6">
-        <div className="lg:col-span-2 bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-primary space-y-4">
+        <div className="lg:col-span-2 bg-white p-4 sm:p-6 rounded-md shadow-sm border border-primary space-y-4">
           <h2 className="text-base sm:text-lg md:text-2xl text-textPrimary font-semibold">
             Earnings Overview
           </h2>
@@ -259,7 +331,7 @@ const DashboardHome = () => {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white rounded-xl p-6 w-full max-w-md border border-primary shadow-2xl"
+              className="bg-white rounded-md p-6 w-full max-w-md border border-primary shadow-2xl"
             >
               <div className="text-center space-y-4">
                 <h2 className="text-xl font-bold text-textPrimary">Share Your Experience</h2>
@@ -282,7 +354,7 @@ const DashboardHome = () => {
                 </div>
 
                 <textarea
-                  className="w-full border border-border rounded-lg p-3 text-sm focus:ring-2 focus:ring-primary outline-none"
+                  className="w-full border border-border rounded-md p-3 text-sm focus:ring-2 focus:ring-primary outline-none"
                   placeholder="Tell us what you like or what we can improve..."
                   rows={4}
                   value={reviewText}

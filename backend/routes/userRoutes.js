@@ -23,6 +23,7 @@ const {
   getMyCheckIns,
     moveIn,
     moveOut,
+  requestExtension,
   createCheckIn,
   verifySecurityAction 
 } = require("../controllers/userController");
@@ -95,6 +96,7 @@ router.post("/checkin-action", protect, createCheckIn);
 // Move-in / Move-out flows
 router.put("/move-in", protect, moveIn);
 router.put("/move-out", protect, moveOut);
+router.put("/request-extension", protect, requestExtension);
 
 /* =========================
     SECURITY

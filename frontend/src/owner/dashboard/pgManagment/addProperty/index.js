@@ -7,7 +7,7 @@ import CFormCard from "../../../../components/cFormCard";
 import { genderOptions } from "../../../../config/staticData";
 import { FaTrash, FaEye, FaFileAlt, FaMapMarkerAlt, FaClock } from "react-icons/fa";
 import Swal from "sweetalert2";
-import { addPgProperty, uploadPropertyDocuments } from "../../../../api/api";
+import { addPgProperty, uploadAgreementTemplate, uploadPropertyDocuments } from "../../../../api/api";
 
 const facilitiesList = ["WiFi", "Food", "Laundry", "Parking", "Power Backup", "AC"];
 const rulesList = [
@@ -43,6 +43,7 @@ const AddProperty = () => {
       aadhaar: null,
       electricityBill: null,
       propertyTax: null,
+      agreementPdf: null,
     },
   });
 
@@ -273,6 +274,16 @@ const AddProperty = () => {
             console.error("Property document upload failed:", docError);
           }
         }
+
+        if (formData.proofDocuments.agreementPdf) {
+          try {
+            const agreementFormData = new FormData();
+            agreementFormData.append("agreementPdf", formData.proofDocuments.agreementPdf);
+            await uploadAgreementTemplate(pgId, agreementFormData);
+          } catch (agreementError) {
+            console.error("Agreement template upload failed:", agreementError);
+          }
+        }
         
         // Store property data for next steps
         localStorage.setItem("currentPropertyId", pgId);
@@ -365,7 +376,7 @@ const AddProperty = () => {
     {facilitiesList.map((item) => (
       <label 
         key={item} 
-        className={`flex items-center gap-2 p-3 rounded-lg border-2 cursor-pointer transition-all ${
+        className={`flex items-center gap-2 p-3 rounded-md border cursor-pointer transition-all ${
           formData.facilities.includes(item) 
             ? 'bg-primarySoft border-primary text-primaryDark' 
             : 'bg-white border-border hover:border-primary/30'
@@ -395,7 +406,7 @@ const AddProperty = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="grid grid-cols-2 gap-3">
                 {rulesList.map((rule) => (
-                  <label key={rule.key} className={`flex items-center gap-3 p-3 rounded-lg border ${formData.rules[rule.key] ? 'bg-primarySoft border-primary/50' : 'bg-white border-border'}`}>
+                  <label key={rule.key} className={`flex items-center gap-3 p-3 rounded-md border ${formData.rules[rule.key] ? 'bg-primarySoft border-primary/50' : 'bg-white border-border'}`}>
                     <input type="checkbox" className="accent-primary w-4 h-4" checked={formData.rules[rule.key]} onChange={(e) => updateRule(rule.key, e.target.checked)} />
                     <span className="text-sm font-semibold">{rule.label}</span>
                   </label>
@@ -410,24 +421,25 @@ const AddProperty = () => {
           {/* 5. DOCUMENTS */}
           <CFormCard className="p-6 border border-primary shadow-sm bg-white">
   <h2 className="text-lg font-bold text-textPrimary mb-6 border-b pb-2 tracking-wide">VERIFICATION DOCUMENTS</h2>
-  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
     {[
       { key: "aadhaar", label: "Owner Aadhaar Card *" },
       { key: "electricityBill", label: "Electricity Bill *" },
-      { key: "propertyTax", label: "Property Tax Receipt *" }
+      { key: "propertyTax", label: "Property Tax Receipt *" },
+      { key: "agreementPdf", label: "Agreement" }
     ].map((doc) => (
       <div key={doc.key} className="flex flex-col">
         <label className="block text-xs font-bold text-textSecondary mb-3 uppercase tracking-wider">{doc.label}</label>
         {!formData.proofDocuments[doc.key] ? (
           <div className="relative group">
             <input type="file" id={`file-${doc.key}`} accept=".pdf,image/*" onChange={(e) => handleFileChange(e, doc.key)} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
-            <div className={`p-4 bg-gray-50 rounded-lg border-2 border-dashed ${errors[doc.key] ? 'border-red-400' : 'border-border'} group-hover:border-primary group-hover:bg-primarySoft/30 transition-all duration-200 flex flex-col items-center justify-center min-h-[100px]`}>
+            <div className={`p-4 bg-gray-50 rounded-md border-2 border-dashed ${errors[doc.key] ? 'border-red-400' : 'border-border'} group-hover:border-primary group-hover:bg-primarySoft/30 transition-all duration-200 flex flex-col items-center justify-center min-h-[100px]`}>
                <div className="bg-primary text-white px-4 py-2 rounded-md text-sm font-bold shadow-sm group-hover:scale-105 transition-transform">Choose File</div>
                <p className="text-[10px] text-textSecondary mt-2">No file chosen</p>
             </div>
           </div>
         ) : (
-          <div className="flex items-center justify-between bg-white p-3 rounded-lg border-2 border-primary/30 shadow-sm">
+          <div className="flex items-center justify-between bg-white p-3 rounded-md border border-primary/30 shadow-sm">
             <div className="flex items-center gap-2 overflow-hidden text-textPrimary">
               <FaFileAlt className="text-primary flex-shrink-0" />
               <span className="text-[10px] font-bold truncate">{formData.proofDocuments[doc.key].name}</span>

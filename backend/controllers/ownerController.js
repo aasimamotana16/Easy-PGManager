@@ -10,6 +10,7 @@ const Agreement = require('../models/agreementModel');
 const SupportTicket = require('../models/supportTicketModel');
 const Payment = require('../models/paymentModel');
 const PendingPayment = require('../models/pendingPaymentModel');
+const CheckIn = require('../models/checkInModel');
 const { jsPDF } = require('jspdf');
 const { autoTable } = require('jspdf-autotable');
 
@@ -24,11 +25,57 @@ const addMonths = (dateInput, months) => {
   return d;
 };
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+const LATE_FINE_PER_DAY = 100;
+
 const normalizeBaseUrl = (value, fallback = "http://localhost:3000") => {
   const raw = String(value || "").trim();
   const source = raw || fallback;
   const withProtocol = /^https?:\/\//i.test(source) ? source : `http://${source}`;
   return withProtocol.replace(/\/+$/, "");
+};
+
+const normalizeVariantKey = (v) =>
+  String(
+    v?.variantName ||
+    v?.variantLabel ||
+    v?.roomType ||
+    v?.type ||
+    v?.label ||
+    v?.name ||
+    ""
+  ).trim().toLowerCase();
+
+const toVariantArray = (roomPrices) => {
+  if (Array.isArray(roomPrices)) return roomPrices;
+  if (!roomPrices || typeof roomPrices !== "object") return [];
+  return Object.entries(roomPrices).map(([k, v]) => {
+    if (v && typeof v === "object") {
+      return { variantName: k, ...v };
+    }
+    return { variantName: k, price: Number(v) || 0 };
+  });
+};
+
+const mergeRoomPriceVariants = (existingRoomPrices, incomingRoomPrices) => {
+  const existing = toVariantArray(existingRoomPrices);
+  const incoming = toVariantArray(incomingRoomPrices);
+  if (incoming.length === 0) return existing;
+
+  const byKey = new Map();
+  existing.forEach((v) => {
+    const k = normalizeVariantKey(v);
+    if (k) byKey.set(k, { ...v });
+  });
+
+  incoming.forEach((v) => {
+    const k = normalizeVariantKey(v);
+    if (!k) return;
+    const prev = byKey.get(k) || {};
+    byKey.set(k, { ...prev, ...v });
+  });
+
+  return Array.from(byKey.values());
 };
 
 const deriveRentAmount = (pg, roomValue) => {
@@ -71,6 +118,17 @@ const deriveRentAmount = (pg, roomValue) => {
   if (Number(pg?.price) > 0) return Number(pg.price);
 
   return 0;
+};
+
+const resolveBookingDates = (checkInDate, checkOutDate) => {
+  const resolvedCheckIn = (checkInDate || new Date().toISOString().split('T')[0]).trim();
+  const hasCheckOut = Boolean(checkOutDate && String(checkOutDate).trim());
+  const resolvedCheckOut = hasCheckOut ? String(checkOutDate).trim() : "Long Term";
+  return {
+    checkInDate: resolvedCheckIn,
+    checkOutDate: resolvedCheckOut,
+    isLongTerm: !hasCheckOut
+  };
 };
 
 const ensureTenantAgreementRecord = async ({ ownerId, tenant, pg, rentAmount }) => {
@@ -367,6 +425,14 @@ const createPg = async (req, res) => {
       ownerId 
     }); // Debug log
 
+    const requestedCategory = String(forWhom || "Any").trim();
+    const normalizedGender = (() => {
+      const key = requestedCategory.toLowerCase();
+      if (key === "boys" || key === "boy") return "Boys";
+      if (key === "girls" || key === "girl") return "Girls";
+      return "Any";
+    })();
+
     // Map frontend fields to backend schema
     const newPg = await Pg.create({
       ownerId,
@@ -379,7 +445,9 @@ const createPg = async (req, res) => {
       price: 0,  // Will be set during room pricing
       totalRooms: parseInt(totalRooms) || 0,
       liveListings: 0,
-      type: forWhom || "Any",  // Boys, Girls, Any
+      gender: normalizedGender,
+      type: requestedCategory || "Any",
+      roomType: "Any",
       amenities: facilities || [],  // Facilities like WiFi, Food, etc
       facilities: facilities || [],  // Both for compatibility
       description: description || "",
@@ -390,49 +458,18 @@ const createPg = async (req, res) => {
         pets: false,
         curfew: ""
       },
-      // Keep newly-created properties visible in admin review queue.
-      status: "pending"
+      // New properties start as draft until owner submits for admin approval.
+      status: "draft",
+      approvalStatus: "pending",
+      operationalStatus: "active",
+      securityDeposit: 0
     });
 
     console.log("PG Created Successfully:", newPg._id); // Debug log
 
-    // Notify admin that a new property has been created (if email configured)
-    try {
-      const adminEmail = process.env.ADMIN_EMAIL || process.env.EMAIL_USER;
-      if (adminEmail && process.env.EMAIL_USER && process.env.EMAIL_PASS) {
-        const transporter = nodemailer.createTransport({
-          service: "gmail",
-          auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
-        });
-
-        const owner = await User.findById(ownerId).select('fullName email phone');
-
-        const mailOptions = {
-          from: process.env.EMAIL_USER,
-          to: adminEmail,
-          subject: `New Property Added - ${newPg.pgName}`,
-          html: `
-            <h2>New Property Added</h2>
-            <p><strong>Property:</strong> ${newPg.pgName}</p>
-            <p><strong>Location:</strong> ${newPg.location}</p>
-            <p><strong>Owner:</strong> ${owner?.fullName || 'Unknown'}</p>
-            <p><strong>Owner Email:</strong> ${owner?.email || ''}</p>
-            <p>Please login to admin panel to review this property.</p>
-          `
-        };
-
-        await transporter.sendMail(mailOptions);
-        console.log('Admin notified of new property:', adminEmail);
-      } else {
-        console.log('Admin email not configured; skipping notification.');
-      }
-    } catch (emailErr) {
-      console.error('Failed sending admin notification on createPg:', emailErr);
-    }
-
     res.status(201).json({
       success: true,
-      message: "Property added successfully",
+      message: "Property saved as draft",
       data: newPg
     });
   } catch (error) {
@@ -448,7 +485,13 @@ const createPg = async (req, res) => {
 const getMyPgs = async (req, res) => {
   try {
     const ownerId = req.user._id;
-    const pgs = await Pg.find({ ownerId });
+    const pgs = await Pg.find({
+      ownerId,
+      $or: [
+        { approvalStatus: "confirmed" },
+        { status: "live" }
+      ]
+    });
 
     // Backward compatibility: earlier uploads could store pg image URL under /uploads/pgImages
     // while the file was actually written to /uploads/documents.
@@ -548,6 +591,36 @@ const updatePg = async (req, res) => {
     const { rooms, ...updateData } = req.body;
 
     let updatePayload = { ...updateData };
+
+    if (updatePayload.forWhom && !updatePayload.gender && !updatePayload.type) {
+      updatePayload.type = updatePayload.forWhom;
+      const key = String(updatePayload.forWhom).toLowerCase();
+      updatePayload.gender = key === "boys" || key === "boy"
+        ? "Boys"
+        : key === "girls" || key === "girl"
+          ? "Girls"
+          : "Any";
+    }
+    if (updatePayload.gender && !updatePayload.type) {
+      updatePayload.type = updatePayload.gender;
+    }
+    if (updatePayload.type && !updatePayload.gender) {
+      const key = String(updatePayload.type).toLowerCase();
+      updatePayload.gender = key === "boys" || key === "boy"
+        ? "Boys"
+        : key === "girls" || key === "girl"
+          ? "Girls"
+          : "Any";
+    }
+    if (updatePayload.occupancy && !updatePayload.roomType) {
+      updatePayload.roomType = updatePayload.occupancy;
+    }
+    if (updatePayload.roomType && !updatePayload.occupancy) {
+      updatePayload.occupancy = updatePayload.roomType;
+    }
+    if (updatePayload.deposit !== undefined && updatePayload.securityDeposit === undefined) {
+      updatePayload.securityDeposit = Number(updatePayload.deposit) || 0;
+    }
 
     // If rooms are being updated, handle them specially
     if (rooms) {
@@ -711,23 +784,54 @@ const updateRoomPrices = async (req, res) => {
       normalizedPrices = { ...roomPrices, securityDeposit: roomPrices.advancePayment };
     }
 
-    targetPg.roomPrices = normalizedPrices;
+    if (Array.isArray(normalizedPrices)) {
+      targetPg.roomPrices = mergeRoomPriceVariants(targetPg.roomPrices, normalizedPrices);
+    } else if (normalizedPrices && typeof normalizedPrices === "object") {
+      targetPg.roomPrices = {
+        ...(targetPg.roomPrices && typeof targetPg.roomPrices === "object" && !Array.isArray(targetPg.roomPrices)
+          ? targetPg.roomPrices
+          : {}),
+        ...normalizedPrices
+      };
+    } else {
+      targetPg.roomPrices = normalizedPrices;
+    }
 
     // Derive a representative `price` for the PG so admin and other flows can display a value
     try {
       let candidatePrices = [];
-      if (Array.isArray(normalizedPrices)) {
-        candidatePrices = normalizedPrices
+      if (Array.isArray(targetPg.roomPrices)) {
+        candidatePrices = targetPg.roomPrices
           .map(r => Number(r.pricePerMonth || r.price || 0))
           .filter(v => Number.isFinite(v) && v > 0);
-      } else if (normalizedPrices && typeof normalizedPrices === 'object') {
-        candidatePrices = Object.values(normalizedPrices).map(v => Number(v)).filter(v => Number.isFinite(v) && v > 0);
+      } else if (targetPg.roomPrices && typeof targetPg.roomPrices === 'object') {
+        candidatePrices = Object.values(targetPg.roomPrices).map(v => Number(v)).filter(v => Number.isFinite(v) && v > 0);
       }
       if (candidatePrices.length > 0) {
         targetPg.price = Math.min(...candidatePrices);
       }
     } catch (e) {
       console.error('Error deriving PG price from roomPrices:', e);
+    }
+
+    // Derive an indicative security deposit from room price data.
+    try {
+      let depositValues = [];
+      if (Array.isArray(targetPg.roomPrices)) {
+        depositValues = targetPg.roomPrices
+          .map((r) => Number(r.securityDeposit || r.deposit || 0))
+          .filter((v) => Number.isFinite(v) && v > 0);
+      } else if (targetPg.roomPrices && typeof targetPg.roomPrices === "object") {
+        depositValues = Object.values(targetPg.roomPrices)
+          .map((v) => Number(v))
+          .filter((v) => Number.isFinite(v) && v > 0)
+          .map((rent) => rent * 2);
+      }
+      if (depositValues.length > 0) {
+        targetPg.securityDeposit = Math.min(...depositValues);
+      }
+    } catch (e) {
+      console.error("Error deriving securityDeposit from roomPrices:", e);
     }
 
     await targetPg.save();
@@ -753,6 +857,7 @@ const addTenant = async (req, res) => {
     }
 
     const effectiveJoiningDate = joiningDate || new Date().toISOString().split('T')[0];
+    const rentAmount = deriveRentAmount(pg, room);
 
     const newTenant = await Tenant.create({
       ownerId,
@@ -763,7 +868,9 @@ const addTenant = async (req, res) => {
       pgName: pg.pgName || "",
       room,
       joiningDate: effectiveJoiningDate,
-      status: 'Active'
+      status: 'Active',
+      securityDeposit: rentAmount > 0 ? rentAmount * 2 : 0,
+      finalRefund: rentAmount > 0 ? rentAmount * 2 : 0
     });
 
     const linked = await ensureTenantLinkedRecords({
@@ -839,9 +946,37 @@ const getMyTenants = async (req, res) => {
     const tenants = await Tenant.find({ ownerId: req.user._id })
       .populate('pgId', 'pgName location city')
       .sort({ createdAt: -1 });
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-    const normalized = tenants.map((t) => {
+    const normalized = await Promise.all(tenants.map(async (t) => {
       const pgObj = t.pgId && typeof t.pgId === "object" ? t.pgId : null;
+      const extensionUntil = t.extensionUntil ? new Date(t.extensionUntil) : null;
+      if (extensionUntil) extensionUntil.setHours(0, 0, 0, 0);
+      const extensionPauseActive = Boolean(extensionUntil && today <= extensionUntil);
+
+      const pendingPayment = await PendingPayment.findOne({
+        tenantName: t.name,
+        status: { $in: ["Pending", "Overdue"] },
+        $or: [
+          { pg: pgObj?._id || t.pgId },
+          { pgName: pgObj?.pgName || t.pgName || "" }
+        ]
+      }).sort({ dueDate: 1 });
+
+      let lateFine = 0;
+      if (pendingPayment?.dueDate) {
+        const due = new Date(pendingPayment.dueDate);
+        due.setHours(0, 0, 0, 0);
+        const overdueDays = Math.max(0, Math.floor((today - due) / DAY_MS));
+        lateFine = extensionPauseActive ? 0 : overdueDays * LATE_FINE_PER_DAY;
+
+        if (!extensionPauseActive && overdueDays > 0 && pendingPayment.status !== "Overdue") {
+          pendingPayment.status = "Overdue";
+          await pendingPayment.save();
+        }
+      }
+
       return {
         _id: t._id,
         name: t.name,
@@ -852,8 +987,28 @@ const getMyTenants = async (req, res) => {
         room: t.room,
         joiningDate: t.joiningDate,
         status: t.status,
+        securityDeposit: Number(t.securityDeposit) || 0,
+        hasMoveOutNotice: Boolean(t.hasMoveOutNotice),
+        moveOutRequested: Boolean(t.moveOutRequested),
+        moveOutRequestedAt: t.moveOutRequestedAt || null,
+        moveOutCompletedAt: t.moveOutCompletedAt || null,
+        damageCharges: Number(t.damageCharges) || 0,
+        pendingFine: (Number(t.pendingFine) || 0) + lateFine,
+        finalRefund: Number(t.finalRefund) || 0,
+        deductionReason: t.deductionReason || "",
+        hasDeferralRequest: Boolean(t.hasDeferralRequest || t.extensionRequested),
+        extensionRequested: Boolean(t.extensionRequested),
+        extensionRequestedAt: t.extensionRequestedAt || null,
+        extensionUntil: t.extensionUntil || null,
+        extensionReason: t.extensionReason || "",
+        deferredDays: Number(t.deferredDays) || 0,
+        deferredReason: t.deferredReason || "",
+        lastDeferredDate: t.lastDeferredDate || "",
+        rentDeferred: Boolean(t.rentDeferred),
+        lateFinePerDay: LATE_FINE_PER_DAY,
+        finePaused: extensionPauseActive
       };
-    });
+    }));
 
     res.status(200).json({
       success: true,
@@ -861,6 +1016,99 @@ const getMyTenants = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const approveExtensionRequest = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const ownerId = req.user._id;
+    const tenant = await Tenant.findOne({ _id: id, ownerId });
+    if (!tenant) {
+      return res.status(404).json({ success: false, message: "Tenant not found" });
+    }
+
+    const extensionUntil = tenant.extensionUntil ? new Date(tenant.extensionUntil) : null;
+    let deferredDays = 0;
+    if (extensionUntil) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      extensionUntil.setHours(0, 0, 0, 0);
+      deferredDays = Math.max(0, Math.ceil((extensionUntil - today) / DAY_MS));
+    }
+
+    tenant.rentDeferred = true;
+    tenant.hasDeferralRequest = false;
+    tenant.extensionRequested = false;
+    tenant.lastDeferredDate = new Date().toISOString().split("T")[0];
+    tenant.deferredDays = deferredDays || tenant.deferredDays || 0;
+    tenant.deferredReason = tenant.extensionReason || tenant.deferredReason || "";
+    await tenant.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Extension approved successfully",
+      data: tenant
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const completeTenantMoveOut = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const ownerId = req.user._id;
+    const tenant = await Tenant.findOne({ _id: id, ownerId });
+    if (!tenant) {
+      return res.status(404).json({ success: false, message: "Tenant not found" });
+    }
+
+    const securityDeposit = Number(req.body?.securityDeposit ?? tenant.securityDeposit ?? 0) || 0;
+    const damageCharges = Number(req.body?.damageCharges ?? 0) || 0;
+    const pendingFine = Number(req.body?.pendingFine ?? tenant.pendingFine ?? 0) || 0;
+    const deductionReason = String(req.body?.deductionReason || "").trim();
+
+    const totalDeduction = Math.max(0, damageCharges + pendingFine);
+    const finalRefund = Math.max(0, securityDeposit - totalDeduction);
+
+    tenant.securityDeposit = securityDeposit;
+    tenant.damageCharges = damageCharges;
+    tenant.pendingFine = pendingFine;
+    tenant.finalRefund = finalRefund;
+    tenant.deductionReason = deductionReason;
+    tenant.status = "Inactive";
+    tenant.hasMoveOutNotice = false;
+    tenant.moveOutRequested = false;
+    tenant.moveOutCompletedAt = new Date();
+    await tenant.save();
+
+    const tenantUser = await User.findOne({ email: new RegExp(`^${String(tenant.email || "").trim()}$`, "i") }).select("_id");
+    if (tenantUser?._id) {
+      const activeCheckIn = await CheckIn.findOne({
+        userId: tenantUser._id,
+        status: { $in: ["Present", "Pending"] }
+      }).sort({ createdAt: -1 });
+      if (activeCheckIn) {
+        activeCheckIn.status = "Out";
+        activeCheckIn.checkOutDate = new Date();
+        await activeCheckIn.save();
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Move-out completed and settlement saved",
+      data: {
+        tenantId: tenant._id,
+        securityDeposit,
+        damageCharges,
+        pendingFine,
+        finalRefund
+      }
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -902,6 +1150,7 @@ const addBooking = async (req, res) => {
     }
 
     const generatedBookingId = bookingId || `BK-${Date.now()}`;
+    const resolvedDates = resolveBookingDates(checkInDate, checkOutDate);
     const newBooking = await Booking.create({
       ownerId,
       pgId: ownerPg._id,
@@ -909,11 +1158,38 @@ const addBooking = async (req, res) => {
       pgName: ownerPg.pgName,
       roomType,
       tenantName,
-      checkInDate,
-      checkOutDate,
+      checkInDate: resolvedDates.checkInDate,
+      checkOutDate: resolvedDates.checkOutDate,
       seatsBooked,
       status: status || "Pending"
     });
+
+    const linkedUser = await User.findOne({ fullName: tenantName }).select('_id');
+    const agreementUserId = linkedUser?._id || ownerId;
+    const templatePg = await Pg.findById(ownerPg._id).select('agreementTemplate roomPrices price');
+    const monthlyRent = deriveRentAmount(templatePg, roomType);
+
+    await Agreement.create({
+      userId: agreementUserId,
+      ownerId,
+      pgId: ownerPg._id,
+      bookingId: generatedBookingId,
+      agreementId: `AGR-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`,
+      pgName: ownerPg.pgName,
+      roomNo: roomType || "N/A",
+      tenantName,
+      rentAmount: Number(monthlyRent) || 0,
+      securityDeposit: Number(monthlyRent || 0) * 2,
+      startDate: resolvedDates.checkInDate,
+      endDate: resolvedDates.checkOutDate,
+      checkInDate: resolvedDates.checkInDate,
+      checkOutDate: resolvedDates.checkOutDate,
+      isLongTerm: resolvedDates.isLongTerm,
+      fileUrl: templatePg?.agreementTemplate?.agreementFileUrl || "",
+      ownerSignatureUrl: templatePg?.agreementTemplate?.ownerSignatureUrl || "",
+      signed: Boolean(templatePg?.agreementTemplate?.ownerSignatureUrl)
+    });
+
     res.status(201).json({ success: true, data: newBooking });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
@@ -1007,6 +1283,7 @@ const getMyAgreements = async (req, res) => {
       return {
         id: agreement._id,
         agreementId: agreement.agreementId,
+        bookingId: agreement.bookingId,
         tenant: agreement.tenantName || tenant.fullName || "Unknown Tenant",
         tenantEmail: tenantRecord?.email || tenant.email || "N/A",
         tenantPhone: tenantRecord?.phone || tenant.phone || "N/A",
@@ -1014,8 +1291,13 @@ const getMyAgreements = async (req, res) => {
         room: agreement.roomNo || 'Unknown',
         startDate: agreement.startDate,
         endDate: agreement.endDate,
+        checkInDate: agreement.checkInDate || agreement.startDate,
+        checkOutDate: agreement.checkOutDate || agreement.endDate,
+        isLongTerm: agreement.isLongTerm || String(agreement.endDate || "").toLowerCase() === "long term",
         rent: agreement.rentAmount,
         securityDeposit: agreement.securityDeposit,
+        fileUrl: agreement.fileUrl || "",
+        ownerSignatureUrl: agreement.ownerSignatureUrl || "",
         status: agreement.signed ? 'Active' : 'Pending Signature',
         signed: agreement.signed,
         createdAt: agreement.createdAt
@@ -1036,13 +1318,27 @@ const getMyAgreements = async (req, res) => {
 // Support ticket management
 const createSupportTicket = async (req, res) => {
   try {
-    const { yourName, emailAddress, phone, message } = req.body;
+    const {
+      yourName,
+      emailAddress,
+      phone,
+      subject,
+      description,
+      message
+    } = req.body;
     const ownerId = req.user._id;
+    const owner = await User.findById(ownerId).select("fullName email phone");
 
-    // Extract subject from message (format: "subject: description")
-    const parts = message.split(':');
-    const subject = parts[0] || 'Support Request';
-    const description = parts.slice(1).join(':').trim() || message;
+    const normalizedSubject = String(subject || "").trim();
+    const normalizedDescription = String(description || "").trim();
+    const normalizedMessage = String(message || "").trim();
+
+    const finalSubject = normalizedSubject || "Support Request";
+    const finalDescription = normalizedDescription || normalizedMessage;
+
+    if (!finalDescription) {
+      return res.status(400).json({ success: false, message: "Description is required" });
+    }
 
     // Generate unique ticket ID
     const ticketId = `TKT${Date.now()}`;
@@ -1050,11 +1346,11 @@ const createSupportTicket = async (req, res) => {
     const newTicket = await SupportTicket.create({
       ownerId,
       ticketId,
-      subject,
-      description,
-      yourName,
-      emailAddress,
-      phone,
+      subject: finalSubject,
+      description: finalDescription,
+      yourName: String(yourName || owner?.fullName || "Owner").trim(),
+      emailAddress: String(emailAddress || owner?.email || "").trim(),
+      phone: String(phone || owner?.phone || "Not provided").trim(),
       date: new Date().toISOString().split('T')[0]
     });
 
@@ -1187,6 +1483,7 @@ const submitForApproval = async (req, res) => {
 
     // Update status to pending
     pg.status = "pending";
+    pg.approvalStatus = "pending";
     await pg.save();
 
     // Get owner details for email
@@ -1530,17 +1827,35 @@ const uploadPropertyDocuments = async (req, res) => {
     if (!pg.proofDocuments) {
       pg.proofDocuments = {};
     }
+    if (!pg.proofDocumentMeta) {
+      pg.proofDocumentMeta = {};
+    }
 
     const filePath = (file) => (file ? `/uploads/documents/${file.filename}` : undefined);
 
     if (req.files?.aadhaar?.[0]) {
       pg.proofDocuments.aadhaar = filePath(req.files.aadhaar[0]);
+      pg.proofDocumentMeta.aadhaar = {
+        status: "Uploaded",
+        reviewedAt: null,
+        reviewNote: ""
+      };
     }
     if (req.files?.electricityBill?.[0]) {
       pg.proofDocuments.electricityBill = filePath(req.files.electricityBill[0]);
+      pg.proofDocumentMeta.electricityBill = {
+        status: "Uploaded",
+        reviewedAt: null,
+        reviewNote: ""
+      };
     }
     if (req.files?.propertyTax?.[0]) {
       pg.proofDocuments.propertyTax = filePath(req.files.propertyTax[0]);
+      pg.proofDocumentMeta.propertyTax = {
+        status: "Uploaded",
+        reviewedAt: null,
+        reviewNote: ""
+      };
     }
 
     await pg.save();
@@ -1552,6 +1867,59 @@ const uploadPropertyDocuments = async (req, res) => {
     });
   } catch (error) {
     console.error("Upload property documents error:", error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const uploadAgreementTemplate = async (req, res) => {
+  try {
+    const { pgId } = req.params;
+    const ownerId = req.user._id;
+
+    const pg = await Pg.findOne({ _id: pgId, ownerId });
+    if (!pg) {
+      return res.status(404).json({ success: false, message: "PG not found" });
+    }
+
+    const agreementFile = req.files?.agreementPdf?.[0];
+    const signatureFile = req.files?.ownerSignature?.[0];
+
+    if (!agreementFile && !signatureFile) {
+      return res.status(400).json({ success: false, message: "Upload agreement PDF or owner signature" });
+    }
+
+    pg.agreementTemplate = {
+      agreementFileUrl: agreementFile ? `/uploads/documents/${agreementFile.filename}` : (pg.agreementTemplate?.agreementFileUrl || ""),
+      ownerSignatureUrl: signatureFile ? `/uploads/documents/${signatureFile.filename}` : (pg.agreementTemplate?.ownerSignatureUrl || ""),
+      uploadedAt: new Date()
+    };
+    if (!pg.agreementTemplateMeta) {
+      pg.agreementTemplateMeta = {};
+    }
+    if (agreementFile) {
+      pg.agreementTemplateMeta.agreementFileUrl = {
+        status: "Uploaded",
+        reviewedAt: null,
+        reviewNote: ""
+      };
+    }
+    if (signatureFile) {
+      pg.agreementTemplateMeta.ownerSignatureUrl = {
+        status: "Uploaded",
+        reviewedAt: null,
+        reviewNote: ""
+      };
+    }
+
+    await pg.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Agreement template uploaded successfully",
+      data: pg.agreementTemplate
+    });
+  } catch (error) {
+    console.error("Upload agreement template error:", error);
     return res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -1625,6 +1993,8 @@ module.exports = {
   updateRoomPrices, 
   addTenant, 
   getMyTenants, 
+  approveExtensionRequest,
+  completeTenantMoveOut,
   getMyBookings, 
   addBooking, 
   updateBookingStatus,
@@ -1639,6 +2009,7 @@ module.exports = {
   updateSupportTicketStatus,
   submitForApproval,
   uploadPropertyDocuments,
+  uploadAgreementTemplate,
   confirmArrival,
   getOwnerEarnings,
   downloadOwnerEarningsPDF

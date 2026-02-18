@@ -5,6 +5,7 @@ import "react-calendar/dist/Calendar.css";
 import CButton from "../../../components/cButton";
 import axios from "axios";
 import Swal from "sweetalert2";
+import { requestExtension, requestMoveOut } from "../../../api/api";
 import { 
   FaHistory, 
   FaSignOutAlt, 
@@ -99,21 +100,17 @@ const CheckIns = () => {
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
-          const token = localStorage.getItem("userToken");
-          const resp = await axios.put("http://localhost:5000/api/users/move-out", {}, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
+          const resp = await requestMoveOut();
 
           if (resp.data?.earlyMoveOut) {
             Swal.fire({
-              title: 'Early Move-Out Penalty',
-              html: `You have stayed only ${resp.data.daysStayed} days. A 1 month rent penalty of <b>₹${resp.data.penalty}</b> will be applied.`,
+              title: 'Move-Out Request Sent',
+              html: `You have stayed only ${resp.data.daysStayed} days. Early move-out penalty can be <b>₹${resp.data.penalty}</b>. Owner will inspect and settle first.`,
               icon: 'warning',
               confirmButtonColor: '#D97706'
             });
           } else if (resp.data?.success) {
-            setStayStatus('Inactive');
-            Swal.fire({ title: 'Move-Out Processed', text: resp.data.message || 'Move-out completed', icon: 'success', confirmButtonColor: '#D97706' });
+            Swal.fire({ title: 'Request Sent', text: resp.data.message || 'Move-out request sent to owner.', icon: 'success', confirmButtonColor: '#D97706' });
           } else {
             Swal.fire({ title: 'Error', text: resp.data?.message || 'Failed to move-out', icon: 'error', confirmButtonColor: '#D97706' });
           }
@@ -128,13 +125,44 @@ const CheckIns = () => {
   const handleExtension = () => {
     Swal.fire({
       title: 'Request Extension',
-      text: 'Send a request to the owner to extend your current stay agreement?',
+      html: `
+        <div style="text-align:left;">
+          <label style="font-size:12px;font-weight:600;">Pause fine till date</label>
+          <input id="ext-date" type="date" class="swal2-input" />
+          <textarea id="ext-reason" class="swal2-textarea" placeholder="Reason (optional)"></textarea>
+          <p style="font-size:11px;color:#B45309;">Late fine is ₹100/day and will pause till selected date.</p>
+        </div>
+      `,
       icon: 'question',
       showCancelButton: true,
       confirmButtonColor: '#D97706',
-    }).then((res) => {
-      if(res.isConfirmed) {
-        Swal.fire({ title: 'Request Sent', icon: 'success', confirmButtonColor: '#D97706' });
+      preConfirm: () => {
+        const untilDate = document.getElementById("ext-date")?.value;
+        const reason = document.getElementById("ext-reason")?.value || "";
+        if (!untilDate) {
+          Swal.showValidationMessage("Please select extension date");
+          return null;
+        }
+        return { untilDate, reason };
+      }
+    }).then(async (res) => {
+      if (res.isConfirmed && res.value) {
+        try {
+          const apiRes = await requestExtension(res.value);
+          Swal.fire({
+            title: 'Request Sent',
+            text: apiRes.data?.message || 'Extension request submitted',
+            icon: 'success',
+            confirmButtonColor: '#D97706'
+          });
+        } catch (error) {
+          Swal.fire({
+            title: 'Error',
+            text: error.response?.data?.message || 'Failed to request extension',
+            icon: 'error',
+            confirmButtonColor: '#D97706'
+          });
+        }
       }
     });
   };
@@ -148,7 +176,7 @@ const CheckIns = () => {
   };
 
   return (
-    <div className="relative min-h-screen bg-[#ffffff] text-[#1C1C1C]">
+    <div className="relative min-h-screen bg-gray-200 text-[#1C1C1C]">
       <div className="p-4 sm:p-6 lg:p-8 space-y-6">
         
         <div className="px-1 text-center md:text-left">
@@ -161,7 +189,7 @@ const CheckIns = () => {
           
           {/* STATE 1: Reserved but Rent not paid */}
           {stayStatus === "Reserved" && (
-            <div className="md:col-span-2 bg-white rounded-xl p-8 shadow-sm border border-[#E5E0D9] flex flex-col items-center text-center">
+            <div className="md:col-span-2 bg-white rounded-md p-8 shadow-sm border border-[#E5E0D9] flex flex-col items-center text-center">
               <div className="w-16 h-16 bg-[#FEF3C7] text-[#D97706] rounded-full flex items-center justify-center mb-4">
                 <FaMoneyCheckAlt size={30} />
               </div>
@@ -175,7 +203,7 @@ const CheckIns = () => {
 
           {/* STATE 2: Rent Paid, Waiting for Owner "Confirm Arrival" */}
           {stayStatus === "PendingConfirmation" && (
-            <div className="md:col-span-2 bg-[#FEF3C7] rounded-xl p-8 shadow-sm flex flex-col items-center text-center border-2 border-dashed border-[#D97706] animate-pulse">
+            <div className="md:col-span-2 bg-[#FEF3C7] rounded-md p-8 shadow-sm flex flex-col items-center text-center border-2 border-dashed border-[#D97706] animate-pulse">
               <FaClock size={40} className="text-[#D97706] mb-3" />
               <h2 className="text-xl font-bold uppercase text-[#B45309]">Awaiting Owner Confirmation</h2>
               <p className="text-[#B45309] max-w-sm">Payment successful! Please inform the owner to click <b>"Confirm Arrival"</b> in their app to activate your dashboard.</p>
@@ -185,7 +213,7 @@ const CheckIns = () => {
           {/* STATE 3: Fully Active Stay */}
           {stayStatus === "Active" && (
             <>
-              <div className="bg-white rounded-xl p-6 shadow-sm flex flex-col items-center space-y-4 border border-[#E5E0D9] border-l-4 border-green-500">
+              <div className="bg-white rounded-md p-6 shadow-sm flex flex-col items-center space-y-4 border border-[#E5E0D9] border-l-4 border-green-500">
                 <FaSignInAlt size={22} className="text-green-600" />
                 <h3 className="font-bold uppercase text-sm">Stay Active</h3>
                 <p className="text-xs text-[#4B4B4B]">Joined On: {joiningDate?.toLocaleDateString()}</p>
@@ -194,7 +222,7 @@ const CheckIns = () => {
                 </CButton>
               </div>
 
-              <div className="bg-white rounded-xl p-6 shadow-sm flex flex-col items-center space-y-4 border border-[#E5E0D9] border-l-4 border-red-500">
+              <div className="bg-white rounded-md p-6 shadow-sm flex flex-col items-center space-y-4 border border-[#E5E0D9] border-l-4 border-red-500">
                 <FaSignOutAlt size={22} className="text-red-600" />
                 <h3 className="font-bold uppercase text-sm">Permanent Move-Out</h3>
                 <p className="text-xs text-[#4B4B4B]">End your stay and settle dues</p>
@@ -208,9 +236,9 @@ const CheckIns = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* CALENDAR */}
-          <div className="lg:col-span-7 bg-white rounded-xl shadow-sm border border-[#E5E0D9] p-4 sm:p-6">
-            <h3 className="pb-4 font-bold text-xs uppercase text-[#4B4B4B] flex items-center gap-2">
-               <FaCalendarCheck className="text-[#D97706]"/> Stay Calendar
+          <div className="lg:col-span-7 bg-white rounded-md shadow-sm border border-[#E5E0D9] p-4 sm:p-6">
+            <h3 className="pb-4 font-bold text-lg uppercase text-[#4B4B4B] flex items-center gap-2">
+               <FaCalendarCheck className=" text-lg text-[#D97706]"/> Stay Calendar
             </h3>
             <Calendar
               onChange={setSelectedDate}
@@ -221,15 +249,15 @@ const CheckIns = () => {
           </div>
 
           {/* HISTORY */}
-          <div className="lg:col-span-5 bg-white rounded-xl shadow-sm border border-[#E5E0D9] flex flex-col h-[450px]">
-            <div className="p-4 border-b border-[#E5E0D9] font-bold uppercase tracking-widest text-[10px] flex items-center gap-2">
-              <FaHistory className="text-[#D97706]" /> Previous Stay Records
+          <div className="lg:col-span-5 bg-white rounded-md shadow-sm border border-[#E5E0D9] flex flex-col h-[450px]">
+            <div className="p-4 border-b border-[#E5E0D9] font-bold uppercase tracking-widest text-lg flex items-center gap-2">
+              <FaHistory className=" text-lg text-[#D97706]" /> Previous Stay Records
             </div>
             <div className="p-4 overflow-y-auto space-y-3 flex-grow custom-scrollbar">
               {history.length === 0 ? (
                 <div className="text-center py-24">
                   <FaClock className="mx-auto text-[#E5E0D9] mb-2" size={40} />
-                  <p className="text-[#4B4B4B] text-xs font-bold uppercase tracking-tighter">No History Found</p>
+                  <p className="text-[#4B4B4B] text-sm font-bold uppercase tracking-tighter">No History Found</p>
                 </div>
               ) : (
                 history.map((entry) => (
@@ -240,10 +268,10 @@ const CheckIns = () => {
                          </div>
                          <div>
                             <p className="font-bold">{entry.pgName || "Nadiad PG"}</p>
-                            <p className="text-[10px] text-[#4B4B4B]">{entry.date || "2026-02-15"}</p>
+                            <p className="text-sm text-[#4B4B4B]">{entry.date || "2026-02-15"}</p>
                          </div>
                       </div>
-                      <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded bg-[#E5E0D9]">
+                      <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded-md bg-[#E5E0D9]">
                         Completed
                       </span>
                    </div>
@@ -268,3 +296,5 @@ const CheckIns = () => {
 };
 
 export default CheckIns;
+
+

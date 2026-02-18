@@ -131,23 +131,23 @@ const Agreements = () => {
           <h1 className="text-3xl md:text-4xl font-bold text-[#1C1C1C]"> Digital Agreement </h1>
           <p className="text-sm md:text-lg text-[#4B4B4B] mt-1"> Verified Legal Document • E-Signed </p>
         </div>
-        <div className={`self-start md:self-center px-4 py-2 rounded-full text-xs font-bold border ${
+        <div className={`self-start md:self-center px-4 py-2 rounded-md text-xs font-bold border ${
           agreementInfo?.status === 'Active' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-orange-50 text-[#D97706] border-orange-200'
         }`}>
           <span className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-current animate-pulse"></span>
+            <span className="w-2 h-2 rounded-md bg-current animate-pulse"></span>
             {agreementInfo?.status || "Pending"}
           </span>
         </div>
       </div>
 
       {/* Details Card */}
-      <div className="bg-white rounded-2xl shadow-lg border border-[#E5E0D9] overflow-hidden max-w-5xl">
+      <div className="bg-white rounded-md shadow-lg border border-[#E5E0D9] overflow-hidden max-w-5xl">
         <div className="p-6 md:p-10">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-8 rounded-b-md">
             <Info label="PG Name" value={agreementInfo?.pgName} />
             <Info label="Room Details" value={agreementInfo?.roomNo} />
-            <Info label="Validity" value={agreementInfo?.startDate && agreementInfo?.endDate ? `${agreementInfo.startDate} – ${agreementInfo.endDate}` : undefined} />
+            <Info label="Validity" value={agreementInfo?.startDate ? `${agreementInfo.startDate} – ${agreementInfo?.isLongTerm ? "Long Term" : (agreementInfo?.endDate || "N/A")}` : undefined} />
             <Info label="Monthly Rent" value={agreementInfo?.rentAmount ? `₹${agreementInfo.rentAmount}` : undefined} />
             <Info label="Deposit" value={agreementInfo?.securityDeposit ? `₹${agreementInfo.securityDeposit}` : undefined} />
             <Info label="Agreement ID" value={agreementInfo?.agreementId} />
@@ -180,7 +180,7 @@ const Agreements = () => {
             onClick={() => setShowRules(false)}
           />
           
-          <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl relative overflow-hidden transition-all animate-in zoom-in duration-200 z-[100000]">
+          <div className="bg-white w-full max-w-lg rounded-md shadow-2xl relative overflow-hidden transition-all animate-in zoom-in duration-200 z-[100000]">
             
             {/* UPDATED: Solid Header Background using primary color */}
             <div className="bg-primary px-6 py-4 flex items-center justify-between">
@@ -225,7 +225,7 @@ const Agreements = () => {
 const Info = ({ label, value }) => {
   const isPending = !value || value.includes("undefined") || value === "₹undefined";
   return (
-    <div className="bg-white rounded-xl p-4 border border-[#E5E0D9] shadow-sm">
+    <div className="bg-white rounded-md p-4 border border-[#E5E0D9] shadow-sm">
       <p className="text-[10px] text-[#4B4B4B] uppercase font-bold tracking-widest mb-1">{label}</p>
       <p className={`text-sm md:text-base font-bold truncate ${isPending ? "text-gray-300 italic" : "text-[#1C1C1C]"}`}>
         {isPending ? "Pending Update" : value}

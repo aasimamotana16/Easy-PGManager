@@ -25,12 +25,15 @@ const {
   getMyAgreements,
   updateTenant,
   deleteTenant,
+  approveExtensionRequest,
+  completeTenantMoveOut,
   syncTenantLinkedData,
   createSupportTicket,
   getMySupportTickets,
   updateSupportTicketStatus,
   submitForApproval,
   uploadPropertyDocuments,
+  uploadAgreementTemplate,
   getOwnerEarnings,
   downloadOwnerEarningsPDF
 } = require('../controllers/ownerController');
@@ -52,6 +55,7 @@ router.post('/submit-for-approval/:pgId', protect, isOwner, submitForApproval);
 router.post('/add-room', protect, isOwner, addRoom);
 router.post('/upload-images/:pgId', protect, isOwner, upload.fields([{ name: 'mainImage', maxCount: 1 }, { name: 'images', maxCount: 10 }]), uploadPgImages);
 router.post('/upload-property-docs/:pgId', protect, isOwner, upload.fields([{ name: 'aadhaar', maxCount: 1 }, { name: 'electricityBill', maxCount: 1 }, { name: 'propertyTax', maxCount: 1 }]), uploadPropertyDocuments);
+router.post('/upload-agreement-template/:pgId', protect, isOwner, upload.fields([{ name: 'agreementPdf', maxCount: 1 }, { name: 'ownerSignature', maxCount: 1 }]), uploadAgreementTemplate);
 router.post('/update-room-prices', protect, isOwner, updateRoomPrices);
 
 // --- TENANT MANAGEMENT ---
@@ -60,6 +64,8 @@ router.get('/my-tenants', protect, isOwner, getMyTenants);
 router.delete('/tenant/:id', protect, isOwner, deleteTenant);
 router.put('/confirm-arrival/:id', protect, isOwner, confirmArrival);
 router.put('/update-tenant/:id', protect, isOwner, updateTenant);
+router.put('/approve-extension/:id', protect, isOwner, approveExtensionRequest);
+router.put('/complete-move-out/:id', protect, isOwner, completeTenantMoveOut);
 router.post('/sync-tenant-linked-data', protect, isOwner, syncTenantLinkedData);
 
 // --- BOOKING MANAGEMENT ---

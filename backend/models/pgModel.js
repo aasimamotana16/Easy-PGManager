@@ -31,10 +31,20 @@ const pgSchema = new mongoose.Schema(
       enum: ["Boys", "Girls", "Any"],
       default: "Any"
     },
+    // Backward/admin compatibility alias for category
+    type: {
+      type: String,
+      default: "Any"
+    },
     occupancy: { 
       type: String, 
       enum: ["Single", "Double", "Triple", "Any"], 
       default: "Any" 
+    },
+    // Backward/admin compatibility alias for room type
+    roomType: {
+      type: String,
+      default: "Any"
     },
     rentCycle: { 
       type: String, 
@@ -67,6 +77,40 @@ const pgSchema = new mongoose.Schema(
       electricityBill: { type: String },
       propertyTax: { type: String }
     },
+    proofDocumentMeta: {
+      aadhaar: {
+        status: { type: String, enum: ["Pending", "Uploaded", "Verified", "Rejected"], default: "Pending" },
+        reviewedAt: { type: Date },
+        reviewNote: { type: String, default: "" }
+      },
+      electricityBill: {
+        status: { type: String, enum: ["Pending", "Uploaded", "Verified", "Rejected"], default: "Pending" },
+        reviewedAt: { type: Date },
+        reviewNote: { type: String, default: "" }
+      },
+      propertyTax: {
+        status: { type: String, enum: ["Pending", "Uploaded", "Verified", "Rejected"], default: "Pending" },
+        reviewedAt: { type: Date },
+        reviewNote: { type: String, default: "" }
+      }
+    },
+    agreementTemplate: {
+      agreementFileUrl: { type: String },
+      ownerSignatureUrl: { type: String },
+      uploadedAt: { type: Date }
+    },
+    agreementTemplateMeta: {
+      agreementFileUrl: {
+        status: { type: String, enum: ["Pending", "Uploaded", "Verified", "Rejected"], default: "Pending" },
+        reviewedAt: { type: Date },
+        reviewNote: { type: String, default: "" }
+      },
+      ownerSignatureUrl: {
+        status: { type: String, enum: ["Pending", "Uploaded", "Verified", "Rejected"], default: "Pending" },
+        reviewedAt: { type: Date },
+        reviewNote: { type: String, default: "" }
+      }
+    },
     facilities: [String], // ["WiFi", "Food", "Laundry", "Parking", "Power Backup", "AC"]
     
     totalRooms: { type: Number, default: 0 },
@@ -76,6 +120,19 @@ const pgSchema = new mongoose.Schema(
       enum: ["live", "pending", "closed", "draft", "rejected"],
       default: "draft"
     },
+    // Admin-facing approval state (separate from listing status)
+    approvalStatus: {
+      type: String,
+      enum: ["pending", "confirmed", "rejected"],
+      default: "pending"
+    },
+    // Optional admin-facing operational status
+    operationalStatus: {
+      type: String,
+      enum: ["active", "maintenance", "inactive"],
+      default: "active"
+    },
+    securityDeposit: { type: Number, default: 0 },
     rooms: [{
       roomType: String,
       totalRooms: Number,

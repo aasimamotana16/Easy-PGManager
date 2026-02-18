@@ -97,8 +97,18 @@ const PGDetails = () => {
     let mounted = true;
     (async () => {
       try {
-        if (!id || isOwnerPreviewRoute || pgFromList) return;
+        if (!id) return;
         const api = await import("../../api/api");
+        if (isOwnerPreviewRoute) {
+          const res = await api.getOwnerPgById(id);
+          if (mounted && res?.data?.success) {
+            const data = res.data.data || null;
+            setOwnerPgData(data ? { ...data, name: data.name || data.pgName } : null);
+          }
+          return;
+        }
+
+        if (pgFromList) return;
         const res = await api.getPgById(id);
         if (mounted && res?.data?.success) setOwnerPgData(res.data.data || null);
       } catch (err) { console.error(err); }
@@ -109,25 +119,50 @@ const PGDetails = () => {
   const allRooms = useMemo(() => {
     if (!pg && !roomDocsState) return [];
     const normalize = (s) => String(s || "").trim().toLowerCase();
+    const canonical = (s) => {
+      const txt = normalize(s).replace(/[_-]/g, " ");
+      if (txt.includes("single")) return "single";
+      if (txt.includes("double")) return "double";
+      if (txt.includes("triple")) return "triple";
+      const first = txt.split(/\s+/).filter(Boolean)[0];
+      return first || "";
+    };
     const priceMap = new Map();
+    const setPriceEntry = (rawKey, entry) => {
+      const key = normalize(rawKey);
+      const cKey = canonical(rawKey);
+      if (key) priceMap.set(key, entry);
+      if (cKey && !priceMap.has(cKey)) priceMap.set(cKey, entry);
+    };
 
     if (Array.isArray(pg?.roomPrices)) {
       pg.roomPrices.forEach((v) => {
-        const key = normalize(v.variantLabel || v.roomType || v.type || v.label || v.name);
-        priceMap.set(key, {
-          rent: Number(v.rent || v.price || v.pricePerMonth || 0) || 0,
+        const rawKey = v.variantName || v.variantLabel || v.roomType || v.type || v.label || v.name;
+        setPriceEntry(rawKey, {
+          rent: Number(v.rent || v.price || v.pricePerMonth || v.monthlyRent || 0) || 0,
           securityDeposit: Number(v.securityDeposit || v.deposit || 0) || 0,
           acType: v.acType || v.ac || 'Non-AC',
           description: v.description || v.desc || ''
+        });
+      });
+    } else if (pg?.roomPrices && typeof pg.roomPrices === "object") {
+      Object.entries(pg.roomPrices).forEach(([k, v]) => {
+        const rent = Number(v?.rent || v?.price || v?.pricePerMonth || v?.monthlyRent || v || 0) || 0;
+        const deposit = Number(v?.securityDeposit || v?.deposit || 0) || 0;
+        setPriceEntry(k, {
+          rent,
+          securityDeposit: deposit,
+          acType: v?.acType || 'Non-AC',
+          description: v?.description || ''
         });
       });
     }
 
     if (Array.isArray(roomDocsState) && roomDocsState.length > 0) {
       roomDocsState.forEach((rd) => {
-        const key = normalize(rd.roomType || rd.variantLabel || rd.type || rd.label || rd.name || '');
-        priceMap.set(key, {
-          rent: Number(rd.rent || rd.price || 0) || 0,
+        const rawKey = rd.roomType || rd.variantName || rd.variantLabel || rd.type || rd.label || rd.name || '';
+        setPriceEntry(rawKey, {
+          rent: Number(rd.rent || rd.price || rd.pricePerMonth || rd.monthlyRent || 0) || 0,
           securityDeposit: Number(rd.securityDeposit || rd.deposit || 0) || 0,
           acType: rd.acType || 'Non-AC',
           description: rd.description || rd.desc || ''
@@ -139,8 +174,10 @@ const PGDetails = () => {
     if (Array.isArray(pg?.rooms) && pg.rooms.length > 0) {
       pg.rooms.forEach((r) => {
         const type = r.roomType || r.type || 'Room';
-        const key = normalize(r.roomType || r.type || '');
+        const key = normalize(type);
+        const cKey = canonical(type);
         let priced = priceMap.get(key) || null;
+        if (!priced && cKey) priced = priceMap.get(cKey) || null;
 
         if (!priced && priceMap.size > 0 && key) {
           for (const [k, v] of priceMap.entries()) {
@@ -150,7 +187,7 @@ const PGDetails = () => {
 
         result.push({
           type,
-          price: priced ? priced.rent : Number(r.price || r.rent || 0) || 0,
+          price: priced ? priced.rent : Number(r.price || r.rent || r.pricePerMonth || r.monthlyRent || 0) || 0,
           securityDeposit: priced ? priced.securityDeposit : Number(r.securityDeposit || r.deposit || 0) || 0,
           bedsAvailable: Number(r.totalRooms || r.bedsPerRoom || r.bedsAvailable || 0) || 0,
           acType: priced?.acType || r.acType || 'Non-AC',
@@ -166,7 +203,10 @@ const PGDetails = () => {
       }
     }
 
-    return result;
+    return result.map((room) => ({
+      ...room,
+      price: Number(room.price || 0) === 0 ? Number(pg?.price || 0) : Number(room.price || 0)
+    }));
   }, [pg, roomDocsState]);
 
   const startingPrice = useMemo(() => {
@@ -320,7 +360,13 @@ const PGDetails = () => {
                 </div>
                 {!isOwnerPreviewRoute && role !== "owner" && (
                   <button 
-                    onClick={() => navigate(`/book/${pg._id}`)}
+                    onClick={() => navigate(`/book/${pg._id}`, {
+                      state: {
+                        selectedRoom: selectedRoomIdx >= 0 && filteredRooms[selectedRoomIdx]
+                          ? filteredRooms[selectedRoomIdx]
+                          : null
+                      }
+                    })}
                     className="px-10 py-4 bg-primary text-white font-bold uppercase text-sm rounded shadow-lg hover:bg-primaryDark transition-all"
                   >
                     Secure This Room

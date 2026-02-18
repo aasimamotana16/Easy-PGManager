@@ -1,15 +1,28 @@
 import React, { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { FaEdit, FaPlus, FaSearch, FaEye, FaTrash, FaSignOutAlt, FaMapMarkerAlt, FaHistory, FaClock, FaInfoCircle } from "react-icons/fa";
 import CButton from "../../../components/cButton";
 import CSelect from "../../../components/cSelect";
 import Swal from "sweetalert2";
 import AddTenant from "./addTenant";
-import { getMyTenants, addTenant as apiAddTenant, getMyPgs, deleteTenant as apiDeleteTenant } from "../../../api/api";
+import {
+  getMyTenants,
+  addTenant as apiAddTenant,
+  getMyPgs,
+  deleteTenant as apiDeleteTenant,
+  approveExtension as apiApproveExtension,
+  completeMoveOut as apiCompleteMoveOut
+} from "../../../api/api";
 
 const Tenants = () => {
+  const location = useLocation();
+  const initialFilter = location.state?.filter === "extension" || location.state?.filter === "checkout"
+    ? location.state.filter
+    : "all";
   const [tenants, setTenants] = useState([]);
   const [search, setSearch] = useState("");
   const [selectedPG, setSelectedPG] = useState("all");
+  const [activeFilter, setActiveFilter] = useState(initialFilter);
   const [showAddModal, setShowAddModal] = useState(false);
   const [pgOptions, setPgOptions] = useState([]);
 
@@ -67,6 +80,33 @@ const Tenants = () => {
     fetchPgs();
   }, []);
 
+  useEffect(() => {
+    if (location.state?.filter === "extension" || location.state?.filter === "checkout") {
+      setActiveFilter(location.state.filter);
+    }
+  }, [location.state?.filter]);
+
+  const isExtensionTenant = (tenant) => {
+    const status = String(tenant?.status || "").toLowerCase();
+    return (
+      tenant?.hasDeferralRequest === true ||
+      tenant?.extensionRequested === true ||
+      status.includes("extension") ||
+      status.includes("deferral")
+    );
+  };
+
+  const isPendingCheckoutTenant = (tenant) => {
+    const status = String(tenant?.status || "").toLowerCase();
+    return (
+      tenant?.hasMoveOutNotice === true ||
+      tenant?.moveOutRequested === true ||
+      status.includes("checkout") ||
+      status.includes("move-out") ||
+      status.includes("move out")
+    );
+  };
+
   const fetchTenants = async () => {
     try {
       const res = await getMyTenants();
@@ -90,10 +130,17 @@ const Tenants = () => {
     }
   };
 
-  const filteredTenants = tenants.filter((t) =>
-    t.name.toLowerCase().includes(search.toLowerCase()) ||
-    t.pgName.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredTenants = tenants.filter((t) => {
+    const searchMatch =
+      t.name.toLowerCase().includes(search.toLowerCase()) ||
+      t.pgName.toLowerCase().includes(search.toLowerCase());
+    const pgMatch = selectedPG === "all" || t.pgId === selectedPG;
+    const filterMatch =
+      activeFilter === "all" ||
+      (activeFilter === "extension" && isExtensionTenant(t)) ||
+      (activeFilter === "checkout" && isPendingCheckoutTenant(t));
+    return searchMatch && pgMatch && filterMatch;
+  });
 
   // ACTION: Confirm Arrival
   const handleConfirmArrival = (id) => {
@@ -159,27 +206,83 @@ const Tenants = () => {
       title: "Grant Rent Deferral?",
       html: `
         <div style="text-align: left; font-size: 14px; color: #1C1C1C; background: #FEF3C7; padding: 15px; border-radius: 10px; border: 1px solid #E5E0D9;">
-           <p style="margin-bottom: 8px;"><b>Requested Extension:</b> ${tenant.requestDays} Days</p>
-           <p><b>Tenant's Reason:</b> ${tenant.requestReason}</p>
+           <p style="margin-bottom: 8px;"><b>Requested Till:</b> ${tenant.extensionUntil ? new Date(tenant.extensionUntil).toLocaleDateString() : "N/A"}</p>
+           <p><b>Tenant's Reason:</b> ${tenant.extensionReason || "Not provided"}</p>
         </div>
-        <p style="font-size: 12px; color: #4B4B4B; margin-top: 15px;">Are you sure you want to approve this? This will be marked as their 6-month quota.</p>
+        <p style="font-size: 12px; color: #4B4B4B; margin-top: 15px;">Late fee (₹100/day) stays paused till requested date.</p>
       `,
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#B45309",
       confirmButtonText: "Yes, Grant Deferral",
       cancelButtonColor: "#4B4B4B",
-    }).then((res) => {
+    }).then(async (res) => {
       if (res.isConfirmed) {
-        setTenants(prev => prev.map(t => t._id === tenant._id ? { 
-            ...t, 
-            rentDeferred: true, 
-            hasDeferralRequest: false, 
-            deferredDays: tenant.requestDays,
-            deferredReason: tenant.requestReason,
-            lastDeferredDate: new Date().toISOString().split('T')[0] 
-        } : t));
-        Swal.fire({ title: "Granted", text: "Rent deferral has been activated.", icon: "success", confirmButtonColor: "#D97706" });
+        try {
+          const apiRes = await apiApproveExtension(tenant._id);
+          Swal.fire({
+            title: "Granted",
+            text: apiRes.data?.message || "Rent deferral has been activated.",
+            icon: "success",
+            confirmButtonColor: "#D97706"
+          });
+          fetchTenants();
+        } catch (error) {
+          Swal.fire({
+            title: "Error",
+            text: error.response?.data?.message || "Failed to approve extension",
+            icon: "error",
+            confirmButtonColor: "#D97706"
+          });
+        }
+      }
+    });
+  };
+
+  const handleCompleteMoveOut = (tenant) => {
+    Swal.fire({
+      title: "Finalize Move-Out",
+      html: `
+        <div style="text-align:left;">
+          <label style="font-size:12px;font-weight:600;">Security Deposit</label>
+          <input id="settlement-deposit" type="number" class="swal2-input" value="${tenant.securityDeposit || 0}" />
+          <label style="font-size:12px;font-weight:600;">Damage Charges</label>
+          <input id="settlement-damage" type="number" class="swal2-input" value="${tenant.damageCharges || 0}" />
+          <label style="font-size:12px;font-weight:600;">Pending Fine (₹100/day rule)</label>
+          <input id="settlement-fine" type="number" class="swal2-input" value="${tenant.pendingFine || 0}" />
+          <textarea id="settlement-reason" class="swal2-textarea" placeholder="Deduction notes">${tenant.deductionReason || ""}</textarea>
+        </div>
+      `,
+      showCancelButton: true,
+      confirmButtonText: "Complete Move-Out",
+      confirmButtonColor: "#1C1C1C",
+      cancelButtonColor: "#4B4B4B",
+      preConfirm: () => {
+        const securityDeposit = Number(document.getElementById("settlement-deposit")?.value || 0);
+        const damageCharges = Number(document.getElementById("settlement-damage")?.value || 0);
+        const pendingFine = Number(document.getElementById("settlement-fine")?.value || 0);
+        const deductionReason = document.getElementById("settlement-reason")?.value || "";
+        return { securityDeposit, damageCharges, pendingFine, deductionReason };
+      }
+    }).then(async (res) => {
+      if (!res.isConfirmed || !res.value) return;
+      try {
+        const apiRes = await apiCompleteMoveOut(tenant._id, res.value);
+        const finalRefund = apiRes.data?.data?.finalRefund ?? 0;
+        Swal.fire({
+          title: "Move-Out Completed",
+          text: `Settlement saved. Final refund: ₹${finalRefund}`,
+          icon: "success",
+          confirmButtonColor: "#D97706"
+        });
+        fetchTenants();
+      } catch (error) {
+        Swal.fire({
+          title: "Error",
+          text: error.response?.data?.message || "Failed to complete move-out",
+          icon: "error",
+          confirmButtonColor: "#D97706"
+        });
       }
     });
   };
@@ -229,7 +332,7 @@ const Tenants = () => {
   };
 
   return (
-    <div className="p-4 md:p-10 bg-[#ffffff] min-h-screen">
+    <div className="p-4 md:p-10 bg-gray-200 min-h-screen">
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
@@ -241,19 +344,56 @@ const Tenants = () => {
         </CButton>
       </div>
 
+      <div className="flex flex-wrap gap-2 mb-4">
+        <button
+          onClick={() => setActiveFilter("all")}
+          className={`px-4 py-2 text-xs font-bold rounded-full border transition-colors ${
+            activeFilter === "all"
+              ? "bg-[#D97706] text-white border-[#D97706]"
+              : "bg-white text-[#4B4B4B] border-[#E5E0D9] hover:border-[#D97706]"
+          }`}
+        >
+          All Tenants
+        </button>
+        <button
+          onClick={() => setActiveFilter("extension")}
+          className={`px-4 py-2 text-xs font-bold rounded-full border transition-colors ${
+            activeFilter === "extension"
+              ? "bg-[#D97706] text-white border-[#D97706]"
+              : "bg-white text-[#4B4B4B] border-[#E5E0D9] hover:border-[#D97706]"
+          }`}
+        >
+          Extension Requests
+        </button>
+        <button
+          onClick={() => setActiveFilter("checkout")}
+          className={`px-4 py-2 text-xs font-bold rounded-full border transition-colors ${
+            activeFilter === "checkout"
+              ? "bg-[#D97706] text-white border-[#D97706]"
+              : "bg-white text-[#4B4B4B] border-[#E5E0D9] hover:border-[#D97706]"
+          }`}
+        >
+          Pending Check-outs
+        </button>
+      </div>
+
       {/* Search & Filter */}
-      <div className="flex flex-col md:flex-row gap-4 mb-8 bg-white p-4 rounded-xl shadow-sm border border-[#D97706]">
-        <div className="relative flex-grow">
-          <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+      <div className="flex flex-col md:flex-row gap-4 mb-8 bg-white p-4 rounded-md shadow-sm border border-[#D97706]">
+        <div className="relative flex-grow ">
+          <FaSearch className="absolute left-4 top-1/3 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
             placeholder="Search by name or PG..."
-            className="w-full pl-12 pr-4 py-3 rounded-lg border border-[#E5E0D9] focus:outline-none focus:ring-1 focus:ring-[#D97706] text-sm"
+            className="w-full pl-12 pr-4 py-3 rounded-md border border-[#E5E0D9] focus:outline-none focus:ring-1 focus:ring-[#D97706] text-sm"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <CSelect options={[{ value: "all", label: "All Properties" }]} />
+        <CSelect
+          value={selectedPG}
+          onChange={(e) => setSelectedPG(e.target.value)}
+          options={[{ value: "all", label: "All Properties" }, ...pgOptions]}
+        />
       </div>
 
       {/* Table */}
@@ -326,7 +466,10 @@ const Tenants = () => {
                           )}
 
                           {t.hasMoveOutNotice && (
-                            <button className="flex items-center gap-1 px-3 py-1.5 bg-[#1C1C1C] text-white text-[10px] font-bold rounded hover:bg-black transition-all">
+                            <button
+                              onClick={() => handleCompleteMoveOut(t)}
+                              className="flex items-center gap-1 px-3 py-1.5 bg-[#1C1C1C] text-white text-[10px] font-bold rounded hover:bg-black transition-all"
+                            >
                               <FaSignOutAlt /> MOVE OUT
                             </button>
                           )}

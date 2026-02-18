@@ -56,7 +56,7 @@ const Documents = () => {
             status: docsData.rentalAgreementCopy?.status || "Pending",
             date: docsData.rentalAgreementCopy?.uploadedAt ? new Date(docsData.rentalAgreementCopy.uploadedAt).toLocaleDateString("en-GB") : null,
             fileUrl: docsData.rentalAgreementCopy?.fileUrl || null,
-            guidance: "Signed copy of your PG agreement",
+            guidance: "Upload signed agreement copy (with signature)",
             fieldName: "rentalAgreementCopy"
           },
         ];

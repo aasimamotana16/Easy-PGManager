@@ -63,6 +63,8 @@ export const getMyTimeline = () => API.get("/users/timeline");
 export const getMyCheckIns = () => API.get("/users/checkins");
 export const createCheckIn = (data) => API.post("/users/checkin-action", data);
 export const getOwnerContactData = () => API.get("/users/my-owner-contact");
+export const requestExtension = (payload) => API.put("/users/request-extension", payload);
+export const requestMoveOut = () => API.put("/users/move-out");
 
 /* =========================
     OWNER & PROPERTY APIs 
@@ -76,12 +78,22 @@ export const uploadPropertyDocuments = (pgId, formData) =>
   API.post(`/owner/upload-property-docs/${pgId}`, formData, {
     headers: { "Content-Type": "multipart/form-data" },
   });
+export const uploadAgreementTemplate = (pgId, formData) =>
+  API.post(`/owner/upload-agreement-template/${pgId}`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
 export const updateRoomPrices = (roomPrices, pgId) => API.post('/owner/update-room-prices', { roomPrices, pgId });
 export const deleteBooking = (id) => API.delete(`/owner/delete-booking/${id}`);
 export const submitForApproval = (pgId) => API.post(`/owner/submit-for-approval/${pgId}`);
 export const addTenant = (tenantData) => API.post('/owner/add-tenant', tenantData);
 export const getMyTenants = () => API.get('/owner/my-tenants');
+export const getMyBookings = () => API.get('/owner/my-bookings');
 export const deleteTenant = (id) => API.delete(`/owner/tenant/${id}`);
+export const approveExtension = (id) => API.put(`/owner/approve-extension/${id}`);
+export const completeMoveOut = (id, payload) => API.put(`/owner/complete-move-out/${id}`, payload);
+export const createOwnerSupportTicket = (payload) => API.post('/owner/create-support-ticket', payload);
+export const getOwnerSupportTickets = () => API.get('/owner/my-support-tickets');
+export const updateOwnerSupportTicket = (id, payload) => API.put(`/owner/update-support-ticket/${id}`, payload);
 
 /* =========================
     ADMIN APIs 
@@ -89,6 +101,8 @@ export const deleteTenant = (id) => API.delete(`/owner/tenant/${id}`);
 export const getPendingProperties = () => API.get("/admin/pending-properties");
 export const approveProperty = (id) => API.post(`/admin/approve-property/${id}`);
 export const rejectProperty = (id, reason) => API.post(`/admin/reject-property/${id}`, { rejectionReason: reason });
+export const getAdminSupportTickets = () => API.get("/admin/support-tickets");
+export const updateAdminSupportTicket = (id, status) => API.put(`/admin/support-ticket/${id}`, { status });
 
 /* =========================
     CITY & HOME APIs
@@ -112,6 +126,7 @@ export const getTerms = () => API.get('/terms');
 export const searchPGs = (params) => API.get("/pgs/search", { params });
 export const getBookings = () => API.get("/bookings/my");
 export const createBooking = (bookingData) => API.post("/bookings/create", bookingData);
+export const getBookingAgreement = (bookingMongoId) => API.get(`/bookings/${bookingMongoId}/agreement`);
 
 /* =========================
     ROOMS & PAYMENTS APIs
