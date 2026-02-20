@@ -1,6 +1,9 @@
 const User = require('../models/userModel');
 const Pg = require('../models/pgModel');
 const SupportTicket = require('../models/supportTicketModel');
+const Booking = require('../models/bookingModel');
+const Payment = require('../models/paymentModel');
+const PendingPayment = require('../models/pendingPaymentModel');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
@@ -46,17 +49,45 @@ const adminLogin = async (req, res) => {
 // NEW: This connects your Admin Dashboard UI
 const getAdminDashboardStats = async (req, res) => {
   try {
-    // Real counts from MongoDB [cite: 2026-01-06]
-    const totalOwners = await User.countDocuments({ role: 'owner' });
-    const totalTenants = await User.countDocuments({ role: 'tenant' });
+    const [totalOwners, totalTenants, pendingPaymentsCount, activeComplaints, bookingStats, paymentAgg] = await Promise.all([
+      User.countDocuments({ role: 'owner' }),
+      User.countDocuments({ role: { $in: ['tenant', 'user'] } }),
+      PendingPayment.countDocuments({ status: { $in: ['Pending', 'Overdue'] } }),
+      SupportTicket.countDocuments({ status: { $in: ['Open', 'In Progress'] } }),
+      Booking.aggregate([
+        {
+          $group: {
+            _id: null,
+            totalBookings: { $sum: 1 },
+            confirmedBookings: {
+              $sum: {
+                $cond: [{ $eq: ['$status', 'Confirmed'] }, 1, 0]
+              }
+            }
+          }
+        }
+      ]),
+      Payment.aggregate([
+        { $match: { paymentStatus: { $in: ['Success', 'Paid', 'PAID'] } } },
+        {
+          $group: {
+            _id: null,
+            totalRevenue: { $sum: '$amountPaid' }
+          }
+        }
+      ])
+    ]);
 
     res.status(200).json({
       success: true,
       data: {
-        totalOwners: totalOwners || 12, // UI Fallback
-        totalTenants: totalTenants || 45, // UI Fallback
-        pendingPayments: 12500,
-        activeComplaints: 3
+        totalOwners: totalOwners || 0,
+        totalTenants: totalTenants || 0,
+        pendingPayments: pendingPaymentsCount || 0,
+        activeComplaints: activeComplaints || 0,
+        totalBookings: bookingStats?.[0]?.totalBookings || 0,
+        confirmedBookings: bookingStats?.[0]?.confirmedBookings || 0,
+        totalRevenue: paymentAgg?.[0]?.totalRevenue || 0
       }
     });
   } catch (error) {
@@ -474,6 +505,37 @@ const updateSupportTicketByAdmin = async (req, res) => {
   }
 };
 
+// @desc    Booking + Payment overview for admin panel
+const getBookingPaymentOverview = async (req, res) => {
+  try {
+    const [bookings, payments, pendingPayments] = await Promise.all([
+      Booking.find({})
+        .sort({ createdAt: -1 })
+        .limit(200)
+        .select('bookingId pgName tenantName tenantEmail status isPaid paymentStatus checkInDate checkOutDate createdAt'),
+      Payment.find({ paymentStatus: { $in: ['Success', 'Paid', 'PAID'] } })
+        .sort({ paymentDate: -1 })
+        .limit(200)
+        .select('pgName tenantName amountPaid month paymentDate transactionId'),
+      PendingPayment.find({ status: { $in: ['Pending', 'Overdue'] } })
+        .sort({ dueDate: 1 })
+        .limit(200)
+        .select('pgName tenantName amount dueDate status month')
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        bookings,
+        payments,
+        pendingPayments
+      }
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Error fetching booking/payment overview' });
+  }
+};
+
 module.exports = { 
   adminLogin, 
   getAdminDashboardStats, 
@@ -486,5 +548,6 @@ module.exports = {
   getPendingDocuments,
   reviewUserDocument,
   getSupportTickets,
-  updateSupportTicketByAdmin
+  updateSupportTicketByAdmin,
+  getBookingPaymentOverview
 };

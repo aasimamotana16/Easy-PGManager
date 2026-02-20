@@ -4,12 +4,18 @@ const Agreement = require('../models/agreementModel');
 const Pg = require('../models/pgModel');
 const User = require('../models/userModel');
 const nodemailer = require('nodemailer');
+const { protect } = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
 // 1. Create booking (public) - associates booking with PG owner and notifies owner via email
-router.post("/create", async (req, res) => {
+router.post("/create", protect, async (req, res) => {
   try {
+    const requesterRole = String(req.user?.role || '').toLowerCase();
+    if (!['user', 'tenant'].includes(requesterRole)) {
+      return res.status(403).json({ success: false, message: "Only tenant/user accounts can create booking requests" });
+    }
+
     const { pgId, members, stayDetails, persons, roomType } = req.body;
 
     if (!pgId) return res.status(400).json({ success: false, message: 'pgId is required' });
@@ -20,11 +26,15 @@ router.post("/create", async (req, res) => {
     const owner = pg.ownerId;
 
     const bookingId = `BK-${Date.now()}`;
-    const tenantName = (members && members.length > 0) ? members[0].fullName : 'Guest';
-    const tenantEmail = (members && members.length > 0) ? String(members[0].email || '').trim().toLowerCase() : '';
+    const tenantName = (members && members.length > 0 && members[0].fullName)
+      ? members[0].fullName
+      : (req.user?.fullName || 'Guest');
+    const tenantEmail = (members && members.length > 0 && members[0].email)
+      ? String(members[0].email || '').trim().toLowerCase()
+      : String(req.user?.email || '').trim().toLowerCase();
     const checkInDate = stayDetails?.checkIn || new Date().toISOString().split('T')[0];
     const checkOutDate = stayDetails?.checkOut || 'Long Term';
-    const isLongTerm = !Boolean(stayDetails?.checkOut);
+    const monthlyRent = Number(pg?.price || 0);
 
     const newBooking = await Booking.create({
       ownerId: owner ? owner._id : null,
@@ -36,39 +46,28 @@ router.post("/create", async (req, res) => {
       checkInDate,
       checkOutDate,
       seatsBooked: Number(persons) || 1,
+      bookingAmount: monthlyRent,
       status: 'Pending',
       bookingSource: 'tenant_request'
     });
 
-    const linkedUser = tenantEmail
-      ? await User.findOne({ email: tenantEmail }).select('_id')
-      : null;
-    const agreementUserId = linkedUser?._id || (owner ? owner._id : null);
+    const linkedUser = req.user?._id
+      ? await User.findById(req.user._id).select('_id fullName email role')
+      : (tenantEmail
+      ? await User.findOne({
+          email: new RegExp(`^${tenantEmail}$`, 'i'),
+          role: { $in: ['user', 'tenant'] }
+        }).select('_id fullName email')
+      : null);
+    const agreementUserId = linkedUser?._id || null;
 
     if (agreementUserId) {
-      const monthlyRent = Number(pg?.price || 0);
-      const agreementPayload = {
-        userId: agreementUserId,
-        ownerId: owner ? owner._id : undefined,
-        pgId: pg._id,
-        bookingId: bookingId,
-        agreementId: `AGR-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`,
-        pgName: pg.pgName || 'Unknown PG',
-        roomNo: roomType || pg.occupancy || 'N/A',
-        tenantName,
-        rentAmount: monthlyRent,
-        securityDeposit: monthlyRent > 0 ? monthlyRent * 2 : 0,
-        startDate: checkInDate,
-        endDate: checkOutDate,
-        checkInDate,
-        checkOutDate,
-        isLongTerm,
-        fileUrl: pg.agreementTemplate?.agreementFileUrl || '',
-        ownerSignatureUrl: pg.agreementTemplate?.ownerSignatureUrl || '',
-        signed: Boolean(pg.agreementTemplate?.ownerSignatureUrl)
-      };
-
-      await Agreement.create(agreementPayload);
+      newBooking.tenantUserId = agreementUserId;
+      newBooking.tenantEmail = linkedUser?.email || tenantEmail;
+      await newBooking.save();
+    } else if (tenantEmail) {
+      newBooking.tenantEmail = tenantEmail;
+      await newBooking.save();
     }
 
     // Send email to owner if configured
@@ -100,8 +99,7 @@ router.post("/create", async (req, res) => {
       }
     }
 
-    const bookingAgreement = await Agreement.findOne({ bookingId }).sort({ createdAt: -1 });
-    res.status(201).json({ success: true, booking: newBooking, agreement: bookingAgreement });
+    res.status(201).json({ success: true, booking: newBooking, agreement: null });
   } catch (err) {
     console.error('Booking create error:', err);
     res.status(500).json({ success: false, message: err.message });
@@ -109,9 +107,22 @@ router.post("/create", async (req, res) => {
 });
 
 // 2. Get all bookings [cite: 2026-01-06]
-router.get("/my", async (req, res) => {
+router.get("/my", protect, async (req, res) => {
   try {
-    const bookings = await Booking.find();
+    const role = String(req.user?.role || '').toLowerCase();
+    let query = {};
+    if (role === 'owner') {
+      query = { ownerId: req.user._id };
+    } else {
+      const email = String(req.user?.email || '').trim().toLowerCase();
+      query = {
+        $or: [
+          { tenantUserId: req.user._id },
+          email ? { tenantEmail: new RegExp(`^${email}$`, 'i') } : null
+        ].filter(Boolean)
+      };
+    }
+    const bookings = await Booking.find(query).sort({ createdAt: -1 });
     res.json({ success: true, bookings });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });

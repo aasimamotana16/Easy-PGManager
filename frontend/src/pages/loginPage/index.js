@@ -83,12 +83,23 @@ const Login = () => {
         localStorage.setItem("role", role);
         localStorage.setItem("isLoggedIn", "true");
 
-        // 2. SAVE NAME FOR NAVBAR (This fixes the "User" name issue)
-        const fullName = response.data.user?.name || response.data.user?.fullName || "User";
+        // 2. SAVE NAME FOR NAVBAR (supports both flat and nested backend payloads)
+        const fullName =
+          response.data.fullName ||
+          response.data.name ||
+          response.data.user?.fullName ||
+          response.data.user?.name ||
+          "User";
         localStorage.setItem("userName", fullName);
         
         // Optional: Save whole object for Profile page
-        localStorage.setItem("user", JSON.stringify(response.data.user));
+        const userPayload = response.data.user || {
+          _id: response.data._id,
+          fullName: response.data.fullName || response.data.name || fullName,
+          email: response.data.email,
+          role: response.data.role,
+        };
+        localStorage.setItem("user", JSON.stringify(userPayload));
 
         Swal.fire({
           icon: "success",

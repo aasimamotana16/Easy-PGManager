@@ -12,7 +12,8 @@ const {
   getPendingDocuments,
   reviewUserDocument,
   getSupportTickets,
-  updateSupportTicketByAdmin
+  updateSupportTicketByAdmin,
+  getBookingPaymentOverview
 } = require('../controllers/adminController');
 const { protect } = require('../middleware/authMiddleware');
 
@@ -30,5 +31,6 @@ router.get('/pending-documents', protect, getPendingDocuments);
 router.post('/review-document', protect, reviewUserDocument);
 router.get('/support-tickets', protect, getSupportTickets);
 router.put('/support-ticket/:id', protect, updateSupportTicketByAdmin);
+router.get('/booking-payment-overview', protect, getBookingPaymentOverview);
 
 module.exports = router;

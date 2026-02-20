@@ -159,6 +159,19 @@ exports.updateProfile = async (req, res) => {
     ]);
 
     if (user && fullProfile) {
+      // Keep legacy User document in sync with Profile personal/emergency sections.
+      if (section === "personalInfo") {
+        user.fullName = data.fullName || user.fullName;
+        user.phone = data.phone || user.phone;
+        user.city = data.city || user.city;
+        user.state = data.state || user.state;
+      }
+      if (section === "emergencyContact") {
+        user.emergencyContact = user.emergencyContact || {};
+        user.emergencyContact.contactName = data.guardianName || user.emergencyContact.contactName;
+        user.emergencyContact.relationship = data.relationship || user.emergencyContact.relationship;
+        user.emergencyContact.phoneNumber = data.guardianPhone || user.emergencyContact.phoneNumber;
+      }
       user.profileCompletion = calculateProfileCompletion(user, fullProfile);
       await user.save();
     }

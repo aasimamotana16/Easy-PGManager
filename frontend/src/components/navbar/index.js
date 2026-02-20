@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { FaUserCircle, FaBars, FaTimes } from "react-icons/fa";
 import axios from "axios";
 import CButton from "../../components/cButton";
+import { getUserProfile } from "../../api/api";
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -74,6 +75,32 @@ const Navbar = () => {
       window.removeEventListener("storage", handleProfileUpdate);
     };
   }, []);
+
+  // Keep navbar name synced with backend profile to avoid stale localStorage values.
+  useEffect(() => {
+    const syncNameFromProfile = async () => {
+      const loggedIn = localStorage.getItem("isLoggedIn") === "true";
+      if (!loggedIn) return;
+      try {
+        const res = await getUserProfile();
+        const freshName = res?.data?.data?.fullName || res?.data?.data?.name || "";
+        if (!freshName) return;
+        setUserName(freshName);
+
+        const existingRaw = localStorage.getItem("user");
+        let existingUser = {};
+        if (existingRaw) {
+          try { existingUser = JSON.parse(existingRaw) || {}; } catch (e) { existingUser = {}; }
+        }
+        localStorage.setItem("user", JSON.stringify({ ...existingUser, fullName: freshName, name: freshName }));
+        localStorage.setItem("userName", freshName);
+      } catch (err) {
+        // Silent fallback to localStorage name if profile fetch fails.
+      }
+    };
+
+    syncNameFromProfile();
+  }, [location.pathname]);
 
   const handleLogout = async () => {
     try {

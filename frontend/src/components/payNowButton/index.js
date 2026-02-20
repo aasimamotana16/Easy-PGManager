@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Swal from 'sweetalert2';
 import CButton from '../cButton';
 
-const PayNowButton = ({ amount, pgId, intentType, description, children, className, disabled, onSuccess }) => {
+const PayNowButton = ({ amount, pgId, bookingId, intentType, description, children, className, disabled, onSuccess }) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const colors = { primary: '#D97706' };
 
@@ -36,7 +36,9 @@ const PayNowButton = ({ amount, pgId, intentType, description, children, classNa
                 razorpay_order_id: response.razorpay_order_id,
                 razorpay_payment_id: response.razorpay_payment_id,
                 razorpay_signature: response.razorpay_signature,
-                amountPaid: order.amount / 100
+                amountPaid: order.amount / 100,
+                pgId,
+                bookingId
               })
             });
             const result = await verifyRes.json();

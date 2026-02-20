@@ -13,6 +13,7 @@ const Payments = () => {
   const [agreementInfo, setAgreementInfo] = useState(null);
   const [extensionApproved, setExtensionApproved] = useState(false);
   const location = useLocation();
+  const queryBookingId = new URLSearchParams(location.search).get("bookingId");
   const [intentType, setIntentType] = useState(null);
   const [intentAmount, setIntentAmount] = useState(null);
 
@@ -69,6 +70,47 @@ const Payments = () => {
       console.error("Fetch error:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDownloadReceipt = async (payment) => {
+    try {
+      const token = localStorage.getItem("userToken");
+      if (!token || !payment?.id) {
+        Swal.fire({
+          title: "Receipt Unavailable",
+          text: "Payment receipt could not be generated.",
+          icon: "warning",
+          confirmButtonColor: colors.primary
+        });
+        return;
+      }
+
+      const response = await fetch(`http://localhost:5000/api/payments/receipt/${payment.id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to download receipt");
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      const safeMonth = String(payment.month || "payment").replace(/\s+/g, "_");
+      link.href = url;
+      link.download = `Receipt_${safeMonth}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      Swal.fire({
+        title: "Download Failed",
+        text: "Unable to download receipt right now.",
+        icon: "error",
+        confirmButtonColor: colors.primary
+      });
     }
   };
 
@@ -138,6 +180,7 @@ const Payments = () => {
                 <PayNowButton 
                   amount={totalDue} 
                   pgId={paymentData.nextPayment?.pgId || ""} 
+                  bookingId={queryBookingId || paymentData.nextPayment?.bookingId || ""}
                   intentType={intentType || (stayStatus === 'Active' ? "MONTHLY_RENT" : "MOVE_IN_PAYMENT")} 
                   className="px-8 py-3 rounded-md font-bold text-white shadow-lg transition-transform active:scale-95"
                   style={{ backgroundColor: colors.primary }}
@@ -167,6 +210,7 @@ const Payments = () => {
                 <PayNowButton 
                   amount={totalDue} 
                   pgId={paymentData.nextPayment?.pgId || ""} 
+                  bookingId={queryBookingId || paymentData.nextPayment?.bookingId || ""}
                   intentType="MOVE_IN_PAYMENT"
                   className="px-8 py-3 rounded-md font-bold text-white"
                   style={{ backgroundColor: colors.primary }}
@@ -222,7 +266,7 @@ const Payments = () => {
                       </span>
                     </td>
                     <td className="p-5 text-right">
-                      <button onClick={() => window.print()} style={{ color: colors.primary }} className="p-2 hover:bg-orange-50 rounded-full transition-all">
+                      <button onClick={() => handleDownloadReceipt(pay)} style={{ color: colors.primary }} className="p-2 hover:bg-orange-50 rounded-full transition-all">
                         <FaDownload />
                       </button>
                     </td>

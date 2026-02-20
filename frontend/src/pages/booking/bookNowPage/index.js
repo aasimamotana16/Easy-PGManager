@@ -220,9 +220,13 @@ const BookingPage = () => {
       };
 
       try {
+        const token = localStorage.getItem("userToken");
         const res = await fetch("http://localhost:5000/api/bookings/create", {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {})
+          },
           body: JSON.stringify(bookingPayload)
         });
 

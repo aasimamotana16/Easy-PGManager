@@ -155,24 +155,32 @@ const getUserDashboard = async (req, res) => {
 const getUserProfile = async (req, res) => {
   try {
     // Explicitly include fields that are select:false by default (profilePicture, profileCompletion)
-    const user = await User.findById(req.user._id).select("-password +profilePicture +profileCompletion");
+    const [user, profile] = await Promise.all([
+      User.findById(req.user._id).select("-password +profilePicture +profileCompletion"),
+      Profile.findOne({ userId: req.user._id }).select("personalInfo emergencyContact")
+    ]);
     if (!user) return res.status(404).json({ message: "User not found" });
+
+    const personal = profile?.personalInfo || {};
+    const emergency = profile?.emergencyContact || {};
+    const pick = (...values) =>
+      values.find((v) => v !== undefined && v !== null && v !== "" && v !== "NOT SET");
 
     res.status(200).json({ 
       success: true, 
       data: {
-        fullName: user.fullName || user.name, 
+        fullName: pick(personal.fullName, user.fullName, user.name, "User"),
         email: user.email,
-        phone: user.phone || "Not Set",
-        city: user.city || "Not Set",
-        state: user.state || "Not Set",
+        phone: pick(personal.phone, user.phone, "Not Set"),
+        city: pick(personal.city, user.city, "Not Set"),
+        state: pick(personal.state, user.state, "Not Set"),
         role: user.role || "user",
         profilePicture: user.profilePicture || "",
         profileCompletion: user.profileCompletion || 0,
         emergencyContact: {
-          contactName: user.emergencyContact?.contactName || "Not Set",
-          relationship: user.emergencyContact?.relationship || "Not Set",
-          phoneNumber: user.emergencyContact?.phoneNumber || "Not Set"
+          contactName: pick(emergency.guardianName, user.emergencyContact?.contactName, "Not Set"),
+          relationship: pick(emergency.relationship, user.emergencyContact?.relationship, "Not Set"),
+          phoneNumber: pick(emergency.guardianPhone, user.emergencyContact?.phoneNumber, "Not Set")
         }
       } 
     });
@@ -337,12 +345,29 @@ const getMe = async (req, res) => {
 
 const getMyAgreement = async (req, res) => {
   try {
-    const userId = new mongoose.Types.ObjectId(req.user._id);
+    const userId = req.user?._id;
     const agreement = await Agreement.findOne({ userId }).sort({ createdAt: -1 });
 
     if (!agreement) {
-      return res.status(404).json({
-        success: false,
+      return res.status(200).json({
+        success: true,
+        data: {
+          pgName: "",
+          roomNo: "",
+          tenantName: req.user?.fullName || "",
+          rentAmount: null,
+          securityDeposit: null,
+          agreementId: "",
+          bookingId: "",
+          startDate: "",
+          endDate: "",
+          checkInDate: "",
+          checkOutDate: "",
+          isLongTerm: false,
+          fileUrl: "",
+          ownerSignatureUrl: "",
+          status: "Pending"
+        },
         message: "No agreement available yet. It will appear after booking confirmation."
       });
     }

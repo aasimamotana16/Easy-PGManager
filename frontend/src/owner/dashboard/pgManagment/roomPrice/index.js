@@ -89,6 +89,16 @@ const SetRoomPrice = () => {
     setIsSaving(true);
     try {
       const pgId = incomingPgId || localStorage.getItem("currentPropertyId");
+      if (!pgId) {
+        setIsSaving(false);
+        Swal.fire({
+          title: "Property Not Found",
+          text: "Property ID is missing. Please go back and select the property again.",
+          icon: "error",
+          confirmButtonColor: "#D97706"
+        });
+        return;
+      }
       const resp = await updateRoomPrices(roomPrices, pgId);
       setIsSaving(false);
 

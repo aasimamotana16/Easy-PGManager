@@ -2,8 +2,8 @@ import React, { useState, useEffect } from "react";
 import ReactDOM from "react-dom"; // Required for Portal
 import CButton from "../../../components/cButton";
 import jsPDF from "jspdf";
-import axios from "axios";
 import Swal from "sweetalert2";
+import { getMyAgreement } from "../../../api/api";
 import { 
   FaDownload, 
   FaListUl, 
@@ -21,21 +21,23 @@ const Agreements = () => {
   useEffect(() => {
     const fetchAgreement = async () => {
       try {
-        const token = localStorage.getItem("userToken");
-        const res = await axios.get("http://localhost:5000/api/users/agreement", {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const res = await getMyAgreement();
         if (res.data.success) {
           setAgreementInfo(res.data.data);
         }
       } catch (err) {
-        console.error("Agreement fetch error:", err);
-        Swal.fire({
-          icon: 'error',
-          title: 'Connection Error',
-          text: 'Unable to load agreement details.',
-          confirmButtonColor: '#D97706'
-        });
+        const status = err?.response?.status;
+        if (status === 404) {
+          setAgreementInfo(null);
+        } else {
+          console.error("Agreement fetch error:", err);
+          Swal.fire({
+            icon: 'error',
+            title: 'Connection Error',
+            text: 'Unable to load agreement details.',
+            confirmButtonColor: '#D97706'
+          });
+        }
       } finally {
         setLoading(false);
       }

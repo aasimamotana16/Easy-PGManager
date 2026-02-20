@@ -4,6 +4,7 @@ const {
   createOrder, 
   verifyPayment, 
   getUserPayments, 
+  getUserPaymentStats,
   downloadReceipt 
 } = require("../controllers/paymentController");
 const { protect } = require("../middleware/authMiddleware");
@@ -13,6 +14,7 @@ router.get("/test", (req, res) => res.send("Payment routes are working!"));
 // 1. Get payment history (Existing - for your table)
 // URL: /api/payments/history
 router.get("/history", protect, getUserPayments);
+router.get("/user-stats", protect, getUserPaymentStats);
 
 // 2. Step 1: Create Razorpay Order
 // URL: /api/payments/create-order
