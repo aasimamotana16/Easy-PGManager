@@ -387,11 +387,11 @@ const PGDetails = () => {
           <div className="bg-white rounded-md shadow p-6 border border-primary">
             <h1 className="text-2xl font-bold text-textPrimary mb-1">{pg.name}</h1>
             <p className="text-textSecondary text-sm flex items-center gap-1"><MapPinIcon className="h-4 w-4" /> {pg.city}</p>
-            <div className="mt-6 flex items-center gap-4 bg-background p-4 rounded-md border border-border">
-                <div className="bg-primary p-2 rounded-md"><StarIcon className="h-6 w-6 text-white" /></div>
+            <div className="mt-5 flex items-center gap-4 bg-background p-4 rounded-md border border-border">
+                <div className="bg-primary p-2 rounded-md"><StarIcon className="h-3 w-3 text-white" /></div>
                 <div>
-                  <p className="text-[10px] text-textSecondary font-bold">Community Rating</p>
-                  <span className="text-xl font-bold">{averageRating} / 5.0</span>
+                  <p className="text-sm text-textSecondary font-bold">Community Rating</p>
+                  <span className="text-base font-bold">{averageRating} / 5.0</span>
                 </div>
             </div>
           </div>

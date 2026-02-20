@@ -130,12 +130,24 @@ const getUserDashboard = async (req, res) => {
     const user = await User.findById(req.user._id).select("-password +profileCompletion");
     if (!user) return res.status(404).json({ message: "User not found" });
 
+    // Get roomType from agreement if available
+    let roomType = "N/A";
+    try {
+      const agreement = await Agreement.findOne({ userId: user._id }).sort({ createdAt: -1 });
+      if (agreement && agreement.roomType) {
+        roomType = agreement.roomType;
+      }
+    } catch (e) {
+      console.log("Could not fetch roomType from agreement");
+    }
+
     const dashboardData = {
       fullName: user.fullName || user.name, 
       profileCompletion: user.profileCompletion || 0,
       currentBooking: {
         pgName: user.bookedPgName || "No PG Booked",
         roomNo: user.roomNo || "N/A",
+        roomType: roomType,
         status: user.bookingStatus || "Inactive",
         monthlyRent: user.monthlyRent || 0,
       },

@@ -264,7 +264,9 @@ exports.getPgById = async (req, res) => {
       roomType: pg.roomType || pg.occupancy || "Any",
       type: pg.type || pg.gender || "Any",
       approval: pg.approvalStatus || (pg.status === "live" ? "confirmed" : "pending"),
-      roomDocs
+      roomDocs,
+      // Include agreement template for booking page
+      agreementTemplate: pg.agreementTemplate || null
     };
     res.status(200).json({ success: true, data: responseData });
   } catch (error) {

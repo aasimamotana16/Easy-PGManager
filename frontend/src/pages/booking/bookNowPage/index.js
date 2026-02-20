@@ -22,6 +22,7 @@ const BookingPage = () => {
   const [pageLoading, setPageLoading] = useState(true);
   const [errors, setErrors] = useState({});
   const [paymentOption, setPaymentOption] = useState("deposit_only"); 
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   const personRefs = useRef([]);
 
@@ -165,6 +166,12 @@ const BookingPage = () => {
       return;
     }
 
+    // Check if user agreed to terms
+    if (!agreedToTerms) {
+      Swal.fire({ icon: 'warning', title: 'Terms Required', text: 'Please agree to the refund policy and agreement terms to proceed.', confirmButtonColor: "#D97706" });
+      return;
+    }
+
     // Restored Payment Terms + Logic Notice
     const paymentTermsHtml = `
       <div style="text-align: left; font-size: 14px; color: #4B4B4B; line-height: 1.6;">
@@ -259,14 +266,14 @@ const BookingPage = () => {
                    className="bg-background rounded-md p-6 shadow-sm border border-border">
                 <h3 className="font-bold text-textPrimary text-lg mb-4">Person {index + 1} (Tenant)</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <CInput label="Full Name" required error={errors[`fullName_${index}`]} value={person.fullName} onChange={(e) => handleChange(index, "fullName", e.target.value)} />
-                  <CInput label="Email" required type="email" error={errors[`email_${index}`]} value={person.email} onChange={(e) => handleChange(index, "email", e.target.value)} />
-                  <CInput label="Phone Number" required error={errors[`phone_${index}`]} value={person.phone} onChange={(e) => handleChange(index, "phone", e.target.value)} />
-                  <CInput type="select" label="Gender" required disabled={isGirlsHostel} error={errors[`gender_${index}`]} value={person.gender} onChange={(e) => handleChange(index, "gender", e.target.value)} options={[{ label: "Select Gender", value: "" }, { label: "Male", value: "Male" }, { label: "Female", value: "Female" }]} />
-                  <CInput label="College / Workplace Name" required error={errors[`institution_${index}`]} value={person.institution} onChange={(e) => handleChange(index, "institution", e.target.value)} />
+                  <CInput label="Full Name" required error={!!errors[`fullName_${index}`]} helperText={errors[`fullName_${index}`]} value={person.fullName} onChange={(e) => handleChange(index, "fullName", e.target.value)} />
+                  <CInput label="Email" required type="email" error={!!errors[`email_${index}`]} helperText={errors[`email_${index}`]} value={person.email} onChange={(e) => handleChange(index, "email", e.target.value)} />
+                  <CInput label="Phone Number" required error={!!errors[`phone_${index}`]} helperText={errors[`phone_${index}`]} value={person.phone} onChange={(e) => handleChange(index, "phone", e.target.value)} />
+                  <CInput type="select" label="Gender" required disabled={isGirlsHostel} error={!!errors[`gender_${index}`]} helperText={errors[`gender_${index}`]} value={person.gender} onChange={(e) => handleChange(index, "gender", e.target.value)} options={[{ label: "Select Gender", value: "" }, { label: "Male", value: "Male" }, { label: "Female", value: "Female" }]} />
+                  <CInput label="College / Workplace Name" required error={!!errors[`institution_${index}`]} helperText={errors[`institution_${index}`]} value={person.institution} onChange={(e) => handleChange(index, "institution", e.target.value)} />
                   <CInput label="Course / Job Role" value={person.occupationRole} onChange={(e) => handleChange(index, "occupationRole", e.target.value)} />
                   <CInput label="Emergency Contact Name" value={person.emergencyName} onChange={(e) => handleChange(index, "emergencyName", e.target.value)} />
-                  <CInput label="Emergency Contact Phone" required error={errors[`emergencyPhone_${index}`]} value={person.emergencyPhone} onChange={(e) => handleChange(index, "emergencyPhone", e.target.value)} />
+                  <CInput label="Emergency Contact Phone" required error={!!errors[`emergencyPhone_${index}`]} helperText={errors[`emergencyPhone_${index}`]} value={person.emergencyPhone} onChange={(e) => handleChange(index, "emergencyPhone", e.target.value)} />
                 </div>
               </div>
             ))}
@@ -274,8 +281,8 @@ const BookingPage = () => {
             <div className="bg-background rounded-md p-6 shadow-sm border border-border">
               <h3 className="font-bold text-textPrimary text-lg mb-4">Stay Details</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <CInput type="date" label="Check-in Date" required error={errors.checkIn} min={today} value={stayDetails.checkIn} onChange={(e) => setStayDetails({ ...stayDetails, checkIn: e.target.value })} />
-                <CInput type="date" label="Check-out Date (Optional)" error={errors.checkOut} min={stayDetails.checkIn || today} value={stayDetails.checkOut} onChange={(e) => setStayDetails({ ...stayDetails, checkOut: e.target.value })} />
+                <CInput type="date" label="Check-in Date" required error={!!errors.checkIn} helperText={errors.checkIn} min={today} value={stayDetails.checkIn} onChange={(e) => setStayDetails({ ...stayDetails, checkIn: e.target.value })} />
+                <CInput type="date" label="Check-out Date (Optional)" error={!!errors.checkOut} helperText={errors.checkOut} min={stayDetails.checkIn || today} value={stayDetails.checkOut} onChange={(e) => setStayDetails({ ...stayDetails, checkOut: e.target.value })} />
               </div>
             </div>
           </div>
@@ -320,11 +327,45 @@ const BookingPage = () => {
                 </div>
             </div>
 
+            {/* Agreement and Refund Policy Terms */}
+            <div className="mt-4 p-3 bg-gray-50 rounded-md border border-border">
+                <div className="flex items-start gap-2">
+                    <input 
+                        type="checkbox" 
+                        id="agreedToTerms"
+                        checked={agreedToTerms}
+                        onChange={(e) => setAgreedToTerms(e.target.checked)}
+                        className="mt-1 w-4 h-4 accent-primary"
+                    />
+                    <label htmlFor="agreedToTerms" className="text-[11px] text-textSecondary leading-tight">
+                        I agree to the <span className="font-semibold text-primary">refund policy</span> and <span className="font-semibold text-primary">agreement terms provided by the PG Owner</span>
+                    </label>
+                </div>
+                
+                {/* View Agreement PDF Link */}
+                {pg.agreementTemplate?.agreementFileUrl && (
+                    <div className="mt-2 pt-2 border-t border-border">
+                        <a 
+                            href={`http://localhost:5000${pg.agreementTemplate.agreementFileUrl}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[11px] text-primary hover:underline flex items-center gap-1"
+                        >
+                            <span>📄</span> View Owner Agreement PDF
+                        </a>
+                    </div>
+                )}
+                
+                {errors.agreedToTerms && (
+                    <p className="text-red-500 text-[10px] mt-1">{errors.agreedToTerms}</p>
+                )}
+            </div>
+
             <CButton 
-                className={`w-full mt-6 py-3 font-bold transition-all ${isSubmitted ? 'bg-textSecondary' : 'bg-primary hover:bg-primaryDark text-textLight'}`}
+                className={`w-full mt-4 py-3 font-bold transition-all ${isSubmitted || !agreedToTerms ? 'bg-textSecondary cursor-not-allowed opacity-70' : 'bg-primary hover:bg-primaryDark text-textLight'}`}
                 onClick={handleBooking} 
-                disabled={isSubmitted}
-                text={isSubmitted ? "Request Sent" : "Request to Book"}
+                disabled={isSubmitted || !agreedToTerms}
+                text={isSubmitted ? "Request Sent" : !agreedToTerms ? "Agree to Terms to Book" : "Request to Book"}
             />
             <p className="text-[10px] text-textSecondary text-center mt-3 uppercase tracking-wider font-semibold">
               {paymentOption === "deposit_only" ? "Rent Due at Check-in" : "Fully Pre-paid Booking"}

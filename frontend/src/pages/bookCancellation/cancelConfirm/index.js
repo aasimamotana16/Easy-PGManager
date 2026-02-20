@@ -18,11 +18,7 @@ const CancelConfirmModal = ({ onClose, onConfirm }) => {
         </p>
 
         <ul className="text-body-sm text-textSecondary mb-8 space-y-3">
-          <li className="flex items-start gap-2">
-            {/* Dot color using your primaryDark for high contrast [cite: 2026-02-09] */}
-            <span className="text-primaryDark font-bold">•</span>
-            <span>Advance payments are <strong className="text-textPrimary">non-refundable</strong>. [cite: 2026-02-09]</span>
-          </li>
+          
           <li className="flex items-start gap-2">
             <span className="text-primaryDark font-bold">•</span>
             <span>Your booking data will be <strong className="text-textPrimary">permanently deleted</strong>. [cite: 2026-02-09]</span>

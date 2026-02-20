@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Navbar from "../../../components/navbar";
 import Loader from "../../../components/loader";
-import { CheckBadgeIcon, ShieldCheckIcon, MapPinIcon, CreditCardIcon } from "@heroicons/react/24/solid";
+import PayNowButton from "../../../components/payNowButton";
+import { CheckBadgeIcon, ShieldCheckIcon, MapPinIcon } from "@heroicons/react/24/solid";
 
 const PayNow = () => {
   const { bookingId } = useParams();
@@ -25,30 +26,61 @@ const PayNow = () => {
     // This effect handles fetching the data using the ID from the URL (Email link)
     const getBookingDetails = async () => {
       try {
-        // Replace with your actual API call: const res = await api.getBooking(bookingId);
-        // Mocking the data structure visible in your backend screenshots:
+        const token = localStorage.getItem('userToken');
+        
+        // If we have a bookingId, try to fetch the actual booking details
+        if (bookingId) {
+          const res = await fetch(`http://localhost:5000/api/bookings/${bookingId}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          const data = await res.json();
+          
+          if (data.success && data.booking) {
+            setBooking({
+              propertyName: data.booking.propertyId?.propertyName || "PG Property",
+              fullAddress: data.booking.propertyId?.address || "Address not available",
+              roomType: data.booking.roomId?.roomType || "Standard Room",
+              rent: data.booking.rent || 0,
+              deposit: data.booking.securityDeposit || 0,
+              total: (data.booking.rent || 0) + (data.booking.securityDeposit || 0),
+              pgId: data.booking.propertyId?._id || ""
+            });
+            setLoading(false);
+            return;
+          }
+        }
+        
+        // Fallback to mock data if no bookingId or API fails
         setBooking({
           propertyName: "Elite Property",
-          fullAddress: "Sector 45, Hitech City, Surat", // Combined address + location
+          fullAddress: "Sector 45, Hitech City, Surat",
           roomType: "Single Sharing",
           rent: 5000,
           deposit: 5000,
-          total: 10000
+          total: 10000,
+          pgId: ""
         });
         setLoading(false);
       } catch (err) {
         console.error("Booking fetch failed", err);
+        // Fallback to mock data on error
+        setBooking({
+          propertyName: "Elite Property",
+          fullAddress: "Sector 45, Hitech City, Surat",
+          roomType: "Single Sharing",
+          rent: 5000,
+          deposit: 5000,
+          total: 10000,
+          pgId: ""
+        });
         setLoading(false);
       }
     };
     getBookingDetails();
   }, [bookingId]);
 
-  const handlePayment = () => {
-    // Tenant pays the rent/deposit [cite: 2026-02-15]
-    console.log("Processing payment for booking:", bookingId);
-    alert("Payment Successful! Owner has been notified.");
-    // After payment, redirect to confirm booking page so owner can confirm arrival
+  const handlePaymentSuccess = (result) => {
+    // After successful payment, redirect to confirm booking page so owner can confirm arrival
     navigate(`/confirmBook/${bookingId}`);
   };
 
@@ -111,14 +143,18 @@ const PayNow = () => {
               ₹{booking.total}
             </div>
 
-            <button 
-              onClick={handlePayment}
+            <PayNowButton 
+              amount={booking.total} 
+              pgId={booking.pgId} 
+              bookingId={bookingId}
+              intentType="MOVE_IN_PAYMENT"
+              description="PG Booking Payment"
               className="w-full py-4 rounded font-black text-white uppercase tracking-widest transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-2"
               style={{ backgroundColor: colors.primary }}
+              onSuccess={handlePaymentSuccess}
             >
-              <CreditCardIcon className="h-5 w-5" />
               Pay Now
-            </button>
+            </PayNowButton>
 
             <div className="mt-6 space-y-3">
                <div className="flex items-center gap-2 text-[10px] font-bold uppercase" style={{ color: colors.textSecondary }}>

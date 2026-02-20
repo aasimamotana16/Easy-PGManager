@@ -8,6 +8,7 @@ const agreementSchema = new mongoose.Schema({
     agreementId: { type: String, required: true },
     pgName: { type: String, required: true }, 
     roomNo: { type: String, required: true },
+    roomType: { type: String },
     tenantName: { type: String, required: true },
     rentAmount: { type: Number, required: true },
     securityDeposit: { type: Number, required: true },

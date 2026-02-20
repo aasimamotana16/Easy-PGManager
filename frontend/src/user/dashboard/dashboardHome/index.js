@@ -199,7 +199,7 @@ const DashboardHome = () => {
   };
 
   const pgName = dashboardData?.currentBooking?.pgName || user?.bookedPgName || "No PG Booked";
-  const roomNo = dashboardData?.currentBooking?.roomNo || user?.roomNo || "N/A";
+  const roomType = dashboardData?.currentBooking?.roomType || user?.roomType || "N/A";
   const monthlyRent = dashboardData?.currentBooking?.monthlyRent || user?.monthlyRent || 0;
   const bookingStatus = dashboardData?.currentBooking?.status || user?.bookingStatus || "Inactive";
   const rawDueDate = dashboardData?.nextPayment?.dueDate || user?.paymentDueDate || null;
@@ -223,7 +223,7 @@ const DashboardHome = () => {
       {/* STATS GRID */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
         <StatCard title="PG Name" value={pgName} icon={<FaHome />} />
-        <StatCard title="Room No" value={roomNo} icon={<FaBed />} />
+        <StatCard title="Room Type" value={roomType} icon={<FaBed />} />
         <StatCard title="Status" value={bookingStatus} icon={<FaUserCheck />} live={bookingStatus === "Active"} />
         <StatCard title="Rent" value={`₹${monthlyRent.toLocaleString()}`} icon={<FaWallet />} />
       </div>

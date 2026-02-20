@@ -147,7 +147,7 @@ const Payments = () => {
   const statusLabel = stayStatus ? stayStatus.toUpperCase() : 'UNKNOWN';
 
   return (
-    <div className="p-4 sm:p-8 bg-gray-100 min-h-screen space-y-6">
+    <div className="p-4 sm:p-8 bg-gray-200 min-h-screen space-y-6">
       <header>
         <h2 className="" style={{ color: colors.textPrimary }}>Payments & Invoices</h2>
         <h3 style={{ color: colors.primary }}>Track your rent cycle and receipts.</h3>

@@ -95,12 +95,7 @@ const ConfirmBooking = () => {
           />
 
           <div className="flex flex-col sm:flex-row gap-4">
-            <button
-              onClick={() => navigate(`/agreement/${bookingData._id}`)}
-              className="flex-1 py-3 px-4 border border-border rounded-md text-textSecondary hover:bg-primarySoft transition-colors text-sm font-medium flex items-center justify-center gap-2"
-            >
-              View Agreement
-            </button>
+          
 
             <button
               onClick={() => navigate(`/cancel/${id}`)}

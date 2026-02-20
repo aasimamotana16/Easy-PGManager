@@ -47,24 +47,15 @@ const CancelForm = () => {
       <div className="max-w-2xl mx-auto">
         
         {/* Warning Card - Updated with Primary brand colors for caution [cite: 2026-02-09] */}
-        <div className="bg-primarySoft border-l-4 border-primary p-4 mb-8 rounded-r-xl shadow-sm flex items-start gap-3">
-          <FaExclamationTriangle className="text-primary mt-1 shrink-0" size={20} />
-          <div>
-            <h3 className="text-primaryDark font-bold text-sm uppercase">Permanent Action</h3>
-            <p className="text-textSecondary text-body-sm">
-              Advance payments are non-refundable. Your booking data will be <strong className="text-textPrimary">permanently deleted</strong> immediately upon cancellation.
-            </p>
-          </div>
-        </div>
-
+       
         {/* Main Form Card */}
         <div className="bg-background rounded-2xl shadow-sm border border-border overflow-hidden">
-          <div className="bg-primarySoft/30 px-8 py-6 border-b border-border">
+          <div className="bg-primarySoft/30 px-4 sm:px-8 py-4 sm:py-6 border-b border-border">
             <h2 className="text-h2-sm lg:text-h2 font-bold text-textPrimary">Cancel Booking</h2>
             <p className="text-textSecondary text-body-sm">Please verify your details to proceed</p>
           </div>
 
-          <div className="p-8 space-y-6">
+          <div className="p-4 sm:p-8 space-y-6">
             <CInput
               label="Registered Email"
               type="email"
