@@ -22,6 +22,11 @@ const AddProperty = () => {
   const [errors, setErrors] = useState({});
   const roomsRef = useRef(null);
   const pincodeRef = useRef(null);
+  const fanRef = useRef(null);
+  const lightRef = useRef(null);
+  const bedRef = useRef(null);
+  const cupboardRef = useRef(null);
+  const mattressRef = useRef(null);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -32,6 +37,14 @@ const AddProperty = () => {
     address: "",
     pincode: "",
     facilities: [],
+    inventory: {
+      fan: "",
+      light: "",
+      bed: "",
+      cupboard: "",
+      mattress: "",
+      note: "",
+    },
     rules: {
       smoking: false,
       alcohol: false,
@@ -43,8 +56,8 @@ const AddProperty = () => {
       aadhaar: null,
       electricityBill: null,
       propertyTax: null,
-      agreementPdf: null,
     },
+    legalConfirmed: false, // ✅ NEW
   });
 
   // Prevent scroll change on number inputs
@@ -54,11 +67,28 @@ const AddProperty = () => {
     };
     const roomsInput = roomsRef.current;
     const pincodeInput = pincodeRef.current;
+    const fanInput = fanRef.current;
+    const lightInput = lightRef.current;
+    const bedInput = bedRef.current;
+    const cupboardInput = cupboardRef.current;
+    const mattressInput = mattressRef.current;
+    
     if (roomsInput) roomsInput.addEventListener("wheel", handleWheel, { passive: false });
     if (pincodeInput) pincodeInput.addEventListener("wheel", handleWheel, { passive: false });
+    if (fanInput) fanInput.addEventListener("wheel", handleWheel, { passive: false });
+    if (lightInput) lightInput.addEventListener("wheel", handleWheel, { passive: false });
+    if (bedInput) bedInput.addEventListener("wheel", handleWheel, { passive: false });
+    if (cupboardInput) cupboardInput.addEventListener("wheel", handleWheel, { passive: false });
+    if (mattressInput) mattressInput.addEventListener("wheel", handleWheel, { passive: false });
+    
     return () => {
       if (roomsInput) roomsInput.removeEventListener("wheel", handleWheel);
       if (pincodeInput) pincodeInput.removeEventListener("wheel", handleWheel);
+      if (fanInput) fanInput.removeEventListener("wheel", handleWheel);
+      if (lightInput) lightInput.removeEventListener("wheel", handleWheel);
+      if (bedInput) bedInput.removeEventListener("wheel", handleWheel);
+      if (cupboardInput) cupboardInput.removeEventListener("wheel", handleWheel);
+      if (mattressInput) mattressInput.removeEventListener("wheel", handleWheel);
     };
   }, []);
 
@@ -121,6 +151,14 @@ const AddProperty = () => {
     }
   };
 
+  const handleInventoryChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      inventory: { ...prev.inventory, [name]: value },
+    }));
+  };
+
   const updateRule = (key, value) => {
     setFormData((prev) => ({ ...prev, rules: { ...prev.rules, [key]: value } }));
     // Clear curfew error when user sets gate timing
@@ -161,7 +199,6 @@ const AddProperty = () => {
       aadhaar: "Aadhaar Card",
       electricityBill: "Electricity Bill",
       propertyTax: "Property Tax Receipt",
-      agreementPdf: "Agreement"
     };
     
     Swal.fire({
@@ -231,6 +268,10 @@ const AddProperty = () => {
     if (!formData.proofDocuments.aadhaar) newErrors.aadhaar = "Aadhaar card is required";
     if (!formData.proofDocuments.electricityBill) newErrors.electricityBill = "Electricity bill is required";
     if (!formData.proofDocuments.propertyTax) newErrors.propertyTax = "Property tax receipt is required";
+    if (!formData.legalConfirmed) {
+      newErrors.legalConfirmed = "You must confirm the legal declaration";
+    }
+
 
     console.log("Form Data:", formData); // Debug: see what data is being validated
     console.log("Validation Errors:", newErrors); // Debug: see what errors are found
@@ -273,7 +314,9 @@ const AddProperty = () => {
         address: formData.address,
         pincode: formData.pincode,
         facilities: formData.facilities,  // Will map to both amenities and facilities
-        rules: formData.rules
+        inventory: formData.inventory,
+        rules: formData.rules,
+        legalConfirmed: formData.legalConfirmed // ✅ SENT
       };
 
       console.log("Frontend - Data being sent to backend:", dataToSend); // Debug
@@ -304,15 +347,6 @@ const AddProperty = () => {
           }
         }
 
-        if (formData.proofDocuments.agreementPdf) {
-          try {
-            const agreementFormData = new FormData();
-            agreementFormData.append("agreementPdf", formData.proofDocuments.agreementPdf);
-            await uploadAgreementTemplate(pgId, agreementFormData);
-          } catch (agreementError) {
-            console.error("Agreement template upload failed:", agreementError);
-          }
-        }
         
         // Store property data for next steps
         localStorage.setItem("currentPropertyId", pgId);
@@ -428,6 +462,31 @@ const AddProperty = () => {
     </p>
   )}
 </CFormCard>
+
+          {/* INVENTORY */}
+          <CFormCard className="p-6 border border-primary bg-white">
+            <h2 className="text-lg font-bold mb-6 border-b pb-2">
+              INVENTORY LISTINGS
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              <CInput ref={fanRef} type="number" label="Fan" name="fan" value={formData.inventory.fan} onChange={handleInventoryChange} />
+              <CInput ref={lightRef} type="number" label="Light" name="light" value={formData.inventory.light} onChange={handleInventoryChange} />
+              <CInput ref={bedRef} type="number" label="Bed" name="bed" value={formData.inventory.bed} onChange={handleInventoryChange} />
+              <CInput ref={cupboardRef} type="number" label="CupBoard" name="cupboard" value={formData.inventory.cupboard} onChange={handleInventoryChange} />
+              <CInput ref={mattressRef} type="number" label="Matterss" name="mattress" value={formData.inventory.mattress} onChange={handleInventoryChange} />
+            </div>
+            <div className="mt-4">
+              <CInput
+                type="textarea"
+                label="Additional Inventory / Notes (Optional)"
+                name="note"
+                value={formData.inventory.note}
+                onChange={handleInventoryChange}
+                rows={2}
+              />
+            </div>
+          </CFormCard>
+
           {/* 4. RULES */}
           <CFormCard className="p-6 border border-primary shadow-sm bg-white">
             <h2 className="text-lg font-bold text-textPrimary mb-6 border-b pb-2 tracking-wide">RULES & GATE TIMING</h2>
@@ -449,12 +508,11 @@ const AddProperty = () => {
           {/* 5. DOCUMENTS */}
           <CFormCard className="p-6 border border-primary shadow-sm bg-white">
   <h2 className="text-lg font-bold text-textPrimary mb-6 border-b pb-2 tracking-wide">VERIFICATION DOCUMENTS</h2>
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
     {[
       { key: "aadhaar", label: "Owner Aadhaar Card *" },
       { key: "electricityBill", label: "Electricity Bill *" },
       { key: "propertyTax", label: "Property Tax Receipt *" },
-      { key: "agreementPdf", label: "Agreement" }
     ].map((doc) => (
       <div key={doc.key} className="flex flex-col">
         <label className="block text-xs font-bold text-textSecondary mb-3 uppercase tracking-wider">{doc.label}</label>
@@ -478,7 +536,7 @@ const AddProperty = () => {
             </div>
           </div>
         )}
-        
+         
         {/* Simple Error Message Replacement */}
         {errors[doc.key] && (
           <p className="text-red-500 text-[10px] mt-2 font-medium">
@@ -489,6 +547,18 @@ const AddProperty = () => {
     ))}
   </div>
 </CFormCard>
+ {/* LEGAL DECLARATION */}
+          <CFormCard className="p-4 bg-yellow-50 border border-yellow-400">
+            <p className="text-xs text-yellow-800 mb-2">
+              The property details, facilities, inventory, and rules entered above will be used to generate digital tenant agreements. 
+              The owner is responsible for ensuring that all information provided is accurate.
+            </p>
+            <label className="flex items-start gap-2">
+              <input type="checkbox" checked={formData.legalConfirmed} onChange={(e) => setFormData(p => ({ ...p, legalConfirmed: e.target.checked }))} />
+              <span className="text-xs font-semibold">I confirm the above information is accurate.</span>
+            </label>
+            {errors.legalConfirmed && <p className="text-red-500 text-xs">{errors.legalConfirmed}</p>}
+          </CFormCard>
           <div className="text-center pb-10">
             <CButton size="lg" type="submit" className="px-16 py-4 text-xl">Save & Proceed to Rooms</CButton>
           </div>

@@ -1,6 +1,6 @@
-import React from "react";
+import React, { forwardRef } from "react";
 
-const CInput = ({
+const CInput = forwardRef(({
   label,
   value,
   onChange,
@@ -14,8 +14,7 @@ const CInput = ({
   helperText = "", 
   required = false,
   disabled = false,
-}) => {
-  // Use theme tokens for colors [cite: 2026-02-09]
+}, ref) => {
   const baseInputClasses = `
     w-full px-4 py-3 rounded-md border transition-all duration-200 focus:outline-none
     text-body-sm lg:text-body
@@ -32,10 +31,13 @@ const CInput = ({
     ${error ? "text-danger" : "text-textSecondary"}
   `;
 
+  const handleWheel = (e) => {
+    if (document.activeElement.type === "number") {
+      e.preventDefault();
+    }
+  };
+
   return (
-    /* We use flex-col and remove 'relative' from here. 
-       The error message will now occupy real space, increasing the total height of the component.
-    */
     <div className={`flex flex-col ${className}`}>
       {label && (
         <label className={labelClasses}>
@@ -45,7 +47,6 @@ const CInput = ({
       )}
 
       <div className="relative">
-        {/* SELECT */}
         {type === "select" ? (
           <select
             name={name}
@@ -63,6 +64,7 @@ const CInput = ({
           </select>
         ) : type === "textarea" || type === "multiline" ? (
           <textarea
+            ref={ref}
             name={name}
             value={value}
             onChange={onChange}
@@ -73,20 +75,19 @@ const CInput = ({
           />
         ) : (
           <input
+            ref={ref}
             type={type}
             name={name}
             value={value}
             onChange={onChange}
             placeholder={placeholder}
             disabled={disabled}
+            onWheel={handleWheel}
             className={`${baseInputClasses} h-12 lg:h-10`}
           />
         )}
       </div>
 
-      {/* STATIC POSITIONING: This increases the field size when the error exists.
-          The 'mt-1.5' ensures there is a specific gap between the input and the red text.
-      */}
       {error && helperText && (
         <span className="text-[10px] text-danger font-medium leading-none mt-1.5 ml-1">
           {helperText}
@@ -94,6 +95,8 @@ const CInput = ({
       )}
     </div>
   );
-};
+});
+
+CInput.displayName = "CInput";
 
 export default CInput;
