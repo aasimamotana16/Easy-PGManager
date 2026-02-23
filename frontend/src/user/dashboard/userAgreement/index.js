@@ -63,6 +63,23 @@ const Agreements = () => {
     return `${apiBaseUrl}/${normalizedPath}`;
   };
 
+  const triggerAgreementDownload = async (agreementUrl) => {
+    const response = await fetch(agreementUrl, { method: "GET", credentials: "include" });
+    if (!response.ok) {
+      throw new Error("Failed to download agreement PDF");
+    }
+
+    const blob = await response.blob();
+    const objectUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = objectUrl;
+    link.download = `Agreement-${agreementInfo?.agreementId || "copy"}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(objectUrl);
+  };
+
   const handleDownloadPDF = () => {
     const agreementUrl = resolveAgreementUrl(agreementInfo?.fileUrl);
     if (!agreementUrl) {
@@ -76,15 +93,24 @@ const Agreements = () => {
 
     Swal.fire({
       title: 'Download Agreement?',
-      text: "This will open your generated agreement in a new tab.",
+      text: "This will download your generated agreement PDF.",
       icon: 'question',
       showCancelButton: true,
       confirmButtonColor: '#D97706',
       cancelButtonColor: '#1C1C1C',
-      confirmButtonText: 'Open PDF'
-    }).then((result) => {
+      confirmButtonText: 'Download PDF'
+    }).then(async (result) => {
       if (result.isConfirmed) {
-        window.open(agreementUrl, "_blank", "noopener,noreferrer");
+        try {
+          await triggerAgreementDownload(agreementUrl);
+        } catch (error) {
+          Swal.fire({
+            icon: "error",
+            title: "Download Failed",
+            text: "Unable to download agreement right now.",
+            confirmButtonColor: "#D97706"
+          });
+        }
       }
     });
   };

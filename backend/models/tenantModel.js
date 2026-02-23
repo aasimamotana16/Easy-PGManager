@@ -29,6 +29,8 @@ const tenantSchema = new mongoose.Schema({
   extensionRequestedAt: { type: Date, default: null },
   extensionUntil: { type: Date, default: null },
   extensionReason: { type: String, default: "" },
+  lastExtensionRequestAt: { type: Date, default: null },
+  isFinePaused: { type: Boolean, default: false },
   deferredDays: { type: Number, default: 0 },
   deferredReason: { type: String, default: "" },
   lastDeferredDate: { type: String, default: "" },

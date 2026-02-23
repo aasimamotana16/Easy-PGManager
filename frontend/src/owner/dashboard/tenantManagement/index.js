@@ -11,6 +11,7 @@ import {
   updateTenant as apiUpdateTenant,
   getMyPgs,
   deleteTenant as apiDeleteTenant,
+  confirmArrival as apiConfirmArrival,
   approveExtension as apiApproveExtension,
   completeMoveOut as apiCompleteMoveOut
 } from "../../../api/api";
@@ -153,10 +154,25 @@ const Tenants = () => {
       confirmButtonColor: "#D97706",
       cancelButtonColor: "#4B4B4B",
       confirmButtonText: "Confirm Arrival"
-    }).then((res) => {
+    }).then(async (res) => {
       if (res.isConfirmed) {
-        setTenants(prev => prev.map(t => t._id === id ? { ...t, status: "Active" } : t));
-        Swal.fire({ title: "Welcome!", icon: "success", confirmButtonColor: "#D97706" });
+        try {
+          const apiRes = await apiConfirmArrival(id);
+          Swal.fire({
+            title: "Welcome!",
+            text: apiRes.data?.message || "Arrival confirmed successfully.",
+            icon: "success",
+            confirmButtonColor: "#D97706"
+          });
+          fetchTenants();
+        } catch (error) {
+          Swal.fire({
+            title: "Error",
+            text: error.response?.data?.message || "Failed to confirm arrival",
+            icon: "error",
+            confirmButtonColor: "#D97706"
+          });
+        }
       }
     });
   };

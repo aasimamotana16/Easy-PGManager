@@ -53,7 +53,7 @@ const Documents = () => {
           },
           {
             id: 3,
-            name: "Rental Agreement Copy",
+            name: "Signed Agreement",
             status: docsData.rentalAgreementCopy?.status || "Pending",
             date: docsData.rentalAgreementCopy?.uploadedAt ? new Date(docsData.rentalAgreementCopy.uploadedAt).toLocaleDateString("en-GB") : null,
             fileUrl: docsData.rentalAgreementCopy?.fileUrl || null,
@@ -194,7 +194,7 @@ const Documents = () => {
           <h3 className=" text-2xl text-gray-800 flex items-center gap-3">
             <FaFileImport className="text-blue-500" /> Uploaded Documents
           </h3>
-          <p className="text-gray-500 ">View or update your existing legal records</p>
+          <p className="text-gray-500 ">View your existing legal records</p>
         </div>
 
         <div className="grid grid-cols-1 gap-5">
@@ -212,7 +212,6 @@ const Documents = () => {
                 
                 <div className="flex items-center gap-3">
                   <button onClick={() => handleView(doc)} title="View" className="text-blue-500 hover:scale-110 transition-all"><FaEye size={18} /></button>
-                  <button onClick={() => handleUploadClick(doc.id)} title="Update/Replace" className="text-orange-500 hover:scale-110 transition-all"><FaCloudUploadAlt size={18} /></button>
                   <button onClick={() => handleDelete(doc)} title="Delete" className="text-red-400 hover:text-red-600 transition-all"><FaTrash size={18} /></button>
                 </div>
               </div>

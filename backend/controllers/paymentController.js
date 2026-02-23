@@ -50,6 +50,11 @@ const addMonths = (dateInput, months) => {
   return d;
 };
 
+const deriveSecurityDepositAmount = (monthlyRent) => {
+  const rent = Math.max(0, Number(monthlyRent) || 0);
+  return rent * 2;
+};
+
 const getNextCycleDueDate = (anchorDateInput) => {
   const anchor = new Date(anchorDateInput);
   if (Number.isNaN(anchor.getTime())) return null;
@@ -107,11 +112,15 @@ const ensureBookingCompletionRecords = async ({ booking, tenantUser, pgDoc, tena
     fallbackDeposit: Number(booking.securityDeposit || pgDoc.securityDeposit || 0)
   });
   const safeRent = Number(booking.rentAmount || booking.bookingAmount || bookingPricing.rentAmount || rentAmount || 0);
-  const securityDeposit = Number(booking.securityDeposit || bookingPricing.securityDeposit || 0);
+  const securityDeposit = deriveSecurityDepositAmount(safeRent);
   const variantLabel = booking.variantLabel || bookingPricing.variantLabel || booking.roomType || "N/A";
 
   booking.rentAmount = safeRent;
   booking.securityDeposit = securityDeposit;
+  booking.ownerApprovalStatus =
+    booking.ownerApproved || String(booking.status || "").toLowerCase() === "confirmed"
+      ? "approved"
+      : "pending";
   booking.variantLabel = variantLabel;
   booking.bookingAmount = safeRent;
   booking.pricingSnapshot = {
@@ -146,7 +155,7 @@ const ensureBookingCompletionRecords = async ({ booking, tenantUser, pgDoc, tena
       pgName: pgDoc.pgName || "",
       room: booking.roomType || "N/A",
       joiningDate: checkInDate,
-      status: "Active",
+      status: "Pending Arrival",
       securityDeposit
     });
   } else {
@@ -154,7 +163,9 @@ const ensureBookingCompletionRecords = async ({ booking, tenantUser, pgDoc, tena
     tenantRecord.pgName = pgDoc.pgName || tenantRecord.pgName;
     tenantRecord.room = booking.roomType || tenantRecord.room;
     tenantRecord.joiningDate = tenantRecord.joiningDate || checkInDate;
-    tenantRecord.status = "Active";
+    if (String(tenantRecord.status || "").toLowerCase() !== "inactive") {
+      tenantRecord.status = "Pending Arrival";
+    }
     tenantRecord.securityDeposit = Number(tenantRecord.securityDeposit || securityDeposit);
     if (tenantEmail && (!tenantRecord.email || tenantRecord.email === "no-email@easy-pg.local")) {
       tenantRecord.email = tenantEmail;
@@ -380,8 +391,34 @@ const verifyPayment = async (req, res) => {
 
       if (targetBooking) {
         targetBooking.ownerApproved = Boolean(targetBooking.ownerApproved || String(targetBooking.status || "") === "Confirmed");
+        targetBooking.ownerApprovalStatus = targetBooking.ownerApproved ? "approved" : "pending";
         targetBooking.isPaid = true;
         targetBooking.paymentStatus = "Paid";
+        const monthlyRent = Number(targetBooking.rentAmount || targetBooking.bookingAmount || 0);
+        const requiredDeposit = Number(targetBooking.securityDeposit || deriveSecurityDepositAmount(monthlyRent));
+        const paidSoFarQuery = {
+          paymentStatus: { $in: ["Success", "Paid", "PAID"] },
+          $and: [
+            {
+              $or: [
+                { user: req.user.id },
+                { tenantName }
+              ]
+            }
+          ]
+        };
+        const paidPgMatchers = [
+          targetBooking.pgId ? { pgId: targetBooking.pgId } : null,
+          targetBooking.pgName ? { pgName: targetBooking.pgName } : null
+        ].filter(Boolean);
+        if (paidPgMatchers.length > 0) {
+          paidSoFarQuery.$and.push({ $or: paidPgMatchers });
+        }
+        const paidSoFarRaw = await Payment.find(paidSoFarQuery).select("amountPaid");
+        const runningTotal = paidSoFarRaw.reduce((sum, p) => sum + (Number(p.amountPaid) || 0), 0);
+        targetBooking.initialRentPaid = Boolean(targetBooking.initialRentPaid) || runningTotal >= monthlyRent;
+        targetBooking.securityDepositPaid =
+          Boolean(targetBooking.securityDepositPaid) || requiredDeposit <= 0 || runningTotal >= (monthlyRent + requiredDeposit);
         if (targetBooking.ownerApproved && String(targetBooking.status || "") !== "Cancelled") {
           targetBooking.status = "Confirmed";
         }

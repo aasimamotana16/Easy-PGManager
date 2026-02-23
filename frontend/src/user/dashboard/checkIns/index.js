@@ -5,7 +5,7 @@ import "react-calendar/dist/Calendar.css";
 import CButton from "../../../components/cButton";
 import axios from "axios";
 import Swal from "sweetalert2";
-import { requestExtension, requestMoveOut } from "../../../api/api";
+import { requestExtension, requestMoveIn, requestMoveOut } from "../../../api/api";
 import { 
   FaHistory, 
   FaSignOutAlt, 
@@ -25,9 +25,9 @@ const CheckIns = () => {
   // Possible statuses: "Reserved" (only deposit paid), "PendingConfirmation" (rent paid, waiting for owner), "Active"
   const [stayStatus, setStayStatus] = useState("Reserved"); 
   const [joiningDate, setJoiningDate] = useState(null);
-  const [rentAmount, setRentAmount] = useState(0); 
-
-  const user = JSON.parse(localStorage.getItem("user"));
+  const [rentAmount, setRentAmount] = useState(0);
+  const [hasPaidFirstRent, setHasPaidFirstRent] = useState(false);
+  const [hasApprovedMoveIn, setHasApprovedMoveIn] = useState(false);
   const authToken = localStorage.getItem("userToken");
 
   useEffect(() => {
@@ -48,12 +48,18 @@ const CheckIns = () => {
       const booking = data.currentBooking || {};
       const nextPayment = data.nextPayment || {};
       const bookingStatus = String(booking.status || "").toLowerCase();
+      const bookingPaid = Boolean(booking.isPaid);
+      const moveInApproved = Boolean(booking.hasApprovedMoveIn);
 
       const derivedRent = Number(nextPayment.amount || booking.monthlyRent || 0);
       setRentAmount(derivedRent);
+      setHasPaidFirstRent(bookingPaid);
+      setHasApprovedMoveIn(moveInApproved);
 
       if (bookingStatus === "active") {
         setStayStatus("Active");
+      } else if (bookingStatus === "pending move-in approval") {
+        setStayStatus("PendingConfirmation");
       } else if (bookingStatus === "awaiting payment") {
         setStayStatus("Reserved");
       } else if (bookingStatus === "pending approval") {
@@ -86,6 +92,8 @@ const CheckIns = () => {
 
   // --- LOGIC: MOVE-IN (Redirect to Payment) ---
   const handleMoveIn = async () => {
+    if (hasPaidFirstRent) return;
+
     const result = await Swal.fire({
       title: 'Complete Your Move-In',
       html: `You need to pay the first month's rent of <b>₹${rentAmount}</b> to activate your stay.<br><br><small>You will be redirected to the secure payment page.</small>`,
@@ -103,6 +111,34 @@ const CheckIns = () => {
           type: 'MOVE_IN_PAYMENT',
           reason: 'Move-In Activation'
         }
+      });
+    }
+  };
+
+  const handleRequestMoveIn = async () => {
+    try {
+      const resp = await requestMoveIn();
+      if (resp.data?.success) {
+        Swal.fire({
+          title: "Move-In Requested",
+          text: "Your move-in request is sent. Owner approval is required.",
+          icon: "success",
+          confirmButtonColor: "#D97706"
+        });
+      } else {
+        Swal.fire({
+          title: "Error",
+          text: resp.data?.message || "Failed to request move-in",
+          icon: "error",
+          confirmButtonColor: "#D97706"
+        });
+      }
+    } catch (error) {
+      Swal.fire({
+        title: "Error",
+        text: error.response?.data?.message || "Failed to request move-in",
+        icon: "error",
+        confirmButtonColor: "#D97706"
       });
     }
   };
@@ -225,10 +261,28 @@ const CheckIns = () => {
               <FaMoneyCheckAlt size={30} />
             </div>
             <h2 className="text-xl font-bold uppercase tracking-tight">Activate Your Stay</h2>
-            <p className="text-[#4B4B4B] mb-6 max-w-sm">Your room is reserved. Please pay the first month's rent to enable Check-In and notify the owner.</p>
-            <CButton onClick={handleMoveIn} className="max-w-md w-full py-4 text-lg font-bold shadow-md">
-              Pay Rent & Check-In
+            <p className="text-[#4B4B4B] mb-6 max-w-sm">
+              {hasPaidFirstRent
+                ? (hasApprovedMoveIn
+                    ? "Move-In approved by owner."
+                    : "Payment completed. Waiting for owner move-in approval.")
+                : "Your room is reserved. Please pay the first month's rent to enable Move-In and notify the owner."}
+            </p>
+            <CButton
+              onClick={handleMoveIn}
+              disabled={hasPaidFirstRent}
+              className={`max-w-md w-full py-4 text-lg font-bold shadow-md ${hasPaidFirstRent ? "bg-gray-400 hover:bg-gray-400 border-gray-400" : ""}`}
+            >
+              {hasPaidFirstRent ? "Payment Completed" : "Pay Rent & Move-In"}
             </CButton>
+            {hasPaidFirstRent && !hasApprovedMoveIn && (
+              <CButton
+                onClick={handleRequestMoveIn}
+                className="max-w-md w-full py-4 text-lg font-bold mt-3"
+              >
+                Request Move-In
+              </CButton>
+            )}
           </div>
         </div>
 
@@ -266,11 +320,12 @@ const CheckIns = () => {
                          </div>
                          <div>
                             <p className="font-bold">{entry.pgName || "Nadiad PG"}</p>
-                            <p className="text-sm text-[#4B4B4B]">{entry.date || "2026-02-15"}</p>
+                            <p className="text-[11px] text-[#4B4B4B]">{entry.title || "Stay Update"}</p>
+                            <p className="text-sm text-[#4B4B4B]">{entry.date || "2026-02-15"}{entry.time ? `, ${entry.time}` : ""}</p>
                          </div>
                       </div>
                       <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded-md bg-[#E5E0D9]">
-                        Completed
+                        {entry.status || "Completed"}
                       </span>
                    </div>
                 ))
@@ -294,5 +349,7 @@ const CheckIns = () => {
 };
 
 export default CheckIns;
+
+
 
 

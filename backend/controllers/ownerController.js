@@ -13,8 +13,12 @@ const PendingPayment = require('../models/pendingPaymentModel');
 const CheckIn = require('../models/checkInModel');
 const Room = require('../models/roomModel');
 const Review = require('../models/reviewModel');
+const ExtensionRequest = require('../models/extensionRequestModel');
+const DamageReport = require('../models/damageReportModel');
+const FineTransaction = require('../models/fineTransactionModel');
 const { mergeRoomPriceVariants, resolveVariantPricing } = require('../utils/pricingUtils');
 const { generateAgreementPdf } = require('../utils/agreementPdf');
+const { calculateLateFine, validateMoveIn } = require('../utils/leaseUtils');
 const { jsPDF } = require('jspdf');
 const { autoTable } = require('jspdf-autotable');
 
@@ -31,6 +35,11 @@ const addMonths = (dateInput, months) => {
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const LATE_FINE_PER_DAY = 100;
+
+const deriveSecurityDepositAmount = (monthlyRent) => {
+  const rent = Math.max(0, Number(monthlyRent) || 0);
+  return rent * 2;
+};
 
 const normalizeBaseUrl = (value, fallback = "http://localhost:3000") => {
   const raw = String(value || "").trim();
@@ -161,7 +170,7 @@ const ensureTenantLinkedRecords = async ({ ownerId, tenant, pg }) => {
       checkOutDate: addMonths(effectiveJoiningDate, 11).toISOString().split('T')[0],
       seatsBooked: 1,
       rentAmount: Number(tenantPricing.rentAmount || 0),
-      securityDeposit: Number(tenantPricing.securityDeposit || 0),
+      securityDeposit: deriveSecurityDepositAmount(Number(tenantPricing.rentAmount || 0)),
       pricingSnapshot: {
         billingCycle: tenantPricing.billingCycle || "Monthly",
         acType: tenantPricing.acType || "Non-AC",
@@ -169,6 +178,10 @@ const ensureTenantLinkedRecords = async ({ ownerId, tenant, pg }) => {
       },
       bookingAmount: Number(tenantPricing.rentAmount || 0),
       status: "Confirmed",
+      ownerApproved: true,
+      ownerApprovalStatus: "approved",
+      initialRentPaid: true,
+      securityDepositPaid: deriveSecurityDepositAmount(Number(tenantPricing.rentAmount || 0)) <= 0,
       bookingSource: "tenant_sync"
     });
     bookingCreated = true;
@@ -176,7 +189,7 @@ const ensureTenantLinkedRecords = async ({ ownerId, tenant, pg }) => {
 
   const pricing = tenantPricing;
   const rentAmount = Number(pricing.rentAmount || 0);
-  const securityDeposit = Number(pricing.securityDeposit || 0);
+  const securityDeposit = deriveSecurityDepositAmount(rentAmount);
   const joinDateObj = new Date(effectiveJoiningDate);
   const currentMonthLabel = getMonthLabel(joinDateObj);
   const nextMonthDate = addMonths(joinDateObj, 1);
@@ -284,6 +297,51 @@ const resolveTenantUserForBooking = async (booking) => {
   return byName || null;
 };
 
+const clearTenantDashboardDataForCancelledBooking = async ({ booking, tenantUser }) => {
+  if (!booking) return;
+
+  const tenantMatcher = [
+    tenantUser?._id ? { tenant: tenantUser._id } : null,
+    booking?.tenantName ? { tenantName: booking.tenantName } : null
+  ].filter(Boolean);
+
+  const pgMatcher = [
+    booking?.pgId ? { pg: booking.pgId } : null,
+    booking?.pgName ? { pgName: booking.pgName } : null
+  ].filter(Boolean);
+
+  if (tenantMatcher.length > 0 && pgMatcher.length > 0) {
+    await PendingPayment.deleteMany({
+      status: { $in: ['Pending', 'Overdue'] },
+      $and: [
+        { $or: tenantMatcher },
+        { $or: pgMatcher }
+      ]
+    });
+  }
+
+  if (booking?.bookingId) {
+    await Agreement.deleteMany({ bookingId: booking.bookingId });
+  }
+
+  if (tenantUser?._id) {
+    await Promise.all([
+      User.findByIdAndUpdate(tenantUser._id, {
+        $set: {
+          assignedPg: null,
+          ownerId: null,
+          roomNo: ""
+        },
+        $unset: {
+          bookedPgName: "",
+          paymentDueDate: ""
+        }
+      }),
+      CheckIn.deleteMany({ userId: tenantUser._id })
+    ]);
+  }
+};
+
 const ensureBookingConfirmationData = async ({ booking, ownerId }) => {
   const pg = booking.pgId
     ? await Pg.findOne({ _id: booking.pgId, ownerId }).select('pgName roomPrices price securityDeposit agreementTemplate ownerId')
@@ -305,7 +363,7 @@ const ensureBookingConfirmationData = async ({ booking, ownerId }) => {
     fallbackDeposit: Number(booking.securityDeposit || pg?.securityDeposit || 0)
   });
   const rentAmount = Number(booking.rentAmount || booking.bookingAmount || bookingPricing.rentAmount || 0);
-  const securityDeposit = Number(booking.securityDeposit || bookingPricing.securityDeposit || 0);
+  const securityDeposit = deriveSecurityDepositAmount(rentAmount);
   const resolvedVariantLabel = booking.variantLabel || bookingPricing.variantLabel || room;
   const checkInDate = booking.checkInDate || new Date().toISOString().split('T')[0];
   const checkOutDate = booking.checkOutDate || addMonths(checkInDate, 11).toISOString().split('T')[0];
@@ -317,6 +375,7 @@ const ensureBookingConfirmationData = async ({ booking, ownerId }) => {
   }
   booking.rentAmount = rentAmount;
   booking.securityDeposit = securityDeposit;
+  booking.ownerApprovalStatus = booking.ownerApproved || String(booking.status || "").toLowerCase() === "confirmed" ? "approved" : "pending";
   booking.variantLabel = resolvedVariantLabel;
   booking.bookingAmount = rentAmount;
   booking.pricingSnapshot = {
@@ -538,14 +597,30 @@ const getOwnerDashboardData = async (req, res) => {
     const ownerPgIds = allOwnerPgs.map((pg) => pg._id);
     const ownerPgNames = allOwnerPgs.map((pg) => pg.pgName).filter(Boolean);
 
-    const [totalBookings, revenueAgg] = await Promise.all([
-      Booking.countDocuments({
-        $or: [
-          { ownerId },
-          { pgId: { $in: ownerPgIds } },
-          { pgName: { $in: ownerPgNames } }
-        ]
-      }),
+    const [uniqueBookingCountAgg, revenueAgg] = await Promise.all([
+      Booking.aggregate([
+        {
+          $match: {
+            $or: [
+              { ownerId },
+              { pgId: { $in: ownerPgIds } },
+              { pgName: { $in: ownerPgNames } }
+            ],
+            bookingSource: { $ne: "tenant_sync" },
+            status: { $ne: "Cancelled" }
+          }
+        },
+        {
+          $group: {
+            _id: {
+              $ifNull: ["$bookingId", "$_id"]
+            }
+          }
+        },
+        {
+          $count: "total"
+        }
+      ]),
       Payment.aggregate([
         {
           $match: {
@@ -565,6 +640,7 @@ const getOwnerDashboardData = async (req, res) => {
       ])
     ]);
 
+    const totalBookings = Number(uniqueBookingCountAgg?.[0]?.total || 0);
     const totalRevenue = Number(revenueAgg?.[0]?.totalRevenue || 0);
     const totalPgs = liveOwnerPgs.length;
     const totalRooms = liveOwnerPgs.reduce((sum, pg) => sum + (Number(pg.totalRooms) || 0), 0);
@@ -1111,7 +1187,7 @@ const addTenant = async (req, res) => {
       fallbackDeposit: Number(pg?.securityDeposit || 0)
     });
     const rentAmount = Number(pricing.rentAmount || 0);
-    const securityDeposit = Number(pricing.securityDeposit || 0);
+    const securityDeposit = deriveSecurityDepositAmount(rentAmount);
 
     const newTenant = await Tenant.create({
       ownerId,
@@ -1255,28 +1331,78 @@ const getMyTenants = async (req, res) => {
       const pgObj = t.pgId && typeof t.pgId === "object" ? t.pgId : null;
       const extensionUntil = t.extensionUntil ? new Date(t.extensionUntil) : null;
       if (extensionUntil) extensionUntil.setHours(0, 0, 0, 0);
-      const extensionPauseActive = Boolean(extensionUntil && today <= extensionUntil);
+      const extensionPauseActive = Boolean(t.isFinePaused && extensionUntil && today <= extensionUntil);
+      const tenantEmailNorm = normalizeValue(t.email);
+      const tenantNameNorm = normalizeValue(t.name);
+      const pgIdValue = pgObj?._id || t.pgId;
+      const pgNameValue = pgObj?.pgName || t.pgName || "";
+
+      const pgMatchers = [
+        pgIdValue ? { pgId: pgIdValue } : null,
+        pgNameValue ? { pgName: pgNameValue } : null
+      ].filter(Boolean);
+      const tenantMatchers = [
+        tenantEmailNorm ? { tenantEmail: new RegExp(`^${tenantEmailNorm}$`, "i") } : null,
+        tenantNameNorm ? { tenantName: t.name } : null
+      ].filter(Boolean);
+      const paidBookingQuery = {
+        status: "Confirmed",
+        bookingSource: "tenant_request",
+        isPaid: true
+      };
+      const andClauses = [];
+      if (pgMatchers.length > 0) andClauses.push({ $or: pgMatchers });
+      if (tenantMatchers.length > 0) andClauses.push({ $or: tenantMatchers });
+      if (andClauses.length > 0) paidBookingQuery.$and = andClauses;
+
+      const paidBooking = await Booking.findOne(paidBookingQuery)
+        .sort({ createdAt: -1 })
+        .select("_id");
+      const hasPaidRent = Boolean(paidBooking?._id);
 
       const pendingPayment = await PendingPayment.findOne({
         tenantName: t.name,
         status: { $in: ["Pending", "Overdue"] },
         $or: [
-          { pg: pgObj?._id || t.pgId },
-          { pgName: pgObj?.pgName || t.pgName || "" }
+          { pg: pgIdValue },
+          { pgName: pgNameValue }
         ]
       }).sort({ dueDate: 1 });
 
       let lateFine = 0;
       if (pendingPayment?.dueDate) {
-        const due = new Date(pendingPayment.dueDate);
-        due.setHours(0, 0, 0, 0);
-        const overdueDays = Math.max(0, Math.floor((today - due) / DAY_MS));
-        lateFine = extensionPauseActive ? 0 : overdueDays * LATE_FINE_PER_DAY;
+        const fineSnapshot = calculateLateFine({
+          dueDate: pendingPayment.dueDate,
+          dailyFine: LATE_FINE_PER_DAY,
+          isFinePaused: extensionPauseActive
+        });
+        const overdueDays = fineSnapshot.overdueDays;
+        lateFine = fineSnapshot.fineAmount;
 
         if (!extensionPauseActive && overdueDays > 0 && pendingPayment.status !== "Overdue") {
           pendingPayment.status = "Overdue";
           await pendingPayment.save();
         }
+
+        await FineTransaction.findOneAndUpdate(
+          {
+            tenantRecordId: t._id,
+            pendingPaymentId: pendingPayment._id
+          },
+          {
+            ownerId,
+            tenantRecordId: t._id,
+            pendingPaymentId: pendingPayment._id,
+            tenantId: null,
+            pgId: pgObj?._id || t.pgId,
+            dayFineAmount: LATE_FINE_PER_DAY,
+            totalFineAmount: lateFine,
+            overdueDays,
+            isFinePaused: extensionPauseActive,
+            reason: extensionPauseActive ? "Fine paused due to approved extension." : "Late rent fine applied."
+          },
+          { upsert: true, setDefaultsOnInsert: true, new: true }
+        );
       }
 
       return {
@@ -1288,7 +1414,8 @@ const getMyTenants = async (req, res) => {
         pgName: pgObj?.pgName || t.pgName || "Unknown PG",
         room: t.room,
         joiningDate: t.joiningDate,
-        status: t.status,
+        status: hasPaidRent && String(t.status || "").toLowerCase() !== "active" ? "Pending Arrival" : t.status,
+        hasPaidRent,
         securityDeposit: Number(t.securityDeposit) || 0,
         hasMoveOutNotice: Boolean(t.hasMoveOutNotice),
         moveOutRequested: Boolean(t.moveOutRequested),
@@ -1397,15 +1524,71 @@ const approveExtensionRequest = async (req, res) => {
     tenant.rentDeferred = true;
     tenant.hasDeferralRequest = false;
     tenant.extensionRequested = false;
+    tenant.isFinePaused = true;
     tenant.lastDeferredDate = new Date().toISOString().split("T")[0];
     tenant.deferredDays = deferredDays || tenant.deferredDays || 0;
     tenant.deferredReason = tenant.extensionReason || tenant.deferredReason || "";
     await tenant.save();
 
+    await ExtensionRequest.findOneAndUpdate(
+      {
+        ownerId,
+        tenantRecordId: tenant._id,
+        status: "Pending"
+      },
+      {
+        status: "Approved",
+        isFinePaused: true,
+        reviewedBy: ownerId,
+        reviewedAt: new Date(),
+        reviewNote: "Approved by owner"
+      },
+      { sort: { createdAt: -1 } }
+    );
+
     return res.status(200).json({
       success: true,
       message: "Extension approved successfully",
       data: tenant
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const rejectExtensionRequest = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const ownerId = req.user._id;
+    const tenant = await Tenant.findOne({ _id: id, ownerId });
+    if (!tenant) {
+      return res.status(404).json({ success: false, message: "Tenant not found" });
+    }
+
+    tenant.hasDeferralRequest = false;
+    tenant.extensionRequested = false;
+    tenant.isFinePaused = false;
+    await tenant.save();
+
+    await ExtensionRequest.findOneAndUpdate(
+      {
+        ownerId,
+        tenantRecordId: tenant._id,
+        status: "Pending"
+      },
+      {
+        status: "Rejected",
+        isFinePaused: false,
+        reviewedBy: ownerId,
+        reviewedAt: new Date(),
+        reviewNote: "Rejected by owner"
+      },
+      { sort: { createdAt: -1 } }
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Extension rejected. Late fine will continue."
     });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
@@ -1422,9 +1605,36 @@ const completeTenantMoveOut = async (req, res) => {
     }
 
     const securityDeposit = Number(req.body?.securityDeposit ?? tenant.securityDeposit ?? 0) || 0;
-    const damageCharges = Number(req.body?.damageCharges ?? 0) || 0;
+    let damageCharges = Number(req.body?.damageCharges ?? 0) || 0;
     const pendingFine = Number(req.body?.pendingFine ?? tenant.pendingFine ?? 0) || 0;
     const deductionReason = String(req.body?.deductionReason || "").trim();
+
+    const latestDamageReport = await DamageReport.findOne({
+      ownerId,
+      tenantRecordId: tenant._id
+    }).sort({ createdAt: -1 });
+
+    if (damageCharges > 0) {
+      if (!latestDamageReport) {
+        return res.status(400).json({
+          success: false,
+          message: "Damage report is required before applying deduction."
+        });
+      }
+      if (latestDamageReport.adminApproval !== "Approved") {
+        return res.status(400).json({
+          success: false,
+          message: "Damage report is pending admin approval."
+        });
+      }
+      if (latestDamageReport.isDeductionDisputed && !latestDamageReport.adminOverride) {
+        return res.status(400).json({
+          success: false,
+          message: "Refund is blocked due to deduction dispute. Admin override required."
+        });
+      }
+      damageCharges = Number(latestDamageReport.approvedAmount || latestDamageReport.amount || 0);
+    }
 
     const totalDeduction = Math.max(0, damageCharges + pendingFine);
     const finalRefund = Math.max(0, securityDeposit - totalDeduction);
@@ -1461,6 +1671,103 @@ const completeTenantMoveOut = async (req, res) => {
         securityDeposit,
         damageCharges,
         pendingFine,
+        finalRefund
+      }
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const submitDamageReport = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const ownerId = req.user._id;
+    const amount = Number(req.body?.amount || 0);
+    const reason = String(req.body?.reason || "").trim();
+
+    if (amount <= 0 || !reason) {
+      return res.status(400).json({ success: false, message: "amount and reason are required" });
+    }
+
+    const tenant = await Tenant.findOne({ _id: id, ownerId });
+    if (!tenant) {
+      return res.status(404).json({ success: false, message: "Tenant not found" });
+    }
+
+    const tenantUser = await User.findOne({
+      email: new RegExp(`^${String(tenant.email || "").trim()}$`, "i"),
+      role: { $in: ["user", "tenant"] }
+    }).select("_id");
+
+    const report = await DamageReport.create({
+      ownerId,
+      tenantId: tenantUser?._id || null,
+      tenantRecordId: tenant._id,
+      pgId: tenant.pgId,
+      amount,
+      approvedAmount: amount,
+      reason,
+      adminApproval: "Pending",
+      isDeductionDisputed: false,
+      adminOverride: false
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "Damage report submitted. Waiting for admin approval before refund processing.",
+      data: report
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const processRefund = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const ownerId = req.user._id;
+    const tenant = await Tenant.findOne({ _id: id, ownerId });
+    if (!tenant) {
+      return res.status(404).json({ success: false, message: "Tenant not found" });
+    }
+
+    const latestDamageReport = await DamageReport.findOne({
+      ownerId,
+      tenantRecordId: tenant._id
+    }).sort({ createdAt: -1 });
+
+    if (latestDamageReport) {
+      if (latestDamageReport.adminApproval !== "Approved") {
+        return res.status(400).json({ success: false, message: "Admin approval required before refund." });
+      }
+      if (latestDamageReport.isDeductionDisputed && !latestDamageReport.adminOverride) {
+        return res.status(400).json({ success: false, message: "Refund blocked due to dispute. Await admin override." });
+      }
+    }
+
+    const fineAmount = Number(tenant.pendingFine || 0);
+    const approvedDamageAmount = Number(latestDamageReport?.approvedAmount || latestDamageReport?.amount || tenant.damageCharges || 0);
+    const totalDeduction = Math.max(0, fineAmount + approvedDamageAmount);
+    const securityDeposit = Number(tenant.securityDeposit || 0);
+    const finalRefund = Math.max(0, securityDeposit - totalDeduction);
+
+    tenant.damageCharges = approvedDamageAmount;
+    tenant.finalRefund = finalRefund;
+    tenant.status = "Inactive";
+    tenant.hasMoveOutNotice = false;
+    tenant.moveOutRequested = false;
+    tenant.moveOutCompletedAt = new Date();
+    await tenant.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Refund processed successfully.",
+      data: {
+        tenantId: tenant._id,
+        securityDeposit,
+        damageCharges: approvedDamageAmount,
+        pendingFine: fineAmount,
         finalRefund
       }
     });
@@ -1544,6 +1851,13 @@ const getMyBookings = async (req, res) => {
       const tenantName = String(b.tenantName || '').trim().toLowerCase();
       const pgIdKey = b.pgId ? String(b.pgId) : '';
       const pgNameKey = String(b.pgName || '').trim().toLowerCase();
+      const source = String(b.bookingSource || '').toLowerCase();
+      const normalizedStatus = String(b.status || '').toLowerCase();
+
+      // Keep actionable tenant requests visible so owner can approve/reject them.
+      if (source === 'tenant_request' && normalizedStatus === 'pending') {
+        return true;
+      }
 
       // Hard rule: once tenant exists in resident list, do not duplicate in bookings list.
       if (
@@ -1554,7 +1868,6 @@ const getMyBookings = async (req, res) => {
         return false;
       }
 
-      const source = String(b.bookingSource || '').toLowerCase();
       if (source === 'tenant_sync') return false;
 
       // Backward-compatibility: older auto-synced bookings may not have bookingSource.
@@ -1622,7 +1935,7 @@ const addBooking = async (req, res) => {
       fallbackDeposit: Number(templatePg?.securityDeposit || 0)
     });
     const monthlyRent = Number(pricing.rentAmount || 0);
-    const securityDeposit = Number(pricing.securityDeposit || 0);
+    const securityDeposit = deriveSecurityDepositAmount(monthlyRent);
     const linkedUser = tenantEmail
       ? await User.findOne({
           email: new RegExp(`^${String(tenantEmail).trim()}$`, 'i'),
@@ -1645,6 +1958,7 @@ const addBooking = async (req, res) => {
       seatsBooked,
       status: status || "Pending",
       ownerApproved: Boolean(status === "Confirmed"),
+      ownerApprovalStatus: status === "Confirmed" ? "approved" : "pending",
       rentAmount: monthlyRent,
       securityDeposit,
       pricingSnapshot: {
@@ -1694,27 +2008,98 @@ const updateBookingStatus = async (req, res) => {
     const requiresPaymentBeforeConfirm = source === 'tenant_request';
 
     if (normalizedStatus === 'Cancelled') {
+      const cancellationRequested = Boolean(booking?.cancelRequest?.requested && booking?.cancelRequest?.status === 'Pending');
+      // Tenant-side bookings must be cancelled only after tenant request + owner approval.
+      if (source === 'tenant_request' && !cancellationRequested) {
+        return res.status(400).json({
+          success: false,
+          message: "Tenant cancellation request not found. Cancel only after tenant request."
+        });
+      }
+
       booking.status = 'Cancelled';
       booking.ownerApproved = false;
+      booking.ownerApprovalStatus = 'rejected';
       booking.paymentStatus = booking.isPaid ? 'Paid' : 'Unpaid';
+      booking.cancelRequest = {
+        ...(booking.cancelRequest || {}),
+        requested: Boolean(booking?.cancelRequest?.requested),
+        requestedAt: booking?.cancelRequest?.requestedAt || null,
+        requestedBy: booking?.cancelRequest?.requestedBy || 'tenant',
+        reason: booking?.cancelRequest?.reason || '',
+        otherReason: booking?.cancelRequest?.otherReason || '',
+        status: 'Approved',
+        reviewedAt: new Date()
+      };
     } else if (normalizedStatus === 'Pending') {
       booking.status = 'Pending';
       booking.ownerApproved = false;
+      booking.ownerApprovalStatus = 'pending';
       booking.paymentStatus = booking.isPaid ? 'Paid' : 'Unpaid';
+      if (booking?.cancelRequest?.status === 'Pending') {
+        booking.cancelRequest.status = 'Rejected';
+        booking.cancelRequest.reviewedAt = new Date();
+      }
     } else if (normalizedStatus === 'Confirmed' && requiresPaymentBeforeConfirm && !booking.isPaid) {
       // Owner-selected confirmation should be reflected immediately in owner bookings UI.
       booking.ownerApproved = true;
+      booking.ownerApprovalStatus = 'approved';
       booking.status = 'Confirmed';
       booking.paymentStatus = booking.isPaid ? 'Paid' : 'Unpaid';
+      if (booking?.cancelRequest?.status === 'Pending') {
+        booking.cancelRequest.status = 'Rejected';
+        booking.cancelRequest.reviewedAt = new Date();
+      }
     } else {
       booking.ownerApproved = true;
+      booking.ownerApprovalStatus = 'approved';
       booking.status = 'Confirmed';
       booking.paymentStatus = booking.isPaid ? 'Paid' : 'Unpaid';
+      if (booking?.cancelRequest?.status === 'Pending') {
+        booking.cancelRequest.status = 'Rejected';
+        booking.cancelRequest.reviewedAt = new Date();
+      }
     }
 
     const updatedBooking = await booking.save();
 
     let linkedData = null;
+    if (normalizedStatus === 'Cancelled') {
+      const tenantUser = await resolveTenantUserForBooking(updatedBooking);
+      const recipientEmail = String(tenantUser?.email || updatedBooking.tenantEmail || '').trim();
+
+      await clearTenantDashboardDataForCancelledBooking({ booking: updatedBooking, tenantUser });
+
+      if (recipientEmail && process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+        try {
+          const frontendUrl = normalizeBaseUrl(process.env.FRONTEND_URL || req.headers.origin || "http://localhost:3000");
+          const loginLink = `${frontendUrl}/loginPage`;
+          const transporter = nodemailer.createTransport({
+            service: "gmail",
+            auth: {
+              user: process.env.EMAIL_USER,
+              pass: process.env.EMAIL_PASS
+            }
+          });
+
+          await transporter.sendMail({
+            from: process.env.EMAIL_USER,
+            to: recipientEmail,
+            subject: `Booking Cancelled - ${updatedBooking.pgName}`,
+            html: `
+              <h2>Your booking has been cancelled</h2>
+              <p>Hi ${updatedBooking.tenantName},</p>
+              <p>Your cancellation request for booking <strong>${updatedBooking.bookingId}</strong> at <strong>${updatedBooking.pgName}</strong> has been approved by the owner.</p>
+              <p>This booking is now fully cancelled and removed from your active dashboard.</p>
+              <p>Login here: <a href="${loginLink}" target="_blank" rel="noopener noreferrer">${loginLink}</a></p>
+            `
+          });
+        } catch (mailErr) {
+          console.warn("Tenant cancellation email failed:", mailErr.message || mailErr);
+        }
+      }
+    }
+
     if (normalizedStatus === 'Confirmed') {
       // Notify tenant that owner approved and payment can be completed.
       const tenantUser = await resolveTenantUserForBooking(updatedBooking);
@@ -2616,11 +3001,124 @@ const confirmArrival = async (req, res) => {
     if (!tenant) return res.status(404).json({ success: false, message: 'Tenant not found' });
     if (String(tenant.ownerId) !== String(ownerId)) return res.status(403).json({ success: false, message: 'Not authorized' });
 
+    const linkedBooking = await Booking.findOne({
+      ownerId,
+      status: { $in: ["Pending", "Confirmed"] },
+      $and: [
+        {
+          $or: [
+            { pgId: tenant.pgId },
+            { pgName: tenant.pgName || "" }
+          ]
+        },
+        {
+          $or: [
+            { tenantEmail: tenant.email || "" },
+            { tenantName: tenant.name || "" }
+          ]
+        }
+      ]
+    }).sort({ createdAt: -1 });
+
+    if (linkedBooking) {
+      const moveInValidation = validateMoveIn({
+        securityDepositPaid:
+          Boolean(linkedBooking.securityDepositPaid) ||
+          Number(linkedBooking.securityDeposit || 0) <= 0,
+        initialRentPaid: Boolean(linkedBooking.initialRentPaid || linkedBooking.isPaid),
+        ownerApprovalStatus:
+          String(linkedBooking.ownerApprovalStatus || "").toLowerCase() === "approved" ||
+          linkedBooking.ownerApproved ||
+          String(linkedBooking.status || "").toLowerCase() === "confirmed"
+            ? "approved"
+            : "pending"
+      });
+      if (!moveInValidation.allowed) {
+        return res.status(400).json({ success: false, message: moveInValidation.message, code: moveInValidation.code });
+      }
+    }
+
     // Set joining date to today and mark active
     const todayStr = new Date().toISOString().split('T')[0];
     tenant.joiningDate = todayStr;
     tenant.status = 'Active';
     await tenant.save();
+
+    // Convert pending user check-in request into approved check-in event.
+    // Resolve user robustly (email -> booking linkage -> tenant name fallback).
+    const tenantEmail = String(tenant.email || "").trim();
+    let linkedUser = null;
+    if (tenantEmail && tenantEmail !== "no-email@easy-pg.local") {
+      linkedUser = await User.findOne({
+        email: new RegExp(`^${tenantEmail}$`, "i"),
+        role: { $in: ["user", "tenant"] }
+      }).select("_id");
+    }
+
+    if (!linkedUser?._id) {
+      const pgMatchers = [
+        { pgId: tenant.pgId },
+        { pgName: tenant.pgName || "" }
+      ];
+      const tenantMatchers = [
+        tenantEmail ? { tenantEmail: tenantEmail } : null,
+        tenant.name ? { tenantName: tenant.name } : null
+      ].filter(Boolean);
+      const linkedBooking = await Booking.findOne({
+        ownerId,
+        status: "Confirmed",
+        isPaid: true,
+        $and: [
+          { $or: pgMatchers },
+          { $or: tenantMatchers }
+        ]
+      })
+        .sort({ createdAt: -1 })
+        .select("tenantUserId tenantEmail tenantName");
+
+      if (linkedBooking?.tenantUserId) {
+        linkedUser = await User.findById(linkedBooking.tenantUserId).select("_id");
+      }
+
+      if (!linkedUser?._id && linkedBooking?.tenantEmail) {
+        linkedUser = await User.findOne({
+          email: new RegExp(`^${String(linkedBooking.tenantEmail).trim()}$`, "i"),
+          role: { $in: ["user", "tenant"] }
+        }).select("_id");
+      }
+
+      if (!linkedUser?._id && linkedBooking?.tenantName) {
+        linkedUser = await User.findOne({
+          fullName: linkedBooking.tenantName,
+          role: { $in: ["user", "tenant"] }
+        }).select("_id");
+      }
+    }
+
+    if (linkedUser?._id) {
+      const pendingCheckIn = await CheckIn.findOne({ userId: linkedUser._id, status: "Pending" }).sort({ createdAt: -1 });
+      if (pendingCheckIn) {
+        pendingCheckIn.status = "Present";
+        pendingCheckIn.checkInDate = new Date();
+        await pendingCheckIn.save();
+      } else {
+        const todayStart = new Date();
+        todayStart.setHours(0, 0, 0, 0);
+        const alreadyApprovedToday = await CheckIn.findOne({
+          userId: linkedUser._id,
+          status: "Present",
+          checkInDate: { $gte: todayStart }
+        }).select("_id");
+
+        if (!alreadyApprovedToday) {
+          await CheckIn.create({
+            userId: linkedUser._id,
+            checkInDate: new Date(),
+            status: "Present"
+          });
+        }
+      }
+    }
 
     // Ensure linked records (booking, agreement, payments)
     const pg = await Pg.findById(tenant.pgId);
@@ -2676,7 +3174,10 @@ module.exports = {
   addTenant, 
   getMyTenants, 
   approveExtensionRequest,
+  rejectExtensionRequest,
   completeTenantMoveOut,
+  submitDamageReport,
+  processRefund,
   getMyBookings, 
   addBooking, 
   updateBookingStatus,

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
+import axios from "axios";
 import CButton from "../../../components/cButton";
 import CInput from "../../../components/cInput";
 import CSelect from "../../../components/cSelect";
@@ -9,6 +10,7 @@ import { FaExclamationTriangle } from "react-icons/fa";
 
 const CancelForm = () => {
   const navigate = useNavigate();
+  const { id } = useParams();
   const [showModal, setShowModal] = useState(false);
 
   const [form, setForm] = useState({
@@ -120,9 +122,27 @@ const CancelForm = () => {
       {showModal && (
         <CancelConfirmModal
           onClose={() => setShowModal(false)}
-          onConfirm={() => {
-            // Success logic here
-            navigate("/Home");
+          onConfirm={async () => {
+            try {
+              const token = localStorage.getItem("userToken");
+              const res = await axios.put(
+                `http://localhost:5000/api/bookings/${id}/request-cancel`,
+                {
+                  reason: form.reason,
+                  otherReason: form.reason === "Other" ? form.otherReason : "",
+                  email: form.email
+                },
+                { headers: { Authorization: `Bearer ${token}` } }
+              );
+
+              if (res.data?.success) {
+                navigate("/cancel-success");
+              } else {
+                navigate("/Home");
+              }
+            } catch (error) {
+              navigate("/Home");
+            }
           }}
         />
       )}

@@ -4,7 +4,7 @@ import { useLocation } from "react-router-dom"; // For page navigation
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
 import { updateRoomPrices } from "../../../../api/api";
-import { FaTrash, FaPlus, FaSave, FaCheck, FaSnowflake, FaTree, FaToilet, FaCalendarAlt, FaFan } from "react-icons/fa";
+import { FaTrash, FaPlus, FaSave, FaCheck, FaTree, FaToilet, FaCalendarAlt } from "react-icons/fa";
 import Swal from "sweetalert2"; // Standard Swal import
 import CInput from "../../../../components/cInput";
 import CButton from "../../../../components/cButton";
@@ -194,25 +194,6 @@ const SetRoomPrice = () => {
                   {/* LEFT: FEATURE SELECTION */}
                   <div className="lg:w-80 p-8 bg-gray-50/50 border-r border-[#E5E0D9] space-y-4">
                     <label className="text-xs font-semibold uppercase text-[#4B4B4B] tracking-widest mb-4 block">Room Inclusions</label>
-                    
-                    <div className="flex gap-2 mb-4">
-                        <button 
-                            type="button"
-                            onClick={() => handleChange(index, 'acType', 'AC')}
-                            className={`flex-1 flex flex-col items-center p-4 rounded-md border transition-all ${room.acType === 'AC' ? 'bg-white border-[#D97706] text-[#D97706] shadow-sm' : 'bg-transparent border-transparent opacity-40 grayscale'}`}
-                        >
-                            <FaSnowflake size={18} className="mb-1" />
-                            <span className="text-[10px] font-medium uppercase tracking-wider">AC</span>
-                        </button>
-                        <button 
-                            type="button"
-                            onClick={() => handleChange(index, 'acType', 'Non-AC')}
-                            className={`flex-1 flex flex-col items-center p-4 rounded-md border transition-all ${room.acType === 'Non-AC' ? 'bg-white border-[#D97706] text-[#D97706] shadow-sm' : 'bg-transparent border-transparent opacity-40 grayscale'}`}
-                        >
-                            <FaFan size={18} className="mb-1" />
-                            <span className="text-[10px] font-medium uppercase tracking-wider">Non-AC</span>
-                        </button>
-                    </div>
 
                     <FeatureToggle label="Private Balcony" icon={<FaTree />} active={room.features.balcony} onClick={() => toggleFeature(index, 'balcony')} />
                     <FeatureToggle label="Attached Bath" icon={<FaToilet />} active={room.features.attachedWashroom} onClick={() => toggleFeature(index, 'attachedWashroom')} />

@@ -9,6 +9,40 @@ const { protect } = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
+const resolveTenantBooking = async ({ bookingIdentifier, user }) => {
+  const userId = user?._id;
+  const normalizedEmail = String(user?.email || '').trim().toLowerCase();
+
+  const tenantMatcher = {
+    $or: [
+      { tenantUserId: userId },
+      normalizedEmail ? { tenantEmail: new RegExp(`^${normalizedEmail}$`, 'i') } : null
+    ].filter(Boolean)
+  };
+
+  let booking = null;
+
+  if (bookingIdentifier && String(bookingIdentifier).match(/^[a-fA-F0-9]{24}$/)) {
+    booking = await Booking.findOne({ _id: bookingIdentifier, ...tenantMatcher });
+    if (!booking) {
+      booking = await Booking.findOne({
+        pgId: bookingIdentifier,
+        status: { $in: ['Pending', 'Confirmed'] },
+        ...tenantMatcher
+      }).sort({ createdAt: -1 });
+    }
+  }
+
+  if (!booking) {
+    booking = await Booking.findOne({
+      bookingId: String(bookingIdentifier || '').trim(),
+      ...tenantMatcher
+    });
+  }
+
+  return booking;
+};
+
 // 1. Create booking (public) - associates booking with PG owner and notifies owner via email
 router.post("/create", protect, async (req, res) => {
   try {
@@ -43,7 +77,7 @@ router.post("/create", protect, async (req, res) => {
       fallbackDeposit: Number(pg?.securityDeposit || 0)
     });
     const monthlyRent = Number(pricing.rentAmount || 0);
-    const securityDeposit = Number(pricing.securityDeposit || 0);
+    const securityDeposit = Math.max(0, monthlyRent * 2);
 
     const newBooking = await Booking.create({
       ownerId: owner ? owner._id : null,
@@ -66,6 +100,9 @@ router.post("/create", protect, async (req, res) => {
       bookingAmount: monthlyRent,
       status: 'Pending',
       ownerApproved: false,
+      ownerApprovalStatus: 'pending',
+      initialRentPaid: false,
+      securityDepositPaid: false,
       bookingSource: 'tenant_request'
     });
 
@@ -144,6 +181,46 @@ router.get("/my", protect, async (req, res) => {
     res.json({ success: true, bookings });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// 3. Tenant raises cancellation request. Owner must approve before final cancellation.
+router.put("/:bookingId/request-cancel", protect, async (req, res) => {
+  try {
+    const role = String(req.user?.role || '').toLowerCase();
+    if (!['user', 'tenant'].includes(role)) {
+      return res.status(403).json({ success: false, message: "Only tenant/user accounts can request cancellation" });
+    }
+
+    const { reason = '', otherReason = '' } = req.body || {};
+    const booking = await resolveTenantBooking({ bookingIdentifier: req.params.bookingId, user: req.user });
+
+    if (!booking) {
+      return res.status(404).json({ success: false, message: "Booking not found for this user" });
+    }
+
+    if (String(booking.status || '') === 'Cancelled') {
+      return res.status(400).json({ success: false, message: "Booking is already cancelled" });
+    }
+
+    booking.cancelRequest = {
+      requested: true,
+      requestedAt: new Date(),
+      requestedBy: 'tenant',
+      reason: String(reason || '').trim(),
+      otherReason: String(otherReason || '').trim(),
+      status: 'Pending',
+      reviewedAt: null
+    };
+    await booking.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Cancellation request sent to owner for approval",
+      data: booking
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
   }
 });
 

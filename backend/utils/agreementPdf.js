@@ -7,6 +7,24 @@ const User = require("../models/userModel");
 const AdminConfig = require("../models/adminConfigModel");
 const { resolveVariantPricing } = require("./pricingUtils");
 
+const resolveAgreementStampPath = () => {
+  const configured = String(process.env.AGREEMENT_STAMP_PATH || "").trim();
+  const windowsUserStampPath = "C:\\Users\\khans\\OneDrive\\Pictures\\AR-RoundNotary_medium.png";
+  const candidates = [
+    configured,
+    windowsUserStampPath,
+    path.join(__dirname, "..", "uploads", "documents", "notary-stamp.png"),
+    path.join(__dirname, "..", "uploads", "documents", "notary-stamp.jpg"),
+    path.join(__dirname, "..", "uploads", "documents", "notary-stamp.jpeg"),
+    path.join(__dirname, "..", "assets", "notary-stamp.png")
+  ].filter(Boolean);
+
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) return candidate;
+  }
+  return "";
+};
+
 const getAgreementSettingsFromAdminConfig = async () => {
   // Shape 1: new model style -> { key: "global", agreementSettings: {...} }
   const globalConfig = await AdminConfig.findOne({ key: "global" }).lean();
@@ -49,6 +67,9 @@ const parseInventoryObject = (rawInventory) => {
 
 const resolveInventory = (pgDoc) => {
   const inventory = parseInventoryObject(pgDoc?.inventory);
+  const derivedRoomsCount = Array.isArray(pgDoc?.rooms)
+    ? pgDoc.rooms.reduce((sum, room) => sum + (Number(room?.totalRooms) || 0), 0)
+    : 0;
   const derivedBedsFromRooms = Array.isArray(pgDoc?.rooms)
     ? pgDoc.rooms.reduce((sum, room) => {
         const totalRooms = Number(room?.totalRooms) || 0;
@@ -65,51 +86,67 @@ const resolveInventory = (pgDoc) => {
     pgDoc?.bedCount,
     pgDoc?.bedsCount,
     pgDoc?.bed,
-    pgDoc?.beds,
-    derivedBedsFromRooms
+      pgDoc?.beds,
+      derivedBedsFromRooms
   );
+  const fallbackMattressCount = bedCount;
+  const fallbackRoomFixtures = derivedRoomsCount || 0;
 
   return {
     bedCount,
     fanCount: pickFirstNumeric(
       inventory.fanCount,
       inventory.fansCount,
+      inventory.fanscount,
       inventory.fan,
       inventory.fans,
+      inventory.Fan,
+      inventory.Fans,
       pgDoc?.fanCount,
       pgDoc?.fansCount,
       pgDoc?.fan,
-      pgDoc?.fans
+      pgDoc?.fans,
+      fallbackRoomFixtures
     ),
     lightCount: pickFirstNumeric(
       inventory.lightCount,
       inventory.lightsCount,
+      inventory.lightcount,
       inventory.light,
       inventory.lights,
+      inventory.Light,
+      inventory.Lights,
       pgDoc?.lightCount,
       pgDoc?.lightsCount,
       pgDoc?.light,
-      pgDoc?.lights
+      pgDoc?.lights,
+      fallbackRoomFixtures
     ),
     mattressCount: pickFirstNumeric(
       inventory.mattressCount,
       inventory.mattressesCount,
+      inventory.matterssCount,
       inventory.mattress,
       inventory.mattresses,
+      inventory.matterss,
       pgDoc?.mattressCount,
       pgDoc?.mattressesCount,
       pgDoc?.mattress,
-      pgDoc?.mattresses
+      pgDoc?.mattresses,
+      fallbackMattressCount
     ),
     cupboardCount: pickFirstNumeric(
       inventory.cupboardCount,
       inventory.cupboardsCount,
+      inventory.cupBoardCount,
       inventory.cupboard,
       inventory.cupboards,
+      inventory.cupBoard,
       pgDoc?.cupboardCount,
       pgDoc?.cupboardsCount,
       pgDoc?.cupboard,
-      pgDoc?.cupboards
+      pgDoc?.cupboards,
+      fallbackRoomFixtures
     )
   };
 };
@@ -131,11 +168,23 @@ const ensurePageSpace = (doc, minSpace = 80) => {
   }
 };
 
+const CONTENT_LEFT = 50;
+const CONTENT_WIDTH = 495;
+
+const writeBodyLine = (doc, text) => {
+  doc.text(text, CONTENT_LEFT, doc.y, { width: CONTENT_WIDTH });
+};
+
 const drawSectionTitle = (doc, title) => {
   ensurePageSpace(doc, 120);
   doc.moveDown(0.4);
-  doc.font("Helvetica-Bold").fontSize(12).fillColor("#111111").text(title, { underline: true });
+  doc.x = CONTENT_LEFT;
+  doc.font("Helvetica-Bold").fontSize(12).fillColor("#111111").text(title, CONTENT_LEFT, doc.y, {
+    underline: true,
+    width: CONTENT_WIDTH
+  });
   doc.moveDown(0.3);
+  doc.x = CONTENT_LEFT;
   doc.font("Helvetica").fontSize(10.5).fillColor("#111111");
 };
 
@@ -171,6 +220,7 @@ const drawInventoryTable = (doc, inventoryRows) => {
   });
 
   doc.y = tableTop + tableHeight + 8;
+  doc.x = CONTENT_LEFT;
 };
 
 const writePdf = async ({ outputPath, agreementData }) => {
@@ -193,38 +243,61 @@ const writePdf = async ({ outputPath, agreementData }) => {
   doc.text("Certificate No: ____________________", 60, stampBoxY + 30);
   doc.text("Certificate Issued Date: ____________________", 60, stampBoxY + 46);
   doc.text("Unique Doc Reference: ____________________", 60, stampBoxY + 62);
+
+  const stampImagePath = resolveAgreementStampPath();
+  if (stampImagePath) {
+    try {
+      // Place circular notary stamp on the right side of the e-stamp section.
+      doc.image(stampImagePath, 430, stampBoxY + 8, {
+        fit: [105, 62],
+        align: "right",
+        valign: "top"
+      });
+    } catch (error) {
+      // Keep PDF generation resilient even if image cannot be parsed.
+      doc.font("Helvetica-Oblique").fontSize(8).fillColor("#6B7280").text(
+        "Stamp image could not be rendered.",
+        418,
+        stampBoxY + 56,
+        { width: 118, align: "right" }
+      );
+      doc.font("Helvetica").fontSize(10.5).fillColor("#111111");
+    }
+  }
   doc.y = stampBoxY + stampBoxHeight + 12;
 
   drawSectionTitle(doc, "Parties & Booking Details");
-  doc.text(`Booking ID: ${agreementData.bookingCode}`);
-  doc.text(`Owner (First Party): ${agreementData.ownerName}`);
-  doc.text(`Tenant (Second Party): ${agreementData.tenantName}`);
-  doc.text(`Property Name: ${agreementData.propertyName}`);
-  doc.text(`Accommodation Variant: ${agreementData.variantLabel}`);
-  doc.text(`Check-In Date: ${agreementData.checkInDate}`);
-  doc.text(`Check-Out Date: ${agreementData.checkOutDate}`);
+  writeBodyLine(doc, `Booking ID: ${agreementData.bookingCode}`);
+  writeBodyLine(doc, `Owner (First Party): ${agreementData.ownerName}`);
+  writeBodyLine(doc, `Tenant (Second Party): ${agreementData.tenantName}`);
+  writeBodyLine(doc, `Property Name: ${agreementData.propertyName}`);
+  writeBodyLine(doc, `Accommodation Variant: ${agreementData.variantLabel}`);
+  writeBodyLine(doc, `Check-In Date: ${agreementData.checkInDate}`);
+  writeBodyLine(doc, `Check-Out Date: ${agreementData.checkOutDate}`);
 
   drawSectionTitle(doc, "Financial Terms");
-  doc.text(`Monthly Rent: INR ${agreementData.rentAmount}`);
-  doc.text(`Security Deposit: INR ${agreementData.securityDeposit}`);
+  writeBodyLine(doc, `Monthly Rent: INR ${agreementData.rentAmount}`);
+  writeBodyLine(doc, `Security Deposit: INR ${agreementData.securityDeposit}`);
 
   drawSectionTitle(doc, "Schedule A: Property Inventory");
   drawInventoryTable(doc, agreementData.inventoryRows);
-  doc.font("Helvetica").fontSize(10.5).text(
+  doc.font("Helvetica").fontSize(10.5);
+  writeBodyLine(
+    doc,
     "The Tenant accepts the premises with the above-listed fixtures in good working condition."
   );
 
   drawSectionTitle(doc, "Administrative Clauses");
   if (agreementData.fixedClauses.length > 0) {
     agreementData.fixedClauses.forEach((clause, index) => {
-      doc.text(`${index + 1}. ${clause}`);
+      writeBodyLine(doc, `${index + 1}. ${clause}`);
     });
   } else {
-    doc.text("No fixed clauses configured.");
+    writeBodyLine(doc, "No fixed clauses configured.");
   }
   doc.moveDown(0.2);
-  doc.text(`Jurisdiction: ${agreementData.jurisdiction || "Not specified"}`);
-  doc.text(`Platform Disclaimer: ${agreementData.platformDisclaimer || "Not specified"}`);
+  writeBodyLine(doc, `Jurisdiction: ${agreementData.jurisdiction || "Not specified"}`);
+  writeBodyLine(doc, `Platform Disclaimer: ${agreementData.platformDisclaimer || "Not specified"}`);
 
   drawSectionTitle(doc, "Signature & Digital Verification");
   const signTop = doc.y + 8;

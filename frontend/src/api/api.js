@@ -2,6 +2,7 @@ import axios from "axios";
 
 const API = axios.create({
   baseURL: "http://localhost:5000/api",
+  withCredentials: true,
   headers: {
     "Content-Type": "application/json",
   },
@@ -64,6 +65,7 @@ export const getMyCheckIns = () => API.get("/users/checkins");
 export const createCheckIn = (data) => API.post("/users/checkin-action", data);
 export const getOwnerContactData = () => API.get("/users/my-owner-contact");
 export const requestExtension = (payload) => API.put("/users/request-extension", payload);
+export const requestMoveIn = () => API.put("/users/move-in");
 export const requestMoveOut = () => API.put("/users/move-out");
 
 /* =========================
@@ -88,6 +90,7 @@ export const submitForApproval = (pgId) => API.post(`/owner/submit-for-approval/
 export const addTenant = (tenantData) => API.post('/owner/add-tenant', tenantData);
 export const getMyTenants = () => API.get('/owner/my-tenants');
 export const updateTenant = (id, payload) => API.put(`/owner/update-tenant/${id}`, payload);
+export const confirmArrival = (id) => API.put(`/owner/confirm-arrival/${id}`);
 export const getMyBookings = () => API.get('/owner/my-bookings');
 export const deleteTenant = (id) => API.delete(`/owner/tenant/${id}`);
 export const approveExtension = (id) => API.put(`/owner/approve-extension/${id}`);

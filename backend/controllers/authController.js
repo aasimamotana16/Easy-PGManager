@@ -21,6 +21,16 @@ const verifyRecaptcha = async (recaptchaToken) => {
 // Temporary in-memory store for OTPs
 const otpCache = {};
 
+const setAuthCookie = (res, token) => {
+  if (!token) return;
+  res.cookie("userToken", token, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: false,
+    maxAge: 24 * 60 * 60 * 1000
+  });
+};
+
 // 1. SEND OTP (Updated with reCAPTCHA logic)
 exports.sendOtp = async (req, res) => {
   try {
@@ -149,6 +159,7 @@ exports.registerUser = async (req, res) => {
 
     delete otpCache[finalEmail];
     console.log("✅ Sending success response with token");
+    setAuthCookie(res, token);
     res.status(201).json({ 
       success: true, 
       message: "Registration successful",
@@ -225,6 +236,7 @@ exports.loginUser = async (req, res) => {
 
     console.log(`✅ LOGIN SUCCESS: ${user.fullName} (${user.role}) - ${email}\n`);
 
+    setAuthCookie(res, token);
     res.status(200).json({
       success: true,
       token,

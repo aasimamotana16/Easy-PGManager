@@ -9,7 +9,69 @@ import { FaTrash, FaEye, FaFileAlt, FaMapMarkerAlt, FaClock } from "react-icons/
 import Swal from "sweetalert2";
 import { addPgProperty, uploadAgreementTemplate, uploadPropertyDocuments } from "../../../../api/api";
 
-const facilitiesList = ["WiFi", "Food", "Laundry", "Parking", "Power Backup", "AC"];
+const facilitySections = [
+  {
+    title: "Basic Living Facilities",
+    items: [
+      "Electricity Included",
+      "Water Supply (24x7 / Limited)",
+      "Power Backup",
+      "Lift",
+      "Parking (Two-wheeler)",
+      "Parking (Four-wheeler)",
+    ],
+  },
+  {
+    title: "Room Facilities",
+    items: [
+      "AC",
+      "Non-AC",
+      "Attached Bathroom",
+      "Balcony",
+      "Furnished Room",
+    ],
+  },
+  {
+    title: "Food & Kitchen Facilities",
+    items: [
+      "Food Included",
+      "Veg Only",
+      "Non-Veg Allowed",
+      "Common Kitchen Access",
+      "RO Drinking Water",
+    ],
+  },
+  {
+    title: "Internet & Utility",
+    items: [
+      "Wi-Fi",
+      "TV (Common Area)",
+      "Washing Machine",
+      "Refrigerator (Common)",
+      "Geyser / Hot Water",
+    ],
+  },
+  {
+    title: "Safety & Rules Related Facilities",
+    items: [
+      "CCTV Surveillance",
+      "Security Guard",
+      "Biometric / Key Access",
+      "Fire Safety",
+      "First Aid",
+    ],
+  },
+  {
+    title: "House Rules (Optional)",
+    items: [
+      "Entry Time Restriction",
+      "Visitors Allowed",
+      "Smoking Allowed",
+      "Drinking Allowed",
+      "Pets Allowed",
+    ],
+  },
+];
 const rulesList = [
   { label: "Smoking Allowed", key: "smoking" },
   { label: "Alcohol Allowed", key: "alcohol" },
@@ -431,37 +493,52 @@ const AddProperty = () => {
 
           {/* 3. FACILITIES */}
           <CFormCard className="p-6 border border-primary shadow-sm bg-white">
-  <h2 className="text-lg font-bold text-textPrimary mb-6 border-b pb-2 tracking-wide">
-    FACILITIES <span className="text-red-500 text-sm">*</span>
-  </h2>
-  <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
-    {facilitiesList.map((item) => (
-      <label 
-        key={item} 
-        className={`flex items-center gap-2 p-3 rounded-md border cursor-pointer transition-all ${
-          formData.facilities.includes(item) 
-            ? 'bg-primarySoft border-primary text-primaryDark' 
-            : 'bg-white border-border hover:border-primary/30'
-        }`}
-      >
-        <input 
-          type="checkbox" 
-          className="accent-primary w-4 h-4" 
-          checked={formData.facilities.includes(item)} 
-          onChange={() => toggleFacility(item)} 
-        />
-        <span className="text-sm font-bold uppercase">{item}</span>
-      </label>
-    ))}
-  </div>
-  
-  {/* Simple Error Message */}
-  {errors.facilities && (
-    <p className="text-red-500 text-xs mt-2 font-medium">
-      {errors.facilities}
-    </p>
-  )}
-</CFormCard>
+            <h2 className="text-lg font-bold text-textPrimary mb-6 border-b pb-2 tracking-wide">
+              FACILITIES <span className="text-red-500 text-sm">*</span>
+            </h2>
+
+            <div className="space-y-3">
+              {facilitySections.map((section) => {
+                const selectedInSection = section.items.filter((item) => formData.facilities.includes(item)).length;
+                return (
+                  <details key={section.title} className="border border-border rounded-md bg-white">
+                    <summary className="cursor-pointer select-none list-none flex items-center justify-between px-4 py-3 font-bold text-sm text-textPrimary">
+                      <span>{section.title}</span>
+                      <span className="text-xs font-semibold text-primary">
+                        {selectedInSection}/{section.items.length} selected
+                      </span>
+                    </summary>
+                    <div className="px-4 pb-4 pt-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 border-t border-border">
+                      {section.items.map((item) => (
+                        <label
+                          key={item}
+                          className={`flex items-center gap-2 p-3 rounded-md border cursor-pointer transition-all ${
+                            formData.facilities.includes(item)
+                              ? "bg-primarySoft border-primary text-primaryDark"
+                              : "bg-white border-border hover:border-primary/30"
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            className="accent-primary w-4 h-4"
+                            checked={formData.facilities.includes(item)}
+                            onChange={() => toggleFacility(item)}
+                          />
+                          <span className="text-xs font-semibold">{item}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </details>
+                );
+              })}
+            </div>
+
+            {errors.facilities && (
+              <p className="text-red-500 text-xs mt-2 font-medium">
+                {errors.facilities}
+              </p>
+            )}
+          </CFormCard>
 
           {/* INVENTORY */}
           <CFormCard className="p-6 border border-primary bg-white">

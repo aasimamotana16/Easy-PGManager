@@ -13,13 +13,15 @@ const Tenant = require("../models/tenantModel");
 const PendingPayment = require("../models/pendingPaymentModel");
 const Booking = require("../models/bookingModel");
 const Payment = require("../models/paymentModel");
+const ExtensionRequest = require("../models/extensionRequestModel");
 const fs = require('fs');
 const path = require('path');
+const { validateMoveIn } = require("../utils/leaseUtils");
 // Moved to top to avoid redundant requiring during PDF generation
 const { jsPDF } = require('jspdf');
 const { autoTable } = require('jspdf-autotable');
 
-// ✅ Temporary in-memory store for Security OTPs [cite: 2026-01-06]
+// ? Temporary in-memory store for Security OTPs [cite: 2026-01-06]
 const securityOtpCache = {};
 const JWT_SECRET = process.env.JWT_SECRET || "secret";
 
@@ -27,6 +29,16 @@ const JWT_SECRET = process.env.JWT_SECRET || "secret";
 const generateToken = (id) => {
   return jwt.sign({ id }, JWT_SECRET, {
     expiresIn: "30d",
+  });
+};
+
+const setAuthCookie = (res, token) => {
+  if (!token) return;
+  res.cookie("userToken", token, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: false,
+    maxAge: 24 * 60 * 60 * 1000
   });
 };
 
@@ -100,11 +112,13 @@ const registerUser = async (req, res) => {
     });
 
     if (user) {
+      const token = generateToken(user._id);
+      setAuthCookie(res, token);
       res.status(201).json({
         _id: user._id,
         fullName: user.fullName,
         email: user.email,
-        token: generateToken(user._id),
+        token,
       });
     }
   } catch (error) {
@@ -144,6 +158,7 @@ const loginUser = async (req, res) => {
     }
 
     const token = generateToken(user._id);
+    setAuthCookie(res, token);
 
     res.status(200).json({
       _id: user._id,
@@ -176,6 +191,17 @@ const getUserDashboard = async (req, res) => {
     }).sort({ createdAt: -1 });
 
     const latestAgreement = await Agreement.findOne({ userId: user._id }).sort({ createdAt: -1 });
+    const approvedMoveIn = await CheckIn.findOne({ userId: user._id, status: "Present" })
+      .sort({ checkInDate: -1 })
+      .select("_id");
+    const activeTenantRecord = await Tenant.findOne({
+      status: "Active",
+      $or: [
+        { email: new RegExp(`^${tenantEmail}$`, "i") },
+        { name: user.fullName || "" }
+      ]
+    }).select("_id");
+    const hasApprovedMoveIn = Boolean(approvedMoveIn?._id || activeTenantRecord?._id);
     const pendingPaymentsRaw = await PendingPayment.find({
       status: { $in: ["Pending", "Overdue"] },
       $or: [{ tenant: user._id }, { tenantName: user.fullName }]
@@ -204,7 +230,7 @@ const getUserDashboard = async (req, res) => {
       if (booking.status === "Cancelled") {
         bookingStatus = "Cancelled";
       } else if (booking.isPaid && booking.status === "Confirmed") {
-        bookingStatus = "Active";
+        bookingStatus = hasApprovedMoveIn ? "Active" : "Pending Move-In Approval";
       } else if (booking.ownerApproved) {
         bookingStatus = "Awaiting Payment";
       } else {
@@ -237,6 +263,10 @@ const getUserDashboard = async (req, res) => {
         roomType: roomType,
         status: bookingStatus,
         monthlyRent: monthlyRent,
+        isPaid: Boolean(booking?.isPaid),
+        ownerApproved: Boolean(booking?.ownerApproved),
+        hasApprovedMoveIn: hasApprovedMoveIn,
+        bookingState: booking?.status || "Pending",
       },
       nextPayment: {
         amount: Number(pendingPayment?.amount || monthlyRent || 0),
@@ -572,7 +602,7 @@ const deleteUserDocument = async (req, res) => {
 
     if (!user) return res.status(404).json({ success: false, message: "User not found" });
 
-    // ✅ Robust Path Resolution using process.cwd()
+    // ? Robust Path Resolution using process.cwd()
     if (user[documentType] && user[documentType].fileUrl) {
       const relativePath = user[documentType].fileUrl.startsWith('/') 
         ? user[documentType].fileUrl.substring(1) 
@@ -580,14 +610,14 @@ const deleteUserDocument = async (req, res) => {
 
       const filePath = path.join(process.cwd(), relativePath);
       
-      // ✅ Only try to delete if the file actually exists on the server
+      // ? Only try to delete if the file actually exists on the server
       if (fs.existsSync(filePath)) {
         fs.unlinkSync(filePath);
         console.log(`Successfully deleted file: ${filePath}`);
       }
     }
 
-    // ✅ Reset the database fields regardless of physical file status
+    // ? Reset the database fields regardless of physical file status
     user[documentType] = {
       status: "Pending",
       fileUrl: "",
@@ -726,7 +756,7 @@ const getMyTimeline = async (req, res) => {
       })),
       ...payments.map(p => ({
         id: p._id,
-        title: `Rent Paid: ₹${p.amountPaid}`,
+        title: `Rent Paid: ?${p.amountPaid}`,
         type: "payment",
         date: new Date(p.paymentDate).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }),
         status: "Paid"
@@ -892,7 +922,7 @@ const sendOtp = async (req, res) => {
     }
 
     if (!recaptchaToken) {
-      console.log("⚠️ Development mode: Proceeding without reCAPTCHA token");
+      console.log("?? Development mode: Proceeding without reCAPTCHA token");
     } else {
       const isCaptchaValid = await verifyRecaptcha(recaptchaToken);
       if (!isCaptchaValid) {
@@ -903,10 +933,10 @@ const sendOtp = async (req, res) => {
     const otp = Math.floor(1000 + Math.random() * 9000).toString();
     securityOtpCache[email] = { otp, expires: Date.now() + 300000 };
 
-    console.log(`🔑 Security OTP for ${email} is: ${otp}`);
+    console.log(`?? Security OTP for ${email} is: ${otp}`);
 
     if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-      console.log("⚠️ Development mode: Email not configured, returning OTP in response");
+      console.log("?? Development mode: Email not configured, returning OTP in response");
       return res.status(200).json({ 
         success: true, 
         message: "OTP generated successfully (development mode)",
@@ -943,7 +973,7 @@ const verifyOtpAndRegister = async (req, res) => {
     }
     return registerUser(req, res); 
   } catch (error) {
-    console.error("🚨 VERIFICATION ERROR:", error);
+    console.error("?? VERIFICATION ERROR:", error);
     res.status(500).json({ message: "Registration failed after OTP" });
   }
 };
@@ -959,7 +989,7 @@ const getMyCheckIns = async (req, res) => {
     dayEnd.setDate(dayEnd.getDate() + 1);
 
     const [checkInHistory, paymentHistory, latestBooking] = await Promise.all([
-      CheckIn.find({ userId }).sort({ createdAt: -1 }),
+      CheckIn.find({ userId, status: { $in: ["Present", "Out"] } }).sort({ createdAt: -1 }),
       Payment.find({
         user: userId,
         paymentStatus: { $in: ["Success", "Paid", "PAID"] },
@@ -1001,7 +1031,7 @@ const getMyCheckIns = async (req, res) => {
         _id: `payment-${payment._id}`,
         date: dateObj.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
         time: dateObj.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        title: `Rent Paid: ₹${amount.toLocaleString("en-IN")}`,
+        title: `Rent Paid: ?${amount.toLocaleString("en-IN")}`,
         status: "Paid",
         type: "payment",
         pgName: payment.pgName || latestBooking?.pgName || "",
@@ -1009,24 +1039,7 @@ const getMyCheckIns = async (req, res) => {
       };
     });
 
-    const moveInEvents = [];
-    if (latestBooking?.isPaid && String(latestBooking.status || "").toLowerCase() === "confirmed") {
-      const checkInDateObj = new Date(latestBooking.checkInDate || latestBooking.createdAt || new Date());
-      if (!Number.isNaN(checkInDateObj.getTime())) {
-        moveInEvents.push({
-          _id: `movein-${latestBooking._id}`,
-          date: checkInDateObj.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
-          time: checkInDateObj.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-          title: "Move-In Activated",
-          status: "Active",
-          type: "movein",
-          pgName: latestBooking.pgName || "",
-          sortTs: checkInDateObj.getTime()
-        });
-      }
-    }
-
-    const formattedHistory = [...checkInEvents, ...paymentEvents, ...moveInEvents]
+    const formattedHistory = [...checkInEvents, ...paymentEvents]
       .sort((a, b) => b.sortTs - a.sortTs)
       .map(({ sortTs, ...event }) => event);
 
@@ -1052,13 +1065,15 @@ const createCheckIn = async (req, res) => {
 
 const logoutUser = async (req, res) => {
   try {
+    res.clearCookie("userToken");
+    res.clearCookie("token");
     res.status(200).json({ success: true, message: "Logged out successfully" });
   } catch (error) {
     res.status(500).json({ success: false, message: "Logout failed" });
   }
 };
 
-// ✅ Corrected verifySecurityAction [cite: 2026-01-01, 2026-01-06]
+// ? Corrected verifySecurityAction [cite: 2026-01-01, 2026-01-06]
 const verifySecurityAction = async (req, res) => {
   try {
     const { email, otp, type } = req.body;
@@ -1287,10 +1302,72 @@ const downloadEarningsPDF = async (req, res) => {
   }
 };
 
+const getLatestTenantBookingForUser = async (userId, email, fullName) => {
+  const tenantEmail = String(email || "").trim().toLowerCase();
+  return Booking.findOne({
+    status: { $in: ["Pending", "Confirmed"] },
+    $or: [
+      { tenantUserId: userId },
+      tenantEmail ? { tenantEmail: new RegExp(`^${tenantEmail}$`, "i") } : null,
+      fullName ? { tenantName: fullName } : null
+    ].filter(Boolean)
+  }).sort({ createdAt: -1 });
+};
+
 // @desc User requests Move-In (creates a pending check-in)
 const moveIn = async (req, res) => {
   try {
     const userId = req.user._id;
+    const booking = await getLatestTenantBookingForUser(
+      userId,
+      req.user?.email || "",
+      req.user?.fullName || ""
+    );
+    if (!booking) {
+      return res.status(404).json({ success: false, message: "Booking not found for move-in." });
+    }
+
+    const paymentQuery = {
+      paymentStatus: { $in: ["Success", "Paid", "PAID"] },
+      $and: [
+        {
+          $or: [
+            { user: userId },
+            { tenantName: booking.tenantName || "" }
+          ]
+        }
+      ]
+    };
+    const pgPaymentMatchers = [
+      booking.pgId ? { pgId: booking.pgId } : null,
+      booking.pgName ? { pgName: booking.pgName } : null
+    ].filter(Boolean);
+    if (pgPaymentMatchers.length > 0) {
+      paymentQuery.$and.push({ $or: pgPaymentMatchers });
+    }
+
+    const paidPayments = await Payment.find(paymentQuery).select("amountPaid");
+    const totalPaid = paidPayments.reduce((sum, p) => sum + (Number(p.amountPaid) || 0), 0);
+
+    const monthlyRent = Number(booking.rentAmount || booking.bookingAmount || 0);
+    const securityDeposit = Number(booking.securityDeposit || 0);
+    const ownerApprovalStatus =
+      String(booking.ownerApprovalStatus || "").toLowerCase() === "approved" ||
+      booking.ownerApproved ||
+      String(booking.status || "").toLowerCase() === "confirmed"
+        ? "approved"
+        : "pending";
+
+    const moveInValidation = validateMoveIn({
+      securityDepositPaid: Boolean(booking.securityDepositPaid) || securityDeposit <= 0 || totalPaid >= (monthlyRent + securityDeposit),
+      initialRentPaid: Boolean(booking.initialRentPaid || booking.isPaid) || totalPaid >= monthlyRent,
+      ownerApprovalStatus
+    });
+
+    if (!moveInValidation.allowed) {
+      return res.status(400).json({ success: false, message: moveInValidation.message, code: moveInValidation.code });
+    }
+
     // create a pending CheckIn record (or update existing pending)
     let checkin = await CheckIn.findOne({ userId, status: 'Pending' });
     if (!checkin) {
@@ -1348,16 +1425,20 @@ const moveOut = async (req, res) => {
 };
 
 // @desc User requests payment-extension and pauses late fine till selected date
-const requestExtension = async (req, res) => {
+const requestRentExtension = async (req, res) => {
   try {
-    const { untilDate, reason } = req.body || {};
-    if (!untilDate) {
-      return res.status(400).json({ success: false, message: "untilDate is required" });
+    const requestedDueDate = req.body?.requestedDueDate || req.body?.untilDate;
+    const reason = String(req.body?.reason || "").trim();
+    if (!requestedDueDate) {
+      return res.status(400).json({ success: false, message: "requestedDueDate is required" });
+    }
+    if (!reason) {
+      return res.status(400).json({ success: false, message: "reason is required" });
     }
 
-    const targetDate = new Date(untilDate);
+    const targetDate = new Date(requestedDueDate);
     if (Number.isNaN(targetDate.getTime())) {
-      return res.status(400).json({ success: false, message: "Invalid untilDate" });
+      return res.status(400).json({ success: false, message: "Invalid requestedDueDate" });
     }
 
     const today = new Date();
@@ -1374,15 +1455,42 @@ const requestExtension = async (req, res) => {
       return res.status(404).json({ success: false, message: "Tenant record not found. Contact owner." });
     }
 
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+    const lastRequest = await ExtensionRequest.findOne({
+      tenantId: req.user._id,
+      tenantRecordId: tenant._id,
+      createdAt: { $gte: sixMonthsAgo }
+    }).sort({ createdAt: -1 });
+    if (lastRequest) {
+      return res.status(400).json({
+        success: false,
+        message: "Extension request is allowed only once every 6 months."
+      });
+    }
+
     const diffDays = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24));
     tenant.hasDeferralRequest = true;
     tenant.extensionRequested = true;
     tenant.extensionRequestedAt = new Date();
     tenant.extensionUntil = endDate;
-    tenant.extensionReason = reason || "";
+    tenant.extensionReason = reason;
+    tenant.lastExtensionRequestAt = new Date();
+    tenant.isFinePaused = false;
     tenant.deferredDays = Math.max(diffDays, 0);
-    tenant.deferredReason = reason || "";
+    tenant.deferredReason = reason;
     await tenant.save();
+
+    await ExtensionRequest.create({
+      ownerId: tenant.ownerId,
+      tenantId: req.user._id,
+      tenantRecordId: tenant._id,
+      pgId: tenant.pgId,
+      requestedDueDate: endDate,
+      reason,
+      status: "Pending",
+      isFinePaused: false
+    });
 
     // keep pending payment as pending while extension window is active
     await PendingPayment.updateMany(
@@ -1411,6 +1519,8 @@ const requestExtension = async (req, res) => {
   }
 };
 
+const requestExtension = requestRentExtension;
+
 module.exports = { 
   registerUser, 
   loginUser, 
@@ -1436,6 +1546,7 @@ module.exports = {
   submitSupportTicket,
   moveIn,
   moveOut,
+  requestRentExtension,
   requestExtension,
   getOwnerEarnings,
   downloadEarningsPDF,

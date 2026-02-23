@@ -27,7 +27,10 @@ const {
   updateTenant,
   deleteTenant,
   approveExtensionRequest,
+  rejectExtensionRequest,
   completeTenantMoveOut,
+  submitDamageReport,
+  processRefund,
   syncTenantLinkedData,
   createSupportTicket,
   getMySupportTickets,
@@ -67,7 +70,10 @@ router.delete('/tenant/:id', protect, isOwner, deleteTenant);
 router.put('/confirm-arrival/:id', protect, isOwner, confirmArrival);
 router.put('/update-tenant/:id', protect, isOwner, updateTenant);
 router.put('/approve-extension/:id', protect, isOwner, approveExtensionRequest);
+router.put('/reject-extension/:id', protect, isOwner, rejectExtensionRequest);
 router.put('/complete-move-out/:id', protect, isOwner, completeTenantMoveOut);
+router.post('/submit-damage-report/:id', protect, isOwner, submitDamageReport);
+router.post('/process-refund/:id', protect, isOwner, processRefund);
 router.post('/sync-tenant-linked-data', protect, isOwner, syncTenantLinkedData);
 
 // --- BOOKING MANAGEMENT ---

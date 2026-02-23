@@ -31,7 +31,10 @@ const Contact = require('./models/contactModel');
 const app = express();
 
 // MIDDLEWARE
-app.use(cors()); 
+app.use(cors({
+  origin: true,
+  credentials: true
+})); 
 app.use(express.json()); // Essential for processing Login/Signup data
 
 // DB CONNECTION
@@ -49,6 +52,10 @@ require('./models/termsModel'); // <--- Register Terms model
 require('./models/paymentModel'); // <--- CRITICAL for tonight's payment flow [cite: 2026-01-01]
 require('./models/featureModel'); // <--- ADD THIS for features functionality
 require('./models/pendingPaymentModel'); // <--- ADD THIS for pending payments
+require('./models/leaseAgreementModel');
+require('./models/extensionRequestModel');
+require('./models/damageReportModel');
+require('./models/fineTransactionModel');
 
 // --- ROUTES (Standardized with /api prefix) ---
 

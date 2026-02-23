@@ -22,7 +22,7 @@ const ProfileCard = ({ profileData, setProfileData }) => {
 
   const handleSave = async () => {
     try {
-      const token = localStorage.getItem("token"); 
+      const token = localStorage.getItem("userToken") || localStorage.getItem("token");
 
       const response = await fetch("http://localhost:5000/api/owner/update-profile", {
         method: "PUT",

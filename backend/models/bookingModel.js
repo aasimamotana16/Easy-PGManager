@@ -14,7 +14,14 @@ const bookingSchema = new mongoose.Schema({
   seatsBooked: { type: Number, required: true },
   status: { type: String, enum: ['Pending', 'Confirmed', 'Cancelled'], default: 'Pending' },
   ownerApproved: { type: Boolean, default: false },
+  ownerApprovalStatus: {
+    type: String,
+    enum: ['pending', 'approved', 'rejected'],
+    default: 'pending'
+  },
   isPaid: { type: Boolean, default: false },
+  initialRentPaid: { type: Boolean, default: false },
+  securityDepositPaid: { type: Boolean, default: false },
   paymentStatus: { type: String, enum: ['Unpaid', 'Paid'], default: 'Unpaid' },
   bookingAmount: { type: Number, default: 0 },
   rentAmount: { type: Number, default: 0 },
@@ -30,6 +37,15 @@ const bookingSchema = new mongoose.Schema({
     type: String,
     enum: ['tenant_request', 'owner_manual', 'tenant_sync'],
     default: 'tenant_request'
+  },
+  cancelRequest: {
+    requested: { type: Boolean, default: false },
+    requestedAt: { type: Date, default: null },
+    requestedBy: { type: String, enum: ['tenant', 'owner', 'system', ''], default: '' },
+    reason: { type: String, default: '' },
+    otherReason: { type: String, default: '' },
+    status: { type: String, enum: ['None', 'Pending', 'Approved', 'Rejected'], default: 'None' },
+    reviewedAt: { type: Date, default: null }
   }
 }, { timestamps: true });
 
