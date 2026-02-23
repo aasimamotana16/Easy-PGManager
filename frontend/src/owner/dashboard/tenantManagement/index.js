@@ -8,6 +8,7 @@ import AddTenant from "./addTenant";
 import {
   getMyTenants,
   addTenant as apiAddTenant,
+  updateTenant as apiUpdateTenant,
   getMyPgs,
   deleteTenant as apiDeleteTenant,
   approveExtension as apiApproveExtension,
@@ -302,6 +303,50 @@ const Tenants = () => {
       confirmButtonColor: "#D97706",
       showCancelButton: true,
       cancelButtonColor: "#4B4B4B",
+      preConfirm: () => {
+        const nextRoom = String(document.getElementById("swal-room")?.value || "").trim();
+        if (!nextRoom) {
+          Swal.showValidationMessage("Room number is required");
+          return null;
+        }
+        return nextRoom;
+      }
+    }).then(async (res) => {
+      if (!res.isConfirmed || !res.value) return;
+      try {
+        const payload = {
+          name: tenant.name,
+          phone: tenant.phone,
+          email: tenant.email,
+          pgId: tenant.pgId,
+          status: tenant.status,
+          room: res.value
+        };
+        const apiRes = await apiUpdateTenant(tenant._id, payload);
+        if (apiRes.data?.success) {
+          Swal.fire({
+            title: "Updated",
+            text: "Room info updated successfully.",
+            icon: "success",
+            confirmButtonColor: "#D97706"
+          });
+          fetchTenants();
+        } else {
+          Swal.fire({
+            title: "Error",
+            text: apiRes.data?.message || "Failed to update room info",
+            icon: "error",
+            confirmButtonColor: "#D97706"
+          });
+        }
+      } catch (error) {
+        Swal.fire({
+          title: "Error",
+          text: error.response?.data?.message || error.message || "Failed to update room info",
+          icon: "error",
+          confirmButtonColor: "#D97706"
+        });
+      }
     });
   };
 

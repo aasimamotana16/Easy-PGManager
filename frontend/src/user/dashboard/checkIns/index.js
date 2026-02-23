@@ -25,7 +25,7 @@ const CheckIns = () => {
   // Possible statuses: "Reserved" (only deposit paid), "PendingConfirmation" (rent paid, waiting for owner), "Active"
   const [stayStatus, setStayStatus] = useState("Reserved"); 
   const [joiningDate, setJoiningDate] = useState(null);
-  const [rentAmount, setRentAmount] = useState(5000); 
+  const [rentAmount, setRentAmount] = useState(0); 
 
   const user = JSON.parse(localStorage.getItem("user"));
   const authToken = localStorage.getItem("userToken");
@@ -33,9 +33,43 @@ const CheckIns = () => {
   useEffect(() => {
     if (authToken) {
       fetchCheckInHistory();
-      // Logic to fetch actual stay status from backend would go here
+      fetchStayDetails();
     }
   }, [authToken]);
+
+  const fetchStayDetails = async () => {
+    try {
+      const res = await axios.get("http://localhost:5000/api/users/dashboard-stats", {
+        headers: { Authorization: `Bearer ${authToken}` }
+      });
+
+      if (!res.data?.success || !res.data?.data) return;
+      const data = res.data.data;
+      const booking = data.currentBooking || {};
+      const nextPayment = data.nextPayment || {};
+      const bookingStatus = String(booking.status || "").toLowerCase();
+
+      const derivedRent = Number(nextPayment.amount || booking.monthlyRent || 0);
+      setRentAmount(derivedRent);
+
+      if (bookingStatus === "active") {
+        setStayStatus("Active");
+      } else if (bookingStatus === "awaiting payment") {
+        setStayStatus("Reserved");
+      } else if (bookingStatus === "pending approval") {
+        setStayStatus("PendingConfirmation");
+      } else {
+        setStayStatus("Reserved");
+      }
+
+      const dueDate = nextPayment.dueDate ? new Date(nextPayment.dueDate) : null;
+      if (dueDate && !Number.isNaN(dueDate.getTime())) {
+        setJoiningDate(dueDate);
+      }
+    } catch (error) {
+      console.error("Stay details fetch error:", error);
+    }
+  };
 
   const fetchCheckInHistory = async () => {
     try {
@@ -184,54 +218,18 @@ const CheckIns = () => {
           <h3 className=" text-primary">Manage your move-in, move-out, and billing history</h3>
         </div>
 
-        {/* --- MAIN ACTION CARDS --- */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          
-          {/* STATE 1: Reserved but Rent not paid */}
-          {stayStatus === "Reserved" && (
-            <div className="md:col-span-2 bg-white rounded-md p-8 shadow-sm border border-[#E5E0D9] flex flex-col items-center text-center">
-              <div className="w-16 h-16 bg-[#FEF3C7] text-[#D97706] rounded-full flex items-center justify-center mb-4">
-                <FaMoneyCheckAlt size={30} />
-              </div>
-              <h2 className="text-xl font-bold uppercase tracking-tight">Activate Your Stay</h2>
-              <p className="text-[#4B4B4B] mb-6 max-w-sm">Your room is reserved. Please pay the first month's rent to enable Move-In and notify the owner.</p>
-              <CButton onClick={handleMoveIn} className="max-w-md w-full py-4 text-lg font-bold shadow-md">
-                Pay Rent & Move-In
-              </CButton>
+        {/* --- MAIN ACTION CARD (OLD UI) --- */}
+        <div className="grid grid-cols-1">
+          <div className="bg-white rounded-md p-8 shadow-sm border border-[#E5E0D9] flex flex-col items-center text-center">
+            <div className="w-16 h-16 bg-[#FEF3C7] text-[#D97706] rounded-full flex items-center justify-center mb-4">
+              <FaMoneyCheckAlt size={30} />
             </div>
-          )}
-
-          {/* STATE 2: Rent Paid, Waiting for Owner "Confirm Arrival" */}
-          {stayStatus === "PendingConfirmation" && (
-            <div className="md:col-span-2 bg-[#FEF3C7] rounded-md p-8 shadow-sm flex flex-col items-center text-center border-2 border-dashed border-[#D97706] animate-pulse">
-              <FaClock size={40} className="text-[#D97706] mb-3" />
-              <h2 className="text-xl font-bold uppercase text-[#B45309]">Awaiting Owner Confirmation</h2>
-              <p className="text-[#B45309] max-w-sm">Payment successful! Please inform the owner to click <b>"Confirm Arrival"</b> in their app to activate your dashboard.</p>
-            </div>
-          )}
-
-          {/* STATE 3: Fully Active Stay */}
-          {stayStatus === "Active" && (
-            <>
-              <div className="bg-white rounded-md p-6 shadow-sm flex flex-col items-center space-y-4 border border-[#E5E0D9] border-l-4 border-green-500">
-                <FaSignInAlt size={22} className="text-green-600" />
-                <h3 className="font-bold uppercase text-sm">Stay Active</h3>
-                <p className="text-xs text-[#4B4B4B]">Joined On: {joiningDate?.toLocaleDateString()}</p>
-                <CButton onClick={handleExtension} className="w-full bg-[#1C1C1C] text-white py-3 text-[10px] font-bold uppercase tracking-widest">
-                   Request Extension
-                </CButton>
-              </div>
-
-              <div className="bg-white rounded-md p-6 shadow-sm flex flex-col items-center space-y-4 border border-[#E5E0D9] border-l-4 border-red-500">
-                <FaSignOutAlt size={22} className="text-red-600" />
-                <h3 className="font-bold uppercase text-sm">Permanent Move-Out</h3>
-                <p className="text-xs text-[#4B4B4B]">End your stay and settle dues</p>
-                <CButton onClick={handleMoveOut} className="w-full bg-red-600 hover:bg-red-700 text-white py-3 text-[10px] font-bold uppercase tracking-widest">
-                  Initiate Move-Out
-                </CButton>
-              </div>
-            </>
-          )}
+            <h2 className="text-xl font-bold uppercase tracking-tight">Activate Your Stay</h2>
+            <p className="text-[#4B4B4B] mb-6 max-w-sm">Your room is reserved. Please pay the first month's rent to enable Check-In and notify the owner.</p>
+            <CButton onClick={handleMoveIn} className="max-w-md w-full py-4 text-lg font-bold shadow-md">
+              Pay Rent & Check-In
+            </CButton>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">

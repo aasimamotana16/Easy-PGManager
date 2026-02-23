@@ -13,6 +13,8 @@ const PendingPayment = require('../models/pendingPaymentModel');
 const CheckIn = require('../models/checkInModel');
 const Room = require('../models/roomModel');
 const Review = require('../models/reviewModel');
+const { mergeRoomPriceVariants, resolveVariantPricing } = require('../utils/pricingUtils');
+const { generateAgreementPdf } = require('../utils/agreementPdf');
 const { jsPDF } = require('jspdf');
 const { autoTable } = require('jspdf-autotable');
 
@@ -37,89 +39,44 @@ const normalizeBaseUrl = (value, fallback = "http://localhost:3000") => {
   return withProtocol.replace(/\/+$/, "");
 };
 
-const normalizeVariantKey = (v) =>
-  String(
-    v?.variantName ||
-    v?.variantLabel ||
-    v?.roomType ||
-    v?.type ||
-    v?.label ||
-    v?.name ||
-    ""
-  ).trim().toLowerCase();
-
-const toVariantArray = (roomPrices) => {
-  if (Array.isArray(roomPrices)) return roomPrices;
-  if (!roomPrices || typeof roomPrices !== "object") return [];
-  return Object.entries(roomPrices).map(([k, v]) => {
-    if (v && typeof v === "object") {
-      return { variantName: k, ...v };
-    }
-    return { variantName: k, price: Number(v) || 0 };
-  });
-};
-
-const mergeRoomPriceVariants = (existingRoomPrices, incomingRoomPrices) => {
-  const existing = toVariantArray(existingRoomPrices);
-  const incoming = toVariantArray(incomingRoomPrices);
-  if (incoming.length === 0) return existing;
-
-  const byKey = new Map();
-  existing.forEach((v) => {
-    const k = normalizeVariantKey(v);
-    if (k) byKey.set(k, { ...v });
-  });
-
-  incoming.forEach((v) => {
-    const k = normalizeVariantKey(v);
-    if (!k) return;
-    const prev = byKey.get(k) || {};
-    byKey.set(k, { ...prev, ...v });
-  });
-
-  return Array.from(byKey.values());
-};
-
-const deriveRentAmount = (pg, roomValue) => {
-  const roomKey = String(roomValue || '').toLowerCase();
-  const prices = pg?.roomPrices || {};
-
-  // If roomPrices is an array (frontend format), try to match by roomType or pick the minimum
-  if (Array.isArray(prices)) {
-    // Try exact or contains match for roomType
-    const match = prices.find((r) => {
-      if (!r || !r.roomType) return false;
-      const rt = String(r.roomType || '').toLowerCase();
-      if (!roomKey) return false;
-      return rt === roomKey || rt.includes(roomKey) || roomKey.includes(rt);
-    });
-    if (match) {
-      const month = Number(match.pricePerMonth || match.price || 0);
-      if (Number.isFinite(month) && month > 0) return month;
-    }
-
-    // Fallback to numeric fields in array: pick the smallest monthly price available
-    const monthValues = prices
-      .map((r) => Number(r.pricePerMonth || r.price || 0))
-      .filter((v) => Number.isFinite(v) && v > 0);
-    if (monthValues.length > 0) return Math.min(...monthValues);
+const pickFirstNumeric = (...values) => {
+  for (const value of values) {
+    const num = Number(value);
+    if (Number.isFinite(num)) return num;
   }
-
-  // If roomPrices is an object with keys like single/double/other
-  if (prices && typeof prices === 'object' && !Array.isArray(prices)) {
-    if (roomKey.includes('single') && Number(prices.single) > 0) return Number(prices.single);
-    if (roomKey.includes('double') && Number(prices.double) > 0) return Number(prices.double);
-    if (roomKey.includes('triple') && Number(prices.triple) > 0) return Number(prices.triple);
-    if (Number(prices.other) > 0) return Number(prices.other);
-
-    const allRoomPrices = Object.values(prices).map((v) => Number(v)).filter((v) => Number.isFinite(v) && v > 0);
-    if (allRoomPrices.length > 0) return Math.min(...allRoomPrices);
-  }
-
-  // Finally fall back to the main PG price field
-  if (Number(pg?.price) > 0) return Number(pg.price);
-
   return 0;
+};
+
+const normalizeInventoryInput = (inventoryInput = {}) => {
+  let inventory = inventoryInput && typeof inventoryInput === "object" ? inventoryInput : {};
+  if (typeof inventoryInput === "string") {
+    try {
+      const parsed = JSON.parse(inventoryInput);
+      if (parsed && typeof parsed === "object") inventory = parsed;
+    } catch (_) {
+      inventory = {};
+    }
+  }
+
+  return {
+    fanCount: pickFirstNumeric(inventory.fanCount, inventory.fansCount, inventory.fan, inventory.fans),
+    lightCount: pickFirstNumeric(inventory.lightCount, inventory.lightsCount, inventory.light, inventory.lights),
+    bedCount: pickFirstNumeric(inventory.bedCount, inventory.bedsCount, inventory.bed, inventory.beds),
+    mattressCount: pickFirstNumeric(inventory.mattressCount, inventory.mattressesCount, inventory.mattress, inventory.mattresses),
+    cupboardCount: pickFirstNumeric(inventory.cupboardCount, inventory.cupboardsCount, inventory.cupboard, inventory.cupboards),
+    notes: String(inventory.notes ?? inventory.note ?? inventory.remarks ?? "").trim()
+  };
+};
+
+const deriveRentAmount = (pg, roomValue, variantLabel = "") => {
+  const pricing = resolveVariantPricing({
+    roomPrices: pg?.roomPrices,
+    roomType: roomValue,
+    variantLabel,
+    fallbackRent: Number(pg?.price || 0),
+    fallbackDeposit: Number(pg?.securityDeposit || 0)
+  });
+  return Number(pricing.rentAmount || 0);
 };
 
 const resolveBookingDates = (checkInDate, checkOutDate) => {
@@ -133,7 +90,7 @@ const resolveBookingDates = (checkInDate, checkOutDate) => {
   };
 };
 
-const ensureTenantAgreementRecord = async ({ ownerId, tenant, pg, rentAmount }) => {
+const ensureTenantAgreementRecord = async ({ ownerId, tenant, pg, rentAmount, securityDeposit = 0, variantLabel = "" }) => {
   const startDate = tenant.joiningDate || new Date().toISOString().split('T')[0];
   const endDate = addMonths(startDate, 11).toISOString().split('T')[0];
   const agreementId = `AGR-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`;
@@ -159,9 +116,10 @@ const ensureTenantAgreementRecord = async ({ ownerId, tenant, pg, rentAmount }) 
     agreementId,
     pgName: pg.pgName || "",
     roomNo: tenant.room || "N/A",
+    variantLabel: variantLabel || tenant.room || "",
     tenantName: tenant.name,
     rentAmount: Number(rentAmount) || 0,
-    securityDeposit: Number(rentAmount || 0) * 2,
+    securityDeposit: Number(securityDeposit || 0),
     startDate,
     endDate,
     signed: true
@@ -182,24 +140,43 @@ const ensureTenantLinkedRecords = async ({ ownerId, tenant, pg }) => {
 
   let booking = existingBooking;
   let bookingCreated = false;
+  const tenantPricing = resolveVariantPricing({
+    roomPrices: pg?.roomPrices,
+    roomType: tenant.room || pg.occupancy || "Single",
+    variantLabel: tenant.room || "",
+    fallbackRent: Number(pg?.price || 0),
+    fallbackDeposit: Number(pg?.securityDeposit || 0)
+  });
+
   if (!existingBooking) {
     booking = await Booking.create({
       ownerId,
       pgId: pg._id,
       bookingId: `BK-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`,
       pgName: pg.pgName || "",
-      roomType: pg.occupancy || "Single",
+      roomType: tenant.room || pg.occupancy || "Single",
+      variantLabel: tenantPricing.variantLabel || tenant.room || pg.occupancy || "Single",
       tenantName: tenant.name,
       checkInDate: effectiveJoiningDate,
       checkOutDate: addMonths(effectiveJoiningDate, 11).toISOString().split('T')[0],
       seatsBooked: 1,
+      rentAmount: Number(tenantPricing.rentAmount || 0),
+      securityDeposit: Number(tenantPricing.securityDeposit || 0),
+      pricingSnapshot: {
+        billingCycle: tenantPricing.billingCycle || "Monthly",
+        acType: tenantPricing.acType || "Non-AC",
+        features: tenantPricing.features || {}
+      },
+      bookingAmount: Number(tenantPricing.rentAmount || 0),
       status: "Confirmed",
       bookingSource: "tenant_sync"
     });
     bookingCreated = true;
   }
 
-  const rentAmount = deriveRentAmount(pg, tenant.room);
+  const pricing = tenantPricing;
+  const rentAmount = Number(pricing.rentAmount || 0);
+  const securityDeposit = Number(pricing.securityDeposit || 0);
   const joinDateObj = new Date(effectiveJoiningDate);
   const currentMonthLabel = getMonthLabel(joinDateObj);
   const nextMonthDate = addMonths(joinDateObj, 1);
@@ -268,7 +245,9 @@ const ensureTenantLinkedRecords = async ({ ownerId, tenant, pg }) => {
     ownerId,
     tenant,
     pg,
-    rentAmount
+    rentAmount,
+    securityDeposit,
+    variantLabel: pricing.variantLabel
   });
   agreement = agreementResult.agreement;
   agreementCreated = agreementResult.agreementCreated;
@@ -307,8 +286,8 @@ const resolveTenantUserForBooking = async (booking) => {
 
 const ensureBookingConfirmationData = async ({ booking, ownerId }) => {
   const pg = booking.pgId
-    ? await Pg.findOne({ _id: booking.pgId, ownerId }).select('pgName roomPrices price agreementTemplate ownerId')
-    : await Pg.findOne({ ownerId, pgName: booking.pgName }).select('pgName roomPrices price agreementTemplate ownerId');
+    ? await Pg.findOne({ _id: booking.pgId, ownerId }).select('pgName roomPrices price securityDeposit agreementTemplate ownerId')
+    : await Pg.findOne({ ownerId, pgName: booking.pgName }).select('pgName roomPrices price securityDeposit agreementTemplate ownerId');
 
   if (!pg) {
     throw new Error('Linked PG not found for booking');
@@ -317,9 +296,17 @@ const ensureBookingConfirmationData = async ({ booking, ownerId }) => {
   const tenantUser = await resolveTenantUserForBooking(booking);
   const tenantEmail = tenantUser?.email || booking.tenantEmail || '';
   const tenantName = booking.tenantName || tenantUser?.fullName || 'Tenant';
-  const room = booking.roomType || 'N/A';
-  const rentAmount = deriveRentAmount(pg, room);
-  const securityDeposit = Number(rentAmount || 0) * 2;
+  const room = booking.roomType || booking.variantLabel || 'N/A';
+  const bookingPricing = resolveVariantPricing({
+    roomPrices: pg?.roomPrices,
+    roomType: booking.roomType || booking.variantLabel || room,
+    variantLabel: booking.variantLabel || "",
+    fallbackRent: Number(booking.rentAmount || booking.bookingAmount || pg?.price || 0),
+    fallbackDeposit: Number(booking.securityDeposit || pg?.securityDeposit || 0)
+  });
+  const rentAmount = Number(booking.rentAmount || booking.bookingAmount || bookingPricing.rentAmount || 0);
+  const securityDeposit = Number(booking.securityDeposit || bookingPricing.securityDeposit || 0);
+  const resolvedVariantLabel = booking.variantLabel || bookingPricing.variantLabel || room;
   const checkInDate = booking.checkInDate || new Date().toISOString().split('T')[0];
   const checkOutDate = booking.checkOutDate || addMonths(checkInDate, 11).toISOString().split('T')[0];
   const isLongTerm = String(checkOutDate).toLowerCase() === 'long term';
@@ -327,8 +314,17 @@ const ensureBookingConfirmationData = async ({ booking, ownerId }) => {
   if (tenantUser) {
     booking.tenantUserId = tenantUser._id;
     booking.tenantEmail = tenantUser.email || booking.tenantEmail || '';
-    await booking.save();
   }
+  booking.rentAmount = rentAmount;
+  booking.securityDeposit = securityDeposit;
+  booking.variantLabel = resolvedVariantLabel;
+  booking.bookingAmount = rentAmount;
+  booking.pricingSnapshot = {
+    billingCycle: bookingPricing.billingCycle || booking?.pricingSnapshot?.billingCycle || "Monthly",
+    acType: bookingPricing.acType || booking?.pricingSnapshot?.acType || "Non-AC",
+    features: bookingPricing.features || booking?.pricingSnapshot?.features || {}
+  };
+  await booking.save();
 
   let tenantRecord = await Tenant.findOne({
     ownerId,
@@ -378,6 +374,8 @@ const ensureBookingConfirmationData = async ({ booking, ownerId }) => {
     agreementId: `AGR-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`,
     pgName: pg.pgName || "",
     roomNo: room,
+    roomType: booking.roomType || room,
+    variantLabel: resolvedVariantLabel,
     tenantName,
     rentAmount: Number(rentAmount) || 0,
     securityDeposit,
@@ -400,6 +398,8 @@ const ensureBookingConfirmationData = async ({ booking, ownerId }) => {
     agreement.pgId = agreementPayload.pgId;
     agreement.pgName = agreementPayload.pgName;
     agreement.roomNo = agreementPayload.roomNo;
+    agreement.roomType = agreementPayload.roomType;
+    agreement.variantLabel = agreementPayload.variantLabel;
     agreement.tenantName = agreementPayload.tenantName;
     agreement.rentAmount = agreementPayload.rentAmount;
     agreement.securityDeposit = agreementPayload.securityDeposit;
@@ -525,7 +525,7 @@ const getOwnerDashboardData = async (req, res) => {
   try {
     const ownerId = req.user._id;
     // Keep dashboard totals aligned with the "My PGs" listing.
-    const ownerPgs = await Pg.find({
+    const liveOwnerPgs = await Pg.find({
       ownerId,
       $or: [
         { approvalStatus: "confirmed" },
@@ -533,9 +533,42 @@ const getOwnerDashboardData = async (req, res) => {
       ]
     }).select("totalRooms liveListings status approvalStatus createdAt").sort({ createdAt: -1 });
 
-    const totalPgs = ownerPgs.length;
-    const totalRooms = ownerPgs.reduce((sum, pg) => sum + (Number(pg.totalRooms) || 0), 0);
-    const availablePgs = ownerPgs.reduce((sum, pg) => {
+    // Owner-scoped identifiers for bookings/revenue calculations.
+    const allOwnerPgs = await Pg.find({ ownerId }).select("_id pgName");
+    const ownerPgIds = allOwnerPgs.map((pg) => pg._id);
+    const ownerPgNames = allOwnerPgs.map((pg) => pg.pgName).filter(Boolean);
+
+    const [totalBookings, revenueAgg] = await Promise.all([
+      Booking.countDocuments({
+        $or: [
+          { ownerId },
+          { pgId: { $in: ownerPgIds } },
+          { pgName: { $in: ownerPgNames } }
+        ]
+      }),
+      Payment.aggregate([
+        {
+          $match: {
+            paymentStatus: { $in: ['Success', 'PAID', 'Paid'] },
+            $or: [
+              { pgId: { $in: ownerPgIds } },
+              { pgName: { $in: ownerPgNames } }
+            ]
+          }
+        },
+        {
+          $group: {
+            _id: null,
+            totalRevenue: { $sum: '$amountPaid' }
+          }
+        }
+      ])
+    ]);
+
+    const totalRevenue = Number(revenueAgg?.[0]?.totalRevenue || 0);
+    const totalPgs = liveOwnerPgs.length;
+    const totalRooms = liveOwnerPgs.reduce((sum, pg) => sum + (Number(pg.totalRooms) || 0), 0);
+    const availablePgs = liveOwnerPgs.reduce((sum, pg) => {
       const explicitListings = Number(pg.liveListings);
       if (Number.isFinite(explicitListings) && explicitListings > 0) {
         return sum + explicitListings;
@@ -546,8 +579,8 @@ const getOwnerDashboardData = async (req, res) => {
       const isPubliclyAvailable = status === "live" || approvalStatus === "confirmed";
       return sum + (isPubliclyAvailable ? 1 : 0);
     }, 0);
-    const recentStatus = ownerPgs[0]?.status
-      ? ownerPgs[0].status.charAt(0).toUpperCase() + ownerPgs[0].status.slice(1)
+    const recentStatus = liveOwnerPgs[0]?.status
+      ? liveOwnerPgs[0].status.charAt(0).toUpperCase() + liveOwnerPgs[0].status.slice(1)
       : "No Properties";
 
     res.status(200).json({
@@ -557,6 +590,8 @@ const getOwnerDashboardData = async (req, res) => {
           { label: "Total PGs", value: totalPgs },
           { label: "Total Rooms", value: totalRooms },
           { label: "Available PGs", value: availablePgs },
+          { label: "Total Bookings", value: Number(totalBookings || 0) },
+          { label: "Total Revenue", value: totalRevenue },
           { label: "Recent Status", value: recentStatus }
         ],
         recentActivity: [
@@ -595,6 +630,7 @@ const createPg = async (req, res) => {
       address,     // Frontend field
       pincode,     // Frontend field
       facilities,  // Frontend sends as 'facilities'
+      inventory,
       rules,
       price,
       rent,
@@ -646,6 +682,7 @@ const createPg = async (req, res) => {
       amenities: facilities || [],  // Facilities like WiFi, Food, etc
       facilities: facilities || [],  // Both for compatibility
       description: description || "",
+      inventory: normalizeInventoryInput(inventory),
       rules: rules || {
         smoking: false,
         alcohol: false,
@@ -815,6 +852,9 @@ const updatePg = async (req, res) => {
     }
     if (updatePayload.deposit !== undefined && updatePayload.securityDeposit === undefined) {
       updatePayload.securityDeposit = Number(updatePayload.deposit) || 0;
+    }
+    if (updatePayload.inventory !== undefined) {
+      updatePayload.inventory = normalizeInventoryInput(updatePayload.inventory);
     }
 
     // If rooms are being updated, handle them specially
@@ -1063,7 +1103,15 @@ const addTenant = async (req, res) => {
     }
 
     const effectiveJoiningDate = joiningDate || new Date().toISOString().split('T')[0];
-    const rentAmount = deriveRentAmount(pg, room);
+    const pricing = resolveVariantPricing({
+      roomPrices: pg?.roomPrices,
+      roomType: room,
+      variantLabel: room,
+      fallbackRent: Number(pg?.price || 0),
+      fallbackDeposit: Number(pg?.securityDeposit || 0)
+    });
+    const rentAmount = Number(pricing.rentAmount || 0);
+    const securityDeposit = Number(pricing.securityDeposit || 0);
 
     const newTenant = await Tenant.create({
       ownerId,
@@ -1075,8 +1123,8 @@ const addTenant = async (req, res) => {
       room,
       joiningDate: effectiveJoiningDate,
       status: 'Active',
-      securityDeposit: rentAmount > 0 ? rentAmount * 2 : 0,
-      finalRefund: rentAmount > 0 ? rentAmount * 2 : 0
+      securityDeposit: securityDeposit,
+      finalRefund: securityDeposit
     });
 
     const linked = await ensureTenantLinkedRecords({
@@ -1460,6 +1508,20 @@ const getMyBookings = async (req, res) => {
         { pgName: { $in: pgNames } }
       ]
     }).sort({ createdAt: -1 });
+    const bookingCodes = bookings
+      .map((b) => String(b.bookingId || "").trim())
+      .filter(Boolean);
+    const agreements = bookingCodes.length > 0
+      ? await Agreement.find({ bookingId: { $in: bookingCodes } })
+          .select("bookingId fileUrl")
+          .sort({ createdAt: -1 })
+      : [];
+    const agreementUrlByBookingCode = new Map();
+    agreements.forEach((a) => {
+      const key = String(a.bookingId || "").trim();
+      if (!key || agreementUrlByBookingCode.has(key)) return;
+      if (a.fileUrl) agreementUrlByBookingCode.set(key, a.fileUrl);
+    });
 
     const successfulPayments = await Payment.find({
       paymentStatus: { $in: ['Success', 'PAID', 'Paid'] },
@@ -1522,7 +1584,8 @@ const getMyBookings = async (req, res) => {
       return {
         ...b.toObject(),
         isPaid: paid,
-        paymentStatus: paid ? 'Paid' : 'Unpaid'
+        paymentStatus: paid ? 'Paid' : 'Unpaid',
+        agreementPdfUrl: b.agreementPdfUrl || agreementUrlByBookingCode.get(String(b.bookingId || "").trim()) || ""
       };
     });
 
@@ -1535,7 +1598,7 @@ const getMyBookings = async (req, res) => {
 const addBooking = async (req, res) => {
   try {
     const ownerId = req.user._id;
-    const { bookingId, pgId, pgName, roomType, tenantName, tenantEmail, checkInDate, checkOutDate, seatsBooked, status } = req.body;
+    const { bookingId, pgId, pgName, roomType, variantLabel, tenantName, tenantEmail, checkInDate, checkOutDate, seatsBooked, status } = req.body;
 
     let ownerPg = null;
     if (pgId && mongoose.Types.ObjectId.isValid(pgId)) {
@@ -1550,8 +1613,16 @@ const addBooking = async (req, res) => {
 
     const generatedBookingId = bookingId || `BK-${Date.now()}`;
     const resolvedDates = resolveBookingDates(checkInDate, checkOutDate);
-    const templatePg = await Pg.findById(ownerPg._id).select('agreementTemplate roomPrices price');
-    const monthlyRent = deriveRentAmount(templatePg, roomType);
+    const templatePg = await Pg.findById(ownerPg._id).select('agreementTemplate roomPrices price securityDeposit');
+    const pricing = resolveVariantPricing({
+      roomPrices: templatePg?.roomPrices,
+      roomType,
+      variantLabel,
+      fallbackRent: Number(templatePg?.price || 0),
+      fallbackDeposit: Number(templatePg?.securityDeposit || 0)
+    });
+    const monthlyRent = Number(pricing.rentAmount || 0);
+    const securityDeposit = Number(pricing.securityDeposit || 0);
     const linkedUser = tenantEmail
       ? await User.findOne({
           email: new RegExp(`^${String(tenantEmail).trim()}$`, 'i'),
@@ -1567,11 +1638,20 @@ const addBooking = async (req, res) => {
       bookingId: generatedBookingId,
       pgName: ownerPg.pgName,
       roomType,
+      variantLabel: pricing.variantLabel || variantLabel || roomType || "",
       tenantName,
       checkInDate: resolvedDates.checkInDate,
       checkOutDate: resolvedDates.checkOutDate,
       seatsBooked,
       status: status || "Pending",
+      ownerApproved: Boolean(status === "Confirmed"),
+      rentAmount: monthlyRent,
+      securityDeposit,
+      pricingSnapshot: {
+        billingCycle: pricing.billingCycle || "Monthly",
+        acType: pricing.acType || "Non-AC",
+        features: pricing.features || {}
+      },
       bookingAmount: Number(monthlyRent) || 0,
       bookingSource: "owner_manual"
     });
@@ -1610,11 +1690,28 @@ const updateBookingStatus = async (req, res) => {
       return res.status(403).json({ success: false, message: "You don't have permission to update this booking" });
     }
 
-    booking.status = normalizedStatus;
-    if (normalizedStatus !== 'Confirmed') {
-      booking.isPaid = false;
-      booking.paymentStatus = 'Unpaid';
+    const source = String(booking.bookingSource || '').toLowerCase();
+    const requiresPaymentBeforeConfirm = source === 'tenant_request';
+
+    if (normalizedStatus === 'Cancelled') {
+      booking.status = 'Cancelled';
+      booking.ownerApproved = false;
+      booking.paymentStatus = booking.isPaid ? 'Paid' : 'Unpaid';
+    } else if (normalizedStatus === 'Pending') {
+      booking.status = 'Pending';
+      booking.ownerApproved = false;
+      booking.paymentStatus = booking.isPaid ? 'Paid' : 'Unpaid';
+    } else if (normalizedStatus === 'Confirmed' && requiresPaymentBeforeConfirm && !booking.isPaid) {
+      // Owner-selected confirmation should be reflected immediately in owner bookings UI.
+      booking.ownerApproved = true;
+      booking.status = 'Confirmed';
+      booking.paymentStatus = booking.isPaid ? 'Paid' : 'Unpaid';
+    } else {
+      booking.ownerApproved = true;
+      booking.status = 'Confirmed';
+      booking.paymentStatus = booking.isPaid ? 'Paid' : 'Unpaid';
     }
+
     const updatedBooking = await booking.save();
 
     let linkedData = null;
@@ -1641,8 +1738,8 @@ const updateBookingStatus = async (req, res) => {
             html: `
               <h2>Your booking has been approved</h2>
               <p>Hi ${updatedBooking.tenantName},</p>
-              <p>Your booking <strong>${updatedBooking.bookingId}</strong> for <strong>${updatedBooking.pgName}</strong> is now confirmed.</p>
-              <p>Please complete payment to finalize your onboarding:</p>
+              <p>Your booking <strong>${updatedBooking.bookingId}</strong> for <strong>${updatedBooking.pgName}</strong> is approved by owner.</p>
+              <p>Please complete payment to finalize confirmation and onboarding:</p>
               <p><a href="${paymentLink}" target="_blank" rel="noopener noreferrer">Complete Payment</a></p>
               <p>Login link: <a href="${loginLink}" target="_blank" rel="noopener noreferrer">${loginLink}</a></p>
             `
@@ -1652,11 +1749,51 @@ const updateBookingStatus = async (req, res) => {
         }
       }
 
-      linkedData = {
-        tenantId: null,
-        agreementId: null,
-        rentAmount: Number(updatedBooking.bookingAmount) || 0
-      };
+      if (updatedBooking.status === 'Confirmed') {
+        try {
+          const confirmedData = await ensureBookingConfirmationData({ booking: updatedBooking, ownerId });
+          let agreementPdfResult = null;
+          try {
+            agreementPdfResult = await generateAgreementPdf(updatedBooking._id);
+          } catch (pdfErr) {
+            console.warn("Agreement PDF generation warning:", pdfErr.message || pdfErr);
+          }
+          linkedData = {
+            tenantId: confirmedData?.tenantUser?._id || null,
+            agreementId: confirmedData?.agreement?.agreementId || null,
+            rentAmount: Number(confirmedData?.rentAmount || updatedBooking.rentAmount || updatedBooking.bookingAmount || 0),
+            securityDeposit: Number(confirmedData?.agreement?.securityDeposit || updatedBooking.securityDeposit || 0),
+            agreementPdfUrl: agreementPdfResult?.agreementPdfUrl || updatedBooking.agreementPdfUrl || "",
+            awaitsPayment: false
+          };
+        } catch (linkErr) {
+          console.warn("Booking confirmation sync warning:", linkErr.message || linkErr);
+          let agreementPdfUrl = updatedBooking.agreementPdfUrl || "";
+          try {
+            const pdfResult = await generateAgreementPdf(updatedBooking._id);
+            agreementPdfUrl = pdfResult?.agreementPdfUrl || agreementPdfUrl;
+          } catch (pdfErr) {
+            console.warn("Agreement PDF generation warning:", pdfErr.message || pdfErr);
+          }
+          linkedData = {
+            tenantId: null,
+            agreementId: null,
+            rentAmount: Number(updatedBooking.rentAmount || updatedBooking.bookingAmount || 0),
+            securityDeposit: Number(updatedBooking.securityDeposit || 0),
+            agreementPdfUrl,
+            awaitsPayment: false
+          };
+        }
+      } else {
+        linkedData = {
+          tenantId: updatedBooking.tenantUserId || null,
+          agreementId: null,
+          rentAmount: Number(updatedBooking.rentAmount || updatedBooking.bookingAmount || 0),
+          securityDeposit: Number(updatedBooking.securityDeposit || 0),
+          agreementPdfUrl: updatedBooking.agreementPdfUrl || "",
+          awaitsPayment: true
+        };
+      }
     }
 
     res.status(200).json({
@@ -1666,12 +1803,39 @@ const updateBookingStatus = async (req, res) => {
         ? {
             tenantId: linkedData.tenantId || null,
             agreementId: linkedData.agreementId || null,
-            rentAmount: Number(linkedData.rentAmount) || 0
+            rentAmount: Number(linkedData.rentAmount) || 0,
+            securityDeposit: Number(linkedData.securityDeposit) || 0,
+            agreementPdfUrl: linkedData.agreementPdfUrl || "",
+            awaitsPayment: Boolean(linkedData.awaitsPayment)
           }
         : null
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const generateBookingAgreementPdf = async (req, res) => {
+  try {
+    const ownerId = req.user._id;
+    const { id } = req.params;
+
+    const booking = await Booking.findById(id);
+    if (!booking) {
+      return res.status(404).json({ success: false, message: "Booking not found" });
+    }
+    if (String(booking.ownerId) !== String(ownerId)) {
+      return res.status(403).json({ success: false, message: "You don't have permission for this booking" });
+    }
+
+    const result = await generateAgreementPdf(booking._id);
+    return res.status(200).json({
+      success: true,
+      message: "Agreement PDF generated successfully",
+      data: result
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -1878,8 +2042,19 @@ const updateTenant = async (req, res) => {
       return res.status(404).json({ success: false, message: "Tenant not found or you don't have permission to edit this tenant" });
     }
 
-    // Update tenant information
-    const payload = { name, phone, email, room, status };
+    const normalizedName = name !== undefined ? String(name || "").trim() : undefined;
+    const normalizedPhone = phone !== undefined ? String(phone || "").trim() : undefined;
+    const normalizedEmail = email !== undefined ? String(email || "").trim().toLowerCase() : undefined;
+    const normalizedRoom = room !== undefined ? String(room || "").trim() : undefined;
+    const normalizedStatus = status !== undefined ? String(status || "").trim() : undefined;
+
+    // Update tenant information (only provided fields)
+    const payload = {};
+    if (normalizedName !== undefined) payload.name = normalizedName;
+    if (normalizedPhone !== undefined) payload.phone = normalizedPhone;
+    if (normalizedEmail !== undefined) payload.email = normalizedEmail;
+    if (normalizedRoom !== undefined) payload.room = normalizedRoom;
+    if (normalizedStatus !== undefined) payload.status = normalizedStatus;
     if (pgId) {
       const pg = await Pg.findOne({ _id: pgId, ownerId }).select('pgName');
       if (!pg) {
@@ -1894,6 +2069,58 @@ const updateTenant = async (req, res) => {
       payload,
       { new: true, runValidators: true }
     );
+
+    // Sync linked agreement + user room fields so user dashboard reflects latest room number.
+    const oldEmail = String(tenant.email || "").trim().toLowerCase();
+    const newEmail = String(updatedTenant.email || "").trim().toLowerCase();
+    const oldName = String(tenant.name || "").trim();
+    const newName = String(updatedTenant.name || "").trim();
+
+    const linkedUser = await User.findOne({
+      role: { $in: ['user', 'tenant'] },
+      $or: [
+        oldEmail ? { email: new RegExp(`^${oldEmail}$`, 'i') } : null,
+        newEmail ? { email: new RegExp(`^${newEmail}$`, 'i') } : null,
+        oldName ? { fullName: oldName } : null,
+        newName ? { fullName: newName } : null
+      ].filter(Boolean)
+    }).select('_id');
+
+    if (linkedUser?._id) {
+      await User.findByIdAndUpdate(linkedUser._id, {
+        $set: {
+          roomNo: updatedTenant.room || "",
+          assignedPg: updatedTenant.pgId || null
+        }
+      });
+    }
+
+    const bookingMatches = {
+      ownerId,
+      $or: [
+        oldName ? { tenantName: oldName } : null,
+        newName ? { tenantName: newName } : null,
+        oldEmail ? { tenantEmail: new RegExp(`^${oldEmail}$`, 'i') } : null,
+        newEmail ? { tenantEmail: new RegExp(`^${newEmail}$`, 'i') } : null,
+        linkedUser?._id ? { tenantUserId: linkedUser._id } : null
+      ].filter(Boolean)
+    };
+
+    const linkedBookings = await Booking.find(bookingMatches).select('bookingId');
+    const bookingCodes = linkedBookings
+      .map((b) => String(b.bookingId || "").trim())
+      .filter(Boolean);
+
+    if (bookingCodes.length > 0) {
+      await Agreement.updateMany(
+        { bookingId: { $in: bookingCodes } },
+        {
+          $set: {
+            roomNo: updatedTenant.room || "N/A"
+          }
+        }
+      );
+    }
 
     res.status(200).json({
       success: true,
@@ -2453,6 +2680,7 @@ module.exports = {
   getMyBookings, 
   addBooking, 
   updateBookingStatus,
+  generateBookingAgreementPdf,
   sendPaymentLink,
   updateOwnerProfile,
   getMyAgreements,

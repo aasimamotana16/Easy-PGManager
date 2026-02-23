@@ -9,6 +9,7 @@ const agreementSchema = new mongoose.Schema({
     pgName: { type: String, required: true }, 
     roomNo: { type: String, required: true },
     roomType: { type: String },
+    variantLabel: { type: String, default: "" },
     tenantName: { type: String, required: true },
     rentAmount: { type: Number, required: true },
     securityDeposit: { type: Number, required: true },

@@ -13,7 +13,11 @@ const {
   reviewUserDocument,
   getSupportTickets,
   updateSupportTicketByAdmin,
-  getBookingPaymentOverview
+  getBookingPaymentOverview,
+  getAgreementSettings,
+  updateAgreementSettings,
+  getPricingRules,
+  updatePricingRules
 } = require('../controllers/adminController');
 const { protect } = require('../middleware/authMiddleware');
 
@@ -32,5 +36,9 @@ router.post('/review-document', protect, reviewUserDocument);
 router.get('/support-tickets', protect, getSupportTickets);
 router.put('/support-ticket/:id', protect, updateSupportTicketByAdmin);
 router.get('/booking-payment-overview', protect, getBookingPaymentOverview);
+router.get('/agreement-settings', protect, getAgreementSettings);
+router.put('/agreement-settings', protect, updateAgreementSettings);
+router.get('/pricing-rules', protect, getPricingRules);
+router.put('/pricing-rules', protect, updatePricingRules);
 
 module.exports = router;

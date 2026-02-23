@@ -61,6 +61,14 @@ const pgSchema = new mongoose.Schema(
     }],
     amenities: [String], // ["WiFi", "Laundry", "AC"] [cite: 2026-01-11]
     description: { type: String }, 
+    inventory: {
+      fanCount: { type: Number, default: 0 },
+      lightCount: { type: Number, default: 0 },
+      bedCount: { type: Number, default: 0 },
+      mattressCount: { type: Number, default: 0 },
+      cupboardCount: { type: Number, default: 0 },
+      notes: { type: String, default: "" }
+    },
     
     // Rules & Facilities [cite: 2026-02-12]
     rules: {
@@ -137,13 +145,20 @@ const pgSchema = new mongoose.Schema(
       roomType: String,
       totalRooms: Number,
       bedsPerRoom: Number,
+      occupiedBeds: {
+        type: Number,
+        default: 0
+      },
+      status: {
+        type: String,
+        enum: ["Active", "Full", "Maintenance"],
+        default: "Active"
+      },
       description: String
     }],
     roomPrices: {
-      single: Number,
-      double: Number,
-      triple: Number,
-      other: Number
+      type: mongoose.Schema.Types.Mixed,
+      default: []
     }
   },
   { timestamps: true }

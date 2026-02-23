@@ -1,4 +1,5 @@
 const PG = require('../models/pgModel');
+const Booking = require('../models/bookingModel');
 
 const CITY_ALIASES = {
   ahmedabad: ["ahmedabad", "ahemdabad", "amdavad"],
@@ -9,6 +10,51 @@ const buildCityMatchers = (cityRaw) => {
   if (!city || city === "-- Select --" || city === "Any") return null;
   const key = city.toLowerCase();
   return CITY_ALIASES[key] || [city];
+};
+
+const toNumber = (value) => {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : 0;
+};
+
+const getTotalBeds = (pg) => {
+  if (Array.isArray(pg?.rooms) && pg.rooms.length > 0) {
+    const bedsFromRooms = pg.rooms.reduce((sum, room) => {
+      const totalRooms = toNumber(room?.totalRooms);
+      const bedsPerRoom = Math.max(1, toNumber(room?.bedsPerRoom) || 1);
+      return sum + (totalRooms * bedsPerRoom);
+    }, 0);
+    if (bedsFromRooms > 0) return bedsFromRooms;
+  }
+
+  // Fallback when detailed room specs are not present.
+  return Math.max(0, toNumber(pg?.totalRooms));
+};
+
+const getReservedBedsMap = async (pgIds) => {
+  if (!Array.isArray(pgIds) || pgIds.length === 0) return new Map();
+
+  const rows = await Booking.aggregate([
+    {
+      $match: {
+        pgId: { $in: pgIds },
+        status: "Confirmed",
+        isPaid: true
+      }
+    },
+    {
+      $group: {
+        _id: "$pgId",
+        reservedBeds: { $sum: { $ifNull: ["$seatsBooked", 1] } }
+      }
+    }
+  ]);
+
+  const byPg = new Map();
+  rows.forEach((row) => {
+    byPg.set(String(row._id), toNumber(row.reservedBeds));
+  });
+  return byPg;
 };
 
 // 1. Create a New PG Listing
@@ -122,18 +168,28 @@ exports.searchPGs = async (req, res) => {
 
     // 5. EXECUTE THE DATABASE QUERY (THIS WAS MISSING!)
     const results = await PG.find(query);
+    const reservedBedsByPg = await getReservedBedsMap(results.map((pg) => pg._id));
 
     // 5. CamelCase Mapping for frontend consistency [cite: 2026-01-01]
-    const mappedResults = results.map(pg => ({
+    const mappedResults = results.map(pg => {
+      const totalBeds = getTotalBeds(pg);
+      const reservedBeds = reservedBedsByPg.get(String(pg._id)) || 0;
+      const availableBeds = Math.max(0, totalBeds - reservedBeds);
+
+      return ({
       ...pg._doc,
       name: pg.pgName,
       rent: pg.price,
       rentPerMonth: pg.price,
       deposit: pg.securityDeposit || 0,
+      totalBeds,
+      availableBeds,
+      reservedBeds,
       roomType: pg.roomType || pg.occupancy || "Any",
       type: pg.type || pg.gender || "Any",
       approval: pg.approvalStatus || (pg.status === "live" ? "confirmed" : "pending")
-    }));
+      });
+    });
 
     res.status(200).json({ 
       success: true, 
@@ -211,19 +267,29 @@ exports.getAllPgs = async (req, res) => {
     }
 
     const allPgs = await PG.find(query);
+    const reservedBedsByPg = await getReservedBedsMap(allPgs.map((pg) => pg._id));
 
     // 6. Map results to camelCase to stay consistent with frontend [cite: 2026-01-01]
-    const mappedPgs = allPgs.map(pg => ({
+    const mappedPgs = allPgs.map(pg => {
+      const totalBeds = getTotalBeds(pg);
+      const reservedBeds = reservedBedsByPg.get(String(pg._id)) || 0;
+      const availableBeds = Math.max(0, totalBeds - reservedBeds);
+
+      return ({
       ...pg._doc,
       name: pg.pgName, 
       rent: pg.price,
       rentPerMonth: pg.price,
       deposit: pg.securityDeposit || 0,
+      totalBeds,
+      availableBeds,
+      reservedBeds,
       roomType: pg.roomType || pg.occupancy || "Any",
       type: pg.type || pg.gender || "Any",
       approval: pg.approvalStatus || (pg.status === "live" ? "confirmed" : "pending"),
       city: pg.location // Send back as 'city' for the frontend dropdowns to update [cite: 2026-01-06]
-    }));
+      });
+    });
 
     res.status(200).json({
       success: true,
@@ -255,12 +321,20 @@ exports.getPgById = async (req, res) => {
       console.error('Failed to load Room docs for PG:', e.message);
     }
 
+    const reservedBedsByPg = await getReservedBedsMap([pg._id]);
+    const totalBeds = getTotalBeds(pg);
+    const reservedBeds = reservedBedsByPg.get(String(pg._id)) || 0;
+    const availableBeds = Math.max(0, totalBeds - reservedBeds);
+
     const responseData = {
       ...pg._doc,
       name: pg.pgName, // Fixes missing name on card [cite: 2026-01-01]
       rent: pg.price,  // Fixes 0 price if frontend looks for 'rent' [cite: 2026-01-06]
       rentPerMonth: pg.price,
       deposit: pg.securityDeposit || 0,
+      totalBeds,
+      availableBeds,
+      reservedBeds,
       roomType: pg.roomType || pg.occupancy || "Any",
       type: pg.type || pg.gender || "Any",
       approval: pg.approvalStatus || (pg.status === "live" ? "confirmed" : "pending"),

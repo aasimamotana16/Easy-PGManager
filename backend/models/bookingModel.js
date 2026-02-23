@@ -13,9 +13,19 @@ const bookingSchema = new mongoose.Schema({
   checkOutDate: { type: String, required: true },
   seatsBooked: { type: Number, required: true },
   status: { type: String, enum: ['Pending', 'Confirmed', 'Cancelled'], default: 'Pending' },
+  ownerApproved: { type: Boolean, default: false },
   isPaid: { type: Boolean, default: false },
   paymentStatus: { type: String, enum: ['Unpaid', 'Paid'], default: 'Unpaid' },
   bookingAmount: { type: Number, default: 0 },
+  rentAmount: { type: Number, default: 0 },
+  securityDeposit: { type: Number, default: 0 },
+  variantLabel: { type: String, default: "" },
+  agreementPdfUrl: { type: String, default: "" },
+  pricingSnapshot: {
+    billingCycle: { type: String, default: "Monthly" },
+    acType: { type: String, default: "Non-AC" },
+    features: { type: mongoose.Schema.Types.Mixed, default: {} }
+  },
   bookingSource: {
     type: String,
     enum: ['tenant_request', 'owner_manual', 'tenant_sync'],

@@ -15,6 +15,7 @@ const {
   getMyBookings, 
   addBooking, 
   updateBookingStatus, 
+  generateBookingAgreementPdf,
   sendPaymentLink,
   updateRoomPrices,
   updateOwnerProfile,
@@ -73,6 +74,7 @@ router.post('/sync-tenant-linked-data', protect, isOwner, syncTenantLinkedData);
 router.get('/my-bookings', protect, isOwner, getMyBookings);
 router.post('/add-booking', protect, isOwner, addBooking);
 router.put('/update-booking/:id', protect, isOwner, updateBookingStatus);
+router.post('/booking/:id/generate-agreement-pdf', protect, isOwner, generateBookingAgreementPdf);
 router.post('/send-payment-link/:id', protect, isOwner, sendPaymentLink);
 
 // --- AGREEMENT MANAGEMENT ---

@@ -11,6 +11,8 @@ const CheckIn = require("../models/checkInModel");
 const Timeline = require("../models/timelineModel");
 const Tenant = require("../models/tenantModel");
 const PendingPayment = require("../models/pendingPaymentModel");
+const Booking = require("../models/bookingModel");
+const Payment = require("../models/paymentModel");
 const fs = require('fs');
 const path = require('path');
 // Moved to top to avoid redundant requiring during PDF generation
@@ -34,6 +36,40 @@ const resolveTenantForUser = async (userDoc) => {
   if (!email) return null;
 
   return Tenant.findOne({ email: new RegExp(`^${email}$`, "i") }).sort({ createdAt: -1 });
+};
+
+const getNextCycleDueDate = (anchorDateInput) => {
+  const anchor = new Date(anchorDateInput);
+  if (Number.isNaN(anchor.getTime())) return null;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const due = new Date(anchor);
+  due.setHours(0, 0, 0, 0);
+
+  // Must always show upcoming month cycle (today counts as current cycle, so move ahead).
+  while (due <= today) {
+    due.setMonth(due.getMonth() + 1);
+  }
+  return due;
+};
+
+const pickRelevantPendingPayment = (payments = []) => {
+  if (!Array.isArray(payments) || payments.length === 0) return null;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const futureOrToday = payments.find((p) => {
+    const d = new Date(p?.dueDate);
+    if (Number.isNaN(d.getTime())) return false;
+    d.setHours(0, 0, 0, 0);
+    return d >= today;
+  });
+  if (futureOrToday) return futureOrToday;
+
+  return payments[payments.length - 1] || payments[0];
 };
 
 // @desc Generate Custom CAPTCHA (Function kept but logic cleared to avoid errors)
@@ -126,35 +162,87 @@ const loginUser = async (req, res) => {
 // @desc Get Dynamic Dashboard Data [cite: 2026-01-06]
 const getUserDashboard = async (req, res) => {
   try {
-    // Explicitly include profileCompletion even though it's select:false in the schema
     const user = await User.findById(req.user._id).select("-password +profileCompletion");
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    // Get roomType from agreement if available
-    let roomType = "N/A";
-    try {
-      const agreement = await Agreement.findOne({ userId: user._id }).sort({ createdAt: -1 });
-      if (agreement && agreement.roomType) {
-        roomType = agreement.roomType;
+    const tenantEmail = String(user.email || "").trim().toLowerCase();
+    const booking = await Booking.findOne({
+      status: { $in: ["Pending", "Confirmed"] },
+      $or: [
+        { tenantUserId: user._id },
+        tenantEmail ? { tenantEmail: new RegExp(`^${tenantEmail}$`, "i") } : null,
+        { tenantName: user.fullName }
+      ].filter(Boolean)
+    }).sort({ createdAt: -1 });
+
+    const latestAgreement = await Agreement.findOne({ userId: user._id }).sort({ createdAt: -1 });
+    const pendingPaymentsRaw = await PendingPayment.find({
+      status: { $in: ["Pending", "Overdue"] },
+      $or: [{ tenant: user._id }, { tenantName: user.fullName }]
+    }).sort({ dueDate: 1 });
+    const pendingPayment = pickRelevantPendingPayment(pendingPaymentsRaw);
+    const recentPaymentsRaw = await Payment.find({
+      user: user._id,
+      paymentStatus: { $in: ["Success", "Paid", "PAID"] }
+    })
+      .sort({ paymentDate: -1 })
+      .select("month amountPaid paymentStatus paymentDate _id");
+    const latestByMonth = new Map();
+    recentPaymentsRaw.forEach((payment) => {
+      const monthKey =
+        payment.month || new Date(payment.paymentDate).toLocaleString("en-US", { month: "short", year: "numeric" });
+      if (!latestByMonth.has(monthKey)) {
+        latestByMonth.set(monthKey, payment);
       }
-    } catch (e) {
-      console.log("Could not fetch roomType from agreement");
+    });
+    const filteredRecentPayments = Array.from(latestByMonth.values())
+      .sort((a, b) => new Date(b.paymentDate) - new Date(a.paymentDate))
+      .slice(0, 5);
+
+    let bookingStatus = "Inactive";
+    if (booking) {
+      if (booking.status === "Cancelled") {
+        bookingStatus = "Cancelled";
+      } else if (booking.isPaid && booking.status === "Confirmed") {
+        bookingStatus = "Active";
+      } else if (booking.ownerApproved) {
+        bookingStatus = "Awaiting Payment";
+      } else {
+        bookingStatus = "Pending Approval";
+      }
     }
+
+    const roomType = latestAgreement?.roomType || booking?.roomType || "N/A";
+    const monthlyRent = Number(booking?.rentAmount || booking?.bookingAmount || 0);
+    const normalizedPendingDueDate = getNextCycleDueDate(pendingPayment?.dueDate || null);
+    const fallbackCycleDueDate = getNextCycleDueDate(booking?.checkInDate || user.paymentDueDate || null);
+    const dueDateValue = normalizedPendingDueDate || fallbackCycleDueDate || null;
+    const dueDateLabel = dueDateValue
+      ? new Date(dueDateValue).toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" })
+      : "No due";
+    const recentPayments = filteredRecentPayments.map((payment) => ({
+      id: payment._id,
+      month: payment.month || new Date(payment.paymentDate).toLocaleString("en-US", { month: "short", year: "numeric" }),
+      amount: Number(payment.amountPaid) || 0,
+      status: "Paid"
+    }));
 
     const dashboardData = {
       fullName: user.fullName || user.name, 
       profileCompletion: user.profileCompletion || 0,
       currentBooking: {
-        pgName: user.bookedPgName || "No PG Booked",
-        roomNo: user.roomNo || "N/A",
+        pgId: booking?.pgId || user.assignedPg || null,
+        pgName: booking?.pgName || user.bookedPgName || "No PG Booked",
+        roomNo: latestAgreement?.roomNo || user.roomNo || "N/A",
         roomType: roomType,
-        status: user.bookingStatus || "Inactive",
-        monthlyRent: user.monthlyRent || 0,
+        status: bookingStatus,
+        monthlyRent: monthlyRent,
       },
       nextPayment: {
-        amount: user.monthlyRent || 0,
-        dueDate: user.paymentDueDate || "05 Jan 2026",
-      }
+        amount: Number(pendingPayment?.amount || monthlyRent || 0),
+        dueDate: dueDateLabel
+      },
+      recentPayments
     };
 
     res.status(200).json({ success: true, data: dashboardData });
@@ -358,27 +446,44 @@ const getMe = async (req, res) => {
 const getMyAgreement = async (req, res) => {
   try {
     const userId = req.user?._id;
-    const agreement = await Agreement.findOne({ userId }).sort({ createdAt: -1 });
+    const tenantEmail = String(req.user?.email || "").trim().toLowerCase();
+    const booking = await Booking.findOne({
+      status: { $in: ["Pending", "Confirmed"] },
+      $or: [
+        { tenantUserId: userId },
+        tenantEmail ? { tenantEmail: new RegExp(`^${tenantEmail}$`, "i") } : null,
+        { tenantName: req.user?.fullName || "" }
+      ].filter(Boolean)
+    }).sort({ createdAt: -1 });
+    const agreement = booking?.bookingId
+      ? await Agreement.findOne({ bookingId: booking.bookingId }).sort({ createdAt: -1 })
+      : await Agreement.findOne({ userId }).sort({ createdAt: -1 });
+
+    const bookingPg = booking?.pgId ? await PG.findById(booking.pgId).select("agreementTemplate pgName") : null;
+    const ownerTemplateUrl = bookingPg?.agreementTemplate?.agreementFileUrl || "";
+    const generatedAgreementUrl = booking?.agreementPdfUrl || "";
 
     if (!agreement) {
       return res.status(200).json({
         success: true,
         data: {
-          pgName: "",
+          pgName: booking?.pgName || bookingPg?.pgName || "",
           roomNo: "",
           tenantName: req.user?.fullName || "",
-          rentAmount: null,
-          securityDeposit: null,
+          rentAmount: Number(booking?.rentAmount || booking?.bookingAmount || 0) || null,
+          securityDeposit: Number(booking?.securityDeposit || 0) || null,
           agreementId: "",
-          bookingId: "",
-          startDate: "",
-          endDate: "",
-          checkInDate: "",
-          checkOutDate: "",
-          isLongTerm: false,
-          fileUrl: "",
+          bookingId: booking?.bookingId || "",
+          startDate: booking?.checkInDate || "",
+          endDate: booking?.checkOutDate || "",
+          checkInDate: booking?.checkInDate || "",
+          checkOutDate: booking?.checkOutDate || "",
+          isLongTerm: String(booking?.checkOutDate || "").toLowerCase() === "long term",
+          fileUrl: generatedAgreementUrl || "",
           ownerSignatureUrl: "",
-          status: "Pending"
+          status: booking?.status === "Confirmed"
+            ? (booking?.isPaid ? "Awaiting Agreement Signature" : "Awaiting Payment")
+            : (booking?.ownerApproved ? "Awaiting Payment" : "Pending Approval")
         },
         message: "No agreement available yet. It will appear after booking confirmation."
       });
@@ -399,7 +504,7 @@ const getMyAgreement = async (req, res) => {
         checkInDate: agreement.checkInDate || agreement.startDate,
         checkOutDate: agreement.checkOutDate || agreement.endDate,
         isLongTerm: agreement.isLongTerm || String(agreement.endDate || "").toLowerCase() === "long term",
-        fileUrl: agreement.fileUrl || "",
+        fileUrl: generatedAgreementUrl || agreement.fileUrl || "",
         ownerSignatureUrl: agreement.ownerSignatureUrl || "",
         status: agreement.signed ? "Active" : "Pending Signature"
       }
@@ -412,13 +517,22 @@ const getMyAgreement = async (req, res) => {
 const getMyDocuments = async (req, res) => {
   try {
     const user = await User.findById(req.user._id)
-      .select("+idDocument +aadharCard +rentalAgreementCopy");
+      .select(
+        "+idDocument.status +idDocument.fileUrl +idDocument.uploadedAt +idDocument.reviewedAt +idDocument.reviewNote " +
+        "+aadharCard.status +aadharCard.fileUrl +aadharCard.uploadedAt +aadharCard.reviewedAt +aadharCard.reviewNote " +
+        "+rentalAgreementCopy.status +rentalAgreementCopy.fileUrl +rentalAgreementCopy.uploadedAt +rentalAgreementCopy.reviewedAt +rentalAgreementCopy.reviewNote"
+      );
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
     res.status(200).json({
       success: true,
       data: {
         idDocument: user.idDocument || { status: "Pending" },
         aadharCard: user.aadharCard || { status: "Pending" },
-        rentalAgreementCopy: user.rentalAgreementCopy || { status: "Uploaded" }
+        rentalAgreementCopy: user.rentalAgreementCopy || { status: "Pending" }
       }
     });
   } catch (error) {
@@ -490,27 +604,75 @@ const deleteUserDocument = async (req, res) => {
 
 const getMyOwnerContact = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id).populate('assignedPg');
+    const user = await User.findById(req.user._id).select("email assignedPg fullName");
     if (!user) return res.status(404).json({ success: false, message: "User not found" });
 
-    if (!user.assignedPg) {
-      return res.status(200).json({ 
-        success: true, 
-        message: "No PG found or assigned",
-        data: null 
+    const tenantEmail = String(user.email || "").trim().toLowerCase();
+
+    // Primary source: latest booking for this tenant.
+    const latestBooking = await Booking.findOne({
+      status: { $in: ["Pending", "Confirmed"] },
+      $or: [
+        { tenantUserId: user._id },
+        tenantEmail ? { tenantEmail: new RegExp(`^${tenantEmail}$`, "i") } : null,
+        { tenantName: user.fullName || "" }
+      ].filter(Boolean)
+    }).sort({ createdAt: -1 }).select("pgId pgName ownerId");
+
+    let pg = null;
+    if (latestBooking?.pgId) {
+      pg = await PG.findById(latestBooking.pgId)
+        .populate("ownerId", "fullName email phone")
+        .select("pgName location city area address ownerId");
+    }
+
+    // Fallback 1: assigned PG on user.
+    if (!pg && user.assignedPg) {
+      pg = await PG.findById(user.assignedPg)
+        .populate("ownerId", "fullName email phone")
+        .select("pgName location city area address ownerId");
+    }
+
+    // Fallback 2: PG by booking pgName if pgId missing.
+    if (!pg && latestBooking?.pgName) {
+      pg = await PG.findOne({ pgName: latestBooking.pgName })
+        .populate("ownerId", "fullName email phone")
+        .select("pgName location city area address ownerId");
+    }
+
+    if (!pg) {
+      return res.status(200).json({
+        success: true,
+        message: "No booked PG found for owner contact yet",
+        data: null
       });
     }
 
-    const pg = user.assignedPg;
+    const owner = pg.ownerId && typeof pg.ownerId === "object" ? pg.ownerId : null;
+    const rawLocationParts = [pg.address, pg.area, pg.city, pg.location]
+      .map((part) => String(part || "").trim())
+      .filter(Boolean);
+    const flatLocationParts = rawLocationParts
+      .flatMap((part) => part.split(","))
+      .map((part) => part.trim())
+      .filter(Boolean);
+    const seenLocation = new Set();
+    const dedupedLocationParts = flatLocationParts.filter((part) => {
+      const key = part.toLowerCase();
+      if (seenLocation.has(key)) return false;
+      seenLocation.add(key);
+      return true;
+    });
+    const pgAddress = dedupedLocationParts.length > 0 ? dedupedLocationParts.join(", ") : "Address not available";
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       data: {
-        ownerName: pg.ownerName || "Unity Girls Management", 
-        phone: pg.ownerContact || pg.phone || "9876543210", 
-        email: pg.ownerEmail || "s61429609@gmail.com",
-        pgName: pg.pgName || "Unity Girls Residency", 
-        pgAddress: pg.location || "Nadiad, Gujarat" 
+        ownerName: owner?.fullName || "Owner",
+        phone: owner?.phone || "Not provided",
+        email: owner?.email || "",
+        pgName: pg.pgName || latestBooking?.pgName || "N/A",
+        pgAddress
       }
     });
   } catch (error) {
@@ -531,7 +693,24 @@ const getMyTimeline = async (req, res) => {
     let payments = [];
     try {
       const Payment = mongoose.model("Payment"); // Dynamic check
-      payments = await Payment.find({ user: userId }).sort({ paymentDate: -1 }).limit(5);
+      const rawPayments = await Payment.find({
+        user: userId,
+        paymentStatus: { $in: ["Success", "Paid", "PAID"] }
+      })
+        .sort({ paymentDate: -1 })
+        .limit(20);
+
+      // Keep only the latest payment per month to remove stale duplicate legacy entries.
+      const latestByMonth = new Map();
+      rawPayments.forEach((payment) => {
+        const monthKey = payment.month || new Date(payment.paymentDate).toLocaleString("en-US", { month: "short", year: "numeric" });
+        if (!latestByMonth.has(monthKey)) {
+          latestByMonth.set(monthKey, payment);
+        }
+      });
+      payments = Array.from(latestByMonth.values())
+        .sort((a, b) => new Date(b.paymentDate) - new Date(a.paymentDate))
+        .slice(0, 5);
     } catch (e) {
       console.log("Payment model not found, skipping payment events");
     }
@@ -579,69 +758,126 @@ const getMyTimeline = async (req, res) => {
 
 const downloadTenantReport = async (req, res) => {
   try {
-    const { month } = req.query; // ✅ Capture the month from frontend query
-    const user = await User.findById(req.user._id);
-    
-    // Initial query to find check-ins for this specific user
-    let query = { userId: req.user._id };
-
-    // ✅ NEW: Month filtering logic
-    if (month && month !== "All") {
-      const year = 2026; // Current project year
-      // Convert month name (e.g., "Jan") to index (0-11)
-      const monthIndex = new Date(`${month} 1, ${year}`).getMonth();
-      
-      const startDate = new Date(year, monthIndex, 1);
-      const endDate = new Date(year, monthIndex + 1, 0, 23, 59, 59);
-
-      // Apply the date range to the query
-      query.checkInDate = { $gte: startDate, $lte: endDate };
+    const { month } = req.query;
+    const userId = req.user._id;
+    const user = await User.findById(userId).select("fullName email");
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
     }
 
-    const checkIns = await CheckIn.find(query).sort({ checkInDate: -1 });
+    const tenantEmail = String(user.email || "").trim().toLowerCase();
+    const tenantName = String(user.fullName || "").trim();
+
+    const [checkIns, rawPayments, latestBooking] = await Promise.all([
+      CheckIn.find({ userId }).sort({ checkInDate: -1 }).limit(50),
+      Payment.find({
+        user: userId,
+        paymentStatus: { $in: ["Success", "Paid", "PAID"] }
+      })
+        .sort({ paymentDate: -1 })
+        .limit(50)
+        .select("_id paymentDate amountPaid paymentStatus month"),
+      Booking.findOne({
+        status: { $in: ["Pending", "Confirmed"] },
+        $or: [
+          { tenantUserId: userId },
+          tenantEmail ? { tenantEmail: new RegExp(`^${tenantEmail}$`, "i") } : null,
+          tenantName ? { tenantName } : null
+        ].filter(Boolean)
+      })
+        .sort({ createdAt: -1 })
+        .select("_id checkInDate status isPaid")
+    ]);
+
+    const latestPaymentByMonth = new Map();
+    rawPayments.forEach((payment) => {
+      const monthKey = payment.month || new Date(payment.paymentDate).toLocaleString("en-US", { month: "short", year: "numeric" });
+      if (!latestPaymentByMonth.has(monthKey)) {
+        latestPaymentByMonth.set(monthKey, payment);
+      }
+    });
+    const payments = Array.from(latestPaymentByMonth.values())
+      .sort((a, b) => new Date(b.paymentDate) - new Date(a.paymentDate));
+
+    const checkInEvents = checkIns.map((ci) => {
+      const eventDate = new Date(ci.checkInDate);
+      return {
+        eventDate,
+        date: eventDate.toLocaleDateString("en-GB"),
+        activity: ci.status === "Present" ? "Check-In" : "Check-Out",
+        status: ci.status
+      };
+    });
+
+    const paymentEvents = payments.map((p) => {
+      const eventDate = new Date(p.paymentDate);
+      const amount = Number(p.amountPaid || 0);
+      return {
+        eventDate,
+        date: eventDate.toLocaleDateString("en-GB"),
+        activity: `Rent Paid: INR ${amount.toLocaleString("en-IN")}`,
+        status: "Paid"
+      };
+    });
+
+    const moveInEvents = [];
+    if (latestBooking?.isPaid && String(latestBooking.status || "").toLowerCase() === "confirmed") {
+      const moveInDate = new Date(latestBooking.checkInDate || new Date());
+      if (!Number.isNaN(moveInDate.getTime())) {
+        moveInEvents.push({
+          eventDate: moveInDate,
+          date: moveInDate.toLocaleDateString("en-GB"),
+          activity: "Move-In Activated",
+          status: "Active"
+        });
+      }
+    }
+
+    let allEvents = [...checkInEvents, ...paymentEvents, ...moveInEvents];
+    if (month && month !== "All") {
+      const monthIndex = new Date(`${month} 1, 2026`).getMonth();
+      if (!Number.isNaN(monthIndex)) {
+        allEvents = allEvents.filter((event) => {
+          const d = event.eventDate;
+          return d instanceof Date && !Number.isNaN(d.getTime()) && d.getMonth() === monthIndex;
+        });
+      }
+    }
+    allEvents.sort((a, b) => b.eventDate - a.eventDate);
 
     const doc = new jsPDF();
-    
-    // Header Section
     doc.setFontSize(18);
-    doc.setTextColor(249, 115, 22); // Orange brand color
+    doc.setTextColor(249, 115, 22);
     doc.text("EasyPG Manager - Stay Timeline Report", 14, 20);
-    
+
     doc.setFontSize(12);
-    doc.setTextColor(0, 0, 0); // Reset to Black
+    doc.setTextColor(0, 0, 0);
     doc.text(`Tenant: ${user.fullName}`, 14, 30);
     doc.text(`Email: ${user.email}`, 14, 37);
     doc.text(`Filter: ${month === "All" ? "Full History" : month}`, 14, 44);
     doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 51);
 
-    // Table Section
     autoTable(doc, {
       startY: 58,
-      head: [['Date', 'Activity', 'Status']],
-      body: checkIns.map(ci => [
-        new Date(ci.checkInDate).toLocaleDateString('en-GB'), // DD/MM/YYYY format
-        ci.status === "Present" ? "Check-In" : "Check-Out",
-        ci.status
-      ]),
-      theme: 'striped',
+      head: [["Date", "Activity", "Status"]],
+      body: allEvents.length > 0
+        ? allEvents.map((event) => [event.date, event.activity, event.status])
+        : [["-", "No activity found for selected filter", "-"]],
+      theme: "striped",
       headStyles: { fillColor: [0, 0, 0] }
     });
 
-    const pdfBuffer = Buffer.from(doc.output('arraybuffer'));
-    
-    // Dynamic filename based on month
+    const pdfBuffer = Buffer.from(doc.output("arraybuffer"));
     const fileName = month === "All" ? "Full_Stay_Report.pdf" : `Stay_Report_${month}.pdf`;
-    
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
-    res.send(pdfBuffer);
 
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
+    res.send(pdfBuffer);
   } catch (error) {
     console.error("PDF Gen Error:", error);
     res.status(500).json({ success: false, message: "Failed to generate your report" });
   }
 };
-
 const sendOtp = async (req, res) => {
   const verifyRecaptcha = async (recaptchaToken) => {
     return true; 
@@ -714,19 +950,85 @@ const verifyOtpAndRegister = async (req, res) => {
 
 const getMyCheckIns = async (req, res) => {
   try {
-    const history = await CheckIn.find({ userId: req.user._id }).sort({ createdAt: -1 });
+    const userId = req.user._id;
+    const tenantEmail = String(req.user?.email || "").trim().toLowerCase();
+    const tenantName = String(req.user?.fullName || "").trim();
+    const dayStart = new Date();
+    dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(dayStart);
+    dayEnd.setDate(dayEnd.getDate() + 1);
 
-    const formattedHistory = history.map(item => {
+    const [checkInHistory, paymentHistory, latestBooking] = await Promise.all([
+      CheckIn.find({ userId }).sort({ createdAt: -1 }),
+      Payment.find({
+        user: userId,
+        paymentStatus: { $in: ["Success", "Paid", "PAID"] },
+        paymentDate: { $gte: dayStart, $lt: dayEnd }
+      })
+        .sort({ paymentDate: -1 })
+        .limit(1)
+        .select("_id paymentDate amountPaid paymentStatus pgName"),
+      Booking.findOne({
+        status: { $in: ["Pending", "Confirmed"] },
+        $or: [
+          { tenantUserId: userId },
+          tenantEmail ? { tenantEmail: new RegExp(`^${tenantEmail}$`, "i") } : null,
+          tenantName ? { tenantName } : null
+        ].filter(Boolean)
+      })
+        .sort({ createdAt: -1 })
+        .select("_id checkInDate status isPaid pgName")
+    ]);
+
+    const checkInEvents = checkInHistory.map((item) => {
       const dateObj = new Date(item.checkInDate);
       return {
         _id: item._id,
-        date: dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-        time: dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        title: item.status === "Present" ? "Checked In" : "Checked Out", 
+        date: dateObj.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+        time: dateObj.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        title: item.status === "Present" ? "Checked In" : "Checked Out",
         status: item.status,
-        type: item.status === "Present" ? "checkin" : "checkout"
+        type: item.status === "Present" ? "checkin" : "checkout",
+        pgName: latestBooking?.pgName || "",
+        sortTs: dateObj.getTime()
       };
     });
+
+    const paymentEvents = paymentHistory.map((payment) => {
+      const dateObj = new Date(payment.paymentDate);
+      const amount = Number(payment.amountPaid) || 0;
+      return {
+        _id: `payment-${payment._id}`,
+        date: dateObj.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+        time: dateObj.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        title: `Rent Paid: ₹${amount.toLocaleString("en-IN")}`,
+        status: "Paid",
+        type: "payment",
+        pgName: payment.pgName || latestBooking?.pgName || "",
+        sortTs: dateObj.getTime()
+      };
+    });
+
+    const moveInEvents = [];
+    if (latestBooking?.isPaid && String(latestBooking.status || "").toLowerCase() === "confirmed") {
+      const checkInDateObj = new Date(latestBooking.checkInDate || latestBooking.createdAt || new Date());
+      if (!Number.isNaN(checkInDateObj.getTime())) {
+        moveInEvents.push({
+          _id: `movein-${latestBooking._id}`,
+          date: checkInDateObj.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+          time: checkInDateObj.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          title: "Move-In Activated",
+          status: "Active",
+          type: "movein",
+          pgName: latestBooking.pgName || "",
+          sortTs: checkInDateObj.getTime()
+        });
+      }
+    }
+
+    const formattedHistory = [...checkInEvents, ...paymentEvents, ...moveInEvents]
+      .sort((a, b) => b.sortTs - a.sortTs)
+      .map(({ sortTs, ...event }) => event);
 
     res.status(200).json({ success: true, data: formattedHistory });
   } catch (error) {
@@ -1141,3 +1443,5 @@ module.exports = {
   forgotPassword: (req, res) => res.send("Forgot Pass"), 
   resetPassword: (req, res) => res.send("Reset Pass"), 
 };
+
+

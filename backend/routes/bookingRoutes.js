@@ -4,6 +4,7 @@ const Agreement = require('../models/agreementModel');
 const Pg = require('../models/pgModel');
 const User = require('../models/userModel');
 const nodemailer = require('nodemailer');
+const { resolveVariantPricing } = require('../utils/pricingUtils');
 const { protect } = require('../middleware/authMiddleware');
 
 const router = express.Router();
@@ -16,7 +17,7 @@ router.post("/create", protect, async (req, res) => {
       return res.status(403).json({ success: false, message: "Only tenant/user accounts can create booking requests" });
     }
 
-    const { pgId, members, stayDetails, persons, roomType } = req.body;
+    const { pgId, members, stayDetails, persons, roomType, variantLabel } = req.body;
 
     if (!pgId) return res.status(400).json({ success: false, message: 'pgId is required' });
 
@@ -34,7 +35,15 @@ router.post("/create", protect, async (req, res) => {
       : String(req.user?.email || '').trim().toLowerCase();
     const checkInDate = stayDetails?.checkIn || new Date().toISOString().split('T')[0];
     const checkOutDate = stayDetails?.checkOut || 'Long Term';
-    const monthlyRent = Number(pg?.price || 0);
+    const pricing = resolveVariantPricing({
+      roomPrices: pg?.roomPrices,
+      roomType,
+      variantLabel,
+      fallbackRent: Number(pg?.price || 0),
+      fallbackDeposit: Number(pg?.securityDeposit || 0)
+    });
+    const monthlyRent = Number(pricing.rentAmount || 0);
+    const securityDeposit = Number(pricing.securityDeposit || 0);
 
     const newBooking = await Booking.create({
       ownerId: owner ? owner._id : null,
@@ -42,12 +51,21 @@ router.post("/create", protect, async (req, res) => {
       bookingId,
       pgName: pg.pgName,
       roomType: roomType || pg.occupancy || 'Single Sharing',
+      variantLabel: pricing.variantLabel || roomType || pg.occupancy || 'Single Sharing',
       tenantName,
       checkInDate,
       checkOutDate,
       seatsBooked: Number(persons) || 1,
+      rentAmount: monthlyRent,
+      securityDeposit,
+      pricingSnapshot: {
+        billingCycle: pricing.billingCycle || "Monthly",
+        acType: pricing.acType || "Non-AC",
+        features: pricing.features || {}
+      },
       bookingAmount: monthlyRent,
       status: 'Pending',
+      ownerApproved: false,
       bookingSource: 'tenant_request'
     });
 

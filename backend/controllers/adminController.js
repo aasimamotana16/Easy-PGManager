@@ -4,6 +4,7 @@ const SupportTicket = require('../models/supportTicketModel');
 const Booking = require('../models/bookingModel');
 const Payment = require('../models/paymentModel');
 const PendingPayment = require('../models/pendingPaymentModel');
+const AdminConfig = require('../models/adminConfigModel');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
@@ -512,7 +513,7 @@ const getBookingPaymentOverview = async (req, res) => {
       Booking.find({})
         .sort({ createdAt: -1 })
         .limit(200)
-        .select('bookingId pgName tenantName tenantEmail status isPaid paymentStatus checkInDate checkOutDate createdAt'),
+        .select('bookingId pgName tenantName tenantEmail status ownerApproved isPaid paymentStatus checkInDate checkOutDate createdAt'),
       Payment.find({ paymentStatus: { $in: ['Success', 'Paid', 'PAID'] } })
         .sort({ paymentDate: -1 })
         .limit(200)
@@ -536,6 +537,101 @@ const getBookingPaymentOverview = async (req, res) => {
   }
 };
 
+const getOrCreateAdminConfig = async () => {
+  let config = await AdminConfig.findOne({ key: "global" });
+  if (!config) {
+    config = await AdminConfig.create({ key: "global" });
+  }
+  return config;
+};
+
+const getAgreementSettings = async (req, res) => {
+  try {
+    const config = await getOrCreateAdminConfig();
+    return res.status(200).json({
+      success: true,
+      data: config.agreementSettings || {}
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: "Error fetching agreement settings" });
+  }
+};
+
+const updateAgreementSettings = async (req, res) => {
+  try {
+    const { templateVersion, fixedClauses, jurisdiction, platformDisclaimer, esignConsentText } = req.body || {};
+    const config = await getOrCreateAdminConfig();
+
+    config.agreementSettings = {
+      templateVersion: String(templateVersion || config.agreementSettings?.templateVersion || "v1"),
+      fixedClauses: Array.isArray(fixedClauses)
+        ? fixedClauses.map((clause) => String(clause || "").trim()).filter(Boolean)
+        : (config.agreementSettings?.fixedClauses || []),
+      jurisdiction: String(jurisdiction ?? config.agreementSettings?.jurisdiction ?? "").trim(),
+      platformDisclaimer: String(platformDisclaimer ?? config.agreementSettings?.platformDisclaimer ?? "").trim(),
+      esignConsentText: String(esignConsentText ?? config.agreementSettings?.esignConsentText ?? "").trim()
+    };
+    config.updatedByAdmin = req.user?._id || null;
+
+    await config.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Agreement settings updated successfully",
+      data: config.agreementSettings
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: "Error updating agreement settings" });
+  }
+};
+
+const getPricingRules = async (req, res) => {
+  try {
+    const config = await getOrCreateAdminConfig();
+    return res.status(200).json({
+      success: true,
+      data: config.pricingRules || {}
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: "Error fetching pricing rules" });
+  }
+};
+
+const updatePricingRules = async (req, res) => {
+  try {
+    const { allowDepositPerVariant, depositModesAllowed, maxDepositMonths, minDepositRequired } = req.body || {};
+    const config = await getOrCreateAdminConfig();
+
+    const safeModes = Array.isArray(depositModesAllowed)
+      ? depositModesAllowed.filter((mode) => ["fixed", "months_rent"].includes(String(mode)))
+      : config.pricingRules?.depositModesAllowed || ["fixed", "months_rent"];
+
+    config.pricingRules = {
+      allowDepositPerVariant: allowDepositPerVariant !== undefined
+        ? Boolean(allowDepositPerVariant)
+        : Boolean(config.pricingRules?.allowDepositPerVariant ?? true),
+      depositModesAllowed: safeModes.length > 0 ? safeModes : ["fixed", "months_rent"],
+      maxDepositMonths: Number.isFinite(Number(maxDepositMonths))
+        ? Math.max(0, Math.min(12, Number(maxDepositMonths)))
+        : Number(config.pricingRules?.maxDepositMonths ?? 3),
+      minDepositRequired: minDepositRequired !== undefined
+        ? Boolean(minDepositRequired)
+        : Boolean(config.pricingRules?.minDepositRequired ?? true)
+    };
+    config.updatedByAdmin = req.user?._id || null;
+
+    await config.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Pricing rules updated successfully",
+      data: config.pricingRules
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: "Error updating pricing rules" });
+  }
+};
+
 module.exports = { 
   adminLogin, 
   getAdminDashboardStats, 
@@ -549,5 +645,9 @@ module.exports = {
   reviewUserDocument,
   getSupportTickets,
   updateSupportTicketByAdmin,
-  getBookingPaymentOverview
+  getBookingPaymentOverview,
+  getAgreementSettings,
+  updateAgreementSettings,
+  getPricingRules,
+  updatePricingRules
 };

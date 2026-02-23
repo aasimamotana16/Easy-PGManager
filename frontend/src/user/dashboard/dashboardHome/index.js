@@ -37,7 +37,7 @@ const getUpcomingDueDate = (rawDate) => {
   due.setHours(0, 0, 0, 0);
 
   // If due date is already past, roll it month-by-month to the next upcoming cycle.
-  while (due < today) {
+  while (due <= today) {
     due.setMonth(due.getMonth() + 1);
   }
 

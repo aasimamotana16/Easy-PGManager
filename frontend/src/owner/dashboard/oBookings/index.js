@@ -16,6 +16,7 @@ const BookingManagement = () => {
   const [bookings, setBookings] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedPg, setSelectedPg] = useState("All Properties");
+  const apiBaseUrl = (process.env.REACT_APP_API_URL || "http://localhost:5000").replace(/\/+$/, "");
 
   const fetchBookings = async () => {
     try {
@@ -141,6 +142,32 @@ const BookingManagement = () => {
     });
   };
 
+  const openAgreementPdf = (booking) => {
+    const agreementPdfUrl = booking?.agreementPdfUrl;
+    if (!agreementPdfUrl) {
+      const ownerApproved = Boolean(booking?.ownerApproved);
+      const paid = Boolean(booking?.isPaid);
+      const status = String(booking?.status || "Pending");
+
+      let reason = "Available after confirmation.";
+      if (status === "Pending" && !ownerApproved) reason = "Available after owner approval.";
+      if (ownerApproved && !paid) reason = "Available after tenant payment.";
+      if (status === "Cancelled") reason = "Not available for cancelled bookings.";
+
+      Swal.fire({
+        title: "Agreement Not Ready",
+        text: reason,
+        icon: "info",
+        confirmButtonColor: "#D97706"
+      });
+      return;
+    }
+
+    const normalizedPath = String(agreementPdfUrl).replace(/^\/+/, "");
+    const finalUrl = `${apiBaseUrl}/${normalizedPath}`;
+    window.open(finalUrl, "_blank", "noopener,noreferrer");
+  };
+
   return (
     <div className="p-4 md:p-10 bg-gray-200 min-h-screen">
       {/* HEADER SECTION */}
@@ -257,6 +284,17 @@ const BookingManagement = () => {
                         title="Download Confirmation"
                       >
                         <LuDownload size={20} />
+                      </button>
+                      <button
+                        onClick={() => openAgreementPdf(b)}
+                        className={`px-3 py-2 text-[10px] font-bold uppercase rounded-md border border-[#E5E0D9] transition-all ${
+                          b.agreementPdfUrl
+                            ? "text-[#4B4B4B] hover:text-[#D97706] hover:bg-[#FEF3C7]"
+                            : "text-[#4B4B4B] opacity-50"
+                        }`}
+                        title={b.agreementPdfUrl ? "View Agreement" : "Available after confirmation"}
+                      >
+                        View Agreement
                       </button>
                     </div>
                   </td>

@@ -87,6 +87,7 @@ export const deleteBooking = (id) => API.delete(`/owner/delete-booking/${id}`);
 export const submitForApproval = (pgId) => API.post(`/owner/submit-for-approval/${pgId}`);
 export const addTenant = (tenantData) => API.post('/owner/add-tenant', tenantData);
 export const getMyTenants = () => API.get('/owner/my-tenants');
+export const updateTenant = (id, payload) => API.put(`/owner/update-tenant/${id}`, payload);
 export const getMyBookings = () => API.get('/owner/my-bookings');
 export const deleteTenant = (id) => API.delete(`/owner/tenant/${id}`);
 export const approveExtension = (id) => API.put(`/owner/approve-extension/${id}`);

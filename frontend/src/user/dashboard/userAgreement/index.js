@@ -1,22 +1,20 @@
 import React, { useState, useEffect } from "react";
 import ReactDOM from "react-dom"; // Required for Portal
 import CButton from "../../../components/cButton";
-import jsPDF from "jspdf";
 import Swal from "sweetalert2";
 import { getMyAgreement } from "../../../api/api";
-import { 
+import {
   FaDownload, 
   FaListUl, 
   FaShieldAlt, 
   FaTimes 
 } from "react-icons/fa";
 
-const stampImg = "/pg_stamp.png";
-
 const Agreements = () => {
   const [showRules, setShowRules] = useState(false);
   const [agreementInfo, setAgreementInfo] = useState(null);
   const [loading, setLoading] = useState(true);
+  const apiBaseUrl = (process.env.REACT_APP_API_URL || "http://localhost:5000").replace(/\/+$/, "");
 
   useEffect(() => {
     const fetchAgreement = async () => {
@@ -57,65 +55,38 @@ const Agreements = () => {
     "Any breach of rules may incur fines or penalties.",
   ];
 
+  const resolveAgreementUrl = (fileUrl) => {
+    if (!fileUrl) return "";
+    const rawUrl = String(fileUrl).trim();
+    if (/^https?:\/\//i.test(rawUrl)) return rawUrl;
+    const normalizedPath = rawUrl.replace(/^\/+/, "");
+    return `${apiBaseUrl}/${normalizedPath}`;
+  };
+
   const handleDownloadPDF = () => {
-    const isDataValid = agreementInfo && agreementInfo.tenantName && agreementInfo.rentAmount;
-    if (!isDataValid) {
+    const agreementUrl = resolveAgreementUrl(agreementInfo?.fileUrl);
+    if (!agreementUrl) {
       return Swal.fire({
         icon: 'info',
         title: 'Document Not Ready',
-        text: 'Agreement details are being verified.',
+        text: 'Agreement PDF is not generated yet.',
         confirmButtonColor: '#D97706'
       });
     }
+
     Swal.fire({
       title: 'Download Agreement?',
-      text: "This will generate a digital copy of your signed contract.",
+      text: "This will open your generated agreement in a new tab.",
       icon: 'question',
       showCancelButton: true,
       confirmButtonColor: '#D97706',
       cancelButtonColor: '#1C1C1C',
-      confirmButtonText: 'Yes, Download'
+      confirmButtonText: 'Open PDF'
     }).then((result) => {
-      if (result.isConfirmed) generatePDF();
+      if (result.isConfirmed) {
+        window.open(agreementUrl, "_blank", "noopener,noreferrer");
+      }
     });
-  };
-
-  const generatePDF = () => {
-    const doc = new jsPDF();
-    doc.setFontSize(18);
-    doc.setFont("helvetica", "bold");
-    doc.text("Rental Agreement", 105, 15, null, null, "center");
-    doc.setFontSize(11);
-    doc.setFont("helvetica", "normal");
-    let y = 30;
-    doc.text(`Agreement ID: ${agreementInfo.agreementId || 'N/A'}`, 14, y); y += 7;
-    doc.text(`Tenant Name: ${agreementInfo.tenantName || 'N/A'}`, 14, y); y += 7;
-    doc.text(`PG Name: ${agreementInfo.pgName || 'N/A'}`, 14, y); y += 7;
-    doc.text(`Room: ${agreementInfo.roomNo || 'N/A'}`, 14, y); y += 7;
-    doc.text(`Period: ${agreementInfo.startDate || ''} - ${agreementInfo.endDate || ''}`, 14, y); y += 7;
-    doc.text(`Monthly Rent: Rs ${agreementInfo.rentAmount || '0'}`, 14, y); y += 7;
-    doc.text(`Security Deposit: Rs ${agreementInfo.securityDeposit || '0'}`, 14, y); y += 10;
-    doc.setDrawColor(0);
-    doc.setLineWidth(0.5);
-    doc.line(14, y, 196, y); y += 10;
-    doc.setFont("helvetica", "bold");
-    doc.text("Rules:", 14, y); y += 7;
-    doc.setFont("helvetica", "normal");
-    agreementRules.forEach((rule, index) => { doc.text(`${index + 1}. ${rule}`, 14, y); y += 6; });
-    y += 10;
-    doc.text("Tenant Signature: ____________________", 14, y);
-    doc.text("Owner Signature / Stamp: ____________________", 130, y);
-    const img = new Image();
-    img.src = stampImg;
-    img.onload = function () { 
-      doc.addImage(img, "PNG", 150, y - 8, 40, 20); 
-      doc.save(`Rental_Agreement_${agreementInfo.tenantName}.pdf`); 
-      Swal.fire('Success', 'Agreement downloaded.', 'success');
-    };
-    img.onerror = function () { 
-      doc.save(`Rental_Agreement_${agreementInfo.tenantName}.pdf`); 
-      Swal.fire('Success', 'Agreement downloaded.', 'info');
-    };
   };
 
   {/*if (loading) return (

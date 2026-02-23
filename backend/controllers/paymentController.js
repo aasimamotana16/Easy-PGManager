@@ -10,6 +10,8 @@ const Tenant = require("../models/tenantModel");
 const User = require("../models/userModel");
 const Profile = require("../models/profileModel");
 const Agreement = require("../models/agreementModel");
+const { resolveVariantPricing } = require("../utils/pricingUtils");
+const { generateAgreementPdf } = require("../utils/agreementPdf");
 
 const pickFirstValid = (...values) => {
   for (const raw of values) {
@@ -48,6 +50,39 @@ const addMonths = (dateInput, months) => {
   return d;
 };
 
+const getNextCycleDueDate = (anchorDateInput) => {
+  const anchor = new Date(anchorDateInput);
+  if (Number.isNaN(anchor.getTime())) return null;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const due = new Date(anchor);
+  due.setHours(0, 0, 0, 0);
+
+  while (due <= today) {
+    due.setMonth(due.getMonth() + 1);
+  }
+  return due;
+};
+
+const pickRelevantPendingPayment = (payments = []) => {
+  if (!Array.isArray(payments) || payments.length === 0) return null;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const futureOrToday = payments.find((p) => {
+    const d = new Date(p?.dueDate);
+    if (Number.isNaN(d.getTime())) return false;
+    d.setHours(0, 0, 0, 0);
+    return d >= today;
+  });
+  if (futureOrToday) return futureOrToday;
+
+  return payments[payments.length - 1] || payments[0];
+};
+
 const canUserPayForBooking = (booking, userId, userEmail, userName = "") => {
   if (!booking) return false;
   const normalizedEmail = String(userEmail || "").trim().toLowerCase();
@@ -64,8 +99,27 @@ const ensureBookingCompletionRecords = async ({ booking, tenantUser, pgDoc, tena
 
   const checkInDate = booking.checkInDate || new Date().toISOString().split("T")[0];
   const checkOutDate = booking.checkOutDate || addMonths(checkInDate, 11).toISOString().split("T")[0];
-  const safeRent = Number(rentAmount) || Number(booking.bookingAmount) || Number(pgDoc.price) || 0;
-  const securityDeposit = safeRent > 0 ? safeRent * 2 : 0;
+  const bookingPricing = resolveVariantPricing({
+    roomPrices: pgDoc?.roomPrices,
+    roomType: booking.roomType || booking.variantLabel || "N/A",
+    variantLabel: booking.variantLabel || "",
+    fallbackRent: Number(booking.rentAmount || booking.bookingAmount || pgDoc.price || 0),
+    fallbackDeposit: Number(booking.securityDeposit || pgDoc.securityDeposit || 0)
+  });
+  const safeRent = Number(booking.rentAmount || booking.bookingAmount || bookingPricing.rentAmount || rentAmount || 0);
+  const securityDeposit = Number(booking.securityDeposit || bookingPricing.securityDeposit || 0);
+  const variantLabel = booking.variantLabel || bookingPricing.variantLabel || booking.roomType || "N/A";
+
+  booking.rentAmount = safeRent;
+  booking.securityDeposit = securityDeposit;
+  booking.variantLabel = variantLabel;
+  booking.bookingAmount = safeRent;
+  booking.pricingSnapshot = {
+    billingCycle: bookingPricing.billingCycle || booking?.pricingSnapshot?.billingCycle || "Monthly",
+    acType: bookingPricing.acType || booking?.pricingSnapshot?.acType || "Non-AC",
+    features: bookingPricing.features || booking?.pricingSnapshot?.features || {}
+  };
+  await booking.save();
 
   let tenantRecord = await Tenant.findOne({
     ownerId: pgDoc.ownerId,
@@ -126,6 +180,8 @@ const ensureBookingCompletionRecords = async ({ booking, tenantUser, pgDoc, tena
     agreementId: agreement?.agreementId || `AGR-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`,
     pgName: pgDoc.pgName || booking.pgName || "N/A",
     roomNo: booking.roomType || "N/A",
+    roomType: booking.roomType || "N/A",
+    variantLabel,
     tenantName,
     rentAmount: safeRent,
     securityDeposit,
@@ -200,15 +256,32 @@ const createOrder = async (req, res) => {
 
     const requesterEmail = String(req.user?.email || "").trim().toLowerCase();
     let resolvedPgId = pgId || "";
+    if (!bookingId && pgId) {
+      const gateBooking = await Booking.findOne({
+        pgId,
+        status: { $in: ["Pending", "Confirmed"] },
+        ownerApproved: true,
+        $or: [
+          { tenantUserId: req.user.id },
+          requesterEmail ? { tenantEmail: new RegExp(`^${requesterEmail}$`, "i") } : null,
+          req.user?.fullName || req.user?.name ? { tenantName: req.user?.fullName || req.user?.name } : null
+        ].filter(Boolean)
+      }).sort({ createdAt: -1 }).select("_id");
+
+      if (!gateBooking) {
+        return res.status(400).json({ success: false, message: "Owner approval is required before payment" });
+      }
+    }
     if (bookingId) {
-      const booking = await Booking.findById(bookingId).select("status isPaid pgId tenantUserId tenantEmail");
+      const booking = await Booking.findById(bookingId).select("status ownerApproved isPaid pgId tenantUserId tenantEmail");
       if (!booking) {
         return res.status(404).json({ success: false, message: "Booking not found" });
       }
       if (!canUserPayForBooking(booking, req.user.id, requesterEmail, req.user?.fullName || req.user?.name || "")) {
         return res.status(403).json({ success: false, message: "You cannot pay for this booking" });
       }
-      if (String(booking.status || "") !== "Confirmed") {
+      const isOwnerApproved = Boolean(booking.ownerApproved || String(booking.status || "") === "Confirmed");
+      if (!isOwnerApproved || String(booking.status || "") === "Cancelled") {
         return res.status(400).json({ success: false, message: "Owner approval is required before payment" });
       }
       resolvedPgId = resolvedPgId || String(booking.pgId || "");
@@ -265,14 +338,16 @@ const verifyPayment = async (req, res) => {
         if (!canUserPayForBooking(targetBooking, req.user.id, tenantEmail, tenantUser?.fullName || tenantUser?.name || "")) {
           return res.status(403).json({ success: false, message: "You cannot pay for this booking" });
         }
-        if (String(targetBooking.status || "") !== "Confirmed") {
+        const isOwnerApproved = Boolean(targetBooking.ownerApproved || String(targetBooking.status || "") === "Confirmed");
+        if (!isOwnerApproved || String(targetBooking.status || "") === "Cancelled") {
           return res.status(400).json({ success: false, message: "Owner approval is required before payment" });
         }
       }
       if (!targetBooking && pgId) {
         targetBooking = await Booking.findOne({
           pgId,
-          status: "Confirmed",
+          status: { $in: ["Pending", "Confirmed"] },
+          ownerApproved: true,
           $or: [
             { tenantUserId: req.user.id },
             tenantEmail ? { tenantEmail: new RegExp(`^${tenantEmail}$`, "i") } : null,
@@ -285,7 +360,7 @@ const verifyPayment = async (req, res) => {
       }
 
       const normalizedPgId = targetBooking?.pgId || pgId || null;
-      const pgDoc = normalizedPgId ? await Pg.findById(normalizedPgId).select("_id pgName ownerId price agreementTemplate") : null;
+      const pgDoc = normalizedPgId ? await Pg.findById(normalizedPgId).select("_id pgName ownerId price securityDeposit roomPrices agreementTemplate") : null;
 
       const paymentMonth = month || new Date().toLocaleString("en-US", { month: "short", year: "numeric" });
       const normalizedPgName = pgDoc?.pgName || targetBooking?.pgName || null;
@@ -304,8 +379,12 @@ const verifyPayment = async (req, res) => {
       });
 
       if (targetBooking) {
+        targetBooking.ownerApproved = Boolean(targetBooking.ownerApproved || String(targetBooking.status || "") === "Confirmed");
         targetBooking.isPaid = true;
         targetBooking.paymentStatus = "Paid";
+        if (targetBooking.ownerApproved && String(targetBooking.status || "") !== "Cancelled") {
+          targetBooking.status = "Confirmed";
+        }
         if (!targetBooking.tenantUserId) targetBooking.tenantUserId = req.user.id;
         if (tenantEmail && !targetBooking.tenantEmail) targetBooking.tenantEmail = tenantEmail;
         await targetBooking.save();
@@ -313,11 +392,17 @@ const verifyPayment = async (req, res) => {
         await ensureBookingCompletionRecords({
           booking: targetBooking,
           tenantUser,
-          pgDoc: pgDoc || await Pg.findById(targetBooking.pgId).select("_id pgName ownerId price agreementTemplate"),
+          pgDoc: pgDoc || await Pg.findById(targetBooking.pgId).select("_id pgName ownerId price securityDeposit roomPrices agreementTemplate"),
           tenantName: targetBooking.tenantName || tenantName,
           tenantEmail: targetBooking.tenantEmail || tenantEmail,
-          rentAmount: Number(amountPaid) || Number(targetBooking.bookingAmount) || Number(pgDoc?.price) || 0
+          rentAmount: Number(targetBooking.rentAmount || targetBooking.bookingAmount || pgDoc?.price || 0)
         });
+
+        try {
+          await generateAgreementPdf(targetBooking._id);
+        } catch (pdfErr) {
+          console.warn("Agreement PDF generation warning after payment:", pdfErr.message || pdfErr);
+        }
       }
 
       // Mark pending due as paid for this tenant/PG/month.
@@ -337,11 +422,49 @@ const verifyPayment = async (req, res) => {
         pendingQuery.$and = [{ $or: pgMatcher }];
       }
 
-      await PendingPayment.findOneAndUpdate(
+      const paidPending = await PendingPayment.findOneAndUpdate(
         pendingQuery,
         { $set: { status: "Paid" } },
         { sort: { dueDate: 1 } }
       );
+
+      // After marking current cycle as paid, create the next cycle pending entry.
+      // This prevents "next due date" from getting stuck on an old month.
+      const nextAmount =
+        Number(paidPending?.amount) ||
+        Number(targetBooking?.rentAmount || targetBooking?.bookingAmount || 0) ||
+        Number(amountPaid || 0);
+      if (nextAmount > 0) {
+        const nextDueAnchor = paidPending?.dueDate ? new Date(paidPending.dueDate) : new Date();
+        const nextDueDate = addMonths(nextDueAnchor, 1);
+        const nextMonth = getMonthLabel(nextDueDate);
+
+        const nextPendingQuery = {
+          status: { $in: ["Pending", "Overdue"] },
+          month: nextMonth,
+          $or: [
+            { tenant: req.user.id },
+            { tenantName }
+          ]
+        };
+        if (pgMatcher.length > 0) {
+          nextPendingQuery.$and = [{ $or: pgMatcher }];
+        }
+
+        const existingNextPending = await PendingPayment.findOne(nextPendingQuery).select("_id");
+        if (!existingNextPending) {
+          await PendingPayment.create({
+            tenant: req.user.id,
+            pg: normalizedPgId || undefined,
+            pgName: normalizedPgName || "",
+            tenantName,
+            amount: nextAmount,
+            dueDate: nextDueDate,
+            status: "Pending",
+            month: nextMonth
+          });
+        }
+      }
 
       if (targetBooking && pgDoc?.ownerId && process.env.EMAIL_USER && process.env.EMAIL_PASS) {
         const owner = await User.findById(pgDoc.ownerId).select("email fullName");
@@ -412,8 +535,21 @@ const getUserPaymentStats = async (req, res) => {
       .sort({ paymentDate: -1 })
       .select("month paymentDate amountPaid paymentStatus _id pgId pgName tenantName");
 
-    const totalPaid = historyRaw.reduce((sum, p) => sum + (Number(p.amountPaid) || 0), 0);
-    const history = historyRaw.map((p) => ({
+    // Keep latest successful payment per month (prevents stale/duplicate legacy entries in history)
+    const latestByMonth = new Map();
+    historyRaw.forEach((p) => {
+      const monthKey =
+        p.month || new Date(p.paymentDate).toLocaleString("en-US", { month: "short", year: "numeric" });
+      if (!latestByMonth.has(monthKey)) {
+        latestByMonth.set(monthKey, p);
+      }
+    });
+    const filteredHistoryRaw = Array.from(latestByMonth.values()).sort(
+      (a, b) => new Date(b.paymentDate) - new Date(a.paymentDate)
+    );
+
+    const totalPaid = filteredHistoryRaw.reduce((sum, p) => sum + (Number(p.amountPaid) || 0), 0);
+    const history = filteredHistoryRaw.map((p) => ({
       id: p._id,
       month: p.month,
       date: new Date(p.paymentDate).toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" }),
@@ -424,27 +560,38 @@ const getUserPaymentStats = async (req, res) => {
     }));
 
     const booking = await Booking.findOne({
-      status: "Confirmed",
-      $or: [
-        { tenantUserId: req.user.id },
-        tenantEmail ? { tenantEmail: new RegExp(`^${tenantEmail}$`, "i") } : null,
-        { tenantName }
-      ].filter(Boolean)
+      status: { $in: ["Pending", "Confirmed"] },
+      $and: [
+        {
+          $or: [
+            { ownerApproved: true },
+            { status: "Confirmed" }
+          ]
+        },
+        {
+          $or: [
+            { tenantUserId: req.user.id },
+            tenantEmail ? { tenantEmail: new RegExp(`^${tenantEmail}$`, "i") } : null,
+            { tenantName }
+          ].filter(Boolean)
+        }
+      ]
     }).sort({ createdAt: -1 });
 
-    const pendingPayment = await PendingPayment.findOne({
+    const pendingPaymentsRaw = await PendingPayment.find({
       status: { $in: ["Pending", "Overdue"] },
       $or: [
         { tenant: req.user.id },
         { tenantName }
       ]
     }).sort({ dueDate: 1 });
+    const pendingPayment = pickRelevantPendingPayment(pendingPaymentsRaw);
 
     let nextPayment = null;
     let lateFine = 0;
 
     if (pendingPayment) {
-      const due = new Date(pendingPayment.dueDate);
+      const due = getNextCycleDueDate(pendingPayment.dueDate) || new Date(pendingPayment.dueDate);
       const today = new Date();
       due.setHours(0, 0, 0, 0);
       today.setHours(0, 0, 0, 0);
@@ -455,19 +602,27 @@ const getUserPaymentStats = async (req, res) => {
         pgId: pendingPayment.pg || booking?.pgId || null,
         pgName: pendingPayment.pgName || booking?.pgName || "",
         bookingId: booking?._id || null,
-        month: pendingPayment.month || due.toLocaleString("en-US", { month: "short", year: "numeric" }),
+        month: due.toLocaleString("en-US", { month: "short", year: "numeric" }),
         dueDate: due.toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" })
       };
     } else if (booking) {
-      const pg = booking.pgId ? await Pg.findById(booking.pgId).select("price roomPrices") : null;
-      const rent = pg ? Number(pg.price || 0) : 0;
+      const pg = booking.pgId ? await Pg.findById(booking.pgId).select("price securityDeposit roomPrices") : null;
+      const pricing = resolveVariantPricing({
+        roomPrices: pg?.roomPrices,
+        roomType: booking.roomType || booking.variantLabel || "",
+        variantLabel: booking.variantLabel || "",
+        fallbackRent: Number(booking.rentAmount || booking.bookingAmount || pg?.price || 0),
+        fallbackDeposit: Number(booking.securityDeposit || pg?.securityDeposit || 0)
+      });
+      const rent = Number(booking.rentAmount || booking.bookingAmount || pricing.rentAmount || 0);
+      const fallbackDue = getNextCycleDueDate(booking.checkInDate || new Date());
       nextPayment = {
         amount: rent,
         pgId: booking.pgId || null,
         pgName: booking.pgName || "",
         bookingId: booking._id,
-        month: new Date().toLocaleString("en-US", { month: "short", year: "numeric" }),
-        dueDate: booking.checkInDate || new Date().toISOString().split("T")[0]
+        month: (fallbackDue || new Date()).toLocaleString("en-US", { month: "short", year: "numeric" }),
+        dueDate: (fallbackDue || new Date()).toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" })
       };
     }
 

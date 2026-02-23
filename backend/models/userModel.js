@@ -93,7 +93,8 @@ const userSchema = new mongoose.Schema(
     ownerId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User", // Links to the owner's User document [cite: 2026-01-07]
-    }
+    },
+    roomNo: { type: String, default: "" }
   },
   {
     timestamps: true,
