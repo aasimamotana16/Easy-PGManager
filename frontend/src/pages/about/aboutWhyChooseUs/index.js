@@ -26,13 +26,13 @@ const AboutWhyChooseUs = () => {
 
   return (
     /* Updated background to your theme default [cite: 2026-02-09] */
-    <section className="py-16 px-6 lg:px-20 snap-start bg-background">
+    <section className="py-12 px-6 lg:px-20 snap-start bg-background">
       <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-12">
         
         {/* Left Side: Content */}
         <div className="lg:w-1/2">
           {/* Responsive Heading [cite: 2026-02-06] */}
-          <h2 className="text-h2-sm lg:text-h2 font-bold text-primary mb-6">
+          <h2 className=" text-primary mb-6">
             Why Choose Us
           </h2>
 
@@ -42,7 +42,7 @@ const AboutWhyChooseUs = () => {
             transition={{ duration: 0.6 }}
             viewport={{ once: true }}
             /* Standardized text color and size [cite: 2026-02-09] */
-            className="text-textSecondary leading-relaxed text-body-sm lg:text-body mb-8"
+            className="text-textSecondary  mb-8"
           >
             {aboutWhyChooseUs}
           </motion.p>
@@ -64,10 +64,10 @@ const AboutWhyChooseUs = () => {
               >
                 <CheckCircle className="text-primary mt-1 flex-shrink-0" size={24} />
                 <div>
-                  <h4 className="font-bold text-textPrimary text-body-sm lg:text-body">
+                  <h3 className="font-bold text-textPrimary ">
                     {point.title}
-                  </h4>
-                  <p className="text-sm text-textSecondary opacity-80">
+                  </h3>
+                  <p className=" text-textSecondary opacity-80">
                     {point.desc}
                   </p>
                 </div>

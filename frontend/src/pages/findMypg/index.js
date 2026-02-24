@@ -142,14 +142,14 @@ export default function FindMyPG() {
           {/* LEFT SIDE: FILTER SECTION (40%) */}
           <aside className="w-full lg:w-[30%] lg:sticky lg:top-24 mb-8 lg:mb-0">
             <div className="bg-white border border-primary rounded-md p-6 sm:p-8 shadow-sm">
-              <div className="flex items-center justify-between mb-6 pb-4 border-b border-[#E5E0D9]">
+              <div className="flex flex-wrap items-center justify-between gap-3 mb-6 pb-4 border-b border-[#E5E0D9]">
                 <div className="flex items-center gap-3">
-                  <SlidersHorizontal size={20} className="text-[#D97706]" />
-                  <h2 className="text-xl font-bold text-[#1C1C1C]">Search Filters</h2>
+                  <SlidersHorizontal size={24} className="text-[#D97706]" />
+                  <h3 className="font-bold text-[#1C1C1C] mb-0 leading-none">Search Filters</h3>
                 </div>
                 <button 
                    onClick={() => handleFilterChange("reset")}
-                   className="text-sm font-bold text-[#D97706] hover:underline"
+                   className="text-sm font-bold text-[#D97706] hover:underline mb-0 leading-none whitespace-nowrap"
                 >
                   Reset All
                 </button>

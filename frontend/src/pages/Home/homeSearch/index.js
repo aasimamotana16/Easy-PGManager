@@ -64,20 +64,20 @@ const HomeSearch = () => {
 
   return (
     /* Using background and primary border from theme */
-    <div className="bg-background p-6 sm:p-10 rounded-2xl max-w-4xl mx-auto border border-primary relative shadow-md">
+    <div className="bg-background p-6 sm:p-8 rounded-2xl max-w-4xl mx-auto border border-primary relative shadow-md">
       
       {/* Heading - Now fully responsive with text-h2-sm and lg:text-h2 */}
-      <div className="text-center mb-8">
-        <h2 className="text-h2-sm lg:text-h2 text-textPrimary mb-2 leading-tight">
-          Find <span className="text-primary">Paying Guest</span> Accommodation
+      <div className="text-center mb-6">
+        <h2 className=" text-textPrimary mb-2 leading-tight">
+          Find PG near you
         </h2>
-        <p className="text-body-sm lg:text-body text-textSecondary font-medium">
+        <p className=" text-textSecondary ">
           Select your city to explore available PGs near you
         </p>
       </div>
 
       {/* City Selection */}
-      <div className="w-full lg:max-w-xl mx-auto mb-8">
+      <div className="w-full lg:max-w-xl mx-auto mb-6">
         <CSelect
           label="Select Your City"
           name="citySearch"
@@ -90,7 +90,7 @@ const HomeSearch = () => {
       </div>
 
       {/* Modern Separator using border color */}
-      <div className="w-full h-px bg-border mb-8 opacity-50" />
+      <div className="w-full h-px bg-border mb-6 opacity-50" />
 
       {/* Action Button */}
       <div className="flex justify-center">

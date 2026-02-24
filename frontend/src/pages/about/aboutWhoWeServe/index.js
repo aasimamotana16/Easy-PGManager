@@ -21,13 +21,12 @@ const AboutWhoWeServe = () => {
 
   return (
     /* Background set to your default white [cite: 2026-02-09] */
-    <section className="py-16 px-6 snap-start max-w-7xl mx-auto bg-background">
+    <section className="py-12 px-6 snap-start max-w-7xl mx-auto bg-background">
       {/* Section Heading */}
       <div className="mb-10">
-        <h2 className="text-h2-sm lg:text-h2 font-bold text-primary mb-4">
+        <h2 className=" text-primary mb-4">
           Who We Serve
         </h2>
-        <div className="w-20 h-1.5 bg-primary rounded-full"></div>
       </div>
 
       {/* Responsive Grid [cite: 2026-02-06] */}
@@ -57,10 +56,10 @@ const AboutWhoWeServe = () => {
 
         {/* Content Area */}
         <div>
-          <h3 className="text-h3-sm lg:text-h3 font-bold text-textPrimary mb-2">
+          <h3 className=" font-bold text-textPrimary mb-2">
             {item.role}
           </h3>
-          <p className="text-textSecondary text-body-sm lg:text-body leading-relaxed">
+          <p className="text-textSecondary  leading-relaxed">
             {item.desc}
           </p>
         </div>

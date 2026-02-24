@@ -195,7 +195,7 @@ const SignUp = () => {
 
       <div className="relative z-10 w-full px-4 lg:ml-20 flex justify-center lg:justify-start">
         <CFormCard className="bg-white border border-gray-100 rounded-md p-5 sm:p-8 w-full max-w-[360px] lg:max-w-none lg:w-[700px] animate-fadeIn shadow-none">  
-  <div className="mb-2 flex justify-center">
+  <div className="mb-2  flex justify-center">
     <img src="/logos/logo1.png" alt="Logo" className="h-10 md:h-14 w-auto" />
   </div>
 
@@ -204,7 +204,7 @@ const SignUp = () => {
   </h1>
   
   <div className="flex flex-col gap-3">
-    <div className="flex gap-2 mb-2">
+    <div className="flex gap-2 mb-4 gap-4">
       <CButton fullWidth variant={role === "user" ? "contained" : "outlined"} onClick={() => setRole("user")}>User</CButton>
       <CButton fullWidth variant={role === "owner" ? "contained" : "outlined"} onClick={() => setRole("owner")}>Owner</CButton>
     </div>
@@ -219,7 +219,7 @@ const SignUp = () => {
        />
     </div>
 
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div>
         <CInput 
           label="Email" 
@@ -232,7 +232,7 @@ const SignUp = () => {
       </div>
      <div>
   <CInput 
-    label="Phone" 
+    label="Contact Number" 
     type="tel" // 'tel' is great for mobile responsiveness as it opens the number pad
     value={phone} 
     onChange={(e) => {
@@ -251,7 +251,7 @@ const SignUp = () => {
 </div>
     </div>
 
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div className="relative">
         <CInput 
           label="Password" 
@@ -261,7 +261,7 @@ const SignUp = () => {
           error={!!errors.password} 
           helperText={errors.password} // Moved error message inside CInput
         />
-        <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-[42px] text-gray-400">
+        <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/3 -translate-y-1/2 text-gray-400">
           {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
         </button>
         
@@ -288,13 +288,13 @@ const SignUp = () => {
           error={!!errors.confirmPassword} 
           helperText={errors.confirmPassword} // Moved error message inside CInput
         />
-        <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-[42px] text-gray-400">
+        <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-1/3 -translate-y-1/2 text-gray-400">
           {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
         </button>
       </div>
     </div>
 
-    <div className="mt-1">
+    <div >
       <CCheckbox
         checked={agreeTerms}
         onChange={(e) => {
@@ -314,12 +314,12 @@ const SignUp = () => {
       />
     </div>
 
-    <CButton fullWidth variant="contained" className="mt-2" onClick={handleSendOtp} disabled={loading}>
+    <CButton fullWidth variant="contained"  onClick={handleSendOtp} disabled={loading}>
       {loading ? "Sending..." : "Send OTP"}
     </CButton>
   </div>
 
-  <p className="text-center text-sm mt-6 text-gray-600">
+  <p className="text-center text-sm mt-2  text-gray-600">
     Already have an account?{" "}
     <span onClick={() => navigate("/loginPage")} className="font-bold text-[#D97706] cursor-pointer hover:underline underline-offset-4 transition-colors">Login</span>
   </p>

@@ -286,10 +286,10 @@ const PGDetails = () => {
   const averageRating = (reviews.reduce((sum, r) => sum + Number(r.rating || 0), 0) / reviews.length).toFixed(1);
 
   return (
-    <div className="min-h-screen bg-background text-textPrimary overflow-x-hidden">
+    <div className="min-h-screen bg-background text-textPrimary">
       {!isOwnerPreviewRoute && <Navbar />}
 
-      <motion.div initial="hidden" animate="visible" variants={staggerContainer} className="max-w-7xl mx-auto px-4 py-6 md:py-10 flex flex-col lg:flex-row gap-6 lg:gap-12">
+      <motion.div initial="hidden" animate="visible" variants={staggerContainer} className="max-w-7xl mx-auto px-4 py-6 md:py-10 flex flex-col lg:flex-row gap-6 lg:gap-12 overflow-x-hidden">
         
         <div className="w-full lg:w-[65%] flex flex-col gap-6 md:gap-8">
           {/* IMAGE GALLERY */}

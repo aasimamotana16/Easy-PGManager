@@ -6,14 +6,14 @@
 
 @layer base {
   html, body {
-    /* Ensures Poppins is the global default [cite: 2026-02-09] */
-    font-family: 'Poppins', sans-serif !important;
+    /* Ensures Tailwind's configured sans font is the global default */
+    font-family: theme('fontFamily.sans') !important;
     scroll-behavior: smooth;
   }
 
   body {
     /* Updated: text-textPrimary and bg-background match your new config keys [cite: 2026-02-09] */
-    @apply antialiased text-textPrimary bg-background;
+    @apply font-sans antialiased text-textPrimary bg-background;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }

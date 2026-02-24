@@ -22,7 +22,7 @@ const HomeBanner = () => {
 
   return (
     <section className="bg-background overflow-hidden pt-6 sm:pt-0">
-      <div className="max-w-7xl mx-auto px-6 py-10 lg:py-24">
+      <div className="max-w-7xl mx-auto px-6 py-8 lg:py-16">
         <div className="flex flex-col lg:flex-row items-center gap-10 lg:gap-14">
           
           {/* LEFT CONTENT */}
@@ -30,7 +30,7 @@ const HomeBanner = () => {
             
             <motion.h1
               /* UPDATED: Uses h1-sm for mobile and h1 for desktop */
-              className="text-h1-sm lg:text-h1 leading-tight text-textPrimary"
+              className="text-h1 leading-tight text-textPrimary"
               variants={fadeUp}
               initial="hidden"
               animate="visible"

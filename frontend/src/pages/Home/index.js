@@ -54,10 +54,10 @@ const HomePage = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background-default overflow-x-hidden">
+    <div className="min-h-screen flex flex-col bg-background-default">
       <Navbar />
 
-      <main className="flex-grow">
+      <main className="flex-grow overflow-x-hidden">
         {/* Banner Section: Full width but content is centered inside HomeBanner */}
         <section className="w-full">
           <HomeBanner />
@@ -67,7 +67,7 @@ const HomePage = () => {
           - On mobile (default): mt-0 or small negative margin to stay close to banner.
           - On desktop (md+): -mt-12 to overlay the banner.
         */}
-        <section className="relative gap-6 z-10 px-4 sm:px-6 mt-10  max-w-7xl mx-auto">
+        <section className="relative gap-6 z-10 px-4 sm:px-6 mt-6 max-w-7xl mx-auto">
           <HomeSearch />
         </section>
         
@@ -75,7 +75,7 @@ const HomePage = () => {
           - py-10 for mobile to keep sections distinct without massive gaps.
           - md:py-20 for desktop.
         */}
-        <section className="px-4 sm:px-6 py-10  md:py-20 max-w-7xl mx-auto">
+        <section className="px-4 sm:px-6 max-w-7xl mx-auto">
           <HomeFeatures stats={siteStats} />
         </section>
 

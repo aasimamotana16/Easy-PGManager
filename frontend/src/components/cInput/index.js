@@ -1,4 +1,4 @@
-import React, { forwardRef } from "react";
+import React, { forwardRef, useState } from "react";
 
 const CInput = forwardRef(({
   label,
@@ -15,20 +15,32 @@ const CInput = forwardRef(({
   required = false,
   disabled = false,
 }, ref) => {
+  const [isFocused, setIsFocused] = useState(false);
+
+  // Determine if we should show the floating label
+  // Show label when: input is focused, OR there's a value, OR there's an error
+  const showFloatingLabel = isFocused || value?.length > 0 || error;
+
+  // Base input classes - NO shadow, clean border
   const baseInputClasses = `
-    w-full px-4 py-3 rounded-md border transition-all duration-200 focus:outline-none
+    w-full px-4 py-3 rounded-md border-2 transition-all duration-200 focus:outline-none
     text-body-sm lg:text-body
-    ${disabled ? "bg-border/30 cursor-not-allowed opacity-70" : "bg-background"}
+    ${disabled ? "bg-gray-100 cursor-not-allowed opacity-70" : "bg-white"}
     ${
       error
-        ? "border-danger focus:border-danger text-danger placeholder:text-danger/50"
-        : "border-border focus:border-primary text-textPrimary"
+        ? "border-red-500 focus:border-red-600 text-gray-800 placeholder-gray-400"
+        : "border-gray-300 focus:border-amber-600 text-gray-800 placeholder-gray-400"
     }
   `;
 
-  const labelClasses = `
-    font-semibold text-body-sm lg:text-body transition-colors mb-1.5
-    ${error ? "text-danger" : "text-textSecondary"}
+  // Floating label classes - solid white background, no shadow, proper padding
+  const floatingLabelClasses = `
+    absolute left-2 transition-all duration-200 pointer-events-none
+    ${showFloatingLabel 
+      ? "top-[-10px] text-xs bg-white px-1" 
+      : "top-1/2 -translate-y-1/2 text-sm text-gray-500"
+    }
+    ${error ? "text-red-600 font-semibold" : isFocused ? "text-amber-600 font-semibold" : "text-gray-500"}
   `;
 
   const handleWheel = (e) => {
@@ -37,62 +49,97 @@ const CInput = forwardRef(({
     }
   };
 
-  return (
-    <div className={`flex flex-col ${className}`}>
-      {label && (
-        <label className={labelClasses}>
-          {label}
-          {required && <span className="text-danger ml-1">*</span>}
-        </label>
-      )}
-
-      <div className="relative">
-        {type === "select" ? (
-          <select
-            name={name}
-            value={value}
-            onChange={onChange}
-            disabled={disabled}
-            className={`${baseInputClasses} h-12 lg:h-14 cursor-pointer`}
-          >
-            {!value && <option value="">Select an option</option>}
-            {options.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-        ) : type === "textarea" || type === "multiline" ? (
-          <textarea
-            ref={ref}
-            name={name}
-            value={value}
-            onChange={onChange}
-            placeholder={placeholder}
-            rows={rows}
-            disabled={disabled}
-            className={`${baseInputClasses} resize-none`}
-          />
-        ) : (
-          <input
-            ref={ref}
-            type={type}
-            name={name}
-            value={value}
-            onChange={onChange}
-            placeholder={placeholder}
-            disabled={disabled}
-            onWheel={handleWheel}
-            className={`${baseInputClasses} h-12 lg:h-10`}
-          />
+  // For select, textarea - use traditional label display
+  if (type === "select") {
+    return (
+      <div className={`flex flex-col ${className} mb-4`}>
+        {label && (
+          <label className={`font-medium text-sm text-gray-700 mb-1 ${error ? "text-red-600" : ""}`}>
+            {label}
+            {required && <span className="text-red-500 ml-1">*</span>}
+          </label>
         )}
+        <select
+          name={name}
+          value={value}
+          onChange={onChange}
+          disabled={disabled}
+          className={`${baseInputClasses} h-12 cursor-pointer`}
+        >
+          {!value && <option value="">Select an option</option>}
+          {options.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+        <span className="text-xs text-red-500 font-medium mt-1 pl-4 block text-left">
+  {error ? helperText : ""}
+</span>
+      </div>
+    );
+  }
+
+  if (type === "textarea" || type === "multiline") {
+    return (
+      <div className={`flex flex-col ${className} mb-4`}>
+        {label && (
+          <label className={`font-medium text-sm text-gray-700 mb-1 ${error ? "text-red-600" : ""}`}>
+            {label}
+            {required && <span className="text-red-500 ml-1">*</span>}
+          </label>
+        )}
+        <textarea
+          ref={ref}
+          name={name}
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
+          rows={rows}
+          disabled={disabled}
+          className={`${baseInputClasses} resize-none`}
+        />
+        <span className="text-xs text-red-500 font-medium mt-1 pl-4 block text-left ">
+  {error ? helperText : ""}
+</span>
+      </div>
+    );
+  }
+
+  // For regular inputs - use floating label pattern
+  return (
+    <div className={`flex flex-col ${className} mb-3`}>
+      <div className="relative">
+        {/* Floating Label */}
+        {label && (
+          <label
+            className={floatingLabelClasses}
+            style={showFloatingLabel ? { zIndex: 10 } : {}}
+          >
+            {label}
+            {required && <span className="text-red-500 ml-0.5">*</span>}
+          </label>
+        )}
+        
+        <input
+          ref={ref}
+          type={type}
+          name={name}
+          value={value}
+          onChange={onChange}
+          placeholder={showFloatingLabel ? "" : placeholder}
+          disabled={disabled}
+          onWheel={handleWheel}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
+          className={`${baseInputClasses} h-12 ${showFloatingLabel ? "pt-3" : ""}`}
+        />
       </div>
 
-      {error && helperText && (
-        <span className="text-[10px] text-danger font-medium leading-none mt-1.5 ml-1">
-          {helperText}
-        </span>
-      )}
+      {/* Error message below input */}
+      <span className="text-xs text-red-500 font-medium mt-1  pl-2 block text-left ">
+  {error ? helperText : ""}
+</span>
     </div>
   );
 });

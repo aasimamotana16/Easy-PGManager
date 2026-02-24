@@ -52,7 +52,7 @@ const AboutFeatures = () => {
               {feature.title}
             </h4>
             {/* Body text uses responsive sizing and secondary text color [cite: 2026-02-06, 2026-02-09] */}
-            <p className="text-textSecondary text-body-sm lg:text-body leading-relaxed">
+            <p className="text-textSecondary  leading-relaxed">
               {feature.desc}
             </p>
           </motion.div>
@@ -62,13 +62,13 @@ const AboutFeatures = () => {
   );
 
   return (
-    <section className="py-16 px-6 max-w-7xl mx-auto bg-background">
+    <section className="py-12 px-6 max-w-7xl mx-auto bg-background">
       <div className="mb-12">
         {/* Main Header with responsive variant [cite: 2026-02-06] */}
-        <h2 className="text-h2-sm lg:text-h2 font-bold text-primary mb-4">
+        <h2 className=" text-primary mb-4">
           Our Key Features
         </h2>
-        <p className="text-textSecondary text-body-sm lg:text-body max-w-2xl">
+        <p className="text-textSecondary  max-w-2xl">
           Tailored solutions for both property owners and their valued residents.
         </p>
       </div>

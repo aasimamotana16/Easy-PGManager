@@ -34,7 +34,7 @@ const AboutIntro = () => {
             transition={{ delay: 0.3 }}
             className="text-primary uppercase tracking-[0.3em] font-bold mb-4 text-sm sm:text-xl"
           >
-            Since 2025
+            Since 2026
           </motion.p>
 
           {/* MAIN HEADING - Responsive Text Scaling */}
@@ -42,7 +42,7 @@ const AboutIntro = () => {
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
-            className="text-textLight mb-6 text-4xl sm:text-6xl lg:text-8xl font-extrabold leading-[1.1]"
+            className="text-textLight mb-6  lg:text-8xl font-extrabold leading-[1.1]"
           >
             Redefining <br />
             <span className="text-primary italic">PG Management</span>
@@ -66,7 +66,7 @@ const AboutIntro = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.9 }}
               /* Border-primary used as an accent */
-              className="text-textLight opacity-70 text-body-sm sm:text-xl border-l-4 border-primary pl-6"
+              className="text-textLight opacity-70 border-l-4 border-primary pl-6"
             >
               Our mission is to simplify bookings, automate payments, and provide 
               real-time tracking for every property.

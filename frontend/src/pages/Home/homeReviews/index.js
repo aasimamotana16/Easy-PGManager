@@ -106,14 +106,16 @@ const HomeReviews = () => {
   }, [cardWidth, currentSlide, loading, reviews]);
 
   return (
-    <section className="py-8 px-6 bg-white snap-start">
+    <section className="py-6 px-6 bg-white snap-start">
       <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col mb-6">
-          <h2 className="text-h3 font-bold text-primary mb-2">What Our Users Say</h2>
-          <div className="w-20 h-1.5 bg-primary rounded-full"></div>
+        <div className="flex flex-col mb-4">
+          <h2 className="  text-black mb-3">What Our <span className="text-primary">Users</span> Say</h2>
+          <p className="text-textSecondary  max-w-2xl">
+            Real feedback from PG owners and tenants who use EasyPG Manager daily.
+          </p>
         </div>
 
-        <div className="relative mt-4">
+        <div className="relative ">
           <div
             ref={containerRef}
             onMouseEnter={() => setPaused(true)}
@@ -219,34 +221,62 @@ const HomeReviews = () => {
           </div>
 
           {/* Arrows */}
-          <button
-            aria-label="Previous review"
-            onClick={() => {
-              const visibleCount = (loading ? fallbackReviews : reviews).length || 0;
-              if (visibleCount === 0) return;
-              setPaused(true);
-              setCurrentSlide((s) => (s - 1 + visibleCount) % visibleCount);
-              setTimeout(() => setPaused(false), 1500);
-            }}
-            className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-2 rounded-full shadow-md border border-border"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-primary rotate-90" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M12.293 16.293a1 1 0 010 1.414l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L8.414 10l5.293 5.293a1 1 0 010 1.414z" clipRule="evenodd"/></svg>
-          </button>
+          {!isMobile && (
+            <>
+              <button
+                aria-label="Previous review"
+                onClick={() => {
+                  const visibleCount = (loading ? fallbackReviews : reviews).length || 0;
+                  if (visibleCount === 0) return;
+                  setPaused(true);
+                  setCurrentSlide((s) => (s - 1 + visibleCount) % visibleCount);
+                  setTimeout(() => setPaused(false), 1500);
+                }}
+                className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white w-10 h-10 rounded-full shadow-md border border-border flex items-center justify-center"
+              >
+                <span className="text-primary text-lg leading-none">←</span>
+              </button>
 
-          <button
-            aria-label="Next review"
-            onClick={() => {
-              const visibleCount = (loading ? fallbackReviews : reviews).length || 0;
-              if (visibleCount === 0) return;
-              setPaused(true);
-              setCurrentSlide((s) => (s + 1) % visibleCount);
-              setTimeout(() => setPaused(false), 1500);
-            }}
-            className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-2 rounded-full shadow-md border border-border"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-primary -rotate-90" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M12.293 16.293a1 1 0 010 1.414l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L8.414 10l5.293 5.293a1 1 0 010 1.414z" clipRule="evenodd"/></svg>
-          </button>
+              <button
+                aria-label="Next review"
+                onClick={() => {
+                  const visibleCount = (loading ? fallbackReviews : reviews).length || 0;
+                  if (visibleCount === 0) return;
+                  setPaused(true);
+                  setCurrentSlide((s) => (s + 1) % visibleCount);
+                  setTimeout(() => setPaused(false), 1500);
+                }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white w-10 h-10 rounded-full shadow-md border border-border flex items-center justify-center"
+              >
+                <span className="text-primary text-lg leading-none">→</span>
+              </button>
+            </>
+          )}
         </div>
+
+        {/* Pagination dots (mobile/tablet) */}
+        {isMobile && (
+          <div className="mt-4 flex items-center justify-center gap-2">
+            {Array.from({ length: (loading ? fallbackReviews : reviews).length || 0 }).map((_, idx) => (
+              <button
+                key={`dot-${idx}`}
+                aria-label={`Go to review ${idx + 1}`}
+                onClick={() => {
+                  const visibleCount = (loading ? fallbackReviews : reviews).length || 0;
+                  if (visibleCount === 0) return;
+                  setPaused(true);
+                  setCurrentSlide(idx);
+                  setTimeout(() => setPaused(false), 1500);
+                }}
+                className={
+                  idx === currentSlide
+                    ? "w-2.5 h-2.5 rounded-full bg-primary"
+                    : "w-2.5 h-2.5 rounded-full bg-primarySoft border border-border"
+                }
+              />
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );

@@ -170,7 +170,7 @@ const Login = () => {
             Login – EasyPG <span className="text-black"> Manager</span>
           </h1>
 
-          <div className="flex gap-2 mb-4">
+          <div className="flex gap-3 mb-6">
             <CButton
               fullWidth
               className="text-sm"
@@ -189,7 +189,7 @@ const Login = () => {
             </CButton>
           </div>
 
-          <div className="mb-2">
+          <div className="space-y-4">
             <CInput
               label="Email"
               type="email"
@@ -201,46 +201,48 @@ const Login = () => {
                 if (errors.email) setErrors({ ...errors, email: "" });
               }}
             />
+
+            <div className="relative">
+              <CInput
+                label="Password"
+                type={showPassword ? "text" : "password"}
+                value={password}
+                error={!!errors.password}
+                helperText={errors.password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (errors.password) setErrors({ ...errors, password: "" });
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/3 -translate-y-1/2 text-gray-400 hover:text-amber-600 transition-colors"
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
           </div>
 
-          <div className="relative w-full mb-4">
-            <CInput
-              label="Password"
-              type={showPassword ? "text" : "password"}
-              value={password}
-              error={!!errors.password}
-              helperText={errors.password}
-              onChange={(e) => {
-                setPassword(e.target.value);
-                if (errors.password) setErrors({ ...errors, password: "" });
-              }}
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-[46px] text-gray-400"
-            >
-              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-            </button>
+          <div className="mt-6">
+            <CButton fullWidth onClick={handleLoginClick} disabled={loading}>
+              {loading ? "Logging in..." : "Login"}
+            </CButton>
           </div>
 
-          <CButton fullWidth onClick={handleLoginClick} disabled={loading}>
-            {loading ? "Logging in..." : "Login"}
-          </CButton>
-
-          <div className="flex justify-between items-center text-xs mt-4">
+          <div className="flex justify-between items-center mt-4 pt-2 border-t border-gray-100">
             <CCheckbox
               label="Remember Me"
               checked={rememberMe}
               onChange={(e) => setRememberMe(e.target.checked)}
-              className="scale-90 origin-left"
+              className="mb-0"
             />
-            <a href="/forgot-password" style={{ color: "#D97706" }} className="text-xs hover:underline">
+            <a href="/forgot-password" className="text-sm text-amber-600 hover:underline whitespace-nowrap">
               Forgot Password?
             </a>
           </div>
 
-          <p className="text-center text-sm mt-4 text-gray-600">
+          <p className="text-center text-sm mt-3 text-gray-600">
             Don’t have an account?{" "}
             <span
               onClick={() => navigate("/signup")}

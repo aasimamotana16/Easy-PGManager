@@ -66,14 +66,14 @@ const HomeFeatures = ({ stats, userRole = "guest" }) => {
   return (
     <>
       {/* ================= FEATURES GRID SECTION ================= */}
-      <section className="bg-background px-6 py-12 lg:py-16 mt-6">
+      <section className="bg-background px-6 py-10 lg:py-14 mt-4">
         <div className="max-w-7xl mx-auto">
           <motion.div className="text-center mb-16" variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }}>
             {/* Responsive Typography for Feature Header [cite: 2026-02-06] */}
-            <h2 className="text-h2-sm lg:text-h2 text-primary mb-4">
+            <h2 className=" text-primary mb-4">
               Everything You Need to <span className="text-textPrimary">Manage Your PG</span>
             </h2>
-            <p className="text-textSecondary text-body-sm lg:text-body">
+            <p className="text-textSecondary ">
               Powerful features designed to simplify daily operations.
             </p>
           </motion.div>
@@ -90,11 +90,11 @@ const HomeFeatures = ({ stats, userRole = "guest" }) => {
                       {getFeatureIcon(feature.title)}
                     </div>
                     {/* Card Title stays as standard xl on all screens but respects theme color */}
-                    <h3 className="text-xl font-bold text-textPrimary mb-3 group-hover:text-primary">
+                    <h3 className=" font-bold text-textPrimary mb-3 group-hover:text-primary">
                       {feature.title}
                     </h3>
                     {/* Card Body text is now responsive [cite: 2026-02-06] */}
-                    <p className="text-textSecondary text-body-sm lg:text-body leading-relaxed">
+                    <p className="text-textSecondary  leading-relaxed">
                       {feature.desc}
                     </p>
                     {feature.role === "owner" && (
@@ -111,7 +111,7 @@ const HomeFeatures = ({ stats, userRole = "guest" }) => {
       </section>
 
       {/* ================= GET STARTED / CTA SECTION ================= */}
-      <section className="bg-background px-6 py-12 lg:py-20">
+      <section className="bg-background px-6 py-10 lg:py-16">
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
           
           <motion.div 
@@ -119,10 +119,10 @@ const HomeFeatures = ({ stats, userRole = "guest" }) => {
             variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }}
           >
             {/* CTA Header uses responsive h2-sm [cite: 2026-02-06] */}
-            <h2 className="text-h2-sm lg:text-h2 text-textPrimary leading-tight">
+            <h2 className=" text-textPrimary leading-snug">
               <span className="text-primary">Get Started!</span> Onboard your university in just 10 minutes.
             </h2>
-            <p className="mt-6 text-body-sm lg:text-body text-textSecondary max-w-xl mx-auto lg:mx-0">
+            <p className="mt-6  text-textSecondary max-w-xl mx-auto lg:mx-0">
               Manage PGs, bookings, payments, and tenants from a single dashboard designed for scale.
             </p>
 
@@ -146,7 +146,7 @@ const HomeFeatures = ({ stats, userRole = "guest" }) => {
                   </div>
                   <div className="text-left">
                     <p className="text-lg font-bold text-textPrimary">{stat.value}</p>
-                    <p className="text-xs text-textSecondary uppercase tracking-widest font-bold">{stat.label}</p>
+                    <p className="text-base text-textSecondary uppercase tracking-widest ">{stat.label}</p>
                   </div>
                 </div>
               ))}

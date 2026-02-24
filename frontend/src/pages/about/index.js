@@ -34,7 +34,7 @@ const About = () => {
     <div className="min-h-screen flex flex-col bg-background.DEFAULT text-text-secondary">
       <Navbar />
 
-      <main className="flex-1 space-y-16">
+      <main className="flex-1 space-y-10">
         <AboutIntro />
         <AboutWhoWeServe />
         <AboutFeatures />

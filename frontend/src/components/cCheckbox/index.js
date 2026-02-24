@@ -2,31 +2,29 @@ import React from "react";
 
 const CCheckbox = ({ label, checked, onChange, className = "", error = false, helperText = "" }) => {
   return (
-    /* Added relative and pb-4 to reserve space for the absolute error message */
-    <div className={`flex flex-col relative ${helperText ? "pb-4" : ""} ${className}`}>
-      <div className={`flex items-center gap-3 group`}>
+    <div className={`flex flex-col mb-4 ${className}`}>
+      <div className={`flex items-center gap-2 group`}>
         <div className="relative flex items-center">
           <input
             type="checkbox"
             checked={checked}
             onChange={onChange}
-            /* Themed border changes to danger color if there is an error [cite: 2026-02-09] */
-            className={`peer h-5 w-5 rounded border transition-all cursor-pointer accent-primary 
-              ${error ? "border-danger" : "border-border"} 
-              text-primary focus:ring-primarySoft`}
+            className={`peer h-4 w-4 rounded border-2 transition-all cursor-pointer accent-amber-600 
+              ${error ? "border-red-500" : "border-gray-300"} 
+              text-amber-600 focus:ring-2 focus:ring-amber-200 focus:outline-none`}
           />
         </div>
         
         {label && (
-          <span className="text-body-sm text-textSecondary select-none cursor-default">
+          <span className={`text-sm select-none cursor-default ${error ? "text-black" : "text-gray-700"}`}>
             {label}
           </span>
         )}
       </div>
 
-      {/* Absolute error message aligned under the text, not the checkbox icon */}
+      {/* Error message below checkbox */}
       {error && helperText && (
-        <span className="absolute bottom-0 left-8 text-[10px] text-danger font-medium leading-none">
+        <span className="text-xs text-red-500 font-medium mt-1 ml-6">
           {helperText}
         </span>
       )}
