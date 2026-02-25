@@ -1,5 +1,6 @@
 const PG = require('../models/pgModel');
 const Booking = require('../models/bookingModel');
+const { generateAgreementPreviewPdfByPgId } = require('../utils/agreementPdf');
 
 const CITY_ALIASES = {
   ahmedabad: ["ahmedabad", "ahemdabad", "amdavad"],
@@ -15,6 +16,27 @@ const buildCityMatchers = (cityRaw) => {
 const toNumber = (value) => {
   const n = Number(value);
   return Number.isFinite(n) ? n : 0;
+};
+
+const buildHouseRules = (rules = {}, legacyHouseRules = []) => {
+  if (Array.isArray(legacyHouseRules) && legacyHouseRules.length > 0) {
+    return legacyHouseRules.filter(Boolean);
+  }
+
+  const resolvedRules = rules && typeof rules === "object" ? rules : {};
+  const formatted = [
+    `Smoking: ${resolvedRules.smoking ? "Allowed" : "Not allowed"}`,
+    `Alcohol: ${resolvedRules.alcohol ? "Allowed" : "Not allowed"}`,
+    `Visitors: ${resolvedRules.visitors ? "Allowed" : "Not allowed"}`,
+    `Pets: ${resolvedRules.pets ? "Allowed" : "Not allowed"}`
+  ];
+
+  const curfew = String(resolvedRules.curfew || "").trim();
+  if (curfew) {
+    formatted.push(`Gate Closing Time: ${curfew}`);
+  }
+
+  return formatted;
 };
 
 const getTotalBeds = (pg) => {
@@ -187,7 +209,8 @@ exports.searchPGs = async (req, res) => {
       reservedBeds,
       roomType: pg.roomType || pg.occupancy || "Any",
       type: pg.type || pg.gender || "Any",
-      approval: pg.approvalStatus || (pg.status === "live" ? "confirmed" : "pending")
+      approval: pg.approvalStatus || (pg.status === "live" ? "confirmed" : "pending"),
+      houseRules: buildHouseRules(pg.rules, pg.houseRules)
       });
     });
 
@@ -287,6 +310,7 @@ exports.getAllPgs = async (req, res) => {
       roomType: pg.roomType || pg.occupancy || "Any",
       type: pg.type || pg.gender || "Any",
       approval: pg.approvalStatus || (pg.status === "live" ? "confirmed" : "pending"),
+      houseRules: buildHouseRules(pg.rules, pg.houseRules),
       city: pg.location // Send back as 'city' for the frontend dropdowns to update [cite: 2026-01-06]
       });
     });
@@ -338,6 +362,7 @@ exports.getPgById = async (req, res) => {
       roomType: pg.roomType || pg.occupancy || "Any",
       type: pg.type || pg.gender || "Any",
       approval: pg.approvalStatus || (pg.status === "live" ? "confirmed" : "pending"),
+      houseRules: buildHouseRules(pg.rules, pg.houseRules),
       roomDocs,
       // Include agreement template for booking page
       agreementTemplate: pg.agreementTemplate || null
@@ -345,5 +370,14 @@ exports.getPgById = async (req, res) => {
     res.status(200).json({ success: true, data: responseData });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.getPgAgreementPreview = async (req, res) => {
+  try {
+    const result = await generateAgreementPreviewPdfByPgId(req.params.id);
+    return res.redirect(result.agreementPdfUrl);
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
   }
 };

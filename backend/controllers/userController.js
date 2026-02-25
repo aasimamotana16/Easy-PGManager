@@ -1384,7 +1384,9 @@ const moveIn = async (req, res) => {
   }
 };
 
-// @desc User requests Move-Out (checks 60 day rule)
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+// @desc User requests Move-Out with notice date and long-term notice fine policy
 const moveOut = async (req, res) => {
   try {
     const userId = req.user._id;
@@ -1394,7 +1396,24 @@ const moveOut = async (req, res) => {
       return res.status(404).json({ success: false, message: "Tenant record not found. Contact owner." });
     }
 
-    // find active or pending checkin for user for 60-day rule info
+    const moveOutDateRaw = req.body?.moveOutDate || req.body?.requestedMoveOutDate;
+    if (!moveOutDateRaw) {
+      return res.status(400).json({ success: false, message: "Move-out date is required." });
+    }
+
+    const requestedMoveOutDate = new Date(moveOutDateRaw);
+    if (Number.isNaN(requestedMoveOutDate.getTime())) {
+      return res.status(400).json({ success: false, message: "Invalid move-out date." });
+    }
+    requestedMoveOutDate.setHours(0, 0, 0, 0);
+
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    if (requestedMoveOutDate < todayStart) {
+      return res.status(400).json({ success: false, message: "Move-out date cannot be in the past." });
+    }
+
+    // find active or pending checkin for user for stay info
     const checkin = await CheckIn.findOne({ userId, status: { $in: ['Present', 'Pending'] } }).sort({ createdAt: -1 });
     const joinDate = checkin?.checkInDate ? new Date(checkin.checkInDate) : new Date(tenant.joiningDate);
     const today = new Date();
@@ -1403,20 +1422,50 @@ const moveOut = async (req, res) => {
 
     let rentAmount = 0;
     const agreement = await Agreement.findOne({ userId }).sort({ createdAt: -1 });
+    const booking = await getLatestTenantBookingForUser(
+      userId,
+      req.user?.email || "",
+      req.user?.fullName || ""
+    );
     if (agreement?.rentAmount) rentAmount = Number(agreement.rentAmount) || 0;
+    if (!rentAmount && booking?.rentAmount) rentAmount = Number(booking.rentAmount) || 0;
+    if (!rentAmount && booking?.bookingAmount) rentAmount = Number(booking.bookingAmount) || 0;
+
+    const isLongTermStay =
+      Boolean(agreement?.isLongTerm) ||
+      String(agreement?.endDate || "").toLowerCase() === "long term" ||
+      String(booking?.checkOutDate || "").toLowerCase() === "long term";
+
+    const noticeDays = Math.max(0, Math.ceil((requestedMoveOutDate - todayStart) / DAY_MS));
+    const shortNoticeFine = isLongTermStay && noticeDays < 30 ? 5000 : 0;
+    const previousMoveOutFine = Math.max(0, Number(tenant.moveOutFineApplied || 0));
+    const existingPendingFine = Math.max(0, Number(tenant.pendingFine || 0));
+    const basePendingFine = Math.max(0, existingPendingFine - previousMoveOutFine);
+    const pendingFine = basePendingFine + shortNoticeFine;
+    const securityDeposit = Math.max(0, Number(tenant.securityDeposit || agreement?.securityDeposit || booking?.securityDeposit || 0));
+    const remainingPayable = Math.max(0, shortNoticeFine - securityDeposit);
 
     tenant.hasMoveOutNotice = true;
     tenant.moveOutRequested = true;
     tenant.moveOutRequestedAt = new Date();
+    tenant.moveOutDateRequested = requestedMoveOutDate;
+    tenant.moveOutNoticeDays = noticeDays;
+    tenant.moveOutFineApplied = shortNoticeFine;
+    tenant.moveOutFineRemainingPayable = remainingPayable;
+    tenant.pendingFine = pendingFine;
     await tenant.save();
 
     return res.status(200).json({
       success: true,
       message: "Move-out request sent to owner for inspection and settlement.",
       moveOutRequested: true,
-      earlyMoveOut: diffDays < 60,
-      penalty: diffDays < 60 ? rentAmount : 0,
-      daysStayed: diffDays
+      daysStayed: diffDays,
+      isLongTermStay,
+      noticeDays,
+      fineApplied: shortNoticeFine,
+      pendingFine,
+      securityDeposit,
+      remainingPayable
     });
   } catch (error) {
     console.error('moveOut error:', error);

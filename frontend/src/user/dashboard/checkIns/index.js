@@ -142,56 +142,58 @@ const CheckIns = () => {
       });
     }
   };
-
-  // --- LOGIC: MOVE-OUT (2-Month Penalty Rule) ---
+  // --- LOGIC: MOVE-OUT (notice date + long-term fine rule) ---
   const handleMoveOut = () => {
-    const today = new Date();
-    // Logic to check if stay is less than 60 days
-    const diffTime = joiningDate ? Math.abs(today - joiningDate) : 0;
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    let penaltyMessage = "";
-    if (diffDays < 60) {
-      penaltyMessage = `
-        <div style="color: #B45309; background: #FEF3C7; padding: 12px; border-radius: 8px; margin-top: 15px; border: 1px solid #D97706; text-align: left; font-size: 14px;">
-          <strong>Early Move-out Warning:</strong><br>
-          You have stayed for only ${diffDays} days. As per policy (minimum 60 days), <b>1 month's rent (₹${rentAmount})</b> will be deducted as a fine.
-        </div>`;
-    }
-
     Swal.fire({
-      title: 'Initiate Permanent Move-Out?',
-      html: `Are you sure you want to end your stay permanently?${penaltyMessage}`,
-      icon: 'warning',
+      title: "Initiate Permanent Move-Out?",
+      html: `
+        <div style="text-align:left;">
+          <p style="margin-bottom:10px;">Select your final move-out date.</p>
+          <label style="font-size:12px;font-weight:600;">Move-out date</label>
+          <input id="moveout-date" type="date" class="swal2-input" />
+          <p style="font-size:11px;color:#B45309;">
+            For long-term stays, less than 1-month notice can apply a fixed Rs 5,000 fine.
+          </p>
+        </div>
+      `,
+      icon: "warning",
       showCancelButton: true,
-      confirmButtonColor: '#1C1C1C',
-      cancelButtonColor: '#4B4B4B',
-      confirmButtonText: 'Confirm Move-Out'
-    }).then(async (result) => {
-      if (result.isConfirmed) {
-        try {
-          const resp = await requestMoveOut();
-
-          if (resp.data?.earlyMoveOut) {
-            Swal.fire({
-              title: 'Move-Out Request Sent',
-              html: `You have stayed only ${resp.data.daysStayed} days. Early move-out penalty can be <b>₹${resp.data.penalty}</b>. Owner will inspect and settle first.`,
-              icon: 'warning',
-              confirmButtonColor: '#D97706'
-            });
-          } else if (resp.data?.success) {
-            Swal.fire({ title: 'Request Sent', text: resp.data.message || 'Move-out request sent to owner.', icon: 'success', confirmButtonColor: '#D97706' });
-          } else {
-            Swal.fire({ title: 'Error', text: resp.data?.message || 'Failed to move-out', icon: 'error', confirmButtonColor: '#D97706' });
-          }
-        } catch (e) {
-          console.error('Move-out API error', e);
-          Swal.fire({ title: 'Error', text: 'Failed to request move-out', icon: 'error', confirmButtonColor: '#D97706' });
+      confirmButtonColor: "#1C1C1C",
+      cancelButtonColor: "#4B4B4B",
+      confirmButtonText: "Confirm Move-Out",
+      preConfirm: () => {
+        const moveOutDate = document.getElementById("moveout-date")?.value;
+        if (!moveOutDate) {
+          Swal.showValidationMessage("Please select move-out date");
+          return null;
         }
+        return { moveOutDate };
+      }
+    }).then(async (result) => {
+      if (!result.isConfirmed || !result.value) return;
+      try {
+        const resp = await requestMoveOut(result.value);
+        if (resp.data?.success) {
+          const fineApplied = Number(resp.data?.fineApplied || 0);
+          const remainingPayable = Number(resp.data?.remainingPayable || 0);
+          const fineHtml = fineApplied > 0
+            ? `<br/><small>Notice fine: <b>Rs ${fineApplied}</b>${remainingPayable > 0 ? ` (Remaining payable: Rs ${remainingPayable})` : ""}</small>`
+            : `<br/><small>No short-notice fine applied.</small>`;
+          Swal.fire({
+            title: "Request Sent",
+            html: `${resp.data.message || "Move-out request sent to owner."}${fineHtml}`,
+            icon: "success",
+            confirmButtonColor: "#D97706"
+          });
+        } else {
+          Swal.fire({ title: "Error", text: resp.data?.message || "Failed to move-out", icon: "error", confirmButtonColor: "#D97706" });
+        }
+      } catch (e) {
+        console.error("Move-out API error", e);
+        Swal.fire({ title: "Error", text: "Failed to request move-out", icon: "error", confirmButtonColor: "#D97706" });
       }
     });
   };
-
   const handleExtension = () => {
     Swal.fire({
       title: 'Request Extension',
@@ -283,6 +285,14 @@ const CheckIns = () => {
                 Request Move-In
               </CButton>
             )}
+            {hasApprovedMoveIn && (
+              <CButton
+                onClick={handleMoveOut}
+                className="max-w-md w-full py-4 text-lg font-bold mt-3"
+              >
+                Request Move-Out
+              </CButton>
+            )}
           </div>
         </div>
 
@@ -349,6 +359,7 @@ const CheckIns = () => {
 };
 
 export default CheckIns;
+
 
 
 

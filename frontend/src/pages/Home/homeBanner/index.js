@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import CButton from "../../../components/cButton";
+import { getUserProfile } from "../../../api/api";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -14,11 +15,33 @@ const fadeUp = {
 
 const HomeBanner = () => {
   const navigate = useNavigate();
+  const [profileCompletion, setProfileCompletion] = useState(null);
 
   // AUTH LOGIC
   const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
   const role = localStorage.getItem("role")?.toLowerCase(); // Added optional chaining and lowercase for safety
   const isProfileComplete = localStorage.getItem("isProfileComplete") === "true"; 
+  const isProfileIncomplete =
+    isLoggedIn &&
+    ((profileCompletion !== null && Number(profileCompletion) < 100) ||
+      (profileCompletion === null && !isProfileComplete));
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        if (!isLoggedIn) return;
+        const res = await getUserProfile();
+        const completion = Number(res?.data?.data?.profileCompletion);
+        if (!mounted || !Number.isFinite(completion)) return;
+        setProfileCompletion(completion);
+        localStorage.setItem("isProfileComplete", completion >= 100 ? "true" : "false");
+      } catch (_) {
+        if (mounted) setProfileCompletion(null);
+      }
+    })();
+    return () => { mounted = false; };
+  }, [isLoggedIn]);
 
   return (
     <section className="bg-background overflow-hidden pt-6 sm:pt-0">
@@ -92,7 +115,7 @@ const HomeBanner = () => {
             </motion.div>
 
             {/* PROFILE ALERT */}
-            {isLoggedIn && !isProfileComplete && (
+            {isProfileIncomplete && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}

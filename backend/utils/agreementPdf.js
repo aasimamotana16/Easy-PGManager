@@ -7,24 +7,6 @@ const User = require("../models/userModel");
 const AdminConfig = require("../models/adminConfigModel");
 const { resolveVariantPricing } = require("./pricingUtils");
 
-const resolveAgreementStampPath = () => {
-  const configured = String(process.env.AGREEMENT_STAMP_PATH || "").trim();
-  const windowsUserStampPath = "C:\\Users\\khans\\OneDrive\\Pictures\\AR-RoundNotary_medium.png";
-  const candidates = [
-    configured,
-    windowsUserStampPath,
-    path.join(__dirname, "..", "uploads", "documents", "notary-stamp.png"),
-    path.join(__dirname, "..", "uploads", "documents", "notary-stamp.jpg"),
-    path.join(__dirname, "..", "uploads", "documents", "notary-stamp.jpeg"),
-    path.join(__dirname, "..", "assets", "notary-stamp.png")
-  ].filter(Boolean);
-
-  for (const candidate of candidates) {
-    if (fs.existsSync(candidate)) return candidate;
-  }
-  return "";
-};
-
 const getAgreementSettingsFromAdminConfig = async () => {
   // Shape 1: new model style -> { key: "global", agreementSettings: {...} }
   const globalConfig = await AdminConfig.findOne({ key: "global" }).lean();
@@ -175,6 +157,20 @@ const writeBodyLine = (doc, text) => {
   doc.text(text, CONTENT_LEFT, doc.y, { width: CONTENT_WIDTH });
 };
 
+const normalizeListValues = (...candidateLists) => {
+  const set = new Set();
+  candidateLists.forEach((list) => {
+    if (!Array.isArray(list)) return;
+    list.forEach((item) => {
+      const normalized = String(item || "").trim();
+      if (normalized) set.add(normalized);
+    });
+  });
+  return Array.from(set);
+};
+
+const formatRuleStatus = (label, value) => `${label}: ${value ? "Allowed" : "Not Allowed"}`;
+
 const drawSectionTitle = (doc, title) => {
   ensurePageSpace(doc, 120);
   doc.moveDown(0.4);
@@ -234,50 +230,42 @@ const writePdf = async ({ outputPath, agreementData }) => {
     align: "center"
   });
   doc.moveDown(0.7);
-
-  const stampBoxY = doc.y;
-  const stampBoxHeight = 78;
-  doc.rect(50, stampBoxY, 495, stampBoxHeight).stroke("#1F2937");
-  doc.font("Helvetica-Bold").fontSize(11).text("e-Stamp Certificate Details", 60, stampBoxY + 8);
-  doc.font("Helvetica").fontSize(10.5);
-  doc.text("Certificate No: ____________________", 60, stampBoxY + 30);
-  doc.text("Certificate Issued Date: ____________________", 60, stampBoxY + 46);
-  doc.text("Unique Doc Reference: ____________________", 60, stampBoxY + 62);
-
-  const stampImagePath = resolveAgreementStampPath();
-  if (stampImagePath) {
-    try {
-      // Place circular notary stamp on the right side of the e-stamp section.
-      doc.image(stampImagePath, 430, stampBoxY + 8, {
-        fit: [105, 62],
-        align: "right",
-        valign: "top"
-      });
-    } catch (error) {
-      // Keep PDF generation resilient even if image cannot be parsed.
-      doc.font("Helvetica-Oblique").fontSize(8).fillColor("#6B7280").text(
-        "Stamp image could not be rendered.",
-        418,
-        stampBoxY + 56,
-        { width: 118, align: "right" }
-      );
-      doc.font("Helvetica").fontSize(10.5).fillColor("#111111");
-    }
-  }
-  doc.y = stampBoxY + stampBoxHeight + 12;
+  doc.moveDown(0.4);
 
   drawSectionTitle(doc, "Parties & Booking Details");
   writeBodyLine(doc, `Booking ID: ${agreementData.bookingCode}`);
   writeBodyLine(doc, `Owner (First Party): ${agreementData.ownerName}`);
   writeBodyLine(doc, `Tenant (Second Party): ${agreementData.tenantName}`);
   writeBodyLine(doc, `Property Name: ${agreementData.propertyName}`);
+  writeBodyLine(doc, `City: ${agreementData.city}`);
+  writeBodyLine(doc, `Area/Landmark: ${agreementData.area}`);
+  writeBodyLine(doc, `Full Address: ${agreementData.address}`);
   writeBodyLine(doc, `Accommodation Variant: ${agreementData.variantLabel}`);
   writeBodyLine(doc, `Check-In Date: ${agreementData.checkInDate}`);
   writeBodyLine(doc, `Check-Out Date: ${agreementData.checkOutDate}`);
+  writeBodyLine(doc, `Room Type Selected: ${agreementData.roomTypeLabel}`);
+  writeBodyLine(doc, `Bed Type: ${agreementData.acTypeLabel}`);
 
   drawSectionTitle(doc, "Financial Terms");
   writeBodyLine(doc, `Monthly Rent: INR ${agreementData.rentAmount}`);
   writeBodyLine(doc, `Security Deposit: INR ${agreementData.securityDeposit}`);
+
+  drawSectionTitle(doc, "Property Facilities");
+  writeBodyLine(doc, `Total Facilities Provided: ${agreementData.facilityCount}`);
+  if (agreementData.facilities.length > 0) {
+    writeBodyLine(doc, `Facilities List: ${agreementData.facilities.join(", ")}`);
+  } else {
+    writeBodyLine(doc, "Facilities List: Not specified by owner");
+  }
+
+  drawSectionTitle(doc, "Property Rules");
+  if (agreementData.rules.length > 0) {
+    agreementData.rules.forEach((rule, index) => {
+      writeBodyLine(doc, `${index + 1}. ${rule}`);
+    });
+  } else {
+    writeBodyLine(doc, "No house rules specified by owner.");
+  }
 
   drawSectionTitle(doc, "Schedule A: Property Inventory");
   drawInventoryTable(doc, agreementData.inventoryRows);
@@ -381,6 +369,22 @@ const generateAgreementPdf = async (bookingId) => {
   const propertyName = String(pgDoc?.pgName || booking.pgName || "PG Property");
   const checkInDate = String(booking.checkInDate || "");
   const checkOutDate = String(booking.checkOutDate || "Long Term");
+  const city = String(pgDoc?.city || "").trim() || "Not specified";
+  const area = String(pgDoc?.area || "").trim() || "Not specified";
+  const address = String(pgDoc?.address || pgDoc?.location || "").trim() || "Not specified";
+  const facilities = normalizeListValues(pgDoc?.facilities, pgDoc?.amenities);
+  const rules = [
+    formatRuleStatus("Smoking", Boolean(pgDoc?.rules?.smoking)),
+    formatRuleStatus("Alcohol", Boolean(pgDoc?.rules?.alcohol)),
+    formatRuleStatus("Visitors", Boolean(pgDoc?.rules?.visitors)),
+    formatRuleStatus("Pets", Boolean(pgDoc?.rules?.pets))
+  ];
+  const curfew = String(pgDoc?.rules?.curfew || "").trim();
+  if (curfew) {
+    rules.push(`Gate Closing Time: ${curfew}`);
+  }
+  const roomTypeLabel = String(booking.roomType || booking.variantLabel || pgDoc?.occupancy || "Not specified");
+  const acTypeLabel = String(booking.acType || booking.acPreference || "Not specified");
 
   const safeBookingToken = String(booking.bookingId || booking._id).replace(/[^a-zA-Z0-9_-]/g, "");
   const fileName = `agreement-${safeBookingToken}-${Date.now()}.pdf`;
@@ -394,11 +398,19 @@ const generateAgreementPdf = async (bookingId) => {
       ownerName,
       tenantName,
       propertyName,
+      city,
+      area,
+      address,
       variantLabel,
       checkInDate,
       checkOutDate,
+      roomTypeLabel,
+      acTypeLabel,
       rentAmount,
       securityDeposit,
+      facilityCount: facilities.length,
+      facilities,
+      rules,
       inventoryRows: [
         { item: "Fans", quantity: Number(inventory.fanCount ?? 0) || 0 },
         { item: "Lights", quantity: Number(inventory.lightCount ?? 0) || 0 },
@@ -424,6 +436,96 @@ const generateAgreementPdf = async (bookingId) => {
   };
 };
 
+const generateAgreementPreviewPdfByPgId = async (pgId) => {
+  const pgDoc = await Pg.findById(pgId).lean();
+  if (!pgDoc) {
+    throw new Error("PG not found for agreement preview");
+  }
+
+  const owner = pgDoc?.ownerId ? await User.findById(pgDoc.ownerId).select("fullName").lean() : null;
+  const agreementSettings = await getAgreementSettingsFromAdminConfig();
+
+  const previewPricing = resolveVariantPricing({
+    roomPrices: pgDoc?.roomPrices,
+    roomType: pgDoc?.occupancy || "Single",
+    variantLabel: "",
+    fallbackRent: Number(pgDoc?.price || 0),
+    fallbackDeposit: Number(pgDoc?.securityDeposit || 0)
+  });
+  const inventory = resolveInventory(pgDoc);
+
+  const ownerName = String(owner?.fullName || "Owner");
+  const tenantName = "Prospective Tenant";
+  const propertyName = String(pgDoc?.pgName || "PG Property");
+  const checkInDate = "To be decided";
+  const checkOutDate = "As per booking";
+  const city = String(pgDoc?.city || "").trim() || "Not specified";
+  const area = String(pgDoc?.area || "").trim() || "Not specified";
+  const address = String(pgDoc?.address || pgDoc?.location || "").trim() || "Not specified";
+  const facilities = normalizeListValues(pgDoc?.facilities, pgDoc?.amenities);
+  const rules = [
+    formatRuleStatus("Smoking", Boolean(pgDoc?.rules?.smoking)),
+    formatRuleStatus("Alcohol", Boolean(pgDoc?.rules?.alcohol)),
+    formatRuleStatus("Visitors", Boolean(pgDoc?.rules?.visitors)),
+    formatRuleStatus("Pets", Boolean(pgDoc?.rules?.pets))
+  ];
+  const curfew = String(pgDoc?.rules?.curfew || "").trim();
+  if (curfew) rules.push(`Gate Closing Time: ${curfew}`);
+
+  const roomTypeLabel = String(previewPricing.variantLabel || pgDoc?.occupancy || "Not specified");
+  const acTypeLabel = String(previewPricing.acType || "Not specified");
+  const rentAmount = Number(previewPricing.rentAmount || pgDoc?.price || 0);
+  const securityDeposit = Number(previewPricing.securityDeposit || pgDoc?.securityDeposit || 0);
+
+  const safePgToken = String(pgDoc?._id || pgId).replace(/[^a-zA-Z0-9_-]/g, "");
+  const fileName = `agreement-preview-${safePgToken}-${Date.now()}.pdf`;
+  const absolutePath = path.join(__dirname, "..", "uploads", "agreements", fileName);
+  const publicUrl = `/uploads/agreements/${fileName}`;
+
+  await writePdf({
+    outputPath: absolutePath,
+    agreementData: {
+      bookingCode: `PREVIEW-${safePgToken}`,
+      ownerName,
+      tenantName,
+      propertyName,
+      city,
+      area,
+      address,
+      variantLabel: roomTypeLabel,
+      checkInDate,
+      checkOutDate,
+      roomTypeLabel,
+      acTypeLabel,
+      rentAmount,
+      securityDeposit,
+      facilityCount: facilities.length,
+      facilities,
+      rules,
+      inventoryRows: [
+        { item: "Fans", quantity: Number(inventory.fanCount ?? 0) || 0 },
+        { item: "Lights", quantity: Number(inventory.lightCount ?? 0) || 0 },
+        { item: "Beds", quantity: Number(inventory.bedCount ?? 0) || 0 },
+        { item: "Mattresses", quantity: Number(inventory.mattressCount ?? 0) || 0 },
+        { item: "Cupboards", quantity: Number(inventory.cupboardCount ?? 0) || 0 }
+      ],
+      fixedClauses: (Array.isArray(agreementSettings?.fixedClauses) ? agreementSettings.fixedClauses : [])
+        .map((clause) => String(clause || "").trim())
+        .filter(Boolean),
+      jurisdiction: String(agreementSettings?.jurisdiction || "").trim(),
+      platformDisclaimer: String(agreementSettings?.platformDisclaimer || "").trim(),
+      esignConsentText: String(agreementSettings?.esignConsentText || "").trim() || "Preview copy for booking terms."
+    }
+  });
+
+  return {
+    pgId: pgDoc._id,
+    agreementPdfUrl: publicUrl,
+    absolutePath
+  };
+};
+
 module.exports = {
-  generateAgreementPdf
+  generateAgreementPdf,
+  generateAgreementPreviewPdfByPgId
 };

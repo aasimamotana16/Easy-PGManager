@@ -66,7 +66,7 @@ export const createCheckIn = (data) => API.post("/users/checkin-action", data);
 export const getOwnerContactData = () => API.get("/users/my-owner-contact");
 export const requestExtension = (payload) => API.put("/users/request-extension", payload);
 export const requestMoveIn = () => API.put("/users/move-in");
-export const requestMoveOut = () => API.put("/users/move-out");
+export const requestMoveOut = (payload) => API.put("/users/move-out", payload || {});
 
 /* =========================
     OWNER & PROPERTY APIs 

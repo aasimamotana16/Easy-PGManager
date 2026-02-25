@@ -37,6 +37,16 @@ export const features = [
     desc: "Gain insights with detailed reports and analytics for smarter decisions.",
     role: "owner"
   },
+  {
+    title: "Booking Oversight",
+    desc: "Track incoming bookings, approvals, and occupancy from one clear panel.",
+    role: "owner"
+  },
+  {
+    title: "Agreement Control",
+    desc: "Create and manage tenant agreements digitally with complete audit visibility.",
+    role: "owner"
+  },
   // TENANT / USER FEATURES
   {
     title: "Find My PG",
@@ -57,6 +67,49 @@ export const features = [
     title: "24/7 Support",
     desc: "Raise maintenance requests and get support directly through the app.",
     role: "tenant"
+  },
+  {
+    title: "Owner Contact",
+    desc: "Connect with your property owner quickly for rent, move-in, and agreement help.",
+    role: "tenant"
+  },
+  {
+    title: "Digital Agreements",
+    desc: "View and download your agreement anytime with transparent rental terms.",
+    role: "tenant"
+  }
+];
+
+export const guestFeatures = [
+  {
+    title: "Verified Properties",
+    desc: "All PGs are verified and inspected for quality and safety.",
+    role: "guest"
+  },
+  {
+    title: "Easy Booking",
+    desc: "Simple and quick booking process with instant confirmation.",
+    role: "guest"
+  },
+  {
+    title: "Secure Payments",
+    desc: "Safe and secure payment gateway with multiple options.",
+    role: "guest"
+  },
+  {
+    title: "Real-time Updates",
+    desc: "Get instant notifications for bookings and payments.",
+    role: "guest"
+  },
+  {
+    title: "24/7 Support",
+    desc: "Round-the-clock support for all your stay and onboarding needs.",
+    role: "guest"
+  },
+  {
+    title: "Digital Agreements",
+    desc: "Transparent agreements and documents available online anytime.",
+    role: "guest"
   }
 ];
 

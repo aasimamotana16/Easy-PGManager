@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { features } from "../../../config/staticData";
+import { features, guestFeatures } from "../../../config/staticData";
 import { getHomeFeatures } from "../../../api/api";
 import CFormCard from "../../../components/cFormCard";
 import CButton from "../../../components/cButton";
@@ -43,25 +43,58 @@ const getFeatureIcon = (title) => {
   return <ShieldCheck {...iconProps} />;
 };
 
-const HomeFeatures = ({ stats, userRole = "guest" }) => {
+const HomeFeatures = ({ stats, userRole }) => {
   const [featureList, setFeatureList] = useState(features);
   const [openDemo, setOpenDemo] = useState(false);
+  const effectiveRole =
+    userRole && String(userRole).toLowerCase().trim() !== "guest"
+      ? userRole
+      : localStorage.getItem("role");
+  const resolvedRoleRaw = String(effectiveRole || "guest").toLowerCase().trim();
+  const isOwnerRole = resolvedRoleRaw.includes("owner");
+  const isTenantRole =
+    resolvedRoleRaw.includes("tenant") ||
+    resolvedRoleRaw.includes("user");
+  const resolvedRole = isOwnerRole ? "owner" : isTenantRole ? "tenant" : "guest";
 
   useEffect(() => {
     const fetchFeatureData = async () => {
       try {
         const response = await getHomeFeatures();
-        if (response?.data) setFeatureList(response.data);
+        const payload = Array.isArray(response?.data?.data)
+          ? response.data.data
+          : Array.isArray(response?.data)
+            ? response.data
+            : [];
+
+        const normalized = payload.map((item) => ({
+          ...item,
+          role: String(item?.role || "").toLowerCase()
+        }));
+        const hasRoleAwareData = normalized.some((item) => item.role === "owner" || item.role === "tenant");
+        setFeatureList(hasRoleAwareData ? normalized : features);
       } catch (err) {
         console.error("Error loading features:", err);
+        setFeatureList(features);
       }
     };
     fetchFeatureData();
   }, []);
 
-  const filteredFeatures = featureList.filter(f => 
-    userRole === "owner" ? true : f.role !== "owner"
-  );
+  const ownerFallback = features.filter((f) => f.role === "owner").slice(0, 6);
+  const tenantFallback = features.filter((f) => f.role === "tenant").slice(0, 6);
+  const guestFallback = guestFeatures.slice(0, 6);
+
+  let filteredFeatures = [];
+  if (resolvedRole === "owner") {
+    filteredFeatures = featureList.filter((f) => String(f?.role || "").toLowerCase() === "owner").slice(0, 6);
+    if (filteredFeatures.length === 0) filteredFeatures = ownerFallback;
+  } else if (resolvedRole === "tenant") {
+    filteredFeatures = featureList.filter((f) => String(f?.role || "").toLowerCase() === "tenant").slice(0, 6);
+    if (filteredFeatures.length === 0) filteredFeatures = tenantFallback;
+  } else {
+    filteredFeatures = guestFallback;
+  }
 
   return (
     <>
@@ -97,11 +130,6 @@ const HomeFeatures = ({ stats, userRole = "guest" }) => {
                     <p className="text-textSecondary  leading-relaxed">
                       {feature.desc}
                     </p>
-                    {feature.role === "owner" && (
-                      <span className="mt-4 px-3 py-1 bg-primarySoft text-primary text-[10px] font-bold rounded-full uppercase tracking-widest">
-                        Owner Feature
-                      </span>
-                    )}
                   </CFormCard>
                 </div>
               </motion.div>

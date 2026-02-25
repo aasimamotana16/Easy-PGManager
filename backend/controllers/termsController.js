@@ -1,5 +1,34 @@
 const Terms = require('../models/termsModel');
 
+const MOVE_OUT_NOTICE_POLICY_TEXT = [
+  "This fine rule applies only to long-term stays.",
+  "The tenant must give a minimum 1-month prior notice before final move-out.",
+  "If the tenant gives less than 1 month notice, the system applies a fixed fine of ₹5,000.",
+  "The fine is applied once per move-out request, not per day.",
+  "The ₹5,000 fine is automatically deducted from the security deposit during final settlement.",
+  "If the security deposit is less than ₹5,000, the remaining amount is shown as payable by the tenant.",
+  "If the tenant gives full 2-month notice, no notice fine is charged.",
+  "If the tenant exits earlier than their selected move-out date, pro-rated rent for the actual days stayed is deducted from the security deposit during settlement."
+].join(" ");
+
+const applyMoveOutPolicyToTerms = (sections = []) => {
+  const next = Array.isArray(sections) ? [...sections] : [];
+  const bookingIdx = next.findIndex((s) => String(s?.title || "").toLowerCase().includes("booking"));
+  if (bookingIdx >= 0) {
+    next[bookingIdx] = {
+      ...next[bookingIdx],
+      content: MOVE_OUT_NOTICE_POLICY_TEXT
+    };
+  } else {
+    next.push({
+      title: "Booking & Notice Period",
+      content: MOVE_OUT_NOTICE_POLICY_TEXT,
+      order: next.length
+    });
+  }
+  return next;
+};
+
 // Public: Get Terms & Conditions (returns array of sections)
 exports.getTerms = async (req, res) => {
   try {
@@ -19,7 +48,7 @@ exports.getTerms = async (req, res) => {
           },
           {
             title: '3. Booking & Notice Period',
-            content: 'Only logged-in users can make bookings. For long-term stays, tenants must provide a mandatory 2-month notice via the platform before a Final Move-out. Failure to provide sufficient notice may result in a deposit deduction equivalent to the notice period rent.',
+            content: MOVE_OUT_NOTICE_POLICY_TEXT,
             order: 2
           },
           {
@@ -48,9 +77,9 @@ exports.getTerms = async (req, res) => {
             order: 7
           }
         ];
-      return res.status(200).json({ success: true, data: fallback });
+      return res.status(200).json({ success: true, data: applyMoveOutPolicyToTerms(fallback) });
     }
-    res.status(200).json({ success: true, data: terms });
+    res.status(200).json({ success: true, data: applyMoveOutPolicyToTerms(terms) });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

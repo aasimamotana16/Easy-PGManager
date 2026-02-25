@@ -158,7 +158,6 @@ const DemoBook = ({ isOpen, onClose }) => {
                     required
                     error={!!errors.name}
                     helperText={errors.name}
-                    placeholder="Ex: John Doe"
                     value={formData.name}
                     onChange={(e) => handleChange("name", e.target.value)}
                     disabled={isSubmitting}
@@ -170,7 +169,6 @@ const DemoBook = ({ isOpen, onClose }) => {
                     required
                     error={!!errors.email}
                     helperText={errors.email}
-                    placeholder="john@example.com"
                     value={formData.email}
                     onChange={(e) => handleChange("email", e.target.value)}
                     disabled={isSubmitting}
@@ -182,7 +180,6 @@ const DemoBook = ({ isOpen, onClose }) => {
                   required
                   error={!!errors.phone}
                   helperText={errors.phone}
-                  placeholder="10-digit number"
                   value={formData.phone}
                   onChange={(e) => handleChange("phone", e.target.value)}
                   disabled={isSubmitting}
@@ -191,7 +188,6 @@ const DemoBook = ({ isOpen, onClose }) => {
                 <CInput
                   label="Message (Optional)"
                   type="textarea"
-                  placeholder="Anything else?"
                   rows={2}
                   value={formData.message}
                   onChange={(e) => handleChange("message", e.target.value)}

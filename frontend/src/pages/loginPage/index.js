@@ -13,9 +13,6 @@ import { loginUser } from "../../api/api";
 
 const Login = () => {
   const navigate = useNavigate();
-  const isLocalDevHost =
-    typeof window !== "undefined" &&
-    (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
   const [role, setRole] = useState("user");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -62,12 +59,6 @@ const Login = () => {
 
     setErrors(newErrors);
     if (hasError) return;
-
-    // In local development, bypass captcha to avoid reCAPTCHA timeout runtime crashes.
-    if (isLocalDevHost) {
-      executeLogin("development_bypass");
-      return;
-    }
 
     setShowCaptchaModal(true);
   };

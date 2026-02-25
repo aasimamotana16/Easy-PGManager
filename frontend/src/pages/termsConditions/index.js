@@ -67,7 +67,7 @@ const TermsConditions = () => {
                     {index + 1}
                   </div>
                   <h2 className="text-xl font-bold text-[#1C1C1C] group-hover:text-[#D97706] transition-colors">
-                    {item.title}
+                    {String(item.title || "").replace(/^\s*\d+\s*[\.)-]?\s*/, "")}
                   </h2>
                 </div>
 

@@ -15,6 +15,7 @@ router.get('/features', (req, res) => {
   res.json({ success: true, data: [] }); 
 });
 
+router.get('/:id/agreement-preview', pgController.getPgAgreementPreview);
 router.get('/:id', pgController.getPgById);
 
 module.exports = router;

@@ -5,6 +5,7 @@ import CButton from "../../../components/cButton";
 import CInput from "../../../components/cInput";
 import Loader from "../../../components/loader";
 import Swal from "sweetalert2";
+import { getPgById } from "../../../api/api";
 
 const BookingPage = () => {
   const { id } = useParams();
@@ -23,6 +24,7 @@ const BookingPage = () => {
   const [errors, setErrors] = useState({});
   const [paymentOption, setPaymentOption] = useState("deposit_only"); 
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [pgDetails, setPgDetails] = useState(null);
 
   const personRefs = useRef([]);
 
@@ -49,8 +51,25 @@ const BookingPage = () => {
     return () => clearTimeout(timer);
   }, []);
 
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        if (!id) return;
+        const res = await getPgById(id);
+        if (mounted && res?.data?.success) {
+          setPgDetails(res.data.data || null);
+        }
+      } catch (_) {
+        if (mounted) setPgDetails(null);
+      }
+    })();
+    return () => { mounted = false; };
+  }, [id]);
+
   if (pageLoading || backendLoading) return <Loader />;
-  if (!pg) return <div className="text-center mt-20 text-textPrimary">PG not found</div>;
+  const activePg = pgDetails || pg;
+  if (!activePg) return <div className="text-center mt-20 text-textPrimary">PG not found</div>;
 
   const selectedRoom = location.state?.selectedRoom || null;
   const roomTypeKey = String(selectedRoom?.type || "").toLowerCase();
@@ -60,39 +79,39 @@ const BookingPage = () => {
   };
   const deriveRoomVariantPrice = () => {
     if (selectedRoom?.price) return parseNum(selectedRoom.price);
-    if (Array.isArray(pg.roomPrices) && pg.roomPrices.length > 0) {
-      const exact = pg.roomPrices.find((r) => {
+    if (Array.isArray(activePg.roomPrices) && activePg.roomPrices.length > 0) {
+      const exact = activePg.roomPrices.find((r) => {
         const key = String(r.variantName || r.variantLabel || r.roomType || r.type || "").toLowerCase();
         return roomTypeKey && (key === roomTypeKey || key.includes(roomTypeKey) || roomTypeKey.includes(key));
       });
       if (exact) return parseNum(exact.price || exact.rent || exact.pricePerMonth || exact.monthlyRent);
-      return parseNum(pg.roomPrices[0]?.price || pg.roomPrices[0]?.rent || pg.roomPrices[0]?.pricePerMonth || pg.roomPrices[0]?.monthlyRent);
+      return parseNum(activePg.roomPrices[0]?.price || activePg.roomPrices[0]?.rent || activePg.roomPrices[0]?.pricePerMonth || activePg.roomPrices[0]?.monthlyRent);
     }
-    if (pg.roomPrices && typeof pg.roomPrices === "object") {
-      if (roomTypeKey.includes("single")) return parseNum(pg.roomPrices.single);
-      if (roomTypeKey.includes("double")) return parseNum(pg.roomPrices.double);
-      if (roomTypeKey.includes("triple")) return parseNum(pg.roomPrices.triple);
-      return parseNum(pg.roomPrices.other);
+    if (activePg.roomPrices && typeof activePg.roomPrices === "object") {
+      if (roomTypeKey.includes("single")) return parseNum(activePg.roomPrices.single);
+      if (roomTypeKey.includes("double")) return parseNum(activePg.roomPrices.double);
+      if (roomTypeKey.includes("triple")) return parseNum(activePg.roomPrices.triple);
+      return parseNum(activePg.roomPrices.other);
     }
     return 0;
   };
   const deriveRoomVariantDeposit = () => {
     if (selectedRoom?.securityDeposit) return parseNum(selectedRoom.securityDeposit);
-    if (Array.isArray(pg.roomPrices) && pg.roomPrices.length > 0) {
-      const exact = pg.roomPrices.find((r) => {
+    if (Array.isArray(activePg.roomPrices) && activePg.roomPrices.length > 0) {
+      const exact = activePg.roomPrices.find((r) => {
         const key = String(r.variantName || r.variantLabel || r.roomType || r.type || "").toLowerCase();
         return roomTypeKey && (key === roomTypeKey || key.includes(roomTypeKey) || roomTypeKey.includes(key));
       });
       if (exact) return parseNum(exact.securityDeposit || exact.deposit);
-      return parseNum(pg.roomPrices[0]?.securityDeposit || pg.roomPrices[0]?.deposit);
+      return parseNum(activePg.roomPrices[0]?.securityDeposit || activePg.roomPrices[0]?.deposit);
     }
     return 0;
   };
 
   // Calculation Logic
-  const pricePerPerson = deriveRoomVariantPrice() || Number(pg.startingPrice || pg.rent || pg.price || 0);
-  const securityDepositPerPerson = deriveRoomVariantDeposit() || Number(pg.securityDeposit || pricePerPerson); 
-  const maxBeds = pg.availableBeds || 5;
+  const pricePerPerson = deriveRoomVariantPrice() || Number(activePg.startingPrice || activePg.rent || activePg.price || 0);
+  const securityDepositPerPerson = deriveRoomVariantDeposit() || Number(activePg.securityDeposit || pricePerPerson); 
+  const maxBeds = activePg.availableBeds || 5;
   
   const totalRent = pricePerPerson * persons;
   const totalDeposit = securityDepositPerPerson * persons;
@@ -219,11 +238,11 @@ const BookingPage = () => {
     if (result.isConfirmed) {
       setIsSubmitted(true);
       const bookingPayload = {
-        pgId: pg._id,
+        pgId: activePg._id,
         members: personsData,
         stayDetails,
         persons,
-        roomType: selectedRoom?.type || pg.occupancy || "Single Sharing"
+        roomType: selectedRoom?.type || activePg.occupancy || "Single Sharing"
       };
 
       try {
@@ -241,7 +260,7 @@ const BookingPage = () => {
         if (res.ok && body.success) {
           const created = body.booking;
           Swal.fire({ icon: 'success', title: 'Request Sent!', text: 'Owner notified. You will be able to pay once approved.', confirmButtonColor: "#D97706" })
-            .then(() => navigate(`/confirmBook/${pg._id}`, { state: { bookingData: created } }));
+            .then(() => navigate(`/confirmBook/${activePg._id}`, { state: { bookingData: created } }));
         } else {
           throw new Error(body.message || 'Booking request failed');
         }
@@ -256,8 +275,8 @@ const BookingPage = () => {
   return (
     <div className="min-h-screen bg-background px-4 py-10">
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-h2-sm lg:text-h2 font-bold text-textPrimary mb-1">Book {pg.name}</h1>
-        <p className="text-textSecondary text-body-sm lg:text-body mb-8">{pg.location}</p>
+        <h1 className="text-h2-sm lg:text-h2 font-bold text-textPrimary mb-1">Book {activePg.name}</h1>
+        <p className="text-textSecondary text-body-sm lg:text-body mb-8">{activePg.location}</p>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
@@ -343,15 +362,15 @@ const BookingPage = () => {
                 </div>
                 
                 {/* View Agreement PDF Link */}
-                {pg.agreementTemplate?.agreementFileUrl && (
+                {activePg?._id && (
                     <div className="mt-2 pt-2 border-t border-border">
-                        <a 
-                            href={`http://localhost:5000${pg.agreementTemplate.agreementFileUrl}`}
+                        <a
+                            href={`http://localhost:5000/api/pg/${activePg._id}/agreement-preview?t=${Date.now()}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-[11px] text-primary hover:underline flex items-center gap-1"
                         >
-                            <span>📄</span> View Owner Agreement PDF
+                            <span>View Agreement PDF</span>
                         </a>
                     </div>
                 )}

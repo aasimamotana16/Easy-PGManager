@@ -60,12 +60,25 @@ const PGDetails = () => {
   const [roomsFetched, setRoomsFetched] = useState(false);
 
   const role = localStorage.getItem("role"); 
+  const isLoggedIn =
+    localStorage.getItem("isLoggedIn") === "true" ||
+    Boolean(localStorage.getItem("userToken") || localStorage.getItem("token"));
+  const storedUser = useMemo(() => {
+    try {
+      return JSON.parse(localStorage.getItem("user") || "{}");
+    } catch (_) {
+      return {};
+    }
+  }, []);
   const storedUserName = localStorage.getItem("userName") || "";
+  const loggedInEmail = String(storedUser?.email || localStorage.getItem("userEmail") || "").trim();
 
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
   const [editableName, setEditableName] = useState(storedUserName);
   const [formError, setFormError] = useState("");
+  const [hasBookedCurrentPg, setHasBookedCurrentPg] = useState(false);
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
 
   const parsePrice = (val) => {
     if (val === null || val === undefined) return 0;
@@ -115,6 +128,47 @@ const PGDetails = () => {
     })();
     return () => { mounted = false; };
   }, [id, pgFromList, isOwnerPreviewRoute]);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        if (!id || isOwnerPreviewRoute) return;
+        const api = await import("../../api/api");
+        const res = await api.getReviewsByPg(id);
+        if (mounted && res?.data?.success) {
+          setPropertyReviews(Array.isArray(res.data.data) ? res.data.data : []);
+        }
+      } catch (err) {
+        if (mounted) setPropertyReviews([]);
+      }
+    })();
+    return () => { mounted = false; };
+  }, [id, isOwnerPreviewRoute]);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        if (!isLoggedIn || !id || isOwnerPreviewRoute) {
+          if (mounted) setHasBookedCurrentPg(false);
+          return;
+        }
+        const api = await import("../../api/api");
+        const res = await api.getBookings();
+        const rows = Array.isArray(res?.data?.data) ? res.data.data : [];
+        const booked = rows.some((b) => {
+          const bookingPgId = String(b?.pgId || b?.pg?._id || "").trim();
+          const status = String(b?.status || "").toLowerCase();
+          return bookingPgId === String(id) && status !== "cancelled";
+        });
+        if (mounted) setHasBookedCurrentPg(booked);
+      } catch (_) {
+        if (mounted) setHasBookedCurrentPg(false);
+      }
+    })();
+    return () => { mounted = false; };
+  }, [id, isLoggedIn, isOwnerPreviewRoute]);
 
   const allRooms = useMemo(() => {
     if (!pg && !roomDocsState) return [];
@@ -203,10 +257,44 @@ const PGDetails = () => {
       }
     }
 
-    return result.map((room) => ({
-      ...room,
-      price: Number(room.price || 0) === 0 ? Number(pg?.price || 0) : Number(room.price || 0)
-    }));
+    // Hard fallback: when no room entries exist at all, create one display room from PG-level data.
+    if (result.length === 0) {
+      const rawFallbackType = String(pg?.roomType || pg?.occupancy || "").trim();
+      const fallbackType =
+        !rawFallbackType || rawFallbackType.toLowerCase() === "any"
+          ? "Single"
+          : rawFallbackType;
+      const fallbackPrice = Number(pg?.price || 0) || 0;
+      const fallbackDeposit = Number(pg?.securityDeposit || 0) || 0;
+      result.push({
+        type: fallbackType,
+        price: fallbackPrice,
+        securityDeposit: fallbackDeposit,
+        bedsAvailable: Number(pg?.totalRooms || 0) || 0,
+        acType: "Non-AC",
+        description: ""
+      });
+    }
+
+    return result.map((room) => {
+      const resolvedPrice = Number(room.price || 0) === 0 ? Number(pg?.price || 0) : Number(room.price || 0);
+      const explicitDeposit = Number(room.securityDeposit || 0);
+      // Keep room-level deposit if provided, otherwise derive from selected room rent.
+      const resolvedDeposit = explicitDeposit > 0 ? explicitDeposit : Math.max(0, Math.round(resolvedPrice * 2));
+      const rawType = String(room.type || "").trim();
+      const resolvedType = !rawType || rawType.toLowerCase() === "any" ? "Single" : rawType;
+      const resolvedDescription = String(room.description || "")
+        .replace(/\s+/g, " ")
+        .trim();
+
+      return {
+        ...room,
+        type: resolvedType,
+        price: resolvedPrice,
+        securityDeposit: resolvedDeposit,
+        description: resolvedDescription
+      };
+    });
   }, [pg, roomDocsState]);
 
   const startingPrice = useMemo(() => {
@@ -263,6 +351,22 @@ const PGDetails = () => {
     setGallery(raw.length >= 4 ? raw : [...raw, ...placeholders.slice(0, 4 - raw.length)]);
   }, [pg]);
 
+  const amenitiesList = useMemo(() => {
+    const rawFacilities = Array.isArray(pg?.facilities) ? pg.facilities : [];
+    const rawAmenities = Array.isArray(pg?.amenities) ? pg.amenities : [];
+    const merged = [...rawFacilities, ...rawAmenities]
+      .flatMap((item) => {
+        if (typeof item === "string") {
+          return item.split(",").map((x) => x.trim()).filter(Boolean);
+        }
+        return item ? [item] : [];
+      })
+      .map((item) => (typeof item === "string" ? item.trim() : String(item?.name || "").trim()))
+      .filter(Boolean);
+
+    return [...new Set(merged)];
+  }, [pg]);
+
   /* ================= DEBUGGER ================= */
   useEffect(() => {
     if (pg) {
@@ -279,11 +383,60 @@ const PGDetails = () => {
     }
   }, [pg, allRooms, startingPrice]);
 
+  const normalizedReviews = useMemo(
+    () => (Array.isArray(propertyReviews) ? propertyReviews : []).map((r) => ({
+      user: r?.userName || r?.user || "User",
+      rating: Number(r?.rating || 0),
+      comment: r?.comment || ""
+    })),
+    [propertyReviews]
+  );
+
   if (loading) return <Loader />;
   if (!pg) return <NotFoundState />;
-
-  const reviews = propertyReviews.length ? propertyReviews : [{ user: "User", rating: 5, comment: "Nice stay." }];
+  const reviews = normalizedReviews.length ? normalizedReviews : [{ user: "User", rating: 5, comment: "Nice stay." }];
   const averageRating = (reviews.reduce((sum, r) => sum + Number(r.rating || 0), 0) / reviews.length).toFixed(1);
+
+  const openReviewModal = () => {
+    if (!isLoggedIn || !hasBookedCurrentPg) return;
+    setEditableName(storedUserName || editableName || "");
+    setFormError("");
+    setIsFeedbackOpen(true);
+  };
+
+  const submitReview = async () => {
+    const name = String(editableName || "").trim();
+    const message = String(comment || "").trim();
+
+    if (!name) return setFormError("Name is required.");
+    if (!loggedInEmail) return setFormError("Email is missing in your login profile.");
+    if (!rating || rating < 1) return setFormError("Please select rating.");
+    if (!message) return setFormError("Please write your feedback.");
+
+    try {
+      setReviewSubmitting(true);
+      setFormError("");
+      const api = await import("../../api/api");
+      await api.createReview({
+        pgId: id,
+        ownerId: pg?.ownerId || null,
+        userId: storedUser?._id || storedUser?.id || null,
+        userName: name,
+        userEmail: loggedInEmail,
+        userRole: role === "owner" ? "owner" : "tenant",
+        comment: message,
+        rating
+      });
+      setPropertyReviews((prev) => [{ userName: name, rating, comment: message }, ...(prev || [])]);
+      setIsFeedbackOpen(false);
+      setComment("");
+      setRating(0);
+    } catch (err) {
+      setFormError(err?.response?.data?.message || "Could not submit review.");
+    } finally {
+      setReviewSubmitting(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background text-textPrimary">
@@ -338,6 +491,9 @@ const PGDetails = () => {
                       <div>
                           <h3 className="font-bold text-textPrimary text-sm uppercase">{room.type}</h3>
                           <p className="text-[10px] text-textSecondary">{room.acType}</p>
+                          {room.description ? (
+                            <p className="text-[11px] leading-5 text-textSecondary mt-1 line-clamp-2 max-w-[240px]">{room.description}</p>
+                          ) : null}
                       </div>
                     </div>
                     <div className="text-right">
@@ -380,6 +536,24 @@ const PGDetails = () => {
             <div className="p-4 border-b border-border font-bold">Location</div>
             <iframe title="map" className="w-full h-64 grayscale-[0.3]" src={`https://maps.google.com/maps?q=${encodeURIComponent(displayAddress)}&t=&z=14&ie=UTF8&iwloc=&output=embed`} />
           </motion.div>
+
+          {!isLoggedIn && !isOwnerPreviewRoute && (
+            <motion.div variants={fadeInUp}>
+              <GuestRatingsReviews reviews={normalizedReviews} averageRating={averageRating} />
+            </motion.div>
+          )}
+
+          {!isOwnerPreviewRoute && isLoggedIn && role !== "owner" && hasBookedCurrentPg && (
+            <motion.div variants={fadeInUp} className="flex justify-end">
+              <button
+                type="button"
+                onClick={openReviewModal}
+                className="px-6 py-3 bg-primary text-white font-bold rounded-md hover:bg-primaryDark transition-all"
+              >
+                Write a Review
+              </button>
+            </motion.div>
+          )}
         </div>
 
         {/* SIDEBAR */}
@@ -395,12 +569,82 @@ const PGDetails = () => {
                 </div>
             </div>
           </div>
-          <FeatureList title="Amenities" items={pg?.amenities || []} icon="⭐" />
+          <FeatureList title="Amenities" items={amenitiesList} icon="⭐" />
           <HouseRules pg={pg} ruleIcons={ruleIcons} />
         </motion.div>
       </motion.div>
 
       {!isOwnerPreviewRoute && <Footer />}
+
+      {isFeedbackOpen && isLoggedIn && hasBookedCurrentPg && (
+        <div className="fixed inset-0 z-[1200] bg-black/50 backdrop-blur-[1px] flex items-center justify-center p-4">
+          <div className="w-full max-w-2xl bg-white rounded-3xl shadow-xl p-6 md:p-8">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-3xl font-bold text-textPrimary">Write a Review</h3>
+              <button
+                type="button"
+                className="text-textSecondary hover:text-textPrimary"
+                onClick={() => setIsFeedbackOpen(false)}
+              >
+                <XMarkIcon className="h-7 w-7" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <label className="text-sm font-semibold text-textSecondary">Name</label>
+              <input
+                type="text"
+                value={editableName}
+                onChange={(e) => setEditableName(e.target.value)}
+                className="w-full rounded-2xl border border-border bg-background px-4 py-3 outline-none focus:border-primary"
+              />
+
+              <label className="text-sm font-semibold text-textSecondary">Email</label>
+              <input
+                type="email"
+                value={loggedInEmail}
+                readOnly
+                className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-textSecondary cursor-not-allowed"
+              />
+
+              <div className="flex items-center gap-2 py-1">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button key={star} type="button" onClick={() => setRating(star)}>
+                    <StarIcon className={`h-6 w-6 ${star <= rating ? "text-primary" : "text-gray-300"}`} />
+                  </button>
+                ))}
+              </div>
+
+              <textarea
+                rows={4}
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                placeholder="Write your feedback..."
+                className="w-full rounded-2xl border border-border bg-background px-4 py-3 outline-none focus:border-primary resize-none"
+              />
+              {formError ? <p className="text-sm text-red-500">{formError}</p> : null}
+            </div>
+
+            <div className="mt-6 grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                className="w-full py-3 rounded-2xl bg-gray-100 text-textPrimary font-bold"
+                onClick={() => setIsFeedbackOpen(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="w-full py-3 rounded-2xl bg-primary text-white font-bold hover:bg-primaryDark transition-all disabled:opacity-70"
+                onClick={submitReview}
+                disabled={reviewSubmitting}
+              >
+                {reviewSubmitting ? "Submitting..." : "Submit"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -429,6 +673,39 @@ const HouseRules = ({ pg, ruleIcons }) => {
             <span className="text-[10px] font-bold uppercase text-textSecondary">{typeof r === 'string' ? r : r.text}</span>
           </div>
         ))}
+      </div>
+    </div>
+  );
+};
+
+const GuestRatingsReviews = ({ reviews, averageRating }) => {
+  const items = Array.isArray(reviews) ? reviews.slice(0, 2) : [];
+  const count = Array.isArray(reviews) ? reviews.length : 0;
+
+  return (
+    <div className="bg-white p-5 md:p-8 rounded-3xl shadow border border-border">
+      <h2 className="text-3xl font-bold text-textPrimary mb-4">Ratings & Reviews</h2>
+      <div className="flex items-center gap-3 mb-6">
+        <span className="text-primary font-bold">⭐ {count > 0 ? averageRating : "0.0"}</span>
+        <span className="text-textSecondary font-semibold">({count} REVIEWS)</span>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {items.length === 0 ? (
+          <div className="col-span-full bg-background p-4 rounded-3xl border border-border text-textSecondary">
+            No reviews yet.
+          </div>
+        ) : (
+          items.map((review, idx) => (
+            <div key={idx} className="bg-background p-5 rounded-3xl border border-border">
+              <div className="flex justify-between items-start gap-3">
+                <p className="text-2xl font-bold text-textPrimary">{review.user}</p>
+                <span className="text-primary font-bold">⭐ {Number(review.rating || 0)}</span>
+              </div>
+              <p className="mt-2 text-textSecondary text-xl leading-relaxed">"{review.comment}"</p>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );

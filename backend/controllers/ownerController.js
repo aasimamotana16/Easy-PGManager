@@ -56,6 +56,27 @@ const pickFirstNumeric = (...values) => {
   return 0;
 };
 
+const buildHouseRules = (rules = {}, legacyHouseRules = []) => {
+  if (Array.isArray(legacyHouseRules) && legacyHouseRules.length > 0) {
+    return legacyHouseRules.filter(Boolean);
+  }
+
+  const resolvedRules = rules && typeof rules === "object" ? rules : {};
+  const formatted = [
+    `Smoking: ${resolvedRules.smoking ? "Allowed" : "Not allowed"}`,
+    `Alcohol: ${resolvedRules.alcohol ? "Allowed" : "Not allowed"}`,
+    `Visitors: ${resolvedRules.visitors ? "Allowed" : "Not allowed"}`,
+    `Pets: ${resolvedRules.pets ? "Allowed" : "Not allowed"}`
+  ];
+
+  const curfew = String(resolvedRules.curfew || "").trim();
+  if (curfew) {
+    formatted.push(`Gate Closing Time: ${curfew}`);
+  }
+
+  return formatted;
+};
+
 const normalizeInventoryInput = (inventoryInput = {}) => {
   let inventory = inventoryInput && typeof inventoryInput === "object" ? inventoryInput : {};
   if (typeof inventoryInput === "string") {
@@ -837,10 +858,15 @@ const getMyPgs = async (req, res) => {
       }
     }
 
+    const mappedPgs = pgs.map((pg) => ({
+      ...pg.toObject(),
+      houseRules: buildHouseRules(pg.rules, pg.houseRules)
+    }));
+
     res.status(200).json({
       success: true,
       count: pgs.length,
-      data: pgs 
+      data: mappedPgs 
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -881,9 +907,14 @@ const getPgById = async (req, res) => {
       return res.status(404).json({ success: false, message: "PG not found" });
     }
 
+    const mappedPg = {
+      ...pg.toObject(),
+      houseRules: buildHouseRules(pg.rules, pg.houseRules)
+    };
+
     res.status(200).json({
       success: true,
-      data: pg
+      data: mappedPg
     });
   } catch (error) {
     console.error("Get PG Error:", error);
@@ -1606,7 +1637,7 @@ const completeTenantMoveOut = async (req, res) => {
 
     const securityDeposit = Number(req.body?.securityDeposit ?? tenant.securityDeposit ?? 0) || 0;
     let damageCharges = Number(req.body?.damageCharges ?? 0) || 0;
-    const pendingFine = Number(req.body?.pendingFine ?? tenant.pendingFine ?? 0) || 0;
+    let pendingFine = Number(req.body?.pendingFine ?? tenant.pendingFine ?? 0) || 0;
     const deductionReason = String(req.body?.deductionReason || "").trim();
 
     const latestDamageReport = await DamageReport.findOne({
@@ -1636,21 +1667,51 @@ const completeTenantMoveOut = async (req, res) => {
       damageCharges = Number(latestDamageReport.approvedAmount || latestDamageReport.amount || 0);
     }
 
+    const tenantUser = await User.findOne({ email: new RegExp(`^${String(tenant.email || "").trim()}$`, "i") }).select("_id");
+    const latestAgreement = tenantUser?._id
+      ? await Agreement.findOne({ userId: tenantUser._id }).sort({ createdAt: -1 }).select("rentAmount")
+      : null;
+    const monthlyRent = Math.max(0, Number(latestAgreement?.rentAmount || 0));
+
+    const requestedDate = tenant.moveOutDateRequested ? new Date(tenant.moveOutDateRequested) : null;
+    const actualMoveOutDate = new Date();
+    const isEarlyExitAgainstRequestedDate = Boolean(
+      requestedDate &&
+      !Number.isNaN(requestedDate.getTime()) &&
+      actualMoveOutDate < requestedDate
+    );
+
+    let earlyExitRentDeduction = 0;
+    if (isEarlyExitAgainstRequestedDate && monthlyRent > 0) {
+      // Charge only for days stayed in current month when tenant exits earlier than their requested final date.
+      const monthStart = new Date(actualMoveOutDate.getFullYear(), actualMoveOutDate.getMonth(), 1);
+      const daysStayedInCurrentMonth = Math.max(1, Math.floor((actualMoveOutDate - monthStart) / DAY_MS) + 1);
+      earlyExitRentDeduction = Math.round((monthlyRent / 30) * daysStayedInCurrentMonth);
+      pendingFine += earlyExitRentDeduction;
+    }
+
     const totalDeduction = Math.max(0, damageCharges + pendingFine);
     const finalRefund = Math.max(0, securityDeposit - totalDeduction);
+    const remainingPayable = Math.max(0, totalDeduction - securityDeposit);
+
+    const deductionRemarks = [
+      deductionReason,
+      tenant.moveOutFineApplied > 0 ? `Short notice fine applied: ₹${tenant.moveOutFineApplied}` : "",
+      earlyExitRentDeduction > 0 ? `Early exit rent deduction applied: ₹${earlyExitRentDeduction}` : ""
+    ].filter(Boolean).join(" | ");
 
     tenant.securityDeposit = securityDeposit;
     tenant.damageCharges = damageCharges;
     tenant.pendingFine = pendingFine;
+    tenant.moveOutFineRemainingPayable = Math.max(0, Number(tenant.moveOutFineApplied || 0) - securityDeposit);
     tenant.finalRefund = finalRefund;
-    tenant.deductionReason = deductionReason;
+    tenant.deductionReason = deductionRemarks;
     tenant.status = "Inactive";
     tenant.hasMoveOutNotice = false;
     tenant.moveOutRequested = false;
     tenant.moveOutCompletedAt = new Date();
     await tenant.save();
 
-    const tenantUser = await User.findOne({ email: new RegExp(`^${String(tenant.email || "").trim()}$`, "i") }).select("_id");
     if (tenantUser?._id) {
       const activeCheckIn = await CheckIn.findOne({
         userId: tenantUser._id,
@@ -1671,7 +1732,9 @@ const completeTenantMoveOut = async (req, res) => {
         securityDeposit,
         damageCharges,
         pendingFine,
-        finalRefund
+        earlyExitRentDeduction,
+        finalRefund,
+        remainingPayable
       }
     });
   } catch (error) {
