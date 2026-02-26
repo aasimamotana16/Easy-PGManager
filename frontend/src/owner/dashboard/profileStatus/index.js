@@ -36,14 +36,67 @@ const ProfileStatus = () => {
     fetchData();
   }, []);
 
+  const syncNavbarName = (updatedProfile) => {
+    const freshName =
+      updatedProfile?.name ||
+      updatedProfile?.fullName ||
+      tempData?.name ||
+      tempData?.fullName ||
+      profileData?.name ||
+      profileData?.fullName;
+
+    if (!freshName) return;
+
+    try {
+      const existingRaw = localStorage.getItem("user");
+      let existingUser = {};
+      if (existingRaw) {
+        try {
+          existingUser = JSON.parse(existingRaw) || {};
+        } catch (e) {
+          existingUser = {};
+        }
+      }
+
+      localStorage.setItem(
+        "user",
+        JSON.stringify({
+          ...existingUser,
+          fullName: freshName,
+          name: freshName,
+          email: updatedProfile?.email ?? existingUser?.email,
+          phone: updatedProfile?.phone ?? existingUser?.phone,
+        })
+      );
+      localStorage.setItem("userName", freshName);
+
+      try {
+        window.dispatchEvent(new Event("storage"));
+      } catch (e) {
+        // ignore
+      }
+    } catch (e) {
+      // ignore
+    }
+  };
+
   const fetchData = async () => {
     try {
       const token = localStorage.getItem("userToken");
       const config = { headers: { Authorization: `Bearer ${token}` } };
       const res = await axios.get("http://localhost:5000/api/owner/profile", config);
       if (res.data.success) {
-        setProfileData(res.data.data);
-        setTempData(res.data.data);
+        const incoming = res.data.data || {};
+        const normalized = {
+          ...incoming,
+          name: incoming.name || incoming.fullName || profileData.name,
+        };
+
+        setProfileData(normalized);
+        setTempData(normalized);
+
+        // Ensure Navbar name isn't stale when landing here.
+        syncNavbarName(normalized);
       }
     } catch (error) {
       setTempData(profileData);
@@ -59,8 +112,19 @@ const ProfileStatus = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.data.success) {
-        setProfileData(res.data.data);
+        const incoming = res.data.data || {};
+        const normalized = {
+          ...incoming,
+          name: incoming.name || incoming.fullName || tempData.name,
+        };
+
+        setProfileData(normalized);
+        setTempData(normalized);
         setEditMode(false);
+
+        // Update localStorage so the shared Navbar updates immediately
+        syncNavbarName(normalized);
+
         Swal.fire({
           icon: 'success',
           title: 'Profile Updated',
@@ -165,7 +229,7 @@ const ProfileStatus = () => {
             </CButton>
             {editMode && (
               <CButton 
-                className="bg-white text-[#4B4B4B] border border-[#E5E0D9] font-bold py-3.5 px-8 rounded-md w-full md:w-auto uppercase text-[11px] tracking-wider"
+              variant ="outlined"
                 onClick={() => setEditMode(false)}
               >
                 Cancel
@@ -178,7 +242,7 @@ const ProfileStatus = () => {
           
           {/* LEFT COLUMN: IDENTITY CARD */}
           <motion.aside variants={itemVars} className="w-full lg:w-1/3">
-            <div className="bg-white rounded-[2rem] p-8 border border-[#E5E0D9] shadow-xl text-center lg:sticky lg:top-24">
+            <div className="bg-white rounded-md p-8 border border-primary shadow-xl text-center lg:sticky lg:top-24">
               <div className="relative group mx-auto w-48 h-48 mb-6">
                 <motion.img 
                   whileHover={{ scale: 1.05 }}
@@ -204,7 +268,7 @@ const ProfileStatus = () => {
                 </span>
               </div>
 
-              <h2 className="text-2xl font-black text-[#1C1C1C] uppercase tracking-tighter">{profileData.name}</h2>
+              <h3 className=" font- text-[#1C1C1C]  tracking-tighter">{profileData.name}</h3>
               <p className="text-[#4B4B4B] text-sm mb-8 font-medium">{profileData.email}</p>
               
               <div className="pt-8 border-t border-[#E5E0D9] flex justify-around">
@@ -223,7 +287,7 @@ const ProfileStatus = () => {
 
           {/* RIGHT COLUMN: FORM FIELDS */}
           <section className="flex-1 space-y-8">
-            <motion.div variants={itemVars} className="bg-white rounded-[2rem] p-8 md:p-12 border border-[#E5E0D9] shadow-sm">
+            <motion.div variants={itemVars} className="bg-white rounded-md p-8 md:p-12 border border-[#E5E0D9] shadow-sm">
               <h3 className="text-2xl font-bold text-[#1C1C1C] mb-12 flex items-center gap-4">
                 <motion.span 
                   initial={{ height: 0 }}
@@ -287,7 +351,7 @@ const ProfileStatus = () => {
             <motion.div 
               variants={itemVars}
               whileHover={{ borderColor: "#FCA5A5" }}
-              className="bg-red-50/30 rounded-[2rem] p-8 border border-red-100 flex flex-col md:flex-row justify-between items-center gap-6"
+              className="bg-red-50/30 rounded-md p-8 border border-red-100 flex flex-col md:flex-row justify-between items-center gap-6"
             >
               <div className="text-center md:text-left">
                 <h4 className="text-red-600 font-black uppercase text-xs tracking-widest">Permanent Actions</h4>
@@ -317,7 +381,7 @@ const InputField = ({ label, value, onChange, editMode, placeholder, icon, upper
     animate={{ opacity: 1 }}
     className="space-y-3"
   >
-    <label className="text-[10px] uppercase text-[#4B4B4B] font-black tracking-widest flex items-center gap-2 opacity-60">
+    <label className="text-sm  text-[#4B4B4B] font-semibold tracking-widest flex items-center gap-2 opacity-60">
       <span className="text-primary">{icon}</span> {label}
     </label>
     
@@ -335,7 +399,7 @@ const InputField = ({ label, value, onChange, editMode, placeholder, icon, upper
         <motion.p 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className={`text-lg text-[#1C1C1C] font-bold tracking-tight px-1 ${uppercase ? 'uppercase' : ''}`}
+          className={`text-lg text-[#1C1C1C] font-bold tracking-tight px-1 `}
         >
           {value || "—"}
         </motion.p>

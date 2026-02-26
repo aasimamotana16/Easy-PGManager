@@ -455,12 +455,19 @@ const AddProperty = () => {
 
         <form onSubmit={handleSubmit} className="space-y-8">
           {/* 1. BASIC DETAILS */}
-          <CFormCard className="p-6 border border-primary shadow-sm bg-white">
+          <CFormCard className="p-6  border border-primary shadow-sm bg-white">
             <h2 className="text-lg font-bold text-textPrimary mb-6 border-b pb-2 tracking-wide">BASIC DETAILS</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2">
-                <CInput label="Property Name *" name="name" value={formData.name} onChange={handleChange} error={!!errors.name} helperText={errors.name} />
-              </div>
+<CInput
+  className="mt-6"
+  label="Property Name *"
+  name="name"
+  value={formData.name}
+  onChange={handleChange}
+  error={!!errors.name}
+  helperText={errors.name}
+/>              </div>
               <div>
                 <CSelect label="For *" name="forWhom" value={formData.forWhom} onChange={handleChange} options={genderOptions} error={!!errors.forWhom} helperText={errors.forWhom} />
               </div>
@@ -576,9 +583,33 @@ const AddProperty = () => {
                   </label>
                 ))}
               </div>
-              <div className="max-w-xs">
-                <CInput type="time" label="Gate Closing Time *" value={formData.rules.curfew} onChange={(e) => updateRule("curfew", e.target.value)} error={!!errors.curfew} helperText={errors.curfew} />
-              </div>
+              <div className="flex flex-col gap-1">
+  <label className="text-sm font-semibold text-textPrimary">
+    Gate Closing Time *
+  </label>
+
+  <input
+    type="time"
+    value={formData.rules.curfew}
+    onChange={(e) => updateRule("curfew", e.target.value)}
+    className={`
+      border border-gray-300
+      rounded-md
+      px-3 py-2
+      text-sm
+      focus:outline-none
+      focus:ring-primary
+      focus:border-primary
+      ${errors.curfew ? "border-red-500" : ""}
+    `}
+  />
+
+  {errors.curfew && (
+    <p className="text-xs text-red-500 mt-1">
+      {errors.curfew}
+    </p>
+  )}
+</div>
             </div>
           </CFormCard>
 

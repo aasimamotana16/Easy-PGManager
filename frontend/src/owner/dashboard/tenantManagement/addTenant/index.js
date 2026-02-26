@@ -43,11 +43,24 @@ const AddTenant = ({ onClose, onSave, pgOptions = [] }) => {
       <div className="bg-white rounded-2xl shadow-2xl z-10 w-full max-w-lg max-h-[95vh] flex flex-col overflow-hidden animate-in zoom-in duration-200 border border-border">
         
         {/* HEADER */}
-        <div className="relative flex items-center justify-center p-5 sm:p-6 bg-primary shrink-0">
-          <h2 className="text-h3-sm lg:text-h3 font-bold text-textLight uppercase tracking-tight">Add Tenant</h2>
-          <button onClick={onClose} className="absolute right-4 top-1/2 -translate-y-1/2 text-textLight">
+        <div className="relative bg-primary shrink-0 px-5 sm:px-6 py-5 sm:py-6">
+          <button
+            onClick={onClose}
+            className="absolute right-4 top-4 text-textLight/90 hover:text-white transition-colors"
+            aria-label="Close"
+            type="button"
+          >
             <FaTimes size={20} />
           </button>
+
+          <div className="pr-10">
+            <h2 className="text-textLight uppercase font-black tracking-tight text-3xl sm:text-4xl leading-tight">
+              ADD TENANT
+            </h2>
+            <p className="text-white/90 font-medium text-sm sm:text-base leading-snug mt-2">
+              Register a new tenant to your PG and manage their stay effectively
+            </p>
+          </div>
         </div>
 
         {/* BODY */}
@@ -59,7 +72,6 @@ const AddTenant = ({ onClose, onSave, pgOptions = [] }) => {
               <CInput
                 label="Full Name"
                 icon={<FaUser className="text-primary" />}
-                placeholder="Enter tenant name"
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                 error={!!errors.name} 
@@ -72,7 +84,6 @@ const AddTenant = ({ onClose, onSave, pgOptions = [] }) => {
               <CInput
                 label="Phone Number"
                 icon={<FaPhone className="text-primary" />}
-                placeholder="10-digit number"
                 value={form.phone}
                 onChange={(e) => setForm({ ...form, phone: e.target.value.replace(/\D/g, '') })}
                 error={!!errors.phone}
@@ -85,7 +96,6 @@ const AddTenant = ({ onClose, onSave, pgOptions = [] }) => {
               <CInput
                 label="Email"
                 icon={<FaEnvelope className="text-primary" />}
-                placeholder="email@example.com"
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
                 error={!!errors.email}
@@ -110,7 +120,7 @@ const AddTenant = ({ onClose, onSave, pgOptions = [] }) => {
               <CInput
                 label="Room No."
                 icon={<FaDoorOpen className="text-primary" />}
-                placeholder="e.g. 104-B"
+className="mt-6"
                 value={form.room}
                 onChange={(e) => setForm({ ...form, room: e.target.value })}
                 error={!!errors.room}

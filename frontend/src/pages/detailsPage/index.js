@@ -561,12 +561,12 @@ const PGDetails = () => {
           <div className="bg-white rounded-md shadow p-6 border border-primary">
             <h1 className="text-2xl font-bold text-textPrimary mb-1">{pg.name}</h1>
             <p className="text-textSecondary text-sm flex items-center gap-1"><MapPinIcon className="h-4 w-4" /> {pg.city}</p>
-            <div className="mt-5 flex items-center gap-4 bg-background p-4 rounded-md border border-border">
-                <div className="bg-primary p-2 rounded-md"><StarIcon className="h-3 w-3 text-white" /></div>
-                <div>
-                  <p className="text-sm text-textSecondary font-bold">Community Rating</p>
-                  <span className="text-base font-bold">{averageRating} / 5.0</span>
-                </div>
+            <div className="mt-3 bg-background px-3 py-2.5 rounded-md border border-border">
+              <p className=" text-textSecondary font-bold inline-flex items-center gap-1 leading-tight">
+                <StarIcon className="h-4 w-4 text-primary" />
+                Community Rating
+              </p>
+              <div className="ml-5 text-base font-bold leading-tight">{averageRating} / 5.0</div>
             </div>
           </div>
           <FeatureList title="Amenities" items={amenitiesList} icon="⭐" />

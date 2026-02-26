@@ -274,7 +274,7 @@ const DashboardHome = () => {
               <FaHourglassHalf size={20} />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-textPrimary uppercase">Extension Requests</h3>
+              <h3 className="text-sm font-bold text-textPrimary uppercase">Payment Extension Requests</h3>
               <p className="text-xs text-textSecondary">
                 {stats.extensionRequests > 0
                   ? `${stats.extensionRequests} tenant${stats.extensionRequests > 1 ? "s" : ""} requested extra time`
@@ -297,7 +297,7 @@ const DashboardHome = () => {
               <FaDoorOpen size={20} />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-textPrimary uppercase">Pending Check-outs</h3>
+              <h3 className="text-sm font-bold text-textPrimary uppercase">Pending Move-outs</h3>
               <p className="text-xs text-textSecondary">
                 {stats.pendingCheckouts > 0
                   ? `${stats.pendingCheckouts} inspection${stats.pendingCheckouts > 1 ? "s" : ""} due today`
@@ -422,7 +422,7 @@ const DashboardHome = () => {
                     Later
                   </button>
                   <CButton 
-                    className="flex-1"
+                    className="flex-1 "
                     onClick={handleReviewSubmit}
                     disabled={reviewSubmitting}
                     text={reviewSubmitting ? "Submitting..." : "Submit"}

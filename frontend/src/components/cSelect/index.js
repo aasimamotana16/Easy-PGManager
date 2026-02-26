@@ -49,7 +49,7 @@ const CSelect = ({
 
   return (
     <div
-      className={`flex flex-col gap-1 mb-4 relative ${className}`}
+      className={`flex flex-col gap-1 mb-3 relative ${className}`}
       ref={dropdownRef}
     >
       {label && (
@@ -62,7 +62,7 @@ const CSelect = ({
       {/* Select Trigger */}
       <div
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-full px-4 py-2 rounded-md border-2 ${borderClasses} bg-white text-gray-700 flex justify-between items-center cursor-pointer transition focus:outline-none`}
+        className={`w-full h-12 px-4 py-3 rounded-md border-2 ${borderClasses} bg-white text-gray-700 flex justify-between items-center cursor-pointer transition focus:outline-none`}
       >
         <span
           className={`text-body-sm lg:text-body ${

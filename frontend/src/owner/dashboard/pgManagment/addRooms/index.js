@@ -145,12 +145,12 @@ const AddRooms = () => {
         <div className="p-6 md:p-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="md:col-span-2">
-              <CInput label="Room Type" name="roomType" value={roomData.roomType} onChange={handleChange} placeholder="e.g., Single Sharing" />
+              <CInput label="Room Type" name="roomType" value={roomData.roomType} onChange={handleChange}  />
               {errors.roomType && <p className="text-red-500 text-xs mt-1 font-bold">{errors.roomType}</p>}
             </div>
 
-            <CInput label="Total Rooms" type="number" name="totalRooms" value={roomData.totalRooms} onChange={handleChange} placeholder="0" />
-            <CInput label="Beds Per Room" type="number" name="bedsPerRoom" value={roomData.bedsPerRoom} onChange={handleChange} placeholder="0" />
+            <CInput label="Total Rooms" type="number" name="totalRooms" value={roomData.totalRooms} onChange={handleChange}  />
+            <CInput label="Beds Per Room" type="number" name="bedsPerRoom" value={roomData.bedsPerRoom} onChange={handleChange}  />
 
             <div className="md:col-span-2">
               <CInput label="Room Description" type="textarea" name="description" value={roomData.description} onChange={handleChange} rows={3} placeholder="Describe facilities..." />

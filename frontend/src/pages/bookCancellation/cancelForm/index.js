@@ -61,7 +61,6 @@ const CancelForm = () => {
             <CInput
               label="Registered Email"
               type="email"
-              placeholder="Enter your email"
               value={form.email}
               error={errors.email}
               onChange={(e) => {
@@ -75,7 +74,6 @@ const CancelForm = () => {
                 Reason for Cancellation
               </label>
               <CSelect
-                placeholder="Select a reason"
                 value={form.reason}
                 onChange={(e) => {
                   setForm({ ...form, reason: e.target.value });

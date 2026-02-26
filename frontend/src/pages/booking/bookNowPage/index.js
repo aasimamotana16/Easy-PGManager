@@ -275,8 +275,19 @@ const BookingPage = () => {
   return (
     <div className="min-h-screen bg-background px-4 py-10">
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-h2-sm lg:text-h2 font-bold text-textPrimary mb-1">Book {activePg.name}</h1>
-        <p className="text-textSecondary text-body-sm lg:text-body mb-8">{activePg.location}</p>
+{/* Heading Section */}
+    <div className="bg-primarySoft border border-primary rounded-md px-6 py-5 mb-8">
+      <h2 className="font-bold leading-tight">
+        <span className="text-primary block mb-2">
+          Book
+        </span>
+        <span className="text-textPrimary block text-h2-sm lg:text-h2">
+          {activePg.name}
+        </span>
+      </h2> 
+      <p className="text-textSecondary text-body-sm lg:text-body mb-8">{activePg.location}</p>
+  
+      </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
@@ -307,7 +318,7 @@ const BookingPage = () => {
           </div>
 
           {/* SUMMARY SIDEBAR */}
-          <div className="bg-background rounded-md p-6 shadow-md h-fit sticky top-10 border border-border">
+          <div className="bg-background rounded-md p-6 shadow-md h-fit sticky top-10 border border-primary">
             <h3 className="text-lg font-bold text-textPrimary mb-4">Summary</h3>
             <div className="flex justify-between items-center mb-4">
               <span className="text-primaryDark font-medium">{maxBeds} Beds Available</span>

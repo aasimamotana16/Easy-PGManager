@@ -5,23 +5,23 @@ const CButton = ({
   children,
   onClick,
   type = "button",
-  variant = "contained", 
+  variant = "contained",
   fullWidth = false,
   className = "",
   disabled = false,
 }) => {
-  
-  // Updated variant styles to use your theme tokens [cite: 2026-02-09]
+
   const variantClasses = {
     contained:
-      "bg-primary text-textLight hover:bg-primaryDark border border-transparent",
+      "bg-primary text-textLight hover:bg-primaryDark border border-primary",
+
     outlined:
-      "border border-primary text-textPrimary hover:bg-primarySoft transition-colors",
+      "border-2 border-primary text-primary bg-transparent hover:bg-primarySoft hover:text-primary transition-colors",
+
     text:
       "text-textPrimary hover:text-primary bg-transparent shadow-none hover:shadow-none",
   };
 
-  // Base layout classes focusing on your responsive body font size [cite: 2026-02-06]
   const finalClasses = `
     inline-flex items-center justify-center
     rounded-md font-bold

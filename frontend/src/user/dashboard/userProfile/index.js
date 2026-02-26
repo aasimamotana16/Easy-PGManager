@@ -237,7 +237,7 @@ const Profile = () => {
         <motion.div 
           initial={{ x: -20, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
-          className="w-full lg:w-80 bg-white border-b lg:border-r border-[#E5E0D9] p-6 lg:p-8 lg:h-screen lg:sticky lg:top-0"
+          className="w-full lg:w-80 bg-white border-b lg:border-r-2  border-primary  p-6 lg:p-8 lg:h-screen lg:sticky lg:top-0"
         >
           <div className="flex flex-row lg:flex-col items-center gap-6 lg:gap-0">
             <div className="relative group">
@@ -259,14 +259,14 @@ const Profile = () => {
             </div>
             
             <div className="flex-1 lg:mt-6 text-left lg:text-center">
-              <h2 className="text-xl lg:text-2xl font-bold uppercase text-[#1C1C1C]">{user?.fullName || "User"}</h2>
+              <h2 className="text-xl lg:text-2xl font-bold  text-[#1C1C1C]">{user?.fullName || "User"}</h2>
               <p className="text-sm font-medium text-[#4B4B4B] mt-1">{user?.email}</p>
               <button onClick={handleRemove} className="mt-2 text-red-500 text-xs font-bold uppercase hover:underline lg:hidden">Remove Photo</button>
             </div>
           </div>
 
           <div className="hidden lg:block mt-8">
-            <CButton onClick={handleRemove} className="w-full bg-white !text-[#4B4B4B] border border-[#E5E0D9] hover:bg-red-50 hover:!text-red-500 hover:border-red-200 transition-all text-[10px] uppercase">
+            <CButton onClick={handleRemove} className="w-full bg-white !text-[#4B4B4B] border border-[#E5E0D9] hover:bg-red-50 hover:!text-red-500 hover:border-red-200 transition-all text-[10px] ">
                 <FaTrash className="inline mr-2" /> Remove Photo
             </CButton>
             
@@ -306,7 +306,7 @@ const Profile = () => {
 
           {/* TAB NAVIGATION */}
           <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 w-full lg:w-auto">
+            <div className="flex gap-4 overflow-x-auto no-scrollbar pb-1 w-full lg:w-auto">
               {[
                 {id: 'personal', label: 'Personal', icon: <FaUserAlt />},
                 {id: 'professional', label: 'Academic', icon: <FaBriefcase />},
@@ -316,10 +316,10 @@ const Profile = () => {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-3 px-6 py-3 rounded-md text-[11px] font-bold uppercase transition-all whitespace-nowrap border ${
+                  className={`flex items-center gap-3 px-6 py-3 rounded-md text-sm  uppercase transition-all whitespace-nowrap border ${
                     activeTab === tab.id 
                     ? "bg-[#D97706] text-white border-[#D97706] shadow-lg translate-y-[-2px]" 
-                    : "bg-white text-[#4B4B4B] border-[#E5E0D9] hover:border-[#D97706] hover:text-[#D97706]"
+                    : "bg-white text-[#4B4B4B] border-[#E5E0D9] hover:bg-primarySoft hover:border-[#D97706] hover:text-[#D97706]"
                   }`}
                 >
                   {tab.icon} {tab.label}
@@ -492,7 +492,7 @@ const Profile = () => {
 
               <div className="p-8 bg-gray-50 border-t flex flex-col sm:flex-row gap-4">
                 <CButton onClick={handleSaveInfo} className="flex-[2] py-4 shadow-lg">Save All Changes</CButton>
-                <CButton onClick={() => setIsModalOpen(false)} className="flex-1 bg-white !text-[#4B4B4B] border border-[#E5E0D9] hover:bg-gray-100">Cancel</CButton>
+                <CButton variant= "outlined" onClick={() => setIsModalOpen(false)} className="flex-1 bg-white !text-[#4B4B4B] border border-primary hover:bg-primarySoft">Cancel</CButton>
               </div>
             </motion.div>
           </motion.div>
