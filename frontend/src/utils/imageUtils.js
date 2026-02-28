@@ -19,6 +19,11 @@ export const getImageUrl = (imagePath, defaultImage = null) => {
     return imagePath;
   }
 
+  // Keep frontend public asset paths untouched.
+  if (imagePath.startsWith('/images/')) {
+    return imagePath;
+  }
+
   // If it's a relative path (starts with /), prepend backend URL
   if (imagePath.startsWith('/')) {
     return `${BACKEND_URL}${imagePath}`;

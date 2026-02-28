@@ -144,7 +144,10 @@ const deleteUser = async (req, res) => {
 // @desc    Get all pending properties
 const getPendingProperties = async (req, res) => {
   try {
-    const pendingProperties = await Pg.find({ status: 'pending' }).populate('ownerId', 'fullName email phone');
+    const pendingProperties = await Pg.find({
+      status: 'draft',
+      approvalStatus: 'pending'
+    }).populate('ownerId', 'fullName email phone');
     
     res.status(200).json({
       success: true,

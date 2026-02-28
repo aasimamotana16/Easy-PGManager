@@ -35,12 +35,46 @@ const ruleIcons = {
   noguest: "🙅‍♂️",
 };
 
-const placeholders = [
-  "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af",
-  "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688",
-  "https://images.unsplash.com/photo-1493809842364-78817add7ffb",
-  "https://images.unsplash.com/photo-1554995207-c18c203602cb"
+const roomTypeKey = (value) => {
+  const text = String(value || "").trim().toLowerCase().replace(/[_-]/g, " ");
+  if (text.includes("single") || text.includes("1")) return "single";
+  if (text.includes("double") || text.includes("2")) return "double";
+  if (text.includes("triple") || text.includes("3")) return "triple";
+  return "";
+};
+
+const doubleRoomFallbackImages = [
+  "/images/double-room-fallbacks/double1.jpg",
+  "/images/double-room-fallbacks/double2.jpg",
+  "/images/double-room-fallbacks/double3.jpg",
+  "/images/double-room-fallbacks/double4.jpg"
 ];
+
+const singleRoomFallbackImages = [
+  "/images/single-room-fallbacks/single1.jpg",
+  "/images/single-room-fallbacks/single2.jpg",
+  "/images/single-room-fallbacks/single3.jpg",
+  "/images/single-room-fallbacks/single4.jpg"
+];
+
+const rotateByPgSeed = (images, pg, offset = 0) => {
+  if (!Array.isArray(images) || images.length === 0) return [];
+  const seedSource = String(pg?._id || pg?.id || pg?.pgName || "default");
+  let hash = 0;
+  for (let i = 0; i < seedSource.length; i += 1) {
+    hash = (hash * 31 + seedSource.charCodeAt(i)) >>> 0;
+  }
+
+  const start = (hash + offset) % images.length;
+  const rotated = [];
+  for (let i = 0; i < images.length; i += 1) {
+    rotated.push(images[(start + i) % images.length]);
+  }
+  return rotated;
+};
+
+const getDoubleFallbackByPg = (pg) => rotateByPgSeed(doubleRoomFallbackImages, pg, 0);
+const getSingleFallbackByPg = (pg) => rotateByPgSeed(singleRoomFallbackImages, pg, 7);
 
 const PGDetails = () => {
   const { id } = useParams();
@@ -50,6 +84,7 @@ const PGDetails = () => {
   const isOwnerPreviewRoute = location.pathname.startsWith("/owner/dashboard/pg/");
 
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [isGalleryHovered, setIsGalleryHovered] = useState(false);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [ownerPgData, setOwnerPgData] = useState(null);
@@ -169,6 +204,32 @@ const PGDetails = () => {
     })();
     return () => { mounted = false; };
   }, [id, isLoggedIn, isOwnerPreviewRoute]);
+
+  useEffect(() => {
+    if (Array.isArray(pg?.roomDocs)) {
+      setRoomDocsState(pg.roomDocs);
+      setRoomsFetched(true);
+      return;
+    }
+    if (!id || roomsFetched || isOwnerPreviewRoute) return;
+
+    let mounted = true;
+    (async () => {
+      try {
+        const api = await import("../../api/api");
+        const res = await api.getRoomsByPg(id);
+        if (mounted && res?.data?.success) {
+          setRoomDocsState(Array.isArray(res.data.rooms) ? res.data.rooms : []);
+          setRoomsFetched(true);
+        }
+      } catch (_) {
+        if (mounted) setRoomsFetched(true);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [id, pg, roomsFetched, isOwnerPreviewRoute]);
 
   const allRooms = useMemo(() => {
     if (!pg && !roomDocsState) return [];
@@ -338,18 +399,78 @@ const PGDetails = () => {
 
   const totalToPay = displayedRent + displayedDeposit;
 
+  const cleanText = (value) => String(value ?? "").trim();
+
   const displayAddress = useMemo(() => {
     if (!pg) return "";
-    if (pg.address) return pg.address;
-    return [pg.area, pg.city].filter(Boolean).join(', ');
+    const parts = [pg.address, pg.area, pg.location, pg.city, pg.pincode]
+      .map(cleanText)
+      .filter(Boolean);
+    return [...new Set(parts)].join(", ");
   }, [pg]);
 
-  const [gallery, setGallery] = useState(placeholders.slice(0, 4));
-  useEffect(() => {
-    if (!pg) return;
-    const raw = [pg?.mainImage, ...(pg?.images || [])].filter(Boolean).map(toImageUrl);
-    setGallery(raw.length >= 4 ? raw : [...raw, ...placeholders.slice(0, 4 - raw.length)]);
+  const mapQuery = useMemo(() => {
+    if (!pg) return "";
+    const parts = [pg.name || pg.pgName, pg.address, pg.area, pg.location, pg.city, pg.pincode]
+      .map(cleanText)
+      .filter(Boolean);
+    return [...new Set(parts)].join(", ");
   }, [pg]);
+
+  const mapEmbedUrl = useMemo(() => {
+    if (!mapQuery) return "";
+    return `https://maps.google.com/maps?q=${encodeURIComponent(mapQuery)}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
+  }, [mapQuery]);
+
+  const pgGallery = useMemo(() => {
+    return [pg?.mainImage, ...(pg?.images || [])].filter(Boolean).map(toImageUrl);
+  }, [pg]);
+
+  const roomTypeImages = useMemo(() => {
+    const map = new Map();
+    if (!Array.isArray(roomDocsState)) return map;
+
+    roomDocsState.forEach((room) => {
+      const key = roomTypeKey(room?.roomType || room?.variantLabel || room?.type || room?.name);
+      if (!key) return;
+      const images = [room?.mainImage, ...(Array.isArray(room?.images) ? room.images : [])]
+        .filter(Boolean)
+        .map(toImageUrl);
+      if (images.length > 0 && !map.has(key)) {
+        map.set(key, images);
+      }
+    });
+
+    return map;
+  }, [roomDocsState]);
+
+  const activeGallery = useMemo(() => {
+    if (selectedRoomIdx >= 0 && filteredRooms[selectedRoomIdx]) {
+      const selectedTypeKey = roomTypeKey(filteredRooms[selectedRoomIdx]?.type);
+      if (selectedTypeKey && roomTypeImages.has(selectedTypeKey)) {
+        return roomTypeImages.get(selectedTypeKey);
+      }
+      if (selectedTypeKey === "single") {
+        return getSingleFallbackByPg(pg);
+      }
+      if (selectedTypeKey === "double") {
+        return getDoubleFallbackByPg(pg);
+      }
+    }
+    return pgGallery;
+  }, [selectedRoomIdx, filteredRooms, roomTypeImages, pgGallery, pg]);
+
+  useEffect(() => {
+    setCurrentIndex(0);
+  }, [activeGallery]);
+
+  useEffect(() => {
+    if (activeGallery.length <= 1 || isGalleryHovered) return;
+    const timer = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % activeGallery.length);
+    }, 3500);
+    return () => clearInterval(timer);
+  }, [activeGallery, isGalleryHovered]);
 
   const amenitiesList = useMemo(() => {
     const rawFacilities = Array.isArray(pg?.facilities) ? pg.facilities : [];
@@ -446,12 +567,42 @@ const PGDetails = () => {
         
         <div className="w-full lg:w-[65%] flex flex-col gap-6 md:gap-8">
           {/* IMAGE GALLERY */}
-          <motion.div variants={fadeInUp} className="relative aspect-video md:h-[450px] rounded-md overflow-hidden shadow bg-border ">
-            <AnimatePresence mode="wait">
-              <motion.img key={currentIndex} src={gallery[currentIndex]} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.5 }} className="w-full h-full object-cover" />
-            </AnimatePresence>
-            <button onClick={() => setCurrentIndex(currentIndex === 0 ? gallery.length - 1 : currentIndex - 1)} className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/80 p-2 rounded-full shadow z-10"><ChevronLeftIcon className="h-5 w-5"/></button>
-            <button onClick={() => setCurrentIndex((currentIndex + 1) % gallery.length)} className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/80 p-2 rounded-full shadow z-10"><ChevronRightIcon className="h-5 w-5"/></button>
+          <motion.div
+            variants={fadeInUp}
+            className="relative aspect-video md:h-[450px] rounded-md overflow-hidden shadow bg-border"
+            onMouseEnter={() => setIsGalleryHovered(true)}
+            onMouseLeave={() => setIsGalleryHovered(false)}
+          >
+            {activeGallery.length > 0 ? (
+              <>
+                <AnimatePresence mode="wait">
+                  <motion.img key={currentIndex} src={activeGallery[currentIndex]} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.5 }} className="w-full h-full object-cover" />
+                </AnimatePresence>
+                {activeGallery.length > 1 && (
+                  <>
+                    <button onClick={() => setCurrentIndex(currentIndex === 0 ? activeGallery.length - 1 : currentIndex - 1)} className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/80 p-2 rounded-full shadow z-10"><ChevronLeftIcon className="h-5 w-5"/></button>
+                    <button onClick={() => setCurrentIndex((currentIndex + 1) % activeGallery.length)} className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/80 p-2 rounded-full shadow z-10"><ChevronRightIcon className="h-5 w-5"/></button>
+                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-2 z-10 bg-black/25 px-2 py-1 rounded-full">
+                      {activeGallery.map((_, idx) => (
+                        <button
+                          key={`dot-${idx}`}
+                          type="button"
+                          aria-label={`Go to image ${idx + 1}`}
+                          onClick={() => setCurrentIndex(idx)}
+                          className={`w-2.5 h-2.5 rounded-full transition-all ${
+                            idx === currentIndex ? "bg-white scale-110" : "bg-white/60 hover:bg-white/90"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  </>
+                )}
+              </>
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-sm text-textSecondary bg-background">
+                No room image uploaded
+              </div>
+            )}
           </motion.div>
 
           {/* ROOM SELECTION */}
@@ -533,8 +684,19 @@ const PGDetails = () => {
 
           {/* MAP */}
           <motion.div variants={fadeInUp} className="bg-white rounded-md overflow-hidden shadow border border-border">
-            <div className="p-4 border-b border-border font-bold">Location</div>
-            <iframe title="map" className="w-full h-64 grayscale-[0.3]" src={`https://maps.google.com/maps?q=${encodeURIComponent(displayAddress)}&t=&z=14&ie=UTF8&iwloc=&output=embed`} />
+            <div className="p-4 border-b border-border">
+              <p className="font-bold">Location</p>
+              <p className="text-xs text-textSecondary mt-1">
+                Exact Location: {displayAddress || "Not specified"}
+              </p>
+            </div>
+            {mapEmbedUrl ? (
+              <iframe title="map" className="w-full h-64 grayscale-[0.3]" src={mapEmbedUrl} />
+            ) : (
+              <div className="w-full h-64 flex items-center justify-center text-sm text-textSecondary bg-background">
+                Location map not available
+              </div>
+            )}
           </motion.div>
 
           {!isLoggedIn && !isOwnerPreviewRoute && (

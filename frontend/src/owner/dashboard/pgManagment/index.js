@@ -8,6 +8,21 @@ import Swal from "sweetalert2";
 import { getMyPgs } from "../../../api/api";
 import { getImageUrl } from "../../../utils/imageUtils";
 
+const resolveOwnerPgStatus = (pg) => {
+  const approval = String(pg?.approvalStatus || "").toLowerCase();
+  const listing = String(pg?.status || "").toLowerCase();
+
+  // Live listing should always appear Live even if legacy approvalStatus is stale.
+  if (listing === "live" || approval === "confirmed") return "Live";
+
+  // Keep non-live submitted/new PGs in Draft until admin confirms.
+  if (approval === "pending" || approval === "draft" || listing === "draft") return "Draft";
+  if (approval === "rejected" || listing === "rejected") return "Rejected";
+
+  if (!listing) return "Draft";
+  return listing.charAt(0).toUpperCase() + listing.slice(1);
+};
+
 const PgManagement = () => {
   const navigate = useNavigate(); 
   const [myPgs, setMyPgs] = useState([]);
@@ -54,7 +69,7 @@ const PgManagement = () => {
             id: pg._id,
             name: pg.pgName,
             location: pg.location,
-            status: pg.status.charAt(0).toUpperCase() + pg.status.slice(1),
+            status: resolveOwnerPgStatus(pg),
             rooms: roomsCount,
             beds: bedsCount,
             image: toImageUrl(pg.mainImage),
@@ -123,7 +138,11 @@ const PgManagement = () => {
       }
     } catch (error) {
       console.error("Error deleting PG:", error);
-      Swal.fire("Error!", "Failed to delete PG.", "error");
+      Swal.fire(
+        "Error!",
+        error?.response?.data?.message || "Failed to delete PG.",
+        "error"
+      );
     }
   };
 
@@ -195,8 +214,10 @@ const PgManagement = () => {
                 <div className="flex justify-between items-start gap-2">
                   <h4 className="text-base sm:text-lg md:text-xl font-bold text-gray-800 line-clamp-1">{pg.name}</h4>
                   <span className={`whitespace-nowrap text-[10px] sm:text-xs px-2.5 py-1 rounded-md font-bold ${
-                      pg.status === "Approved" ? "bg-green-100 text-green-700" :
-                      pg.status === "Pending" ? "bg-orange-100 text-orange-700" : "bg-purple-200 text-purple-700"
+                      pg.status === "Live" ? "bg-green-100 text-green-700" :
+                      pg.status === "Draft" ? "bg-orange-100 text-orange-700" :
+                      pg.status === "Rejected" ? "bg-red-100 text-red-700" :
+                      "bg-gray-200 text-gray-700"
                   }`}>
                     {pg.status}
                   </span>

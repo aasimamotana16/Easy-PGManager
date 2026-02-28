@@ -131,8 +131,8 @@ const pgSchema = new mongoose.Schema(
     // Admin-facing approval state (separate from listing status)
     approvalStatus: {
       type: String,
-      enum: ["pending", "confirmed", "rejected"],
-      default: "pending"
+      enum: ["draft", "pending", "confirmed", "rejected"],
+      default: "draft"
     },
     // Optional admin-facing operational status
     operationalStatus: {

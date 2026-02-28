@@ -57,11 +57,18 @@ const pickFirstNumeric = (...values) => {
 };
 
 const buildHouseRules = (rules = {}, legacyHouseRules = []) => {
-  if (Array.isArray(legacyHouseRules) && legacyHouseRules.length > 0) {
+  const resolvedRules = rules && typeof rules === "object" ? rules : {};
+  const hasRulesPayload =
+    Object.prototype.hasOwnProperty.call(resolvedRules, "smoking") ||
+    Object.prototype.hasOwnProperty.call(resolvedRules, "alcohol") ||
+    Object.prototype.hasOwnProperty.call(resolvedRules, "visitors") ||
+    Object.prototype.hasOwnProperty.call(resolvedRules, "pets") ||
+    Object.prototype.hasOwnProperty.call(resolvedRules, "curfew");
+
+  if (!hasRulesPayload && Array.isArray(legacyHouseRules) && legacyHouseRules.length > 0) {
     return legacyHouseRules.filter(Boolean);
   }
 
-  const resolvedRules = rules && typeof rules === "object" ? rules : {};
   const formatted = [
     `Smoking: ${resolvedRules.smoking ? "Allowed" : "Not allowed"}`,
     `Alcohol: ${resolvedRules.alcohol ? "Allowed" : "Not allowed"}`,
@@ -521,7 +528,7 @@ const ensureBookingConfirmationData = async ({ booking, ownerId }) => {
 
 const getOwnerProfile = async (req, res) => {
   try {
-    const owner = await User.findById(req.user._id).select('-password +address');
+    const owner = await User.findById(req.user._id).select('-password +address +profilePicture');
 
     res.status(200).json({
       success: true,
@@ -533,7 +540,7 @@ const getOwnerProfile = async (req, res) => {
         businessName: owner.businessName || "",
         address: owner.address || "Add your address",
         role: "Owner",
-        profileImage: owner.profileImage || "/images/profileImages/profile1.jpg",
+        profileImage: owner.profilePicture || "/images/profileImages/profile1.jpg",
         memberId: owner._id.toString().slice(-6).toUpperCase(),
         isVerified: Boolean(owner.isVerified),
         memberSince: owner.createdAt
@@ -551,22 +558,28 @@ const updateOwnerProfile = async (req, res) => {
   try {
     const ownerId = req.user._id;
     const { name, email, phone, address, businessName, emergencyPhone } = req.body;
+    const updatePayload = {};
+
+    if (typeof name !== "undefined") updatePayload.fullName = name;
+    if (typeof email !== "undefined") updatePayload.email = email;
+    if (typeof phone !== "undefined") updatePayload.phone = phone;
+    if (typeof address !== "undefined") updatePayload.address = address;
+    if (typeof businessName !== "undefined") updatePayload.businessName = businessName || "";
+    if (typeof emergencyPhone !== "undefined") {
+      updatePayload["emergencyContact.phoneNumber"] = emergencyPhone || "";
+    }
+    if (req.file) {
+      updatePayload.profilePicture = `/uploads/profiles/${req.file.filename}`;
+    }
 
     // Update the user document
     const updatedUser = await User.findByIdAndUpdate(
       ownerId,
       {
-        $set: {
-          fullName: name,
-          email,
-          phone,
-          address,
-          businessName: businessName || "",
-          "emergencyContact.phoneNumber": emergencyPhone || ""
-        }
+        $set: updatePayload
       },
       { new: true, runValidators: true }
-    ).select("-password +address");
+    ).select("-password +address +profilePicture");
 
     if (!updatedUser) {
       return res.status(404).json({ success: false, message: "User not found" });
@@ -587,7 +600,7 @@ const updateOwnerProfile = async (req, res) => {
         emergencyPhone: updatedUser?.emergencyContact?.phoneNumber || "",
         businessName: updatedUser.businessName || "",
         address: updatedUser.address || "Add your address",
-        profileImage: updatedUser.profileImage || "/images/profileImages/profile1.jpg",
+        profileImage: updatedUser.profilePicture || "/images/profileImages/profile1.jpg",
         memberId: updatedUser._id.toString().slice(-6).toUpperCase(),
         isVerified: Boolean(updatedUser.isVerified),
         memberSince: updatedUser.createdAt
@@ -789,7 +802,7 @@ const createPg = async (req, res) => {
       },
       // New properties start as draft until owner submits for admin approval.
       status: "draft",
-      approvalStatus: "pending",
+      approvalStatus: "draft",
       operationalStatus: "active",
       securityDeposit: initialDeposit
     });
@@ -814,13 +827,7 @@ const createPg = async (req, res) => {
 const getMyPgs = async (req, res) => {
   try {
     const ownerId = req.user._id;
-    const pgs = await Pg.find({
-      ownerId,
-      $or: [
-        { approvalStatus: "confirmed" },
-        { status: "live" }
-      ]
-    });
+    const pgs = await Pg.find({ ownerId }).sort({ createdAt: -1 });
 
     // Backward compatibility: earlier uploads could store pg image URL under /uploads/pgImages
     // while the file was actually written to /uploads/documents.
@@ -878,7 +885,30 @@ const deletePg = async (req, res) => {
     const { id } = req.params;
     const ownerId = req.user._id;
 
-    // Find and delete the PG
+    const pg = await Pg.findOne({ _id: id, ownerId }).select("_id pgName");
+
+    if (!pg) {
+      return res.status(404).json({ success: false, message: "PG not found" });
+    }
+
+    // Block deletion if this PG has any non-cancelled tenant bookings.
+    const hasLinkedBookings = await Booking.exists({
+      ownerId,
+      status: { $ne: "Cancelled" },
+      $or: [
+        { pgId: pg._id },
+        { pgName: pg.pgName }
+      ]
+    });
+
+    if (hasLinkedBookings) {
+      return res.status(400).json({
+        success: false,
+        message: "This PG cannot be deleted because tenant bookings exist. Remove/cancel all bookings first."
+      });
+    }
+
+    // No active bookings: allow delete.
     const deletedPg = await Pg.findOneAndDelete({ _id: id, ownerId });
 
     if (!deletedPg) {
@@ -2594,8 +2624,8 @@ const submitForApproval = async (req, res) => {
       return res.status(404).json({ success: false, message: "Property not found" });
     }
 
-    // If already pending, treat this as idempotent success for smoother UX.
-    if (pg.status === "pending") {
+    // If already submitted, treat this as idempotent success for smoother UX.
+    if (pg.approvalStatus === "pending") {
       return res.status(200).json({
         success: true,
         message: "Property is already submitted for approval.",
@@ -2603,7 +2633,7 @@ const submitForApproval = async (req, res) => {
       });
     }
 
-    // Only draft properties can be newly submitted.
+    // Only draft listings can be submitted for admin review.
     if (pg.status !== "draft") {
       return res.status(400).json({
         success: false,
@@ -2611,8 +2641,8 @@ const submitForApproval = async (req, res) => {
       });
     }
 
-    // Update status to pending
-    pg.status = "pending";
+    // Keep listing in draft until admin confirms it; only mark approval workflow as pending.
+    pg.status = "draft";
     pg.approvalStatus = "pending";
     await pg.save();
 

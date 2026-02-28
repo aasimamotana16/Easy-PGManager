@@ -61,16 +61,6 @@ const facilitySections = [
       "First Aid",
     ],
   },
-  {
-    title: "House Rules (Optional)",
-    items: [
-      "Entry Time Restriction",
-      "Visitors Allowed",
-      "Smoking Allowed",
-      "Drinking Allowed",
-      "Pets Allowed",
-    ],
-  },
 ];
 const rulesList = [
   { label: "Smoking Allowed", key: "smoking" },

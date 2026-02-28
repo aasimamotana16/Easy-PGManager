@@ -16,7 +16,7 @@ const pgImagesDir = path.join(uploadDir, "pgImages"); // NEW: Folder for PG imag
 });
 
 const storage = multer.diskStorage({
-  destination: (req, file, c1b) => {
+  destination: (req, file, cb) => {
     // Dynamic destination based on the field name
     if (file.fieldname === "image") {
       // Check if it's a profile image or PG image based on the route

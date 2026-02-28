@@ -19,11 +19,18 @@ const toNumber = (value) => {
 };
 
 const buildHouseRules = (rules = {}, legacyHouseRules = []) => {
-  if (Array.isArray(legacyHouseRules) && legacyHouseRules.length > 0) {
+  const resolvedRules = rules && typeof rules === "object" ? rules : {};
+  const hasRulesPayload =
+    Object.prototype.hasOwnProperty.call(resolvedRules, "smoking") ||
+    Object.prototype.hasOwnProperty.call(resolvedRules, "alcohol") ||
+    Object.prototype.hasOwnProperty.call(resolvedRules, "visitors") ||
+    Object.prototype.hasOwnProperty.call(resolvedRules, "pets") ||
+    Object.prototype.hasOwnProperty.call(resolvedRules, "curfew");
+
+  if (!hasRulesPayload && Array.isArray(legacyHouseRules) && legacyHouseRules.length > 0) {
     return legacyHouseRules.filter(Boolean);
   }
 
-  const resolvedRules = rules && typeof rules === "object" ? rules : {};
   const formatted = [
     `Smoking: ${resolvedRules.smoking ? "Allowed" : "Not allowed"}`,
     `Alcohol: ${resolvedRules.alcohol ? "Allowed" : "Not allowed"}`,

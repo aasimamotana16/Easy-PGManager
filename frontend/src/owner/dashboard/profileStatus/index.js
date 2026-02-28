@@ -6,6 +6,7 @@ import {
   FaCamera, FaCheckCircle, FaBuilding,
   FaPhoneSquareAlt, FaTrash, FaShieldAlt, FaMapMarkerAlt
 } from "react-icons/fa";
+import { getProfileImageUrl } from "../../../utils/imageUtils";
 
 import Navbar from "../../../components/navbar";
 import Footer from "../../../components/footer";
@@ -137,6 +138,49 @@ const ProfileStatus = () => {
     }
   };
 
+  const handleProfileImageChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const token = localStorage.getItem("userToken");
+      const formData = new FormData();
+      formData.append("image", file);
+
+      const res = await axios.put("http://localhost:5000/api/owner/update-profile", formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      if (res.data.success) {
+        const incoming = res.data.data || {};
+        const normalized = {
+          ...incoming,
+          name: incoming.name || incoming.fullName || profileData.name,
+        };
+        setProfileData(normalized);
+        setTempData((prev) => ({ ...prev, profileImage: normalized.profileImage }));
+        Swal.fire({
+          icon: "success",
+          title: "Profile Picture Updated",
+          text: "Your owner profile photo has been changed.",
+          confirmButtonColor: "#D97706",
+        });
+      }
+    } catch (error) {
+      Swal.fire({
+        icon: "error",
+        title: "Upload Failed",
+        text: "Could not update profile picture.",
+        confirmButtonColor: "#D97706",
+      });
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
   const handleDeleteAccount = async () => {
     const confirm = await Swal.fire({
       icon: "warning",
@@ -246,7 +290,10 @@ const ProfileStatus = () => {
               <div className="relative group mx-auto w-48 h-48 mb-6">
                 <motion.img 
                   whileHover={{ scale: 1.05 }}
-                  src={profileData.profileImage} 
+                  src={getProfileImageUrl(profileData.profileImage)}
+                  onError={(e) => {
+                    e.currentTarget.src = "/images/profileImages/profile1.jpg";
+                  }}
                   className="w-full h-full rounded-full object-cover border-4 border-[#FEF3C7] p-1.5 shadow-inner" 
                   alt="Profile"
                 />
@@ -258,7 +305,13 @@ const ProfileStatus = () => {
                 >
                   <FaCamera size={18} />
                 </motion.button>
-                <input type="file" ref={fileInputRef} className="hidden" accept="image/*" />
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  className="hidden"
+                  accept="image/*"
+                  onChange={handleProfileImageChange}
+                />
               </div>
 
               <div className="inline-flex items-center gap-2 bg-primarySoft px-4 py-2 rounded-full mb-6">
