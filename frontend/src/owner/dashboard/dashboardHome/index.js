@@ -13,6 +13,7 @@ import {
   FaStar,
   FaHourglassHalf, // Added for Extension
   FaDoorOpen,      // Added for Checkout
+  FaClock,         // Added for Pending Payments
 } from "react-icons/fa";
 import { Line } from "react-chartjs-2";
 import {
@@ -319,11 +320,12 @@ const DashboardHome = () => {
         <h2 className="text-base sm:text-xl text-textPrimary uppercase font-semibold">
           Quick Actions
         </h2>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4 items-stretch">
           <ActionButton label="Add PG" icon={<FaUserPlus />} onClick={() => navigate("/owner/dashboard/pgManagment/addProperty")} />
-          <ActionButton label="Tenants" icon={<FaUsers />} onClick={() => navigate("/owner/dashboard/tenantManagement")} />
-          <ActionButton label="Agreements" icon={<FaFileContract />} onClick={() => navigate("/owner/dashboard/oAgreements")} />
-          <ActionButton label="Listings" icon={<FaEye />} onClick={() => navigate("/owner/dashboard/pgManagment")} />
+          <ActionButton label="Manage Tenants" icon={<FaUsers />} onClick={() => navigate("/owner/dashboard/tenantManagement")} />
+          <ActionButton label="View Agreements" icon={<FaFileContract />} onClick={() => navigate("/owner/dashboard/oAgreements")} />
+          <ActionButton label="Month Pending Payments" icon={<FaClock />} onClick={() => navigate("/owner/dashboard/totalEarnings")} />
+
         </div>
       </div>
 
@@ -444,13 +446,13 @@ const DashboardHome = () => {
 
 /* REUSABLE ACTION BUTTON */
 const ActionButton = ({ label, icon, onClick }) => (
-  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="h-full">
     <CButton
       onClick={onClick}
-      className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 text-xs sm:text-sm md:text-base py-4 px-2 w-full transition-all rounded-md border border-border"
+      className="flex flex-col items-center justify-center gap-1 text-xs sm:text-sm md:text-base px-3 py-3 sm:py-4 lg:px-3 lg:py-4 w-full h-full min-h-[72px] sm:min-h-[88px] transition-all rounded-md border border-border text-center"
     >
       <span className="text-lg sm:text-xl text-textLight">{icon}</span>
-      {label}
+      <span className="whitespace-normal leading-snug break-words">{label}</span>
     </CButton>
   </motion.div>
 );

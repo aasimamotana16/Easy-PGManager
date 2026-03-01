@@ -14,6 +14,7 @@ const CInput = forwardRef(({
   helperText = "", 
   required = false,
   disabled = false,
+  endAdornment = null,
 }, ref) => {
   const [isFocused, setIsFocused] = useState(false);
 
@@ -132,8 +133,14 @@ const CInput = forwardRef(({
           onWheel={handleWheel}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
-          className={`${baseInputClasses} h-12 ${showFloatingLabel ? "pt-3" : ""}`}
+          className={`${baseInputClasses} h-12 ${showFloatingLabel ? "pt-3" : ""} ${endAdornment ? "pr-12" : ""}`}
         />
+
+        {endAdornment ? (
+          <div className="absolute inset-y-0 right-3 flex items-center justify-center">
+            {endAdornment}
+          </div>
+        ) : null}
       </div>
 
       {/* Error message below input */}

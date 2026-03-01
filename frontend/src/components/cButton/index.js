@@ -16,7 +16,7 @@ const CButton = ({
       "bg-primary text-textLight hover:bg-primaryDark border border-primary",
 
     outlined:
-      "border-2 border-primary text-primary bg-transparent hover:bg-primarySoft hover:text-primary transition-colors",
+      "border-2 border-primary text-primary bg-transparent hover:bg-primaryShade hover:text-primary transition-colors",
 
     text:
       "text-textPrimary hover:text-primary bg-transparent shadow-none hover:shadow-none",

@@ -193,26 +193,27 @@ const Login = () => {
               }}
             />
 
-            <div className="relative">
-              <CInput
-                label="Password"
-                type={showPassword ? "text" : "password"}
-                value={password}
-                error={!!errors.password}
-                helperText={errors.password}
-                onChange={(e) => {
-                  setPassword(e.target.value);
-                  if (errors.password) setErrors({ ...errors, password: "" });
-                }}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/3 -translate-y-1/2 text-gray-400 hover:text-amber-600 transition-colors"
-              >
-                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-              </button>
-            </div>
+            <CInput
+              label="Password"
+              type={showPassword ? "text" : "password"}
+              value={password}
+              error={!!errors.password}
+              helperText={errors.password}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                if (errors.password) setErrors({ ...errors, password: "" });
+              }}
+              endAdornment={
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  className="h-9 w-9 -mr-2 inline-flex items-center justify-center text-gray-400 hover:text-amber-600 transition-colors"
+                >
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
+              }
+            />
           </div>
 
           <div className="mt-6">
