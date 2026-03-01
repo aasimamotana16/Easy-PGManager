@@ -93,6 +93,7 @@ const PGDetails = () => {
   const [filterType, setFilterType] = useState("All");
   const [roomDocsState, setRoomDocsState] = useState(null);
   const [roomsFetched, setRoomsFetched] = useState(false);
+  const [expandedRoomDescriptions, setExpandedRoomDescriptions] = useState({});
 
   const role = localStorage.getItem("role"); 
   const isLoggedIn =
@@ -122,6 +123,22 @@ const PGDetails = () => {
     const cleaned = s.replace(/[^0-9.\-]+/g, '');
     const n = parseFloat(cleaned);
     return Number.isFinite(n) ? n : 0;
+  };
+
+  const getRoomKey = (room, idx) => {
+    return String(
+      room?._id ||
+      room?.id ||
+      room?.roomId ||
+      `${room?.type || "room"}-${room?.price || 0}-${idx}`
+    );
+  };
+
+  const toggleRoomDescription = (roomKey) => {
+    setExpandedRoomDescriptions((prev) => ({
+      ...prev,
+      [roomKey]: !prev[roomKey],
+    }));
   };
 
   const formatCurrency = (v) => `₹${parsePrice(v)}`;
@@ -629,9 +646,13 @@ const PGDetails = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {filteredRooms.map((room, idx) => (
-                  <motion.div 
-                    key={idx} 
+              {filteredRooms.map((room, idx) => {
+                const roomKey = getRoomKey(room, idx);
+                const isDescExpanded = Boolean(expandedRoomDescriptions[roomKey]);
+
+                return (
+                  <motion.div
+                    key={idx}
                     onClick={() => setSelectedRoomIdx(idx)}
                     className={`cursor-pointer flex items-start justify-between p-4 rounded-md border-2 transition-all ${selectedRoomIdx === idx ? 'border-primary bg-primarySoft/30' : 'border-border bg-background hover:border-primary/50'}`}
                   >
@@ -640,10 +661,26 @@ const PGDetails = () => {
                         <HomeIcon className="h-5 w-5" />
                       </div>
                       <div>
-                          <h3 className="font-bold text-textPrimary text-sm uppercase">{room.type}</h3>
-                          <p className="text-[10px] text-textSecondary">{room.acType}</p>
+                          <p className="text-[10px] font-bold text-textSecondary uppercase tracking-wider">Room Type</p>
+                          <h3 className="font-bold text-textPrimary uppercase">{room.type}</h3>
+                          <p className="text-sm text-textSecondary">{room.acType}</p>
                           {room.description ? (
-                            <p className="text-[11px] leading-5 text-textSecondary mt-1 line-clamp-2 max-w-[240px]">{room.description}</p>
+                            <>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleRoomDescription(roomKey);
+                                }}
+                                aria-expanded={isDescExpanded}
+                                className={`text-sm leading-5 text-textSecondary mt-1 text-left max-w-[240px] ${isDescExpanded ? '' : 'line-clamp-2'}`}
+                              >
+                                <span className="text-[10px] font-bold text-textSecondary uppercase tracking-wider mr-1">
+                                  Room Description:
+                                </span>
+                                {room.description}
+                              </button>
+                            </>
                           ) : null}
                       </div>
                     </div>
@@ -651,12 +688,13 @@ const PGDetails = () => {
                       <p className="text-lg font-bold text-textPrimary">{formatCurrency(room.price)}<span className="text-[10px] text-textSecondary">/mo</span></p>
                     </div>
                   </motion.div>
-              ))}
+                );
+              })}
             </div>
 
             <div className="mt-8 p-4 md:p-6 bg-background border-2 border-dashed border-border rounded-md flex flex-col md:flex-row justify-between items-center gap-6">
                 <div className="text-center md:text-left">
-                  <p className="text-[10px] font-bold text-textSecondary uppercase">Booking Summary</p>
+                  <p className=" font-bold text-textSecondary uppercase">Booking Summary</p>
                   <div className="mt-2 text-sm text-textPrimary">
                     <div className="flex justify-between w-48"><span>Rent</span><strong>{formatCurrency(displayedRent)}</strong></div>
                     <div className="flex justify-between w-48"><span>Deposit</span><strong>{formatCurrency(displayedDeposit)}</strong></div>
@@ -674,9 +712,9 @@ const PGDetails = () => {
                           : null
                       }
                     })}
-                    className="px-10 py-4 bg-primary text-white font-bold uppercase text-sm rounded shadow-lg hover:bg-primaryDark transition-all"
+                    className="px-10 py-4 bg-primary text-white font-bold uppercase text-xl rounded shadow-lg hover:bg-primaryDark transition-all"
                   >
-                    Secure This Room
+                    Book Now
                   </button>
                 )}
             </div>
@@ -719,10 +757,10 @@ const PGDetails = () => {
         </div>
 
         {/* SIDEBAR */}
-        <motion.div variants={fadeInUp} className="hidden lg:flex w-[35%] flex-col gap-6 sticky top-24 h-fit">
+        <motion.div variants={fadeInUp} className="hidden lg:flex w-[35%] flex-col gap-6 sticky h-fit">
           <div className="bg-white rounded-md shadow p-6 border border-primary">
-            <h1 className="text-2xl font-bold text-textPrimary mb-1">{pg.name}</h1>
-            <p className="text-textSecondary text-sm flex items-center gap-1"><MapPinIcon className="h-4 w-4" /> {pg.city}</p>
+            <h2 className="  font-semibold text-textPrimary mb-2">{pg.name}</h2>
+            <p className="text-textSecondary text-sm flex items-center gap-2"><MapPinIcon className="h-4 w-4" /> {pg.city}</p>
             <div className="mt-3 bg-background px-3 py-2.5 rounded-md border border-border">
               <p className=" text-textSecondary font-bold inline-flex items-center gap-1 leading-tight">
                 <StarIcon className="h-4 w-4 text-primary" />
@@ -815,10 +853,10 @@ const PGDetails = () => {
 
 const FeatureList = ({ title, items, icon }) => (
   <div className="bg-white p-5 rounded-md shadow border border-border">
-    <h2 className="text-sm font-bold mb-4 uppercase flex items-center gap-2">{icon} {title}</h2>
-    <div className="flex flex-wrap gap-2">
+    <h3 className=" font-bold mb-4 uppercase flex items-center gap-2">{icon} {title}</h3>
+    <div className="flex flex-wrap gap-3">
       {items.map((item, i) => (
-        <span key={i} className="px-3 py-1.5 bg-primarySoft rounded-md text-[10px] font-bold uppercase text-primaryDark">{typeof item === 'string' ? item : item.name}</span>
+        <span key={i} className="px-3 py-2 bg-primarySoft rounded-md text-sm font- semibold   text-primaryDark">{typeof item === 'string' ? item : item.name}</span>
       ))}
     </div>
   </div>
@@ -828,11 +866,11 @@ const HouseRules = ({ pg, ruleIcons }) => {
   const rules = pg?.houseRules || [];
   return (
     <div className="bg-white p-5 rounded-md shadow border border-border">
-      <h2 className="text-sm font-bold mb-4 uppercase">📜 House Rules</h2>
+      <h3 className=" font-bold mb-4 uppercase">📜 House Rules</h3>
       <div className="grid grid-cols-1 gap-3">
         {rules.map((r, i) => (
           <div key={i} className="flex gap-3 items-center bg-background p-3 rounded-md border border-border">
-            <span className="text-[10px] font-bold uppercase text-textSecondary">{typeof r === 'string' ? r : r.text}</span>
+            <span className="text-sm font-bold uppercase text-textSecondary">{typeof r === 'string' ? r : r.text}</span>
           </div>
         ))}
       </div>
@@ -845,8 +883,8 @@ const GuestRatingsReviews = ({ reviews, averageRating }) => {
   const count = Array.isArray(reviews) ? reviews.length : 0;
 
   return (
-    <div className="bg-white p-5 md:p-8 rounded-3xl shadow border border-border">
-      <h2 className="text-3xl font-bold text-textPrimary mb-4">Ratings & Reviews</h2>
+    <div className="bg-white p-5 md:p-8 rounded-md shadow border border-border">
+      <h3 className=" font-bold text-textPrimary mb-4">Ratings & Reviews</h3>
       <div className="flex items-center gap-3 mb-6">
         <span className="text-primary font-bold">⭐ {count > 0 ? averageRating : "0.0"}</span>
         <span className="text-textSecondary font-semibold">({count} REVIEWS)</span>
@@ -854,17 +892,17 @@ const GuestRatingsReviews = ({ reviews, averageRating }) => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {items.length === 0 ? (
-          <div className="col-span-full bg-background p-4 rounded-3xl border border-border text-textSecondary">
+          <div className="col-span-full bg-background p-4 rounded-md border border-border text-textSecondary">
             No reviews yet.
           </div>
         ) : (
           items.map((review, idx) => (
-            <div key={idx} className="bg-background p-5 rounded-3xl border border-border">
+            <div key={idx} className="bg-background p-5 rounded-md border border-border">
               <div className="flex justify-between items-start gap-3">
-                <p className="text-2xl font-bold text-textPrimary">{review.user}</p>
+                <p className=" font-bold text-textPrimary">{review.user}</p>
                 <span className="text-primary font-bold">⭐ {Number(review.rating || 0)}</span>
               </div>
-              <p className="mt-2 text-textSecondary text-xl leading-relaxed">"{review.comment}"</p>
+              <p className="mt-2 text-textSecondary leading-relaxed">"{review.comment}"</p>
             </div>
           ))
         )}
