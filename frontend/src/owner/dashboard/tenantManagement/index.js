@@ -177,6 +177,14 @@ const Tenants = () => {
     });
   };
 
+  const getDisplayPhone = (value) => {
+    const phone = String(value || "").trim();
+    if (!phone || phone.toLowerCase() === "not provided" || /^0+$/.test(phone)) {
+      return "";
+    }
+    return phone;
+  };
+
   // ACTION: View Inactive Audit
   const handleViewAudit = (tenant) => {
     Swal.fire({
@@ -480,7 +488,9 @@ const Tenants = () => {
                 <tr key={t._id} className="hover:bg-gray-50 transition-colors">
                   <td className="p-5">
                     <div className="font-bold text-[#1C1C1C]">{t.name}</div>
-                    <div className="text-xs text-[#4B4B4B]">{t.phone}</div>
+                    {getDisplayPhone(t.phone) && (
+                      <div className="text-xs text-[#4B4B4B]">{getDisplayPhone(t.phone)}</div>
+                    )}
                   </td>
                   <td className="p-5 text-[#4B4B4B] text-sm font-medium">{t.pgName}</td>
                   <td className="p-5 text-center">

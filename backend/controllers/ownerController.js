@@ -35,6 +35,27 @@ const addMonths = (dateInput, months) => {
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const LATE_FINE_PER_DAY = 100;
+const MONTH_SHORT_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+const resolveMonthRangeFromShortName = (monthShort) => {
+  const normalized = String(monthShort || "").trim().toLowerCase();
+  const monthIndex = MONTH_SHORT_NAMES.findIndex((m) => m.toLowerCase() === normalized);
+  const now = new Date();
+  const year = now.getFullYear();
+  if (monthIndex < 0) {
+    return {
+      label: MONTH_SHORT_NAMES[now.getMonth()],
+      start: new Date(year, now.getMonth(), 1),
+      end: new Date(year, now.getMonth() + 1, 1)
+    };
+  }
+
+  return {
+    label: MONTH_SHORT_NAMES[monthIndex],
+    start: new Date(year, monthIndex, 1),
+    end: new Date(year, monthIndex + 1, 1)
+  };
+};
 
 const deriveSecurityDepositAmount = (monthlyRent) => {
   const rent = Math.max(0, Number(monthlyRent) || 0);
@@ -54,6 +75,13 @@ const pickFirstNumeric = (...values) => {
     if (Number.isFinite(num)) return num;
   }
   return 0;
+};
+
+const normalizeTenantPhone = (rawPhone = "") => {
+  const value = String(rawPhone || "").trim();
+  if (!value) return "";
+  if (/^0+$/.test(value)) return "";
+  return value;
 };
 
 const buildHouseRules = (rules = {}, legacyHouseRules = []) => {
@@ -306,7 +334,7 @@ const ensureTenantLinkedRecords = async ({ ownerId, tenant, pg }) => {
 
 const resolveTenantUserForBooking = async (booking) => {
   if (booking?.tenantUserId) {
-    const byId = await User.findById(booking.tenantUserId).select('_id fullName email');
+    const byId = await User.findById(booking.tenantUserId).select('_id fullName email phone');
     if (byId) return byId;
   }
 
@@ -314,14 +342,14 @@ const resolveTenantUserForBooking = async (booking) => {
     const byEmail = await User.findOne({
       email: new RegExp(`^${String(booking.tenantEmail).trim()}$`, 'i'),
       role: { $in: ['user', 'tenant'] }
-    }).select('_id fullName email');
+    }).select('_id fullName email phone');
     if (byEmail) return byEmail;
   }
 
   const byName = await User.findOne({
     fullName: booking?.tenantName,
     role: { $in: ['user', 'tenant'] }
-  }).select('_id fullName email');
+  }).select('_id fullName email phone');
   return byName || null;
 };
 
@@ -420,10 +448,11 @@ const ensureBookingConfirmationData = async ({ booking, ownerId }) => {
   }).sort({ createdAt: -1 });
 
   if (!tenantRecord) {
+    const resolvedPhone = normalizeTenantPhone(tenantUser?.phone);
     tenantRecord = await Tenant.create({
       ownerId,
       name: tenantName,
-      phone: "0000000000",
+      phone: resolvedPhone || "Not provided",
       email: tenantEmail || "no-email@easy-pg.local",
       pgId: pg._id,
       pgName: pg.pgName || "",
@@ -438,6 +467,10 @@ const ensureBookingConfirmationData = async ({ booking, ownerId }) => {
     tenantRecord.room = room || tenantRecord.room;
     tenantRecord.joiningDate = tenantRecord.joiningDate || checkInDate;
     tenantRecord.securityDeposit = Number(tenantRecord.securityDeposit || securityDeposit);
+    const resolvedPhone = normalizeTenantPhone(tenantUser?.phone);
+    if (resolvedPhone && (!tenantRecord.phone || tenantRecord.phone === "0000000000" || tenantRecord.phone === "Not provided")) {
+      tenantRecord.phone = resolvedPhone;
+    }
     if (tenantEmail && (!tenantRecord.email || tenantRecord.email === "no-email@easy-pg.local")) {
       tenantRecord.email = tenantEmail;
     }
@@ -1469,7 +1502,7 @@ const getMyTenants = async (req, res) => {
       return {
         _id: t._id,
         name: t.name,
-        phone: t.phone,
+        phone: normalizeTenantPhone(t.phone),
         email: t.email,
         pgId: pgObj?._id || t.pgId,
         pgName: pgObj?.pgName || t.pgName || "Unknown PG",
@@ -1875,31 +1908,6 @@ const getMyBookings = async (req, res) => {
     const ownerPgs = await Pg.find({ ownerId }).select('_id pgName');
     const pgIds = ownerPgs.map((pg) => pg._id);
     const pgNames = ownerPgs.map((pg) => pg.pgName).filter(Boolean);
-    const ownerTenants = await Tenant.find({ ownerId }).select('name pgId pgName joiningDate');
-
-    const tenantKeysByPgId = new Set();
-    const tenantKeysByPgName = new Set();
-    ownerTenants.forEach((t) => {
-      const tenantName = String(t.name || '').trim().toLowerCase();
-      if (!tenantName) return;
-      if (t.pgId) tenantKeysByPgId.add(`${String(t.pgId)}|${tenantName}`);
-      if (t.pgName) tenantKeysByPgName.add(`${String(t.pgName).trim().toLowerCase()}|${tenantName}`);
-    });
-
-    const tenantSyncKeysByPgId = new Set();
-    const tenantSyncKeysByPgName = new Set();
-    ownerTenants.forEach((t) => {
-      const tenantKey = String(t.name || '').trim().toLowerCase();
-      const joinKey = String(t.joiningDate || '').trim();
-      if (!tenantKey || !joinKey) return;
-
-      if (t.pgId) {
-        tenantSyncKeysByPgId.add(`${String(t.pgId)}|${tenantKey}|${joinKey}`);
-      }
-      if (t.pgName) {
-        tenantSyncKeysByPgName.add(`${String(t.pgName).trim().toLowerCase()}|${tenantKey}|${joinKey}`);
-      }
-    });
 
     const bookings = await Booking.find({
       $or: [
@@ -1941,43 +1949,10 @@ const getMyBookings = async (req, res) => {
     });
 
     const filteredBookings = bookings.filter((b) => {
-      const tenantName = String(b.tenantName || '').trim().toLowerCase();
-      const pgIdKey = b.pgId ? String(b.pgId) : '';
-      const pgNameKey = String(b.pgName || '').trim().toLowerCase();
-      const source = String(b.bookingSource || '').toLowerCase();
-      const normalizedStatus = String(b.status || '').toLowerCase();
-
-      // Keep actionable tenant requests visible so owner can approve/reject them.
-      if (source === 'tenant_request' && normalizedStatus === 'pending') {
-        return true;
-      }
-
-      // Hard rule: once tenant exists in resident list, do not duplicate in bookings list.
-      if (
-        tenantName &&
-        ((pgIdKey && tenantKeysByPgId.has(`${pgIdKey}|${tenantName}`)) ||
-          (pgNameKey && tenantKeysByPgName.has(`${pgNameKey}|${tenantName}`)))
-      ) {
-        return false;
-      }
-
-      if (source === 'tenant_sync') return false;
-
-      // Backward-compatibility: older auto-synced bookings may not have bookingSource.
-      if (!source && String(b.status || '').toLowerCase() === 'confirmed') {
-        const tenantKey = tenantName;
-        const joinKey = String(b.checkInDate || '').trim();
-        if (!tenantKey || !joinKey) return true;
-
-        if (pgIdKey && tenantSyncKeysByPgId.has(`${pgIdKey}|${tenantKey}|${joinKey}`)) {
-          return false;
-        }
-        if (pgNameKey && tenantSyncKeysByPgName.has(`${pgNameKey}|${tenantKey}|${joinKey}`)) {
-          return false;
-        }
-      }
-
-      return true;
+      const tenantName = String(b.tenantName || '').trim();
+      const pgName = String(b.pgName || '').trim();
+      // Show all owner-related bookings with basic tenant/property identity.
+      return Boolean(tenantName || pgName);
     }).map((b) => {
       const tenant = String(b.tenantName || '').trim().toLowerCase();
       const pgIdKey = b.pgId ? String(b.pgId) : '';
@@ -2702,12 +2677,20 @@ const submitForApproval = async (req, res) => {
 const getOwnerEarnings = async (req, res) => {
   try {
     const ownerId = req.user._id;
+    const fromQuickAction = String(req.query.from || req.query.source || "").toLowerCase() === "quick-action";
+    const pendingScope = String(req.query.pendingScope || "").toLowerCase();
+    const showOnlyCurrentMonthPending = fromQuickAction || pendingScope === "current-month";
+    const selectedMonthRange = resolveMonthRangeFromShortName(req.query.month);
+
     const ownerPgs = await Pg.find({ ownerId }).select('_id pgName');
     const ownerPgIds = ownerPgs.map((pg) => pg._id);
     const ownerPgNames = ownerPgs.map((pg) => pg.pgName).filter(Boolean);
 
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    const selectedMonthStart = selectedMonthRange.start;
+    const selectedMonthEnd = selectedMonthRange.end;
     const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
     const payments = await Payment.find({
@@ -2719,62 +2702,195 @@ const getOwnerEarnings = async (req, res) => {
     }).sort({ paymentDate: -1 });
 
     const total = payments.reduce((sum, p) => sum + (Number(p.amountPaid) || 0), 0);
-    const monthly = payments
-      .filter((p) => new Date(p.paymentDate) >= monthStart)
-      .reduce((sum, p) => sum + (Number(p.amountPaid) || 0), 0);
-    const today = payments
+    const todayAmount = payments
       .filter((p) => new Date(p.paymentDate) >= dayStart)
       .reduce((sum, p) => sum + (Number(p.amountPaid) || 0), 0);
 
-    const monthlyMap = new Map();
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const key = `${d.getFullYear()}-${d.getMonth()}`;
-      const label = d.toLocaleString('en-US', { month: 'short' });
-      monthlyMap.set(key, { label, amount: 0 });
-    }
-    payments.forEach((p) => {
+    const selectedMonthPayments = payments.filter((p) => {
       const d = new Date(p.paymentDate);
-      const key = `${d.getFullYear()}-${d.getMonth()}`;
-      if (monthlyMap.has(key)) {
-        monthlyMap.get(key).amount += Number(p.amountPaid) || 0;
+      return d >= selectedMonthStart && d < selectedMonthEnd;
+    });
+    const selectedMonthAmount = selectedMonthPayments.reduce((sum, p) => sum + (Number(p.amountPaid) || 0), 0);
+
+    const daysInSelectedMonth = new Date(
+      selectedMonthStart.getFullYear(),
+      selectedMonthStart.getMonth() + 1,
+      0
+    ).getDate();
+    const dayBuckets = Array.from({ length: daysInSelectedMonth }, (_, i) => ({
+      label: String(i + 1),
+      amount: 0
+    }));
+
+    selectedMonthPayments.forEach((p) => {
+      const d = new Date(p.paymentDate);
+      const dayIndex = d.getDate() - 1;
+      if (dayIndex >= 0 && dayIndex < dayBuckets.length) {
+        dayBuckets[dayIndex].amount += Number(p.amountPaid) || 0;
       }
     });
 
-    const chartLabels = Array.from(monthlyMap.values()).map((v) => v.label);
-    const chartValues = Array.from(monthlyMap.values()).map((v) => v.amount);
+    const chartLabels = dayBuckets.map((v) => v.label);
+    const chartValues = dayBuckets.map((v) => v.amount);
 
-    const earningsHistory = payments.slice(0, 50).map((payment) => ({
+    const earningsHistory = selectedMonthPayments.slice(0, 50).map((payment) => ({
       date: new Date(payment.paymentDate).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }),
       source: payment.pgName || "Unknown PG",
       amount: Number(payment.amountPaid) || 0,
       status: "Paid"
     }));
 
-    const pendingPaymentsRaw = await PendingPayment.find({
+    const pendingQuery = {
       status: { $in: ['Pending', 'Overdue'] },
       $or: [
         { pg: { $in: ownerPgIds } },
         { pgName: { $in: ownerPgNames } }
       ]
-    }).sort({ dueDate: 1 });
+    };
+    if (showOnlyCurrentMonthPending) {
+      pendingQuery.dueDate = { $gte: monthStart, $lt: monthEnd };
+    }
+    const pendingPaymentsRaw = await PendingPayment.find(pendingQuery).sort({ dueDate: 1 });
 
-    const pendingPayments = pendingPaymentsRaw.map((payment) => ({
-      tenant: payment.tenantName || 'Unknown Tenant',
-      pg: payment.pgName || 'Unknown PG',
-      amount: Number(payment.amount) || 0,
-      due: new Date(payment.dueDate).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' })
-    }));
+    const normalizeKey = (value = "") => String(value || "").trim().toLowerCase();
+    const buildTenantPgKeys = ({ tenantName = "", pgId = "", pgName = "" }) => ([
+      `${normalizeKey(tenantName)}|id:${normalizeKey(pgId)}`,
+      `${normalizeKey(tenantName)}|name:${normalizeKey(pgName)}`
+    ]);
+
+    const tenantsRaw = await Tenant.find({
+      ownerId,
+      $or: [
+        { pgId: { $in: ownerPgIds } },
+        { pgName: { $in: ownerPgNames } }
+      ]
+    }).select("name pgId pgName isFinePaused extensionUntil");
+    const tenantStateByKey = new Map();
+    tenantsRaw.forEach((tenant) => {
+      const keys = buildTenantPgKeys({
+        tenantName: tenant.name || "",
+        pgId: tenant.pgId || "",
+        pgName: tenant.pgName || ""
+      });
+      keys.forEach((k) => {
+        if (!tenantStateByKey.has(k)) {
+          tenantStateByKey.set(k, {
+            isFinePaused: Boolean(tenant.isFinePaused),
+            extensionUntil: tenant.extensionUntil || null
+          });
+        }
+      });
+    });
+
+    const bookingsRaw = await Booking.find({
+      ownerId,
+      status: { $ne: "Cancelled" },
+      $or: [
+        { pgId: { $in: ownerPgIds } },
+        { pgName: { $in: ownerPgNames } }
+      ]
+    })
+      .sort({ createdAt: -1 })
+      .select("_id pgId pgName tenantName status isPaid");
+
+    const bookingByKey = new Map();
+    const bookingByTenantKey = new Map();
+    bookingsRaw.forEach((booking) => {
+      const keys = buildTenantPgKeys({
+        tenantName: booking.tenantName || "",
+        pgId: booking.pgId || "",
+        pgName: booking.pgName || ""
+      });
+
+      keys.forEach((k) => {
+        const existing = bookingByKey.get(k);
+        const existingScore = existing ? (String(existing.status || "").toLowerCase() === "confirmed" ? 2 : 1) : 0;
+        const nextScore = String(booking.status || "").toLowerCase() === "confirmed" ? 2 : 1;
+        if (!existing || nextScore > existingScore) {
+          bookingByKey.set(k, booking);
+        }
+      });
+
+      const tenantOnlyKey = normalizeKey(booking.tenantName || "");
+      if (tenantOnlyKey) {
+        const existing = bookingByTenantKey.get(tenantOnlyKey);
+        const existingScore = existing ? (String(existing.status || "").toLowerCase() === "confirmed" ? 2 : 1) : 0;
+        const nextScore = String(booking.status || "").toLowerCase() === "confirmed" ? 2 : 1;
+        if (!existing || nextScore > existingScore) {
+          bookingByTenantKey.set(tenantOnlyKey, booking);
+        }
+      }
+    });
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const pendingPayments = pendingPaymentsRaw.map((payment) => {
+      const paymentPgId = payment.pg ? String(payment.pg) : "";
+      const paymentPgName = String(payment.pgName || "");
+      const tenantName = String(payment.tenantName || "Unknown Tenant");
+
+      const lookupKeys = buildTenantPgKeys({
+        tenantName,
+        pgId: paymentPgId,
+        pgName: paymentPgName
+      });
+
+      const tenantState = lookupKeys.map((k) => tenantStateByKey.get(k)).find(Boolean) || null;
+      const matchedBooking =
+        lookupKeys.map((k) => bookingByKey.get(k)).find(Boolean) ||
+        bookingByTenantKey.get(normalizeKey(tenantName)) ||
+        null;
+
+      const extensionUntil = tenantState?.extensionUntil ? new Date(tenantState.extensionUntil) : null;
+      const extensionActive = Boolean(extensionUntil && !Number.isNaN(extensionUntil.getTime()) && extensionUntil >= today);
+      const isFinePaused = Boolean(tenantState?.isFinePaused || extensionActive);
+      const lateFine = calculateLateFine({
+        dueDate: payment.dueDate,
+        dailyFine: LATE_FINE_PER_DAY,
+        isFinePaused
+      });
+
+      const baseAmount = Number(payment.amount) || 0;
+      const lateFee = Number(lateFine.fineAmount || 0);
+      const totalAmount = baseAmount + lateFee;
+      const dueDate = new Date(payment.dueDate);
+      const dueLabel = dueDate.toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' });
+
+      return {
+        id: payment._id,
+        tenant: tenantName,
+        userName: tenantName,
+        pg: paymentPgName || "Unknown PG",
+        amount: baseAmount,
+        lateFee,
+        totalAmount,
+        due: dueLabel,
+        actualDueDate: dueLabel,
+        overdueDays: Number(lateFine.overdueDays || 0),
+        isFinePaused,
+        status: payment.status,
+        month: payment.month,
+        bookingId: matchedBooking?._id || null
+      };
+    });
+
+    const pendingSummary = pendingPayments.reduce((acc, payment) => {
+      acc.baseAmount += Number(payment.amount) || 0;
+      acc.lateFee += Number(payment.lateFee) || 0;
+      acc.totalAmount += Number(payment.totalAmount) || 0;
+      return acc;
+    }, { baseAmount: 0, lateFee: 0, totalAmount: 0 });
 
     res.status(200).json({
       success: true,
       data: {
-        stats: { total, monthly, today },
+        stats: { total, monthly: selectedMonthAmount, today: todayAmount },
         chartData: {
           labels: chartLabels,
           datasets: [
             {
-              label: "Earnings",
+              label: `${selectedMonthRange.label} Earnings`,
               data: chartValues,
               borderColor: "#f97316",
               backgroundColor: "rgba(249,115,22,0.15)",
@@ -2782,8 +2898,15 @@ const getOwnerEarnings = async (req, res) => {
             }
           ]
         },
+        meta: {
+          fromQuickAction,
+          pendingScope: showOnlyCurrentMonthPending ? "current-month" : "all",
+          selectedMonth: selectedMonthRange.label
+        },
+        selectedMonthAmount,
         earningsHistory,
-        pendingPayments
+        pendingPayments,
+        pendingSummary
       }
     });
   } catch (error) {
@@ -2801,9 +2924,37 @@ const sendPaymentLink = async (req, res) => {
     const pgIds = ownerPgs.map((pg) => String(pg._id));
     const pgNames = ownerPgs.map((pg) => pg.pgName).filter(Boolean);
 
-    const booking = await Booking.findById(id);
+    let booking = await Booking.findById(id);
     if (!booking) {
-      return res.status(404).json({ success: false, message: "Booking not found" });
+      const pending = await PendingPayment.findById(id).select("tenantName pg pgName");
+      if (!pending) {
+        return res.status(404).json({ success: false, message: "Booking not found" });
+      }
+
+      const pendingBelongsToOwner =
+        (pending.pg && pgIds.includes(String(pending.pg))) ||
+        (pending.pgName && pgNames.includes(pending.pgName));
+
+      if (!pendingBelongsToOwner) {
+        return res.status(403).json({ success: false, message: "You don't have permission to send payment link for this pending payment" });
+      }
+
+      booking = await Booking.findOne({
+        ownerId,
+        status: { $ne: "Cancelled" },
+        tenantName: pending.tenantName,
+        $or: [
+          pending.pg ? { pgId: pending.pg } : null,
+          pending.pgName ? { pgName: pending.pgName } : null
+        ].filter(Boolean)
+      }).sort({ createdAt: -1 });
+
+      if (!booking) {
+        return res.status(404).json({
+          success: false,
+          message: "No active booking found for this pending payment"
+        });
+      }
     }
 
     const belongsToOwner =
@@ -2890,6 +3041,7 @@ const sendPaymentLink = async (req, res) => {
 const downloadOwnerEarningsPDF = async (req, res) => {
   try {
     const ownerId = req.user._id;
+    const selectedMonthRange = resolveMonthRangeFromShortName(req.query.month);
     const ownerPgs = await Pg.find({ ownerId }).select('_id pgName');
     const ownerPgIds = ownerPgs.map((pg) => pg._id);
     const ownerPgNames = ownerPgs.map((pg) => pg.pgName).filter(Boolean);
@@ -2904,18 +3056,22 @@ const downloadOwnerEarningsPDF = async (req, res) => {
 
     const pendingPaymentsRaw = await PendingPayment.find({
       status: { $in: ['Pending', 'Overdue'] },
+      dueDate: { $gte: selectedMonthRange.start, $lt: selectedMonthRange.end },
       $or: [
         { pg: { $in: ownerPgIds } },
         { pgName: { $in: ownerPgNames } }
       ]
     }).sort({ dueDate: 1 });
 
+    const monthPayments = payments.filter((p) => {
+      const d = new Date(p.paymentDate);
+      return d >= selectedMonthRange.start && d < selectedMonthRange.end;
+    });
+
     const total = payments.reduce((sum, p) => sum + (Number(p.amountPaid) || 0), 0);
     const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const monthly = payments
-      .filter((p) => new Date(p.paymentDate) >= monthStart)
+    const monthly = monthPayments
       .reduce((sum, p) => sum + (Number(p.amountPaid) || 0), 0);
     const today = payments
       .filter((p) => new Date(p.paymentDate) >= dayStart)
@@ -2923,7 +3079,7 @@ const downloadOwnerEarningsPDF = async (req, res) => {
 
     const doc = new jsPDF();
     doc.setFontSize(16);
-    doc.text("EasyPG Manager - Owner Earnings Report", 14, 15);
+    doc.text(`EasyPG Manager - Owner Earnings Report (${selectedMonthRange.label})`, 14, 15);
     doc.setFontSize(11);
     doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 25);
 
@@ -2932,7 +3088,7 @@ const downloadOwnerEarningsPDF = async (req, res) => {
       head: [["Metric", "Amount"]],
       body: [
         ["Total Earnings", `Rs. ${total.toLocaleString()}`],
-        ["This Month", `Rs. ${monthly.toLocaleString()}`],
+        [`${selectedMonthRange.label} Earnings`, `Rs. ${monthly.toLocaleString()}`],
         ["Today", `Rs. ${today.toLocaleString()}`],
       ],
     });
@@ -2940,7 +3096,7 @@ const downloadOwnerEarningsPDF = async (req, res) => {
     autoTable(doc, {
       startY: doc.lastAutoTable.finalY + 10,
       head: [["Date", "PG", "Amount", "Status"]],
-      body: payments.slice(0, 50).map((p) => [
+      body: monthPayments.slice(0, 50).map((p) => [
         new Date(p.paymentDate).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }),
         p.pgName || 'Unknown PG',
         `Rs. ${(Number(p.amountPaid) || 0).toLocaleString()}`,
@@ -2961,7 +3117,7 @@ const downloadOwnerEarningsPDF = async (req, res) => {
 
     const pdfBuffer = Buffer.from(doc.output('arraybuffer'));
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', 'attachment; filename="Owner_Earnings_Report.pdf"');
+    res.setHeader('Content-Disposition', `attachment; filename="Owner_Earnings_Report_${selectedMonthRange.label}.pdf"`);
     res.send(pdfBuffer);
   } catch (error) {
     console.error('Owner earnings PDF error:', error);

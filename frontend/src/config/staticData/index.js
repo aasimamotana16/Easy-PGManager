@@ -1,4 +1,4 @@
-// src/config/staticData/index.js
+﻿// src/config/staticData/index.js
 
 // Banner images (from public/images/homeImages)
 export const bannerImages = [
@@ -119,7 +119,7 @@ export const contactInfo = {
   email: "business-support@easyPGmanager.com",
   supportPhone: "+91 0000000000",
   infoPhone: "+91 000000000",
-  timing: "Monday–Friday [9:00 AM to 6:00 PM]",
+  timing: "Mondayâ€“Friday [9:00 AM to 6:00 PM]",
 };
 
 export const contactCTA = {
@@ -127,7 +127,7 @@ export const contactCTA = {
     title: "What are you still waiting for?",
     description:
       "Automate your operations, manage your hostel/PGs business efficiently, and boost profits!",
-    button: "SCHEDULE A DEMO →",
+    button: "SCHEDULE A DEMO â†’",
   },
   touch: {
     title: "Get in touch with us!",
@@ -185,11 +185,11 @@ export const aboutWhyChooseUs =
 
 export const aboutReviews = [
   {
-    text: "“Managing my PG has never been easier. Billing and complaints are all in one place.”",
+    text: "â€œManaging my PG has never been easier. Billing and complaints are all in one place.â€",
     author: "PG Owner",
   },
   {
-    text: "“I love the transparency. I can see my rent breakdown and contact my owner instantly.”",
+    text: "â€œI love the transparency. I can see my rent breakdown and contact my owner instantly.â€",
     author: "Tenant",
   },
 ];
@@ -199,25 +199,37 @@ export const services = [
     id: 1,
     title: "PG Management",
     description: "Streamline tenant records, rent tracking, and PG operations with ease.",
-    icon: "🏠",
+    icon: "ðŸ ",
   },
   {
     id: 2,
     title: "Billing & Payments",
     description: "Automated invoices, reminders, and secure payment integrations.",
-    icon: "💳",
+    icon: "ðŸ’³",
   },
   {
     id: 3,
     title: "Support & Maintenance",
     description: "Track service requests and manage maintenance schedules efficiently.",
-    icon: "🛠️",
+    icon: "ðŸ› ï¸",
   },
   {
     id: 4,
     title: "Verified Listings",
     description: "Browse verified PGs and hostels with all the details you need.",
-    icon: "📋", // you can replace with another emoji or SVG icon
+    icon: "ðŸ“‹", // you can replace with another emoji or SVG icon
+  },
+  {
+    id: 5,
+    title: "Smart Booking & Agreements",
+    description: "Seamless property booking with automated rental agreements and secure online payments.",
+    icon: "📄",
+  },
+  {
+    id: 6,
+    title: "Analytics & Reports",
+    description: "Gain complete financial and occupancy insights with real-time dashboards and detailed reports.",
+    icon: "📊",
   },
 ];
 
@@ -389,7 +401,7 @@ export const pgdetails = [
     gender: "Male",
 
 
-    startingPrice: "₹4500 / month",
+    startingPrice: "â‚¹4500 / month",
     startingPriceNumber: 4500,
 
     roomPricing: { single: 6500, double: 4500 },
@@ -427,7 +439,7 @@ export const pgdetails = [
     location: "Ahmedabad",
     gender: "Female",
 
-    startingPrice: "₹5500 / month",
+    startingPrice: "â‚¹5500 / month",
     startingPriceNumber: 5500,
 
     roomPricing: { single: 7000, double: 5500 },
@@ -462,7 +474,7 @@ export const pgdetails = [
     location: "Surat",
     gender: "Male",
 
-    startingPrice: "₹4800 / month",
+    startingPrice: "â‚¹4800 / month",
     startingPriceNumber: 4800,
 
     roomPricing: { single: 6500, double: 4800 },
@@ -497,7 +509,7 @@ export const pgdetails = [
     location: "Rajkot",
     gender: "Female",
 
-    startingPrice: "₹5000 / month",
+    startingPrice: "â‚¹5000 / month",
     startingPriceNumber: 5000,
 
     roomPricing: { single: 7000, double: 5000 },
@@ -532,7 +544,7 @@ export const pgdetails = [
     location: "Bhavnagar",
     gender: "Male",
 
-    startingPrice: "₹4200 / month",
+    startingPrice: "â‚¹4200 / month",
     startingPriceNumber: 4200,
 
     roomPricing: { single: 6000, double: 4200 },
@@ -567,7 +579,7 @@ export const pgdetails = [
     location: "Anand",
     gender: "Female",
 
-    startingPrice: "₹4700 / month",
+    startingPrice: "â‚¹4700 / month",
     startingPriceNumber: 4700,
 
     roomPricing: { single: 6500, double: 4700 },
@@ -604,7 +616,7 @@ export const pgdetails = [
     location: "Gandhinagar",
     gender: "Male",
 
-    startingPrice: "₹5300 / month",
+    startingPrice: "â‚¹5300 / month",
     startingPriceNumber: 5300,
 
     roomPricing: { single: 7000, double: 5300 },
@@ -639,7 +651,7 @@ export const pgdetails = [
     location: "Junagadh",
     gender: "Female",
 
-    startingPrice: "₹4600 / month",
+    startingPrice: "â‚¹4600 / month",
     startingPriceNumber: 4600,
 
     roomPricing: { single: 6500, double: 4600 },
@@ -676,7 +688,7 @@ export const hosteldetails = [
     name: "CityHostel",
     location: "Vadodara",
     address: "89 Central Avenue, Vadodara",
-    price: "₹4000/month",
+    price: "â‚¹4000/month",
     rent: 4000,
     amenities: ["WiFi", "Gym", "CCTV"],
     facilities: ["WiFi", "Gym", "CCTV", "Common Area", "Laundry"],
@@ -704,7 +716,7 @@ roomImages: [
     name: "Elite Hostel",
     location: "Nadiad",
     address: "22 Elite Street, Nadiad",
-    price: "₹6000/month",
+    price: "â‚¹6000/month",
     rent: 6000,
     amenities: ["AC", "Meals", "Security"],
     facilities: ["AC", "Meals", "Security", "Study Room", "Hot Water"],
@@ -731,7 +743,7 @@ roomImages: [
     name: "RiverView Hostel",
     location: "Surat",
     address: "12 Riverside Road, Surat",
-    price: "₹4500/month",
+    price: "â‚¹4500/month",
     rent: 4500,
     amenities: ["WiFi", "Meals", "Security"],
     facilities: ["WiFi", "Meals", "Security", "Laundry", "Common Room"],
@@ -758,7 +770,7 @@ roomImages: [
     name: "BrightStay Hostel",
     location: "Rajkot",
     address: "78 College Road, Rajkot",
-    price: "₹5000/month",
+    price: "â‚¹5000/month",
     rent: 5000,
     amenities: ["AC", "WiFi", "Meals"],
     facilities: ["AC", "WiFi", "Meals", "Study Room", "Security"],
@@ -785,7 +797,7 @@ roomImages: [
     name: "OceanView Hostel",
     location: "Bhavnagar",
     address: "56 Seaside Road, Bhavnagar",
-    price: "₹4200/month",
+    price: "â‚¹4200/month",
     rent: 4200,
     amenities: ["WiFi", "Laundry"],
     facilities: ["WiFi", "Laundry", "Meals", "Security"],
@@ -901,5 +913,6 @@ export const cancelReasons = [
   "Personal reason",
   "Other",
 ];
+
 
 

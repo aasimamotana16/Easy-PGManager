@@ -756,7 +756,7 @@ const getMyTimeline = async (req, res) => {
       })),
       ...payments.map(p => ({
         id: p._id,
-        title: `Rent Paid: ${p.amountPaid}`,
+        title: `Rent Paid: ?${p.amountPaid}`,
         type: "payment",
         date: new Date(p.paymentDate).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }),
         status: "Paid"
@@ -1031,7 +1031,7 @@ const getMyCheckIns = async (req, res) => {
         _id: `payment-${payment._id}`,
         date: dateObj.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
         time: dateObj.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        title: `Rent Paid: ${amount.toLocaleString("en-IN")}`,
+        title: `Rent Paid: ?${amount.toLocaleString("en-IN")}`,
         status: "Paid",
         type: "payment",
         pgName: payment.pgName || latestBooking?.pgName || "",

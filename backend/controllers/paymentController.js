@@ -23,6 +23,13 @@ const pickFirstValid = (...values) => {
   return "";
 };
 
+const normalizeTenantPhone = (rawPhone = "") => {
+  const value = String(rawPhone || "").trim();
+  if (!value) return "";
+  if (/^0+$/.test(value)) return "";
+  return value;
+};
+
 const getTenantDisplayName = async (userId, fallback = "") => {
   const [user, profile, agreement] = await Promise.all([
     User.findById(userId).select("fullName name"),
@@ -146,10 +153,11 @@ const ensureBookingCompletionRecords = async ({ booking, tenantUser, pgDoc, tena
   }).sort({ createdAt: -1 });
 
   if (!tenantRecord) {
+    const resolvedPhone = normalizeTenantPhone(tenantUser?.phone);
     tenantRecord = await Tenant.create({
       ownerId: pgDoc.ownerId,
       name: tenantName,
-      phone: "0000000000",
+      phone: resolvedPhone || "Not provided",
       email: tenantEmail || "no-email@easy-pg.local",
       pgId: pgDoc._id,
       pgName: pgDoc.pgName || "",
@@ -167,6 +175,10 @@ const ensureBookingCompletionRecords = async ({ booking, tenantUser, pgDoc, tena
       tenantRecord.status = "Pending Arrival";
     }
     tenantRecord.securityDeposit = Number(tenantRecord.securityDeposit || securityDeposit);
+    const resolvedPhone = normalizeTenantPhone(tenantUser?.phone);
+    if (resolvedPhone && (!tenantRecord.phone || tenantRecord.phone === "0000000000" || tenantRecord.phone === "Not provided")) {
+      tenantRecord.phone = resolvedPhone;
+    }
     if (tenantEmail && (!tenantRecord.email || tenantRecord.email === "no-email@easy-pg.local")) {
       tenantRecord.email = tenantEmail;
     }
@@ -336,7 +348,7 @@ const verifyPayment = async (req, res) => {
       .digest("hex");
 
     if (razorpay_signature === expectedSign) {
-      const tenantUser = await User.findById(req.user.id).select("fullName name email ownerId assignedPg");
+      const tenantUser = await User.findById(req.user.id).select("fullName name email phone ownerId assignedPg");
       const tenantEmail = String(tenantUser?.email || "").trim().toLowerCase();
       const tenantName = await getTenantDisplayName(req.user.id, tenantUser?.fullName || tenantUser?.name || "Tenant");
 

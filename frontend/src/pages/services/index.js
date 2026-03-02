@@ -84,7 +84,7 @@ export default function Services() {
             variants={containerVariants}
             initial="hidden"
             animate="visible"
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 mb-16 md:mb-24"
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 mb-16 md:mb-24"
           >
             {serviceList.map((service, idx) => (
               <motion.div key={idx} variants={itemVariants} className="h-full">

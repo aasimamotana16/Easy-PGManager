@@ -44,11 +44,14 @@ const BookingManagement = () => {
 
   const filteredBookings = bookings.filter((b) => {
     const searchLower = searchTerm.toLowerCase();
+    const tenantName = String(b?.tenantName || "").toLowerCase();
+    const bookingCode = String(b?.bookingId || "").toLowerCase();
+    const pgName = String(b?.pgName || "").toLowerCase();
     return (
-      b.tenantName.toLowerCase().includes(searchLower) || 
-      b.bookingId.toLowerCase().includes(searchLower) ||
-      b.pgName.toLowerCase().includes(searchLower)
-    ) && (selectedPg === "All Properties" || b.pgName === selectedPg);
+      tenantName.includes(searchLower) ||
+      bookingCode.includes(searchLower) ||
+      pgName.includes(searchLower)
+    ) && (selectedPg === "All Properties" || String(b?.pgName || "") === selectedPg);
   });
 
   const handleUpdateStatus = async (id, newStatus) => {
@@ -217,6 +220,13 @@ const BookingManagement = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-[#E5E0D9]">
+              {filteredBookings.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="p-8 text-center text-[#4B4B4B]">
+                    No bookings found
+                  </td>
+                </tr>
+              )}
               {filteredBookings.map((b) => (
                 <tr key={b._id} className="hover:bg-gray-50 transition-colors">
                   <td className="p-5">

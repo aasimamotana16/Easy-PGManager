@@ -324,7 +324,11 @@ const DashboardHome = () => {
           <ActionButton label="Add PG" icon={<FaUserPlus />} onClick={() => navigate("/owner/dashboard/pgManagment/addProperty")} />
           <ActionButton label="Manage Tenants" icon={<FaUsers />} onClick={() => navigate("/owner/dashboard/tenantManagement")} />
           <ActionButton label="View Agreements" icon={<FaFileContract />} onClick={() => navigate("/owner/dashboard/oAgreements")} />
-          <ActionButton label="Month Pending Payments" icon={<FaClock />} onClick={() => navigate("/owner/dashboard/totalEarnings")} />
+          <ActionButton
+            label="Month Pending Payments"
+            icon={<FaClock />}
+            onClick={() => navigate("/owner/dashboard/totalEarnings?from=quick-action&pendingScope=current-month")}
+          />
 
         </div>
       </div>
