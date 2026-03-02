@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Eye, EyeOff, ShieldCheck, X } from "lucide-react"; 
+import { ArrowLeft, Eye, EyeOff, ShieldCheck, X } from "lucide-react"; 
 import CCheckbox from "../../components/cCheckbox";
 import CFormCard from "../../components/cFormCard";
 import CInput from "../../components/cInput";
@@ -252,18 +252,28 @@ const SignUp = () => {
     </div>
 
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <div className="relative">
-        <CInput 
-          label="Password" 
-          type={showPassword ? "text" : "password"} 
-          value={password} 
-          onChange={(e) => {setPassword(e.target.value); setErrors({...errors, password: ""})}} 
-          error={!!errors.password} 
-          helperText={errors.password} // Moved error message inside CInput
+      <div>
+        <CInput
+          label="Password"
+          type={showPassword ? "text" : "password"}
+          value={password}
+          onChange={(e) => {
+            setPassword(e.target.value);
+            setErrors({ ...errors, password: "" });
+          }}
+          error={!!errors.password}
+          helperText={errors.password}
+          endAdornment={
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              className="h-9 w-9 -mr-2 inline-flex items-center justify-center text-gray-400 hover:text-amber-600 transition-colors"
+            >
+              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+            </button>
+          }
         />
-        <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/3 -translate-y-1/2 text-gray-400">
-          {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-        </button>
         
         {password.length > 0 && (
           <div className="mt-2">
@@ -279,18 +289,25 @@ const SignUp = () => {
         )}
       </div>
 
-      <div className="relative">
-        <CInput 
-          label="Confirm Password" 
-          type={showConfirmPassword ? "text" : "password"} 
-          value={confirmPassword} 
-          onChange={(e) => setConfirmPassword(e.target.value)} 
-          error={!!errors.confirmPassword} 
-          helperText={errors.confirmPassword} // Moved error message inside CInput
+      <div>
+        <CInput
+          label="Confirm Password"
+          type={showConfirmPassword ? "text" : "password"}
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          error={!!errors.confirmPassword}
+          helperText={errors.confirmPassword}
+          endAdornment={
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+              className="h-9 w-9 -mr-2 inline-flex items-center justify-center text-gray-400 hover:text-amber-600 transition-colors"
+            >
+              {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+            </button>
+          }
         />
-        <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-1/3 -translate-y-1/2 text-gray-400">
-          {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-        </button>
       </div>
     </div>
 
@@ -319,10 +336,21 @@ const SignUp = () => {
     </CButton>
   </div>
 
-  <p className="text-center text-sm mt-2  text-gray-600">
-    Already have an account?{" "}
-    <span onClick={() => navigate("/loginPage")} className="font-bold text-[#D97706] cursor-pointer hover:underline underline-offset-4 transition-colors">Login</span>
-  </p>
+  <div className="relative mt-2">
+    <button
+      type="button"
+      onClick={() => navigate("/")}
+      aria-label="Back to home"
+      className="absolute left-0 bottom-0 h-9 w-9 inline-flex items-center justify-center rounded-md text-gray-500 hover:text-primary hover:bg-primarySoft transition-colors"
+    >
+      <ArrowLeft size={18} />
+    </button>
+
+    <p className="text-center text-sm text-gray-600 px-10">
+      Already have an account?{" "}
+      <span onClick={() => navigate("/loginPage")} className="font-bold text-[#D97706] cursor-pointer hover:underline underline-offset-4 transition-colors">Login</span>
+    </p>
+  </div>
         </CFormCard>
       </div>
 

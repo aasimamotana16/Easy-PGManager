@@ -11,6 +11,7 @@ const CSelect = ({
   error = false,
   helperText = "",
   required = false,
+  disabled = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -38,6 +39,7 @@ const CSelect = ({
     : "Select an option";
 
   const handleOptionClick = (val) => {
+    if (disabled) return;
     onChange({ target: { name, value: val } });
     setIsOpen(false);
   };
@@ -61,8 +63,14 @@ const CSelect = ({
 
       {/* Select Trigger */}
       <div
-        onClick={() => setIsOpen(!isOpen)}
-        className={`w-full h-12 px-4 py-3 rounded-md border-2 ${borderClasses} bg-white text-gray-700 flex justify-between items-center cursor-pointer transition focus:outline-none`}
+        onClick={() => {
+          if (disabled) return;
+          setIsOpen(!isOpen);
+        }}
+        className={`w-full h-12 px-4 py-3 rounded-md border-2 ${borderClasses} ${
+          disabled ? "bg-gray-100 cursor-not-allowed opacity-70" : "bg-white cursor-pointer"
+        } text-gray-700 flex justify-between items-center transition focus:outline-none`}
+        aria-disabled={disabled}
       >
         <span
           className={`text-body-sm lg:text-body ${
@@ -81,7 +89,7 @@ const CSelect = ({
       </div>
 
       {/* Dropdown */}
-      {isOpen && (
+      {isOpen && !disabled && (
         <div className="absolute z-50 w-full mt-1 top-full bg-white border border-gray-300 rounded-md shadow-sm animate-in fade-in slide-in-from-top-1 duration-200">
           {/* Default Option */}
           <div

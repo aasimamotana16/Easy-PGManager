@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
-import { FaEdit, FaPlus, FaSearch, FaEye, FaTrash, FaSignOutAlt, FaMapMarkerAlt, FaHistory, FaClock, FaInfoCircle } from "react-icons/fa";
-import CButton from "../../../components/cButton";
+import { FaEdit, FaSearch, FaEye, FaTrash, FaSignOutAlt, FaMapMarkerAlt, FaHistory, FaClock, FaInfoCircle } from "react-icons/fa";
 import CSelect from "../../../components/cSelect";
 import Swal from "sweetalert2";
 import AddTenant from "./addTenant";
@@ -408,9 +407,6 @@ const Tenants = () => {
           <h2 className=" text-[#1C1C1C]">Tenants</h2>
           <p className="text-primary">Track arrivals, active stays, and past residents.</p>
         </div>
-        <CButton onClick={() => setShowAddModal(true)} text="Add New Tenant" className="flex items-center gap-2">
-          <FaPlus /> Add New Tenant
-        </CButton>
       </div>
 
       <div className="flex flex-wrap gap-2 mb-4">
@@ -449,11 +445,10 @@ const Tenants = () => {
       {/* Search & Filter */}
       <div className="flex flex-col md:flex-row gap-4 mb-8 bg-white p-4 rounded-md shadow-sm border border-[#D97706]">
         <div className="relative flex-grow mt-3 mb-3">
-          <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
             placeholder="Search by name or PG..."
-            className="w-full pl-12 pr-4 py-3 rounded-md border border-[#E5E0D9] focus:outline-none focus:ring-1 focus:ring-[#D97706] text-sm"
+            className="w-full pl-2 pr-4 py-3 rounded-md border border-[#E5E0D9] focus:outline-none focus:ring-1 focus:ring-[#D97706] text-sm"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />

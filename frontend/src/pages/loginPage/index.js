@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import ReCAPTCHA from "react-google-recaptcha";
 import Swal from "sweetalert2";
-import { Eye, EyeOff, X, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, X, ShieldCheck } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import CFormCard from "../../components/cFormCard";
 import CInput from "../../components/cInput";
@@ -234,15 +234,26 @@ const Login = () => {
             </a>
           </div>
 
-          <p className="text-center text-sm mt-3 text-gray-600">
-            Don’t have an account?{" "}
-            <span
-              onClick={() => navigate("/signup")}
-              className="text-[#D97706] font-bold cursor-pointer hover:underline underline-offset-2"
+          <div className="relative mt-3">
+            <button
+              type="button"
+              onClick={() => navigate("/")}
+              aria-label="Back to home"
+              className="absolute left-0 bottom-0 h-9 w-9 inline-flex items-center justify-center rounded-md text-gray-500 hover:text-amber-600 hover:bg-amber-50 transition-colors"
             >
-              Sign Up
-            </span>
-          </p>
+              <ArrowLeft size={18} />
+            </button>
+
+            <p className="text-center text-sm text-gray-600 px-10">
+              Don’t have an account?{" "}
+              <span
+                onClick={() => navigate("/signup")}
+                className="text-[#D97706] font-bold cursor-pointer hover:underline underline-offset-2"
+              >
+                Sign Up
+              </span>
+            </p>
+          </div>
         </CFormCard>
       </div>
 

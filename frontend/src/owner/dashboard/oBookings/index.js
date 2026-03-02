@@ -184,11 +184,10 @@ const BookingManagement = () => {
       {/* SEARCH AND FILTER */}
       <div className="flex flex-col md:flex-row gap-4 mb-8 bg-white p-4 rounded-md shadow-sm border border-[#D97706]">
         <div className="relative flex-grow">
-          <FaSearch className="absolute left-4 top-1/3 -translate-y-1/2 text-gray-400" />
           <input 
             type="text"
             placeholder="Search by name, ID, or PG..." 
-            className="w-full pl-12 pr-4 py-3 rounded-md border border-[#E5E0D9] focus:outline-none focus:ring-1 focus:ring-[#D97706] text-sm"
+            className="w-full pl-2 pr-4 py-3 rounded-md border border-[#E5E0D9] focus:outline-none focus:ring-1 focus:ring-[#D97706] text-sm"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />

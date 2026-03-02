@@ -60,14 +60,14 @@ const AgreementPage = () => {
           <input
             type="text"
             placeholder="Search by Tenant Name..."
-            className="w-full border border-gray-200 rounded-md px-4 py-2.5 text-sm"
+            className="w-full border border-gray-200  rounded-md px-4 py-2.5 focus:outline-none focus:ring-1 focus:ring-[#D97706] text-sm"
             value={tenantSearch}
             onChange={(e) => setTenantSearch(e.target.value)}
           />
           <input
             type="text"
             placeholder="Search by Property..."
-            className="w-full border border-gray-200 rounded-md px-4 py-2.5 text-sm"
+            className="w-full border border-gray-200 rounded-md px-4 py-2.5 focus:outline-none focus:ring-1 focus:ring-[#D97706] text-sm"
             value={propertySearch}
             onChange={(e) => setPropertySearch(e.target.value)}
           />

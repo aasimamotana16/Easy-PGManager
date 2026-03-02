@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { FaEye, FaSearch } from "react-icons/fa";
 import CButton from "../../../components/cButton";
+import CInput from "../../../components/cInput";
 import Swal from "sweetalert2";
 import {
   createOwnerSupportTicket,
@@ -13,6 +14,7 @@ const SupportPage = () => {
   const [message, setMessage] = useState("");
   const [search, setSearch] = useState("");
   const [selectedTicket, setSelectedTicket] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fetchTickets = async () => {
     try {
@@ -39,15 +41,23 @@ const SupportPage = () => {
     );
   }, [tickets, search]);
 
+  const isFormComplete = subject.trim().length > 0 && message.trim().length > 0;
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!subject.trim() || !message.trim()) return;
+
+    const subjectValue = subject.trim();
+    const messageValue = message.trim();
+
+    if (!subjectValue || !messageValue) return;
+    if (isSubmitting) return;
+    setIsSubmitting(true);
 
     try {
       const user = JSON.parse(localStorage.getItem("user") || "{}");
       const payload = {
-        subject: subject.trim(),
-        description: message.trim(),
+        subject: subjectValue,
+        description: messageValue,
         yourName: user?.fullName || user?.name || localStorage.getItem("userName") || "Owner",
         emailAddress: user?.email || localStorage.getItem("userEmail") || "",
         phone: user?.phone || ""
@@ -71,6 +81,8 @@ const SupportPage = () => {
         text: error.response?.data?.message || "Failed to send support ticket.",
         icon: "error"
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -85,22 +97,27 @@ const SupportPage = () => {
 
       <div className="bg-white rounded-md shadow p-4 md:p-6 border border-primary">
         <h2 className="text-base md:text-lg font-semibold mb-4 text-primary">Ask for Help</h2>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <input
-            type="text"
-            placeholder="Ticket Subject"
-            className="w-full border rounded-md px-4 py-2 text-sm focus:ring-2 focus:ring-orange-400 outline-none"
+        <form onSubmit={handleSubmit} className="flex flex-col">
+          <CInput
+            label="Ticket Subject"
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
+            disabled={isSubmitting}
           />
-          <textarea
+          <CInput
+            type="textarea"
+            label="Describe your issue"
             placeholder="Describe your issue..."
             rows={4}
-            className="w-full border rounded-md px-4 py-2 text-sm focus:ring-2 focus:ring-orange-400 outline-none"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
+            disabled={isSubmitting}
           />
-          <CButton type="submit" text="Submit Request" />
+          <CButton
+            type="submit"
+            text={isSubmitting ? "Submitting..." : "Submit Request"}
+            disabled={isSubmitting || !isFormComplete}
+          />
         </form>
       </div>
 

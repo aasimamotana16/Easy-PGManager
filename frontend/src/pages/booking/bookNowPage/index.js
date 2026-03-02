@@ -3,6 +3,7 @@ import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { BackendContext } from "../../../context/backendContext";
 import CButton from "../../../components/cButton";
 import CInput from "../../../components/cInput";
+import CSelect from "../../../components/cSelect";
 import Loader from "../../../components/loader";
 import Swal from "sweetalert2";
 import { getPgById } from "../../../api/api";
@@ -295,11 +296,11 @@ const BookingPage = () => {
               <div key={index} ref={(el) => (personRefs.current[index] = el)} 
                    className="bg-background rounded-md p-6 shadow-sm border border-border">
                 <h3 className="font-bold text-textPrimary text-lg mb-4">Person {index + 1} (Tenant)</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-end">
                   <CInput label="Full Name" required error={!!errors[`fullName_${index}`]} helperText={errors[`fullName_${index}`]} value={person.fullName} onChange={(e) => handleChange(index, "fullName", e.target.value)} />
                   <CInput label="Email" required type="email" error={!!errors[`email_${index}`]} helperText={errors[`email_${index}`]} value={person.email} onChange={(e) => handleChange(index, "email", e.target.value)} />
                   <CInput label="Phone Number" required error={!!errors[`phone_${index}`]} helperText={errors[`phone_${index}`]} value={person.phone} onChange={(e) => handleChange(index, "phone", e.target.value)} />
-                  <CInput type="select" label="Gender" required disabled={isGirlsHostel} error={!!errors[`gender_${index}`]} helperText={errors[`gender_${index}`]} value={person.gender} onChange={(e) => handleChange(index, "gender", e.target.value)} options={[{ label: "Select Gender", value: "" }, { label: "Male", value: "Male" }, { label: "Female", value: "Female" }]} />
+                  <CSelect className="!mb-3" label="Gender" required disabled={isGirlsHostel} error={!!errors[`gender_${index}`]} helperText={errors[`gender_${index}`]} value={person.gender} onChange={(e) => handleChange(index, "gender", e.target.value)} options={[{ label: "Male", value: "Male" }, { label: "Female", value: "Female" }]} />
                   <CInput label="College / Workplace Name" required error={!!errors[`institution_${index}`]} helperText={errors[`institution_${index}`]} value={person.institution} onChange={(e) => handleChange(index, "institution", e.target.value)} />
                   <CInput label="Course / Job Role" value={person.occupationRole} onChange={(e) => handleChange(index, "occupationRole", e.target.value)} />
                   <CInput label="Emergency Contact Name" value={person.emergencyName} onChange={(e) => handleChange(index, "emergencyName", e.target.value)} />
@@ -310,7 +311,7 @@ const BookingPage = () => {
 
             <div className="bg-background rounded-md p-6 shadow-sm border border-border">
               <h3 className="font-bold text-textPrimary text-lg mb-4">Stay Details</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
                 <CInput type="date" label="Check-in Date" required error={!!errors.checkIn} helperText={errors.checkIn} min={today} value={stayDetails.checkIn} onChange={(e) => setStayDetails({ ...stayDetails, checkIn: e.target.value })} />
                 <CInput type="date" label="Check-out Date (Optional)" error={!!errors.checkOut} helperText={errors.checkOut} min={stayDetails.checkIn || today} value={stayDetails.checkOut} onChange={(e) => setStayDetails({ ...stayDetails, checkOut: e.target.value })} />
               </div>
