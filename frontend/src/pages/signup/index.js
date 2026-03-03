@@ -336,20 +336,27 @@ const SignUp = () => {
     </CButton>
   </div>
 
-  <div className="relative mt-2">
+  <div className="mt-6 grid grid-cols-[2.25rem_1fr_2.25rem] items-center">
     <button
       type="button"
       onClick={() => navigate("/")}
       aria-label="Back to home"
-      className="absolute left-0 bottom-0 h-9 w-9 inline-flex items-center justify-center rounded-md text-gray-500 hover:text-primary hover:bg-primarySoft transition-colors"
+      className="h-9 w-9 inline-flex items-center justify-center rounded-md text-gray-500 hover:text-primary hover:bg-primarySoft transition-colors"
     >
       <ArrowLeft size={18} />
     </button>
 
-    <p className="text-center text-sm text-gray-600 px-10">
+    <p className="mt-3 h-9 leading-9 text-center text-sm text-gray-600 whitespace-nowrap">
       Already have an account?{" "}
-      <span onClick={() => navigate("/loginPage")} className="font-bold text-[#D97706] cursor-pointer hover:underline underline-offset-4 transition-colors">Login</span>
+      <span
+        onClick={() => navigate("/loginPage")}
+        className="font-bold text-[#D97706] cursor-pointer hover:underline underline-offset-4 transition-colors"
+      >
+        Login
+      </span>
     </p>
+
+    <div className="w-9" aria-hidden="true" />
   </div>
         </CFormCard>
       </div>
