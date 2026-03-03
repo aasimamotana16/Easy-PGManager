@@ -260,11 +260,51 @@ const PGDetails = () => {
       return first || "";
     };
     const priceMap = new Map();
+    const mergePriceEntry = (current = {}, incoming = {}) => {
+      const next = { ...current };
+
+      const nextRent = Number(incoming.rent);
+      if (Number.isFinite(nextRent) && nextRent > 0) {
+        next.rent = nextRent;
+      } else if (!Number.isFinite(Number(next.rent))) {
+        next.rent = 0;
+      }
+
+      const nextDeposit = Number(incoming.securityDeposit);
+      if (Number.isFinite(nextDeposit) && nextDeposit >= 0) {
+        next.securityDeposit = nextDeposit;
+      } else if (!Number.isFinite(Number(next.securityDeposit))) {
+        next.securityDeposit = 0;
+      }
+
+      const incomingAcType = String(incoming.acType || "").trim();
+      if (incomingAcType) {
+        next.acType = incomingAcType;
+      } else if (!next.acType) {
+        next.acType = "Non-AC";
+      }
+
+      const incomingDescription = String(incoming.description || "").trim();
+      if (incomingDescription) {
+        next.description = incomingDescription;
+      } else if (!next.description) {
+        next.description = "";
+      }
+
+      return next;
+    };
+
     const setPriceEntry = (rawKey, entry) => {
       const key = normalize(rawKey);
       const cKey = canonical(rawKey);
-      if (key) priceMap.set(key, entry);
-      if (cKey && !priceMap.has(cKey)) priceMap.set(cKey, entry);
+      if (key) {
+        const current = priceMap.get(key) || {};
+        priceMap.set(key, mergePriceEntry(current, entry));
+      }
+      if (cKey) {
+        const currentCanonical = priceMap.get(cKey) || {};
+        priceMap.set(cKey, mergePriceEntry(currentCanonical, entry));
+      }
     };
 
     if (Array.isArray(pg?.roomPrices)) {
@@ -296,7 +336,7 @@ const PGDetails = () => {
         setPriceEntry(rawKey, {
           rent: Number(rd.rent || rd.price || rd.pricePerMonth || rd.monthlyRent || 0) || 0,
           securityDeposit: Number(rd.securityDeposit || rd.deposit || 0) || 0,
-          acType: rd.acType || 'Non-AC',
+          acType: rd.acType || rd.ac || '',
           description: rd.description || rd.desc || ''
         });
       });

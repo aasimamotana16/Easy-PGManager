@@ -23,6 +23,11 @@ const RoomManagement = () => {
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const toInt = (value, fallback = 0) => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
+  };
+
   const fetchPgData = async () => {
     try {
       setLoading(true);
@@ -70,13 +75,17 @@ const RoomManagement = () => {
   };
 
   const handleViewRoom = (room) => {
+    const totalRoomsCount = Math.max(0, toInt(room.totalRooms, 0));
+    const bedsPerRoomCount = Math.max(1, toInt(room.bedsPerRoom, 1));
+    const totalBeds = totalRoomsCount * bedsPerRoomCount;
+    const occupiedBeds = Math.max(0, toInt(room.occupiedBeds, 0));
     Swal.fire({
       title: `<span style="color: #D97706">Room Details</span>`,
       html: `
         <div class="text-left space-y-3 p-2">
           <div class="flex justify-between border-b pb-2"><strong>Type:</strong> <span>${room.roomType}</span></div>
           <div class="flex justify-between border-b pb-2"><strong>Total Rooms:</strong> <span>${room.totalRooms}</span></div>
-          <div class="flex justify-between border-b pb-2"><strong>Occupancy:</strong> <span>${room.occupiedBeds || 0} / ${room.bedsPerRoom || 0} Beds</span></div>
+          <div class="flex justify-between border-b pb-2"><strong>Occupancy:</strong> <span>${occupiedBeds} / ${totalBeds} Beds</span></div>
           <div class="flex justify-between border-b pb-2"><strong>Status:</strong> <span class="uppercase font-bold">${room.status || 'Active'}</span></div>
           <p class="mt-2 text-gray-600"><strong>Description:</strong> ${room.description || 'N/A'}</p>
         </div>
@@ -107,11 +116,7 @@ const RoomManagement = () => {
             </div>
           </div>
 
-          <div class="grid grid-cols-2 gap-3 mt-4">
-             <div>
-              <label class="block text-xs font-bold text-gray-700 mb-1">Occupied Beds</label>
-              <input id="swal-occupiedBeds" type="number" class="swal2-input !m-0 !w-full !text-sm" value="${room.occupiedBeds || 0}">
-            </div>
+          <div class="grid grid-cols-1 gap-3 mt-4">
             <div>
               <label class="block text-xs font-bold text-gray-700 mb-1">Status</label>
               <select id="swal-status" class="swal2-input !m-0 !w-full !text-sm">
@@ -135,7 +140,6 @@ const RoomManagement = () => {
           roomType: document.getElementById('swal-roomType').value,
           totalRooms: parseInt(document.getElementById('swal-totalRooms').value) || 0,
           bedsPerRoom: parseInt(document.getElementById('swal-bedsPerRoom').value) || 0,
-          occupiedBeds: parseInt(document.getElementById('swal-occupiedBeds').value) || 0,
           status: document.getElementById('swal-status').value,
           description: document.getElementById('swal-description').value,
         };
@@ -236,9 +240,11 @@ const RoomManagement = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {rooms.map((room, index) => {
-              const occupied = room.occupiedBeds || 0;
-              const total = room.bedsPerRoom || 1;
-              const occupancyRate = (occupied / total) * 100;
+              const totalRoomsCount = Math.max(0, toInt(room.totalRooms, 0));
+              const bedsPerRoomCount = Math.max(1, toInt(room.bedsPerRoom, 1));
+              const total = Math.max(1, totalRoomsCount * bedsPerRoomCount);
+              const occupied = Math.max(0, toInt(room.occupiedBeds, 0));
+              const occupancyRate = Math.min(100, (occupied / total) * 100);
               const status = room.status || (occupied >= total ? 'Full' : 'Active');
 
               return (

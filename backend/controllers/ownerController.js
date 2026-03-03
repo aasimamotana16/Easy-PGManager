@@ -78,6 +78,82 @@ const pickFirstNumeric = (...values) => {
   return 0;
 };
 
+const normalizeRoomTypeKey = (value = "") =>
+  String(value || "")
+    .toLowerCase()
+    .replace(/sharing|share|room/gi, "")
+    .replace(/[^a-z0-9]/g, "");
+
+const getRoomCapacity = (room = {}) => {
+  const totalRooms = Math.max(0, Number(room?.totalRooms) || 0);
+  const bedsPerRoom = Math.max(1, Number(room?.bedsPerRoom) || 1);
+  return totalRooms * bedsPerRoom;
+};
+
+const attachComputedRoomOccupancy = async (pgItems = []) => {
+  if (!Array.isArray(pgItems) || pgItems.length === 0) return [];
+
+  const normalizedPgs = pgItems.map((pg) => (typeof pg.toObject === "function" ? pg.toObject() : pg));
+  const pgIds = normalizedPgs
+    .map((pg) => pg?._id)
+    .filter(Boolean);
+
+  if (pgIds.length === 0) return normalizedPgs;
+
+  const bookings = await Booking.find({
+    pgId: { $in: pgIds },
+    status: "Confirmed"
+  })
+    .select("pgId roomType variantLabel seatsBooked")
+    .lean();
+
+  const occupiedByPg = new Map();
+  bookings.forEach((booking) => {
+    const pgIdKey = String(booking?.pgId || "");
+    if (!pgIdKey) return;
+
+    const rawRoomType = booking?.variantLabel || booking?.roomType || "";
+    const roomKey = normalizeRoomTypeKey(rawRoomType);
+    if (!roomKey) return;
+
+    const bookedSeats = Math.max(1, Number(booking?.seatsBooked) || 1);
+    const byType = occupiedByPg.get(pgIdKey) || new Map();
+    byType.set(roomKey, (byType.get(roomKey) || 0) + bookedSeats);
+    occupiedByPg.set(pgIdKey, byType);
+  });
+
+  return normalizedPgs.map((pg) => {
+    const rooms = Array.isArray(pg?.rooms) ? pg.rooms : [];
+    const byType = occupiedByPg.get(String(pg?._id || "")) || new Map();
+
+    const computedRooms = rooms.map((room) => {
+      const roomTypeKey = normalizeRoomTypeKey(room?.roomType);
+      let occupiedBeds = byType.get(roomTypeKey) || 0;
+
+      // Fuzzy fallback for legacy labels (e.g. "double" vs "doublesharing").
+      if (!occupiedBeds && roomTypeKey) {
+        for (const [bookingTypeKey, count] of byType.entries()) {
+          if (bookingTypeKey.includes(roomTypeKey) || roomTypeKey.includes(bookingTypeKey)) {
+            occupiedBeds = count;
+            break;
+          }
+        }
+      }
+
+      const capacity = getRoomCapacity(room);
+      return {
+        ...room,
+        occupiedBeds: Math.max(0, Math.min(capacity, Number(occupiedBeds) || 0))
+      };
+    });
+
+    return {
+      ...pg,
+      rooms: computedRooms
+    };
+  });
+};
+
 const normalizeTenantPhone = (rawPhone = "") => {
   const value = String(rawPhone || "").trim();
   if (!value) return "";
@@ -901,8 +977,9 @@ const getMyPgs = async (req, res) => {
       }
     }
 
-    const mappedPgs = pgs.map((pg) => ({
-      ...pg.toObject(),
+    const pgsWithComputedOccupancy = await attachComputedRoomOccupancy(pgs);
+    const mappedPgs = pgsWithComputedOccupancy.map((pg) => ({
+      ...pg,
       houseRules: buildHouseRules(pg.rules, pg.houseRules)
     }));
 
@@ -973,8 +1050,9 @@ const getPgById = async (req, res) => {
       return res.status(404).json({ success: false, message: "PG not found" });
     }
 
+    const [pgWithComputedOccupancy] = await attachComputedRoomOccupancy([pg]);
     const mappedPg = {
-      ...pg.toObject(),
+      ...pgWithComputedOccupancy,
       houseRules: buildHouseRules(pg.rules, pg.houseRules)
     };
 
@@ -1030,9 +1108,22 @@ const updatePg = async (req, res) => {
       updatePayload.inventory = normalizeInventoryInput(updatePayload.inventory);
     }
 
-    // If rooms are being updated, handle them specially
+    // If rooms are being updated, keep aggregate totals in sync.
     if (rooms) {
-      updatePayload.rooms = rooms;
+      const normalizedRooms = Array.isArray(rooms)
+        ? rooms.map((room = {}) => {
+            const { occupiedBeds, ...safeRoom } = room;
+            return safeRoom;
+          })
+        : rooms;
+
+      updatePayload.rooms = normalizedRooms;
+      if (Array.isArray(normalizedRooms)) {
+        updatePayload.totalRooms = normalizedRooms.reduce((sum, room) => {
+          const roomCount = Number(room?.totalRooms) || 0;
+          return sum + roomCount;
+        }, 0);
+      }
     }
 
     const updatedPg = await Pg.findOneAndUpdate(

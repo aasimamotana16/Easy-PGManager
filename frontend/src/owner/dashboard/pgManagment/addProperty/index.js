@@ -24,8 +24,6 @@ const facilitySections = [
   {
     title: "Room Facilities",
     items: [
-      "AC",
-      "Non-AC",
       "Attached Bathroom",
       "Balcony",
       "Furnished Room",

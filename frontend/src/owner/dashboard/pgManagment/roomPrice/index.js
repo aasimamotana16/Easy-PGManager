@@ -4,7 +4,7 @@ import { useLocation } from "react-router-dom"; // For page navigation
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
 import { updateRoomPrices } from "../../../../api/api";
-import { FaTrash, FaPlus, FaSave, FaCheck, FaTree, FaToilet, FaCalendarAlt } from "react-icons/fa";
+import { FaTrash, FaPlus, FaSave, FaCheck, FaCalendarAlt, FaSnowflake, FaSun } from "react-icons/fa";
 import Swal from "sweetalert2"; // Standard Swal import
 import CInput from "../../../../components/cInput";
 import CButton from "../../../../components/cButton";
@@ -49,6 +49,12 @@ const SetRoomPrice = () => {
   const toggleFeature = (index, feature) => {
     const updated = [...roomPrices];
     updated[index].features[feature] = !updated[index].features[feature];
+    setRoomPrices(updated);
+  };
+
+  const setAcType = (index, type) => {
+    const updated = [...roomPrices];
+    updated[index].acType = type;
     setRoomPrices(updated);
   };
 
@@ -195,8 +201,8 @@ const SetRoomPrice = () => {
                   <div className="lg:w-80 p-8 bg-gray-50/50 border-r border-[#E5E0D9] space-y-4">
                     <label className="text-xs font-semibold uppercase text-[#4B4B4B] tracking-widest mb-4 block">Room Inclusions</label>
 
-                    <FeatureToggle label="Private Balcony" icon={<FaTree />} active={room.features.balcony} onClick={() => toggleFeature(index, 'balcony')} />
-                    <FeatureToggle label="Attached Bath" icon={<FaToilet />} active={room.features.attachedWashroom} onClick={() => toggleFeature(index, 'attachedWashroom')} />
+                    <FeatureToggle label="AC" icon={<FaSnowflake />} active={room.acType === "AC"} onClick={() => setAcType(index, "AC")} />
+                    <FeatureToggle label="Non-AC" icon={<FaSun />} active={room.acType === "Non-AC"} onClick={() => setAcType(index, "Non-AC")} />
                   </div>
 
                   {/* RIGHT: PRICING FORM */}
