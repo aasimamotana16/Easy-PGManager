@@ -35,6 +35,7 @@ const addMonths = (dateInput, months) => {
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const LATE_FINE_PER_DAY = 100;
+const PENDING_PAYMENT_VISIBLE_DAYS_BEFORE_DUE = 5;
 const MONTH_SHORT_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 const resolveMonthRangeFromShortName = (monthShort) => {
@@ -83,6 +84,8 @@ const normalizeTenantPhone = (rawPhone = "") => {
   if (/^0+$/.test(value)) return "";
   return value;
 };
+
+const escapeRegex = (value = "") => String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 const buildHouseRules = (rules = {}, legacyHouseRules = []) => {
   const resolvedRules = rules && typeof rules === "object" ? rules : {};
@@ -1381,11 +1384,19 @@ const getMyTenants = async (req, res) => {
         { pgId: { $in: pgIds } },
         { pgName: { $in: pgNames } }
       ]
-    }).select("tenantName tenantEmail tenantUserId pgId pgName");
+    })
+      .sort({ createdAt: -1 })
+      .select("tenantName tenantEmail tenantUserId pgId pgName roomType variantLabel isPaid createdAt");
 
     const normalizeValue = (value) => String(value || "").trim().toLowerCase();
     const allowedKeysByPgId = new Set();
     const allowedKeysByPgName = new Set();
+    const latestBookingByKey = new Map();
+
+    const setLatestBooking = (key, bookingDoc) => {
+      if (!key || latestBookingByKey.has(key)) return;
+      latestBookingByKey.set(key, bookingDoc);
+    };
 
     bookingBackedTenants.forEach((b) => {
       const tenantName = normalizeValue(b.tenantName);
@@ -1397,10 +1408,64 @@ const getMyTenants = async (req, res) => {
       if (pgIdKey && tenantEmail) allowedKeysByPgId.add(`${pgIdKey}|email|${tenantEmail}`);
       if (pgNameKey && tenantName) allowedKeysByPgName.add(`${pgNameKey}|name|${tenantName}`);
       if (pgNameKey && tenantEmail) allowedKeysByPgName.add(`${pgNameKey}|email|${tenantEmail}`);
+
+      setLatestBooking(pgIdKey && tenantName ? `${pgIdKey}|name|${tenantName}` : "", b);
+      setLatestBooking(pgIdKey && tenantEmail ? `${pgIdKey}|email|${tenantEmail}` : "", b);
+      setLatestBooking(pgNameKey && tenantName ? `${pgNameKey}|name|${tenantName}` : "", b);
+      setLatestBooking(pgNameKey && tenantEmail ? `${pgNameKey}|email|${tenantEmail}` : "", b);
+    });
+
+    const bookingTenantUserIds = [...new Set(
+      bookingBackedTenants
+        .map((b) => (b.tenantUserId ? String(b.tenantUserId) : ""))
+        .filter(Boolean)
+    )];
+    const bookingTenantEmails = [...new Set(
+      bookingBackedTenants
+        .map((b) => normalizeValue(b.tenantEmail))
+        .filter(Boolean)
+    )];
+    const bookingTenantNames = [...new Set(
+      bookingBackedTenants
+        .map((b) => normalizeValue(b.tenantName))
+        .filter(Boolean)
+    )];
+
+    const tenantUserOr = [];
+    if (bookingTenantUserIds.length > 0) {
+      tenantUserOr.push({ _id: { $in: bookingTenantUserIds } });
+    }
+    if (bookingTenantEmails.length > 0) {
+      tenantUserOr.push({ email: { $in: bookingTenantEmails } });
+    }
+    if (bookingTenantNames.length > 0) {
+      tenantUserOr.push({
+        $or: bookingTenantNames.map((name) => ({ fullName: new RegExp(`^${escapeRegex(name)}$`, "i") }))
+      });
+    }
+
+    const linkedTenantUsers = tenantUserOr.length > 0
+      ? await User.find({
+          role: { $in: ["user", "tenant"] },
+          $or: tenantUserOr
+        }).select("_id fullName email phone")
+      : [];
+
+    const tenantUserById = new Map();
+    const tenantUserByEmail = new Map();
+    const tenantUserByName = new Map();
+
+    linkedTenantUsers.forEach((u) => {
+      const idKey = u?._id ? String(u._id) : "";
+      const emailKey = normalizeValue(u?.email);
+      const nameKey = normalizeValue(u?.fullName);
+      if (idKey) tenantUserById.set(idKey, u);
+      if (emailKey && !tenantUserByEmail.has(emailKey)) tenantUserByEmail.set(emailKey, u);
+      if (nameKey && !tenantUserByName.has(nameKey)) tenantUserByName.set(nameKey, u);
     });
 
     const tenants = await Tenant.find({ ownerId })
-      .populate('pgId', 'pgName location city')
+      .populate('pgId', 'pgName location city occupancy roomType')
       .sort({ createdAt: -1 });
 
     const filteredTenants = tenants.filter((t) => {
@@ -1435,24 +1500,35 @@ const getMyTenants = async (req, res) => {
         pgIdValue ? { pgId: pgIdValue } : null,
         pgNameValue ? { pgName: pgNameValue } : null
       ].filter(Boolean);
+
+      const matchedBooking =
+        (pgIdValue && tenantEmailNorm ? latestBookingByKey.get(`${String(pgIdValue)}|email|${tenantEmailNorm}`) : null) ||
+        (pgIdValue && tenantNameNorm ? latestBookingByKey.get(`${String(pgIdValue)}|name|${tenantNameNorm}`) : null) ||
+        (pgNameValue && tenantEmailNorm ? latestBookingByKey.get(`${normalizeValue(pgNameValue)}|email|${tenantEmailNorm}`) : null) ||
+        (pgNameValue && tenantNameNorm ? latestBookingByKey.get(`${normalizeValue(pgNameValue)}|name|${tenantNameNorm}`) : null) ||
+        null;
+
+      let hasPaidRent = Boolean(matchedBooking?.isPaid);
       const tenantMatchers = [
         tenantEmailNorm ? { tenantEmail: new RegExp(`^${tenantEmailNorm}$`, "i") } : null,
         tenantNameNorm ? { tenantName: t.name } : null
       ].filter(Boolean);
-      const paidBookingQuery = {
-        status: "Confirmed",
-        bookingSource: "tenant_request",
-        isPaid: true
-      };
-      const andClauses = [];
-      if (pgMatchers.length > 0) andClauses.push({ $or: pgMatchers });
-      if (tenantMatchers.length > 0) andClauses.push({ $or: tenantMatchers });
-      if (andClauses.length > 0) paidBookingQuery.$and = andClauses;
+      if (!hasPaidRent) {
+        const paidBookingQuery = {
+          status: "Confirmed",
+          bookingSource: "tenant_request",
+          isPaid: true
+        };
+        const andClauses = [];
+        if (pgMatchers.length > 0) andClauses.push({ $or: pgMatchers });
+        if (tenantMatchers.length > 0) andClauses.push({ $or: tenantMatchers });
+        if (andClauses.length > 0) paidBookingQuery.$and = andClauses;
 
-      const paidBooking = await Booking.findOne(paidBookingQuery)
-        .sort({ createdAt: -1 })
-        .select("_id");
-      const hasPaidRent = Boolean(paidBooking?._id);
+        const paidBooking = await Booking.findOne(paidBookingQuery)
+          .sort({ createdAt: -1 })
+          .select("_id");
+        hasPaidRent = Boolean(paidBooking?._id);
+      }
 
       const pendingPayment = await PendingPayment.findOne({
         tenantName: t.name,
@@ -1499,14 +1575,33 @@ const getMyTenants = async (req, res) => {
         );
       }
 
+      let resolvedPhone = normalizeTenantPhone(t.phone);
+      if (!resolvedPhone) {
+        const matchedTenantUser =
+          (matchedBooking?.tenantUserId ? tenantUserById.get(String(matchedBooking.tenantUserId)) : null) ||
+          (tenantEmailNorm ? tenantUserByEmail.get(tenantEmailNorm) : null) ||
+          (tenantNameNorm ? tenantUserByName.get(tenantNameNorm) : null) ||
+          null;
+        resolvedPhone = normalizeTenantPhone(matchedTenantUser?.phone);
+      }
+
+      const resolvedRoomType =
+        t.room ||
+        matchedBooking?.roomType ||
+        matchedBooking?.variantLabel ||
+        pgObj?.occupancy ||
+        pgObj?.roomType ||
+        "N/A";
+
       return {
         _id: t._id,
         name: t.name,
-        phone: normalizeTenantPhone(t.phone),
+        phone: resolvedPhone,
         email: t.email,
         pgId: pgObj?._id || t.pgId,
         pgName: pgObj?.pgName || t.pgName || "Unknown PG",
         room: t.room,
+        roomType: resolvedRoomType,
         joiningDate: t.joiningDate,
         status: hasPaidRent && String(t.status || "").toLowerCase() !== "active" ? "Pending Arrival" : t.status,
         hasPaidRent,
@@ -2534,8 +2629,8 @@ const updateTenant = async (req, res) => {
       $or: [
         oldEmail ? { email: new RegExp(`^${oldEmail}$`, 'i') } : null,
         newEmail ? { email: new RegExp(`^${newEmail}$`, 'i') } : null,
-        oldName ? { fullName: oldName } : null,
-        newName ? { fullName: newName } : null
+        oldName ? { fullName: new RegExp(`^${escapeRegex(oldName)}$`, 'i') } : null,
+        newName ? { fullName: new RegExp(`^${escapeRegex(newName)}$`, 'i') } : null
       ].filter(Boolean)
     }).select('_id');
 
@@ -2548,28 +2643,66 @@ const updateTenant = async (req, res) => {
       });
     }
 
-    const bookingMatches = {
-      ownerId,
-      $or: [
-        oldName ? { tenantName: oldName } : null,
-        newName ? { tenantName: newName } : null,
-        oldEmail ? { tenantEmail: new RegExp(`^${oldEmail}$`, 'i') } : null,
-        newEmail ? { tenantEmail: new RegExp(`^${newEmail}$`, 'i') } : null,
-        linkedUser?._id ? { tenantUserId: linkedUser._id } : null
-      ].filter(Boolean)
-    };
+    const pgCandidates = [
+      tenant.pgId ? String(tenant.pgId) : "",
+      updatedTenant.pgId ? String(updatedTenant.pgId) : ""
+    ].filter(Boolean);
+    const pgNameCandidates = [
+      String(tenant.pgName || "").trim(),
+      String(updatedTenant.pgName || "").trim()
+    ].filter(Boolean);
+
+    const identityOr = [
+      oldName ? { tenantName: new RegExp(`^${escapeRegex(oldName)}$`, 'i') } : null,
+      newName ? { tenantName: new RegExp(`^${escapeRegex(newName)}$`, 'i') } : null,
+      oldEmail ? { tenantEmail: new RegExp(`^${oldEmail}$`, 'i') } : null,
+      newEmail ? { tenantEmail: new RegExp(`^${newEmail}$`, 'i') } : null,
+      linkedUser?._id ? { tenantUserId: linkedUser._id } : null
+    ].filter(Boolean);
+
+    const bookingMatches = { ownerId, $and: [] };
+    if (pgCandidates.length > 0 || pgNameCandidates.length > 0) {
+      bookingMatches.$and.push({
+        $or: [
+          pgCandidates.length > 0 ? { pgId: { $in: pgCandidates } } : null,
+          pgNameCandidates.length > 0 ? { pgName: { $in: pgNameCandidates } } : null
+        ].filter(Boolean)
+      });
+    }
+    if (identityOr.length > 0) {
+      bookingMatches.$and.push({ $or: identityOr });
+    }
+    if (identityOr.length === 0) {
+      bookingMatches.$and.push({ _id: null });
+    }
+    if (bookingMatches.$and.length === 0) {
+      delete bookingMatches.$and;
+    }
 
     const linkedBookings = await Booking.find(bookingMatches).select('bookingId');
     const bookingCodes = linkedBookings
       .map((b) => String(b.bookingId || "").trim())
       .filter(Boolean);
 
+    if (normalizedRoom !== undefined) {
+      await Booking.updateMany(
+        bookingMatches,
+        {
+          $set: {
+            roomType: updatedTenant.room || "N/A",
+            variantLabel: updatedTenant.room || ""
+          }
+        }
+      );
+    }
+
     if (bookingCodes.length > 0) {
       await Agreement.updateMany(
         { bookingId: { $in: bookingCodes } },
         {
           $set: {
-            roomNo: updatedTenant.room || "N/A"
+            roomNo: updatedTenant.room || "N/A",
+            roomType: updatedTenant.room || "N/A"
           }
         }
       );
@@ -2747,9 +2880,23 @@ const getOwnerEarnings = async (req, res) => {
         { pgName: { $in: ownerPgNames } }
       ]
     };
-    if (showOnlyCurrentMonthPending) {
-      pendingQuery.dueDate = { $gte: monthStart, $lt: monthEnd };
-    }
+    // Show pending items only in the 5-day pre-due reminder window.
+    const reminderWindowStart = new Date(dayStart);
+    reminderWindowStart.setHours(0, 0, 0, 0);
+    const reminderWindowEnd = new Date(dayStart);
+    reminderWindowEnd.setDate(reminderWindowEnd.getDate() + PENDING_PAYMENT_VISIBLE_DAYS_BEFORE_DUE);
+    reminderWindowEnd.setHours(23, 59, 59, 999);
+    const monthEndInclusive = new Date(monthEnd);
+    monthEndInclusive.setMilliseconds(monthEndInclusive.getMilliseconds() - 1);
+
+    const dueDateGte = showOnlyCurrentMonthPending
+      ? (monthStart > reminderWindowStart ? monthStart : reminderWindowStart)
+      : reminderWindowStart;
+    const dueDateLt = showOnlyCurrentMonthPending
+      ? (monthEndInclusive < reminderWindowEnd ? monthEndInclusive : reminderWindowEnd)
+      : reminderWindowEnd;
+    pendingQuery.dueDate = { $gte: dueDateGte, $lte: dueDateLt };
+
     const pendingPaymentsRaw = await PendingPayment.find(pendingQuery).sort({ dueDate: 1 });
 
     const normalizeKey = (value = "") => String(value || "").trim().toLowerCase();

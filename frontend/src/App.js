@@ -66,6 +66,7 @@ import BookingManagement from "./owner/dashboard/oBookings";
 import OAgreements from "./owner/dashboard/oAgreements";
 import OSupport from "./owner/dashboard/oSupport";
 import Earnings from "./owner/dashboard/totalEarnings";
+import MonthPendingPayments from "./owner/dashboard/monthPendingPayments";
 import OwnerProfile from "./owner/dashboard/profileStatus";
 
 /* ================= PROTECTED ROUTES ================= */
@@ -216,6 +217,7 @@ function App() {
             <Route path="oAgreements" element={<OAgreements />} />
             <Route path="oSupport" element={<OSupport />} />
             <Route path="totalEarnings" element={<Earnings />}/>
+            <Route path="monthPendingPayments" element={<MonthPendingPayments />} />
           </Route>
 
           {/* ===== FALLBACK ===== */}

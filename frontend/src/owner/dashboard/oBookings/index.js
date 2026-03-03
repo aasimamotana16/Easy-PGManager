@@ -3,13 +3,10 @@ import {
   FaCheck,
   FaTimes,
   FaClock,
-  FaSearch,
   FaRegPaperPlane
 } from "react-icons/fa";
-import { LuDownload } from "react-icons/lu"; 
 import axios from "axios";
 import Swal from "sweetalert2";
-import CButton from "../../../components/cButton";
 import CSelect from "../../../components/cSelect";
 
 const BookingManagement = () => {
@@ -125,24 +122,6 @@ const BookingManagement = () => {
         confirmButtonColor: '#D97706',
       });
     }
-  };
-
-  const handleDownload = (bookingId) => {
-    Swal.fire({
-      title: 'Generating PDF...',
-      timer: 1500,
-      timerProgressBar: true,
-      didOpen: () => {
-        Swal.showLoading();
-      }
-    }).then(() => {
-      Swal.fire({
-        title: 'Download Started',
-        text: `Booking details for ${bookingId} have been saved.`,
-        icon: 'success',
-        confirmButtonColor: '#D97706',
-      });
-    });
   };
 
   const openAgreementPdf = (booking) => {
@@ -269,15 +248,17 @@ const BookingManagement = () => {
                   </td>
                   <td className="p-5">
                     <div className="flex items-center justify-center gap-3">
-                      <CSelect 
-                        value={b.status}
-                        onChange={(e) => handleUpdateStatus(b._id, e.target.value)}
-                        options={[
-                          { label: 'Pending', value: 'Pending' },
-                          { label: 'Confirmed', value: 'Confirmed' },
-                          { label: 'Cancelled', value: 'Cancelled' }
-                        ]}
-                      />
+                      {b.status === "Pending" && (
+                        <CSelect
+                          value={b.status}
+                          onChange={(e) => handleUpdateStatus(b._id, e.target.value)}
+                          options={[
+                            { label: 'Pending', value: 'Pending' },
+                            { label: 'Confirmed', value: 'Confirmed' },
+                            { label: 'Cancelled', value: 'Cancelled' }
+                          ]}
+                        />
+                      )}
                       {b.status === "Confirmed" && !b.isPaid && (
                         <button 
                           onClick={() => handleResendEmail(b._id)}
@@ -287,13 +268,6 @@ const BookingManagement = () => {
                           <FaRegPaperPlane size={16} />
                         </button>
                       )}
-                      <button 
-                        onClick={() => handleDownload(b.bookingId)}
-                        className="p-2 text-[#4B4B4B] hover:text-[#D97706] hover:bg-[#FEF3C7] rounded-md transition-all"
-                        title="Download Confirmation"
-                      >
-                        <LuDownload size={20} />
-                      </button>
                       <button
                         onClick={() => openAgreementPdf(b)}
                         className={`px-3 py-2 text-[10px] font-bold uppercase rounded-md border border-[#E5E0D9] transition-all ${

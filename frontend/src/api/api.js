@@ -72,6 +72,7 @@ export const requestMoveOut = (payload) => API.put("/users/move-out", payload ||
     OWNER & PROPERTY APIs 
 ========================= */
 export const getOwnerDashboardStats = () => API.get("/owner/dashboard-summary");
+export const getOwnerProfile = () => API.get("/owner/profile");
 export const addPgProperty = (pgData) => API.post("/owner/add-pg", pgData);
 export const getMyPgs = () => API.get('/owner/my-pgs');
 export const getOwnerPgById = (pgId) => API.get(`/owner/pg/${pgId}`);

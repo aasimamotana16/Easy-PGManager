@@ -313,11 +313,11 @@ const Tenants = () => {
 
   const handleEditClick = (tenant) => {
     Swal.fire({
-      title: "Edit Room Info",
+      title: "Edit Room Type",
       html: `
         <div style="text-align: left;">
-          <label style="font-weight: bold; color: #1C1C1C; font-size: 14px;">Room Number</label>
-          <input id="swal-room" class="swal2-input" value="${tenant.room}" style="width: 85%; margin-top: 5px;">
+          <label style="font-weight: bold; color: #1C1C1C; font-size: 14px;">Room Type</label>
+          <input id="swal-room" class="swal2-input" value="${tenant.roomType || tenant.room || ""}" style="width: 85%; margin-top: 5px;">
           <p style="font-size: 11px; color: #4B4B4B; margin-top: 15px;">
             <i>Note: Status updates automatically based on Move-in/Move-out actions.</i>
           </p>
@@ -329,7 +329,7 @@ const Tenants = () => {
       preConfirm: () => {
         const nextRoom = String(document.getElementById("swal-room")?.value || "").trim();
         if (!nextRoom) {
-          Swal.showValidationMessage("Room number is required");
+          Swal.showValidationMessage("Room type is required");
           return null;
         }
         return nextRoom;
@@ -473,7 +473,7 @@ const Tenants = () => {
               <tr>
                 <th className="p-5">Tenant Details</th>
                 <th className="p-5">Property</th>
-                <th className="p-5 text-center">Room</th>
+                <th className="p-5 text-center">Room Type</th>
                 <th className="p-5 text-center">Status</th>
                 <th className="p-5 text-center">Actions</th>
               </tr>
@@ -483,13 +483,13 @@ const Tenants = () => {
                 <tr key={t._id} className="hover:bg-gray-50 transition-colors">
                   <td className="p-5">
                     <div className="font-bold text-[#1C1C1C]">{t.name}</div>
-                    {getDisplayPhone(t.phone) && (
-                      <div className="text-xs text-[#4B4B4B]">{getDisplayPhone(t.phone)}</div>
-                    )}
+                    <div className="text-xs text-[#4B4B4B]">{getDisplayPhone(t.phone) || "N/A"}</div>
                   </td>
                   <td className="p-5 text-[#4B4B4B] text-sm font-medium">{t.pgName}</td>
                   <td className="p-5 text-center">
-                    <span className="px-3 py-1 rounded border border-[#D97706] text-[#B45309] font-bold text-[10px]">{t.room}</span>
+                    <span className="px-3 py-1 rounded border border-[#D97706] text-[#B45309] font-bold text-[10px]">
+                      {t.roomType || "N/A"}
+                    </span>
                   </td>
                   <td className="p-5">
                     <div className="flex flex-col items-center gap-2">

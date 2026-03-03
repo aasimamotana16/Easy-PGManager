@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import CButton from "../../../components/cButton";
-import { getUserProfile } from "../../../api/api";
+import { getOwnerProfile, getUserProfile } from "../../../api/api";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -15,33 +15,68 @@ const fadeUp = {
 
 const HomeBanner = () => {
   const navigate = useNavigate();
-  const [profileCompletion, setProfileCompletion] = useState(null);
+  const [isProfileIncomplete, setIsProfileIncomplete] = useState(false);
 
   // AUTH LOGIC
   const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
-  const role = localStorage.getItem("role")?.toLowerCase(); // Added optional chaining and lowercase for safety
-  const isProfileComplete = localStorage.getItem("isProfileComplete") === "true"; 
-  const isProfileIncomplete =
-    isLoggedIn &&
-    ((profileCompletion !== null && Number(profileCompletion) < 100) ||
-      (profileCompletion === null && !isProfileComplete));
+  const role = localStorage.getItem("role")?.toLowerCase();
 
   useEffect(() => {
     let mounted = true;
     (async () => {
       try {
-        if (!isLoggedIn) return;
+        if (!isLoggedIn) {
+          if (mounted) setIsProfileIncomplete(false);
+          return;
+        }
+
+        if (role === "owner") {
+          const res = await getOwnerProfile();
+          const owner = res?.data?.data || {};
+
+          const requiredFields = [
+            owner?.name,
+            owner?.email,
+            owner?.phone,
+            owner?.businessName,
+            owner?.emergencyPhone,
+            owner?.address,
+          ];
+
+          const allRequiredFilled = requiredFields.every((value) => {
+            const text = String(value || "").trim();
+            if (!text) return false;
+            if (text.toLowerCase() === "not provided") return false;
+            if (text.toLowerCase() === "add your address") return false;
+            return true;
+          });
+
+          if (!mounted) return;
+          setIsProfileIncomplete(!allRequiredFilled);
+          localStorage.setItem("isProfileComplete", allRequiredFilled ? "true" : "false");
+          return;
+        }
+
         const res = await getUserProfile();
         const completion = Number(res?.data?.data?.profileCompletion);
-        if (!mounted || !Number.isFinite(completion)) return;
-        setProfileCompletion(completion);
-        localStorage.setItem("isProfileComplete", completion >= 100 ? "true" : "false");
+        if (!mounted) return;
+        if (Number.isFinite(completion)) {
+          const incomplete = completion < 100;
+          setIsProfileIncomplete(incomplete);
+          localStorage.setItem("isProfileComplete", incomplete ? "false" : "true");
+        } else {
+          const storedComplete = localStorage.getItem("isProfileComplete") === "true";
+          setIsProfileIncomplete(!storedComplete);
+        }
       } catch (_) {
-        if (mounted) setProfileCompletion(null);
+        if (mounted) {
+          const storedComplete = localStorage.getItem("isProfileComplete") === "true";
+          setIsProfileIncomplete(isLoggedIn ? !storedComplete : false);
+        }
       }
     })();
     return () => { mounted = false; };
-  }, [isLoggedIn]);
+  }, [isLoggedIn, role]);
 
   return (
     <section className="bg-background overflow-hidden pt-6 sm:pt-0">

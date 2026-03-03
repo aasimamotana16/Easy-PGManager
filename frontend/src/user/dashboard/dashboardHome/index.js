@@ -9,11 +9,12 @@ import {
   FaUserCheck,
   FaBed,
   FaHistory,
-  FaDownload
+  FaDownload,
+  FaStar
 } from "react-icons/fa";
 import CButton from "../../../components/cButton";
 import PayNowButton from '../../../components/payNowButton';
-import { getUserProfile, getUserDashboard, getMyAgreement } from "../../../api/api";
+import { getUserProfile, getUserDashboard, getMyAgreement, createReview } from "../../../api/api";
 import axios from "axios";
 import Swal from "sweetalert2";
 
@@ -50,6 +51,13 @@ const DashboardHome = () => {
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [rating, setRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [reviewText, setReviewText] = useState("");
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewError, setReviewError] = useState("");
+  const [reviewSuccess, setReviewSuccess] = useState("");
 
   const loadData = async () => {
     try {
@@ -72,6 +80,12 @@ const DashboardHome = () => {
   useEffect(() => {
     loadData();
   }, []);
+
+  useEffect(() => {
+    if (!reviewSuccess) return undefined;
+    const timer = setTimeout(() => setReviewSuccess(""), 4000);
+    return () => clearTimeout(timer);
+  }, [reviewSuccess]);
 
   // --- RAZORPAY LOGIC ---
   const handleDirectPayment = async () => {
@@ -198,12 +212,52 @@ const DashboardHome = () => {
     }
   };
 
+  const handleReviewSubmit = async () => {
+    const comment = String(reviewText || "").trim();
+    if (!comment) {
+      setReviewError("Please write your review before submitting.");
+      return;
+    }
+    if (!rating || rating < 1) {
+      setReviewError("Please select a rating.");
+      return;
+    }
+
+    try {
+      setReviewSubmitting(true);
+      setReviewError("");
+
+      const payload = {
+        userId: user?._id || localStorage.getItem("userId") || null,
+        userName: user?.fullName || localStorage.getItem("userName") || "User",
+        userEmail: user?.email || localStorage.getItem("userEmail") || "",
+        userRole: "tenant",
+        comment,
+        rating,
+      };
+
+      await createReview(payload);
+      setShowReviewModal(false);
+      setReviewText("");
+      setRating(0);
+      setHoverRating(0);
+      setReviewSuccess("Review submitted successfully and published on home page.");
+    } catch (err) {
+      console.error("User review submit failed", err);
+      setReviewError(err?.response?.data?.message || "Could not submit review. Please try again.");
+    } finally {
+      setReviewSubmitting(false);
+    }
+  };
+
   const pgName = dashboardData?.currentBooking?.pgName || user?.bookedPgName || "No PG Booked";
   const roomType = dashboardData?.currentBooking?.roomType || user?.roomType || "N/A";
   const monthlyRent = dashboardData?.currentBooking?.monthlyRent || user?.monthlyRent || 0;
   const bookingStatus = dashboardData?.currentBooking?.status || user?.bookingStatus || "Inactive";
   const rawDueDate = dashboardData?.nextPayment?.dueDate || user?.paymentDueDate || null;
   const nextPaymentDate = getUpcomingDueDate(rawDueDate) || (monthlyRent > 0 ? "Due date not available" : "No due");
+  const dueAmount = Number(dashboardData?.nextPayment?.amount || monthlyRent || 0);
+  const canPayNow = Boolean(dashboardData?.nextPayment?.canPayNow) && dueAmount > 0;
   const completionPercentage = dashboardData?.profileCompletion || user?.profileCompletion || 0;
   const recentPayments = dashboardData?.recentPayments || [];
 
@@ -298,13 +352,94 @@ const DashboardHome = () => {
           
           <div className="bg-black text-white p-4 sm:p-6 rounded-md shadow-md">
             <p className="text-[10px] sm:text-xs md:text-2xl lg:text-sm text-white uppercase font-medium mb-1">Rent Due</p>
-            <p className="text-2xl sm:text-3xl md:text-5xl lg:text-3xl text-orange-500 mb-4">₹{monthlyRent.toLocaleString()}</p>
-            <PayNowButton amount={monthlyRent} pgId={dashboardData?.currentBooking?.pgId || user?.bookedPgId} className="w-full" onSuccess={() => loadData()}>
-              {isProcessing ? "INITIALIZING..." : "PAY NOW"}
-            </PayNowButton>
+            <p className="text-2xl sm:text-3xl md:text-5xl lg:text-3xl text-orange-500 mb-4">₹{dueAmount.toLocaleString()}</p>
+            {canPayNow ? (
+              <PayNowButton amount={dueAmount} pgId={dashboardData?.currentBooking?.pgId || user?.bookedPgId} className="w-full" onSuccess={() => loadData()}>
+                {isProcessing ? "INITIALIZING..." : "PAY NOW"}
+              </PayNowButton>
+            ) : (
+              <CButton disabled className="w-full !opacity-80 !cursor-not-allowed">
+                PAID FOR THIS CYCLE
+              </CButton>
+            )}
+          </div>
+          <div className="bg-primarySoft border border-primary p-4 sm:p-5 rounded-md shadow-md space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="bg-white p-2 rounded-full text-primary shadow-sm">
+                <FaStar size={16} />
+              </div>
+              <p className="font-bold text-textPrimary text-sm sm:text-base">Enjoying EasyPG?</p>
+            </div>
+            <p className="text-xs text-textSecondary leading-tight">
+              Your feedback helps us make PG management better for everyone.
+            </p>
+            <button
+              onClick={() => {
+                setReviewError("");
+                setShowReviewModal(true);
+              }}
+              className="w-full bg-primary text-white py-2 rounded-md text-xs font-bold hover:bg-primaryDark transition-colors shadow-sm"
+            >
+              Write a Review
+            </button>
           </div>
         </div>
       </div>
+      {showReviewModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[999] p-4">
+          <div className="bg-white rounded-md p-6 w-full max-w-md border border-primary shadow-2xl">
+            <div className="text-center space-y-4">
+              <h2 className="text-xl font-bold text-textPrimary">Share Your Experience</h2>
+              <p className="text-sm text-textSecondary">How would you rate our platform?</p>
+              <div className="flex justify-center gap-2 py-2">
+                {[...Array(5)].map((_, i) => {
+                  const val = i + 1;
+                  return (
+                    <FaStar
+                      key={i}
+                      size={30}
+                      className={`cursor-pointer transition-colors ${val <= (hoverRating || rating) ? "text-primary" : "text-gray-300"}`}
+                      onClick={() => setRating(val)}
+                      onMouseEnter={() => setHoverRating(val)}
+                      onMouseLeave={() => setHoverRating(0)}
+                    />
+                  );
+                })}
+              </div>
+              <textarea
+                className="w-full border border-border rounded-md p-3 text-sm focus:ring-2 focus:ring-primary outline-none"
+                placeholder="Tell us what you like or what we can improve..."
+                rows={4}
+                value={reviewText}
+                onChange={(e) => setReviewText(e.target.value)}
+              />
+              {reviewError && <p className="text-xs text-red-600 text-left">{reviewError}</p>}
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => {
+                    setReviewError("");
+                    setShowReviewModal(false);
+                  }}
+                  className="flex-1 py-2 text-sm font-bold text-textSecondary hover:bg-gray-100 rounded-md transition-colors"
+                >
+                  Later
+                </button>
+                <CButton
+                  className="flex-1"
+                  onClick={handleReviewSubmit}
+                  disabled={reviewSubmitting}
+                  text={reviewSubmitting ? "Submitting..." : "Submit"}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {reviewSuccess && (
+        <div className="fixed bottom-4 right-4 bg-green-100 border border-green-300 text-green-800 px-4 py-2 rounded-md shadow-sm z-[1000]">
+          {reviewSuccess}
+        </div>
+      )}
     </div>
   );
 };

@@ -327,7 +327,7 @@ const DashboardHome = () => {
           <ActionButton
             label="Month Pending Payments"
             icon={<FaClock />}
-            onClick={() => navigate("/owner/dashboard/totalEarnings?from=quick-action&pendingScope=current-month")}
+            onClick={() => navigate("/owner/dashboard/monthPendingPayments")}
           />
 
         </div>

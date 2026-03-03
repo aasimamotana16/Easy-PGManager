@@ -388,6 +388,39 @@ const verifyPayment = async (req, res) => {
       const paymentMonth = month || new Date().toLocaleString("en-US", { month: "short", year: "numeric" });
       const normalizedPgName = pgDoc?.pgName || targetBooking?.pgName || null;
 
+      // Prevent accidental duplicate monthly payment entries for the same tenant + PG + amount.
+      const duplicatePaymentQuery = {
+        paymentStatus: { $in: ["Success", "Paid", "PAID"] },
+        month: paymentMonth,
+        amountPaid: Number(amountPaid || 0),
+        $and: [
+          {
+            $or: [
+              { user: req.user.id },
+              { tenantName }
+            ]
+          }
+        ]
+      };
+      const samePgMatchers = [
+        normalizedPgId ? { pgId: normalizedPgId } : null,
+        normalizedPgName ? { pgName: normalizedPgName } : null
+      ].filter(Boolean);
+      if (samePgMatchers.length > 0) {
+        duplicatePaymentQuery.$and.push({ $or: samePgMatchers });
+      }
+
+      const existingMonthlyPayment = await Payment.findOne(duplicatePaymentQuery)
+        .sort({ paymentDate: -1 })
+        .populate("pgId", "pgName");
+      if (existingMonthlyPayment) {
+        return res.status(200).json({
+          success: true,
+          message: "Payment already recorded for this billing month.",
+          data: existingMonthlyPayment
+        });
+      }
+
       // Create record with fields matching your table
       const newPayment = await Payment.create({
         user: req.user.id,

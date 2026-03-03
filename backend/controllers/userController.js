@@ -20,6 +20,8 @@ const { validateMoveIn } = require("../utils/leaseUtils");
 // Moved to top to avoid redundant requiring during PDF generation
 const { jsPDF } = require('jspdf');
 const { autoTable } = require('jspdf-autotable');
+const DAY_MS = 24 * 60 * 60 * 1000;
+const TENANT_PAY_WINDOW_DAYS_BEFORE_DUE = 5;
 
 // ? Temporary in-memory store for Security OTPs [cite: 2026-01-06]
 const securityOtpCache = {};
@@ -246,6 +248,15 @@ const getUserDashboard = async (req, res) => {
     const dueDateLabel = dueDateValue
       ? new Date(dueDateValue).toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" })
       : "No due";
+    let canPayNow = false;
+    if (pendingPayment?.dueDate) {
+      const dueDateObj = new Date(pendingPayment.dueDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      dueDateObj.setHours(0, 0, 0, 0);
+      const daysUntilDue = Math.floor((dueDateObj - today) / DAY_MS);
+      canPayNow = daysUntilDue <= TENANT_PAY_WINDOW_DAYS_BEFORE_DUE;
+    }
     const recentPayments = filteredRecentPayments.map((payment) => ({
       id: payment._id,
       month: payment.month || new Date(payment.paymentDate).toLocaleString("en-US", { month: "short", year: "numeric" }),
@@ -270,7 +281,8 @@ const getUserDashboard = async (req, res) => {
       },
       nextPayment: {
         amount: Number(pendingPayment?.amount || monthlyRent || 0),
-        dueDate: dueDateLabel
+        dueDate: dueDateLabel,
+        canPayNow
       },
       recentPayments
     };
@@ -1383,8 +1395,6 @@ const moveIn = async (req, res) => {
     return res.status(500).json({ success: false, message: 'Failed to request move-in' });
   }
 };
-
-const DAY_MS = 24 * 60 * 60 * 1000;
 
 // @desc User requests Move-Out with notice date and long-term notice fine policy
 const moveOut = async (req, res) => {

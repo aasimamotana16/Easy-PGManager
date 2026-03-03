@@ -81,8 +81,8 @@ const AgreementPage = () => {
                   <th className="p-4 text-left">ID</th>
                   <th className="p-4 text-left">Tenant</th>
                   <th className="p-4 text-left">Property</th>
-                  <th className="p-4 text-left">Check-In</th>
-                  <th className="p-4 text-left">Check-Out</th>
+                  <th className="p-4 text-left">Move-In</th>
+                  <th className="p-4 text-left">Move-Out</th>
                   <th className="p-4 text-left">Rent</th>
                   <th className="p-4 text-center">Status</th>
                   <th className="p-4 text-center">Actions</th>
@@ -177,8 +177,8 @@ const AgreementPage = () => {
                   <h4 className="text-xs font-bold text-gray-400 uppercase mb-3 flex items-center gap-2">
                     <FaCalendarAlt /> Timeline
                   </h4>
-                  <p className="text-sm flex justify-between"><span>Check-In:</span> <span className="font-bold">{selectedAgreement.checkInDate || selectedAgreement.startDate}</span></p>
-                  <p className="text-sm flex justify-between"><span>Check-Out:</span> <span className="font-bold">{selectedAgreement.isLongTerm ? "Long Term" : (selectedAgreement.checkOutDate || selectedAgreement.endDate)}</span></p>
+                  <p className="text-sm flex justify-between"><span>Move-In:</span> <span className="font-bold">{selectedAgreement.checkInDate || selectedAgreement.startDate}</span></p>
+                  <p className="text-sm flex justify-between"><span>Move-Out:</span> <span className="font-bold">{selectedAgreement.isLongTerm ? "Long Term" : (selectedAgreement.checkOutDate || selectedAgreement.endDate)}</span></p>
                 </div>
               </div>
 

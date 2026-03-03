@@ -100,13 +100,20 @@ exports.upsertReview = async (req, res) => {
   }
 };
 
-// Create a review (owner or user). Admin approval required before it is public.
+// Create a review (owner or user). Owner reviews are moderated; tenant/user reviews are public immediately.
 exports.createReview = async (req, res) => {
   try {
     const { pgId, ownerId, userId, userName, userEmail, userRole, comment, rating } = req.body;
+    const normalizedRole = String(userRole || "").trim().toLowerCase();
+    const isTenantOrUserReview = normalizedRole === "tenant" || normalizedRole === "user";
+
+    if (!String(comment || "").trim()) {
+      return res.status(400).json({ success: false, message: "Comment is required" });
+    }
+
     const payload = { pgId, ownerId, userId, userName, userEmail, userRole, comment, rating };
-    // Reviews are hidden by default and should be explicitly approved by admin.
-    payload.isVisible = false;
+    // User/Tenant dashboard reviews are public immediately; owner reviews remain moderated.
+    payload.isVisible = isTenantOrUserReview;
 
     const created = await Review.create(payload);
     res.status(201).json({ success: true, data: created });
