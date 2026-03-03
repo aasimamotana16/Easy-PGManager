@@ -14,6 +14,10 @@ const HomePage = () => {
   });
   const [isLoading, setIsLoading] = useState(true);
 
+  const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
+  const role = localStorage.getItem("role")?.toLowerCase();
+  const showHomeSearch = !isLoggedIn || role !== "owner";
+
   useEffect(() => {
     fetch('http://localhost:5000/api/home-stats')
       .then(res => res.json())
@@ -67,9 +71,11 @@ const HomePage = () => {
           - On mobile (default): mt-0 or small negative margin to stay close to banner.
           - On desktop (md+): -mt-12 to overlay the banner.
         */}
-        <section className="relative gap-6 z-10 px-4 sm:px-6 mt-6 max-w-7xl mx-auto">
-          <HomeSearch />
-        </section>
+        {showHomeSearch && (
+          <section className="relative gap-6 z-10 px-4 sm:px-6 mt-6 max-w-7xl mx-auto">
+            <HomeSearch />
+          </section>
+        )}
         
         {/* Features Section: 
           - py-10 for mobile to keep sections distinct without massive gaps.

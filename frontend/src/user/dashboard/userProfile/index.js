@@ -31,6 +31,9 @@ const Profile = () => {
   const [formData, setFormData] = useState({});
   const fileInputRef = useRef(null);
 
+  const sanitizePhone10 = (value) => (value || "").toString().replace(/\D/g, "").slice(0, 10);
+  const isValidPhone10 = (value) => /^\d{10}$/.test((value || "").toString());
+
   // --- Animation Variants ---
   const fadeInUp = {
     hidden: { opacity: 0, y: 20 },
@@ -178,12 +181,35 @@ const Profile = () => {
   };
 
   const handleSaveInfo = async () => {
+    const cleanedPhone = sanitizePhone10(formData.phone);
+    const cleanedGuardianPhone = sanitizePhone10(formData.guardianPhone);
+
+    if (cleanedPhone && !isValidPhone10(cleanedPhone)) {
+      Swal.fire({
+        icon: "error",
+        title: "Invalid Phone Number",
+        text: "Phone number must be exactly 10 digits (numbers only).",
+        confirmButtonColor: "#D97706",
+      });
+      return;
+    }
+
+    if (cleanedGuardianPhone && !isValidPhone10(cleanedGuardianPhone)) {
+      Swal.fire({
+        icon: "error",
+        title: "Invalid Guardian Phone",
+        text: "Guardian phone must be exactly 10 digits (numbers only).",
+        confirmButtonColor: "#D97706",
+      });
+      return;
+    }
+
     try {
       setLoading(true);
       const payloads = [
-        { section: "personalInfo", data: { fullName: formData.fullName, phone: formData.phone, age: formData.age, bloodGroup: formData.bloodGroup, city: formData.city, state: formData.state } },
+        { section: "personalInfo", data: { fullName: formData.fullName, phone: cleanedPhone, age: formData.age, bloodGroup: formData.bloodGroup, city: formData.city, state: formData.state } },
         { section: "academicInfo", data: { status: formData.occupationType, qualification: formData.education, company: formData.occupationType === "student" ? formData.collegeName : formData.companyName, workAddress: formData.occupationType === "student" ? formData.collegeAddress : formData.companyAddress, collegeYear: formData.occupationType === "student" ? formData.collegeYear : "" } },
-        { section: "emergencyContact", data: { guardianName: formData.guardianName, relationship: formData.relationship, guardianPhone: formData.guardianPhone } },
+        { section: "emergencyContact", data: { guardianName: formData.guardianName, relationship: formData.relationship, guardianPhone: cleanedGuardianPhone } },
         { section: "paymentDetails", data: { holder: formData.holder, bank: formData.bank, ifsc: formData.ifsc, account: formData.account } },
       ];
       await Promise.all(payloads.map((p) => updateUserProfile(p)));
@@ -195,7 +221,7 @@ const Profile = () => {
           fullName: formData.fullName || user?.fullName,
           name: formData.fullName || user?.fullName,
           email: user?.email,
-          phone: formData.phone || user?.phone
+          phone: cleanedPhone || user?.phone
         };
         localStorage.setItem('user', JSON.stringify(updatedLocal));
         localStorage.setItem('userName', updatedLocal.fullName || updatedLocal.name || 'User');
@@ -432,7 +458,12 @@ const Profile = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <SectionTitle icon={<FaUserAlt />} title="1. Personal Info" />
                   <CInput label="Full Name" value={formData.fullName} onChange={(e) => setFormData({ ...formData, fullName: e.target.value })} />
-                  <CInput label="Phone" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
+                  <CInput
+                    label="Phone"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: sanitizePhone10(e.target.value) })}
+                    inputMode="numeric"
+                  />
                   <CInput label="Age" type="number" value={formData.age} onChange={(e) => setFormData({ ...formData, age: e.target.value })} />
                   <CInput label="Blood Group" value={formData.bloodGroup} onChange={(e) => setFormData({ ...formData, bloodGroup: e.target.value })} />
                   <CInput label="City" value={formData.city} onChange={(e) => setFormData({ ...formData, city: e.target.value })} />
@@ -477,7 +508,13 @@ const Profile = () => {
                   <SectionTitle icon={<FaUserShield />} title="3. Emergency Contact" />
                   <CInput label="Guardian Name" value={formData.guardianName} onChange={(e) => setFormData({ ...formData, guardianName: e.target.value })} />
                   <CInput label="Relationship" value={formData.relationship} onChange={(e) => setFormData({ ...formData, relationship: e.target.value })} />
-                  <CInput label="Guardian Phone" className="md:col-span-2" value={formData.guardianPhone} onChange={(e) => setFormData({ ...formData, guardianPhone: e.target.value })} />
+                  <CInput
+                    label="Guardian Phone"
+                    className="md:col-span-2"
+                    value={formData.guardianPhone}
+                    onChange={(e) => setFormData({ ...formData, guardianPhone: sanitizePhone10(e.target.value) })}
+                    inputMode="numeric"
+                  />
                 </div>
 
                 {/* Section 4 */}

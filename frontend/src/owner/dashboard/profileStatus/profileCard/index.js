@@ -11,16 +11,54 @@ const ProfileCard = ({ profileData, setProfileData }) => {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("profile");
 
+  const sanitizePhone10 = (value) => (value || "").toString().replace(/\D/g, "").slice(0, 10);
+  const isValidPhone10 = (value) => /^\d{10}$/.test((value || "").toString());
+  const isValidEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((value || "").toString().trim());
+
   React.useEffect(() => {
     setTempData(profileData);
   }, [profileData]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+
+    if (name === "phone") {
+      setTempData({ ...tempData, [name]: sanitizePhone10(value) });
+      return;
+    }
+
+    if (name === "email") {
+      setTempData({ ...tempData, [name]: value });
+      return;
+    }
+
     setTempData({ ...tempData, [name]: value });
   };
 
   const handleSave = async () => {
+    const cleanedPhone = sanitizePhone10(tempData.phone);
+    const cleanedEmail = (tempData.email || "").toString().trim();
+
+    if (cleanedEmail && !isValidEmail(cleanedEmail)) {
+      Swal.fire({
+        title: "Invalid Email",
+        text: "Please enter a valid email address.",
+        icon: "error",
+        confirmButtonColor: "#D97706",
+      });
+      return;
+    }
+
+    if (cleanedPhone && !isValidPhone10(cleanedPhone)) {
+      Swal.fire({
+        title: "Invalid Phone Number",
+        text: "Phone number must be exactly 10 digits (numbers only).",
+        icon: "error",
+        confirmButtonColor: "#D97706",
+      });
+      return;
+    }
+
     try {
       const token = localStorage.getItem("userToken") || localStorage.getItem("token");
 
@@ -32,8 +70,8 @@ const ProfileCard = ({ profileData, setProfileData }) => {
         },
         body: JSON.stringify({
           name: tempData.name,
-          email: tempData.email,
-          phone: tempData.phone,
+          email: cleanedEmail,
+          phone: cleanedPhone,
           address: tempData.address
         })
       });

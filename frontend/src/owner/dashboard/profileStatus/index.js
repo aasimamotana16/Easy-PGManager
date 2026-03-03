@@ -33,6 +33,9 @@ const ProfileStatus = () => {
 
   const [tempData, setTempData] = useState({});
 
+  const sanitizePhone10 = (value) => (value || "").toString().replace(/\D/g, "").slice(0, 10);
+  const isValidPhone10 = (value) => /^\d{10}$/.test((value || "").toString());
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -107,11 +110,38 @@ const ProfileStatus = () => {
   };
 
   const handleSave = async () => {
+    const cleanedPhone = sanitizePhone10(tempData?.phone);
+    const cleanedEmergency = sanitizePhone10(tempData?.emergencyPhone);
+
+    if (cleanedPhone && !isValidPhone10(cleanedPhone)) {
+      Swal.fire({
+        icon: "error",
+        title: "Invalid Phone Number",
+        text: "Phone number must be exactly 10 digits (numbers only).",
+        confirmButtonColor: "#D97706",
+      });
+      return;
+    }
+
+    if (cleanedEmergency && !isValidPhone10(cleanedEmergency)) {
+      Swal.fire({
+        icon: "error",
+        title: "Invalid Emergency Contact",
+        text: "Emergency contact must be exactly 10 digits (numbers only).",
+        confirmButtonColor: "#D97706",
+      });
+      return;
+    }
+
     try {
       const token = localStorage.getItem("userToken");
-      const res = await axios.put("http://localhost:5000/api/owner/update-profile", tempData, {
+      const res = await axios.put(
+        "http://localhost:5000/api/owner/update-profile",
+        { ...tempData, phone: cleanedPhone, emergencyPhone: cleanedEmergency },
+        {
         headers: { Authorization: `Bearer ${token}` }
-      });
+        }
+      );
       if (res.data.success) {
         const incoming = res.data.data || {};
         const normalized = {
@@ -363,7 +393,7 @@ const ProfileStatus = () => {
                   <InputField 
                     label="Phone Number" 
                     value={editMode ? tempData.phone : profileData.phone} 
-                    onChange={e => setTempData({...tempData, phone: e.target.value})} 
+                    onChange={e => setTempData({...tempData, phone: sanitizePhone10(e.target.value)})} 
                     editMode={editMode}
                     icon={<FaPhoneSquareAlt />}
                     key="phone"
@@ -380,7 +410,7 @@ const ProfileStatus = () => {
                   <InputField 
                     label="Emergency Contact" 
                     value={editMode ? tempData.emergencyPhone : profileData.emergencyPhone} 
-                    onChange={e => setTempData({...tempData, emergencyPhone: e.target.value})} 
+                    onChange={e => setTempData({...tempData, emergencyPhone: sanitizePhone10(e.target.value)})} 
                     editMode={editMode}
                     placeholder="Backup phone number"
                     key="emergency"
