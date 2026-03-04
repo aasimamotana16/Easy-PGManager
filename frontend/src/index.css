@@ -24,7 +24,7 @@
   }
 
   h2 {
-    @apply text-h2 text-textPrimary mb-4 font-semibold;
+    @apply text-h2-sm sm:text-h2 text-textPrimary mb-4 font-semibold;
   }
 
   h3 {

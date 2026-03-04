@@ -147,6 +147,18 @@ const RoomManagement = () => {
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
+          const confirmResult = await Swal.fire({
+            title: 'Are you sure?',
+            text: 'Do you want to save these room changes?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#D97706',
+            cancelButtonColor: '#6B7280',
+            confirmButtonText: 'Yes'
+          });
+
+          if (!confirmResult.isConfirmed) return;
+
           const token = localStorage.getItem("userToken");
           const updatedRooms = [...rooms];
           updatedRooms[index] = { ...updatedRooms[index], ...result.value };
@@ -161,6 +173,13 @@ const RoomManagement = () => {
           try {
             const pgResp = await axios.get(`http://localhost:5000/api/owner/pg/${propertyId}`, { headers: { Authorization: `Bearer ${token}` } });
             if (pgResp.data && pgResp.data.success) {
+              await Swal.fire({
+                icon: 'success',
+                title: 'Updated successfully',
+                timer: 1200,
+                showConfirmButton: false,
+                confirmButtonColor: '#D97706'
+              });
               navigate('/owner/dashboard/pgManagment', { state: { updatedPg: pgResp.data.data } });
               return; // navigated away
             }
@@ -169,7 +188,13 @@ const RoomManagement = () => {
           }
 
           setRooms(updatedRooms);
-          Swal.fire("Success", "Room updated successfully", "success");
+          Swal.fire({
+            icon: 'success',
+            title: 'Updated successfully',
+            timer: 1200,
+            showConfirmButton: false,
+            confirmButtonColor: '#D97706'
+          });
         } catch (error) {
           Swal.fire("Error!", "Failed to update room", "error");
         }
@@ -179,13 +204,13 @@ const RoomManagement = () => {
 
   const handleDeleteRoom = async (index) => {
     const result = await Swal.fire({
-      title: 'Delete Room?',
-      text: "This action cannot be undone.",
+      title: 'Are you sure?',
+      text: 'Do you really want to delete this room?',
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#D97706',
       cancelButtonColor: '#6B7280',
-      confirmButtonText: 'Yes, delete it!'
+      confirmButtonText: 'Yes'
     });
 
     if (result.isConfirmed) {
@@ -210,7 +235,13 @@ const RoomManagement = () => {
         }
 
         setRooms(updatedRooms);
-        Swal.fire("Deleted!", "Room has been removed.", "success");
+        Swal.fire({
+          icon: 'success',
+          title: 'Deleted successfully',
+          timer: 1200,
+          showConfirmButton: false,
+          confirmButtonColor: '#D97706'
+        });
       } catch (error) {
         Swal.fire("Error!", "Failed to delete room.", "error");
       }

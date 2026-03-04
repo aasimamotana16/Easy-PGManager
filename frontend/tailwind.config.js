@@ -26,7 +26,7 @@ module.exports = {
       fontSize: {
         // Desktop Sizes
         'h1': ["60px", { lineHeight: "60px", fontWeight: "700" }], 
-        'h2': ["45px", { lineHeight: "32px", fontWeight: "600" }], 
+        'h2': ["45px", { lineHeight: "54px", fontWeight: "600" }], 
         'h3': ["21px", { lineHeight: "40px", fontWeight: "600" }], 
         'body': ["18px", { lineHeight: "30px", fontWeight: "400" }], 
         'p': ["15px", { lineHeight: "20px", fontWeight: "400" }],
