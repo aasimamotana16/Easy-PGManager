@@ -51,7 +51,7 @@ const CancelForm = () => {
         {/* Warning Card - Updated with Primary brand colors for caution [cite: 2026-02-09] */}
        
         {/* Main Form Card */}
-        <div className="bg-background rounded-2xl shadow-sm border border-border overflow-hidden">
+        <div className="bg-background rounded-2xl shadow-sm border border-border overflow-visible">
           <div className="bg-primarySoft/30 px-4 sm:px-8 py-4 sm:py-6 border-b border-border">
             <h2 className="text-h2-sm lg:text-h2 font-bold text-textPrimary">Cancel Booking</h2>
             <p className="text-textSecondary text-body-sm">Please verify your details to proceed</p>
@@ -86,7 +86,7 @@ const CancelForm = () => {
 
             {form.reason === "Other" && (
               <CInput
-                label="Specify Reason"
+               
                 type="text"
                 placeholder="Why are you leaving?"
                 value={form.otherReason}

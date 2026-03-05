@@ -213,8 +213,7 @@ const BookingPage = () => {
 
         <p style="font-weight: bold; color: #1C1C1C; margin-bottom: 8px;">Agreement Terms:</p>
         <ul style="margin-bottom: 15px; padding-left: 20px;">
-          <li><b>Notice Period:</b> 30 days notice required before vacating.</li>
-          <li><b>Lock-in Period:</b> Minimum stay of 3 months applies.</li>
+         <li><b>Lock-in Period:</b> Minimum stay of 3 months applies.</li>
           <li><b>Refund:</b> Deposit is refundable after the lock-in period.</li>
         </ul>
         
@@ -312,8 +311,8 @@ const BookingPage = () => {
             <div className="bg-background rounded-md p-6 shadow-sm border border-border">
               <h3 className="font-bold text-textPrimary text-lg mb-4">Stay Details</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
-                <CInput type="date" label="Check-in Date" required error={!!errors.checkIn} helperText={errors.checkIn} min={today} value={stayDetails.checkIn} onChange={(e) => setStayDetails({ ...stayDetails, checkIn: e.target.value })} />
-                <CInput type="date" label="Check-out Date (Optional)" error={!!errors.checkOut} helperText={errors.checkOut} min={stayDetails.checkIn || today} value={stayDetails.checkOut} onChange={(e) => setStayDetails({ ...stayDetails, checkOut: e.target.value })} />
+                <CInput type="date" required error={!!errors.checkIn} helperText={errors.checkIn} min={today} value={stayDetails.checkIn} onChange={(e) => setStayDetails({ ...stayDetails, checkIn: e.target.value })} />
+                <CInput type="date"  error={!!errors.checkOut} helperText={errors.checkOut} min={stayDetails.checkIn || today} value={stayDetails.checkOut} onChange={(e) => setStayDetails({ ...stayDetails, checkOut: e.target.value })} />
               </div>
             </div>
           </div>

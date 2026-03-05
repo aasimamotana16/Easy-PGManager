@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { FaEye, FaSearch } from "react-icons/fa";
 import CButton from "../../../components/cButton";
 import CInput from "../../../components/cInput";
@@ -188,31 +189,34 @@ const SupportPage = () => {
         </div>
       </div>
 
-      {selectedTicket && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-md p-5 md:p-6 w-full max-w-lg">
-            <div className="flex justify-between items-start mb-4">
-              <h2 className="text-lg md:text-xl font-bold text-primary">Ticket #{selectedTicket.ticketId || selectedTicket._id}</h2>
-              <button onClick={() => setSelectedTicket(null)} className="text-gray-400 hover:text-black">x</button>
-            </div>
+      {selectedTicket && typeof document !== "undefined"
+        ? createPortal(
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4">
+              <div className="bg-white rounded-md p-5 md:p-6 w-full max-w-lg">
+                <div className="flex justify-between items-start mb-4">
+                  <h2 className="text-lg md:text-xl font-bold text-primary">Ticket #{selectedTicket.ticketId || selectedTicket._id}</h2>
+                  <button onClick={() => setSelectedTicket(null)} className="text-gray-400 hover:text-black">x</button>
+                </div>
 
-            <p className="text-sm md:text-base font-bold text-gray-800 mb-2">{selectedTicket.subject}</p>
-            <p className="text-xs md:text-sm text-gray-600 mb-6 bg-gray-50 p-3 rounded">{selectedTicket.description}</p>
+                <p className="text-sm md:text-base font-bold text-gray-800 mb-2">{selectedTicket.subject}</p>
+                <p className="text-xs md:text-sm text-gray-600 mb-6 bg-gray-50 p-3 rounded">{selectedTicket.description}</p>
 
-            <div className="flex items-center justify-between mb-8 px-2 overflow-x-auto">
-              <StatusStep label="Open" active />
-              <Divider />
-              <StatusStep label="Process" active={selectedTicket.status !== "Open"} />
-              <Divider />
-              <StatusStep label="Done" active={selectedTicket.status === "Closed"} />
-            </div>
+                <div className="flex items-center justify-between mb-8 px-2 overflow-x-auto">
+                  <StatusStep label="Open" active />
+                  <Divider />
+                  <StatusStep label="Process" active={selectedTicket.status !== "Open"} />
+                  <Divider />
+                  <StatusStep label="Done" active={selectedTicket.status === "Closed"} />
+                </div>
 
-            <CButton className="bg-primary text-white py-2 rounded-md w-full text-sm" onClick={() => setSelectedTicket(null)}>
-              Close
-            </CButton>
-          </div>
-        </div>
-      )}
+                <CButton className="bg-primary text-white py-2 rounded-md w-full text-sm" onClick={() => setSelectedTicket(null)}>
+                  Close
+                </CButton>
+              </div>
+            </div>,
+            document.body
+          )
+        : null}
     </div>
   );
 };

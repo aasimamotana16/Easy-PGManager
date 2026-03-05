@@ -109,6 +109,7 @@ const SetRoomPrice = () => {
       setIsSaving(false);
 
       if (resp?.data?.success) {
+        let roomAddedSuccessfully = false;
         // If this flow was started from AddRooms, create the room now
         if (createRoomFlow && incomingRoomData) {
           try {
@@ -130,6 +131,7 @@ const SetRoomPrice = () => {
             );
 
             if (roomResp.data && roomResp.data.success) {
+              roomAddedSuccessfully = true;
               // Upload images if provided
               const createdRoom = roomResp.data.data && roomResp.data.data.room;
               if (incomingRoomData.mainImage || (incomingRoomData.subImages && incomingRoomData.subImages.length > 0)) {
@@ -148,9 +150,14 @@ const SetRoomPrice = () => {
             console.error('Failed to create room after saving pricing', err);
           }
         }
+
+        const successTitle = roomAddedSuccessfully ? "Success!" : "Pricing Saved!";
+        const successText = roomAddedSuccessfully
+          ? "Room added successfully"
+          : "Your room variants have been recorded successfully.";
         Swal.fire({
-          title: 'Pricing Saved!',
-          text: "Your room variants have been recorded successfully.",
+          title: successTitle,
+          text: successText,
           icon: "success",
           confirmButtonColor: "#D97706",
           confirmButtonText: fromCreate ? "Proceed to Approval" : "OK",
