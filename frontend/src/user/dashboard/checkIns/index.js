@@ -31,6 +31,7 @@ const CheckIns = () => {
   const authToken = localStorage.getItem("userToken");
 
   const canRequestMoveOut = hasPaidFirstRent && hasApprovedMoveIn;
+  const disableMoveInPay = hasPaidFirstRent || !Number.isFinite(Number(rentAmount)) || Number(rentAmount) <= 0;
 
   useEffect(() => {
     if (authToken) {
@@ -94,7 +95,17 @@ const CheckIns = () => {
 
   // --- LOGIC: MOVE-IN (Redirect to Payment) ---
   const handleMoveIn = async () => {
-    if (hasPaidFirstRent) return;
+    if (disableMoveInPay) {
+      if (!hasPaidFirstRent) {
+        Swal.fire({
+          title: 'No Payment Due',
+          text: "There's nothing to pay right now.",
+          icon: 'info',
+          confirmButtonColor: '#D97706'
+        });
+      }
+      return;
+    }
 
     const result = await Swal.fire({
       title: 'Complete Your Move-In',
@@ -283,8 +294,8 @@ const CheckIns = () => {
             </p>
             <CButton
               onClick={handleMoveIn}
-              disabled={hasPaidFirstRent}
-              className={`max-w-md w-full py-4 text-lg font-bold shadow-md ${hasPaidFirstRent ? "bg-gray-400 hover:bg-gray-400 border-gray-400" : ""}`}
+              disabled={disableMoveInPay}
+              className={`max-w-md w-full py-4 text-lg font-bold shadow-md ${disableMoveInPay ? "bg-gray-400 hover:bg-gray-400 border-gray-400" : ""}`}
             >
               {hasPaidFirstRent ? "Payment Completed" : "Pay Rent & Move-In"}
             </CButton>

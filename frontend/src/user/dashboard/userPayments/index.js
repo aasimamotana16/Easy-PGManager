@@ -122,8 +122,10 @@ const Payments = () => {
   const agreementExpired = agreementEnd ? agreementEnd < today : false;
   
   // Logic: Use intent amount (from link) or calculated due amount
-  const baseDue = paymentData.nextPayment?.amount || 0;
-  const totalDue = (intentAmount != null ? intentAmount : baseDue) + (paymentData.lateFine || 0);
+  const baseDue = Number(paymentData.nextPayment?.amount || 0);
+  const selectedBaseDue = intentAmount != null ? Number(intentAmount) : baseDue;
+  const totalDue = selectedBaseDue + Number(paymentData.lateFine || 0);
+  const disablePayActions = !Number.isFinite(totalDue) || totalDue <= 0;
 
   let showPayNow = false;
   let showExtendStay = false;
@@ -182,6 +184,7 @@ const Payments = () => {
                   pgId={paymentData.nextPayment?.pgId || ""} 
                   bookingId={queryBookingId || paymentData.nextPayment?.bookingId || ""}
                   intentType={intentType || (stayStatus === 'Active' ? "MONTHLY_RENT" : "MOVE_IN_PAYMENT")} 
+                  disabled={disablePayActions}
                   className="px-8 py-3 rounded-md font-bold text-white shadow-lg transition-transform active:scale-95"
                   style={{ backgroundColor: colors.primary }}
                   onSuccess={() => { fetchPaymentDetails(); fetchAgreementStatus(); }}
@@ -212,6 +215,7 @@ const Payments = () => {
                   pgId={paymentData.nextPayment?.pgId || ""} 
                   bookingId={queryBookingId || paymentData.nextPayment?.bookingId || ""}
                   intentType="MOVE_IN_PAYMENT"
+                  disabled={disablePayActions}
                   className="px-8 py-3 rounded-md font-bold text-white"
                   style={{ backgroundColor: colors.primary }}
                   onSuccess={() => { fetchPaymentDetails(); fetchAgreementStatus(); }}

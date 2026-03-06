@@ -439,21 +439,21 @@ const Profile = () => {
         {isModalOpen && (
           <motion.div 
             variants={modalOverlay} initial="hidden" animate="visible" exit="exit"
-            className="fixed inset-0 bg-black/70 backdrop-blur-md z-[200] flex items-center justify-center p-4"
+            className="fixed inset-0 bg-black/70 backdrop-blur-md z-[3000] flex items-start sm:items-center justify-center p-0 sm:p-6 lg:p-8"
           >
             <motion.div 
               variants={modalContent}
-              className="bg-white rounded-3xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden"
+              className="bg-white rounded-none sm:rounded-3xl w-full max-w-none sm:max-w-3xl lg:max-w-4xl h-[100dvh] sm:h-auto max-h-[100dvh] sm:max-h-[90vh] flex flex-col shadow-2xl overflow-hidden min-h-0"
             >
-              <div className="p-8 border-b bg-white flex justify-between items-center">
+              <div className="sticky sm:static top-0 z-10 p-4 sm:p-8 border-b border-white/20 bg-primary flex justify-between items-center">
                 <div>
-                  <h3 className="text-2xl font-black text-[#1C1C1C]">Update Profile</h3>
-                  <p className="text-[10px] font-bold text-[#4B4B4B] uppercase tracking-widest mt-1">Global Data Synchronization</p>
+                  <h3 className="text-2xl font-black text-textLight">Update Profile</h3>
+                  <p className="text-[10px] font-bold text-primarySoft uppercase tracking-widest mt-1">Global Data Synchronization</p>
                 </div>
-                <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-black transition-colors text-2xl">×</button>
+                <button onClick={() => setIsModalOpen(false)} className="text-textLight/70 hover:text-textLight transition-colors text-2xl">×</button>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-8 md:p-12 space-y-12 custom-scrollbar">
+              <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-8 md:p-12 space-y-10 sm:space-y-12 custom-scrollbar">
                 {/* Section 1 */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <SectionTitle icon={<FaUserAlt />} title="1. Personal Info" />
@@ -527,9 +527,9 @@ const Profile = () => {
                 </div>
               </div>
 
-              <div className="p-8 bg-gray-50 border-t flex flex-col sm:flex-row gap-4">
-                <CButton onClick={handleSaveInfo} className="flex-[2] py-4 shadow-lg">Save All Changes</CButton>
-                <CButton variant= "outlined" onClick={() => setIsModalOpen(false)} className="flex-1 bg-white !text-[#4B4B4B] border border-primary hover:bg-primarySoft">Cancel</CButton>
+              <div className="p-4 sm:p-8 bg-gray-50 border-t flex flex-col sm:flex-row gap-3 sm:gap-4">
+                <CButton onClick={handleSaveInfo} className="w-full sm:flex-[2] py-4 shadow-lg">Save All Changes</CButton>
+                <CButton variant= "outlined" onClick={() => setIsModalOpen(false)} className="w-full sm:flex-1 bg-white !text-[#4B4B4B] border border-primary hover:bg-primarySoft">Cancel</CButton>
               </div>
             </motion.div>
           </motion.div>

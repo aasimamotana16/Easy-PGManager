@@ -30,21 +30,40 @@ const ConfirmBooking = () => {
   const membersCount = bookingData.members?.length || bookingData.seatsBooked || 1;
   const rentLabel = bookingData.totalRent || bookingData.rentAmount || 0;
 
+  const bookingStatusRaw = String(
+    bookingData.status || bookingData.bookingStatus || bookingData.state || ""
+  );
+  const bookingStatus = bookingStatusRaw.toLowerCase();
+  const isBookingConfirmed =
+    bookingStatus.includes("confirmed") ||
+    bookingStatus.includes("active") ||
+    bookingStatus.includes("approved") ||
+    bookingData.isConfirmed === true;
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Navbar />
 
-      <main className="flex-1 max-w-2xl mx-auto w-full px-4 py-12 md:py-20">
-        <div className="text-center mb-10">
-          <div className="flex justify-center mb-4">
-            <CheckCircleIcon className="h-20 w-20 text-primary animate-bounce-short" />
+      <main className="flex-1 max-w-2xl mx-auto w-full px-4 py-6 md:py-12">
+        <div className="text-center mb-8 md:mb-10">
+          <div className="flex items-center justify-center gap-3 mb-2">
+            <CheckCircleIcon className="h-10 w-10 md:h-12 md:w-12 text-primary animate-bounce-short" />
+            <h1 className="text-h2-sm md:text-h2 font-bold text-textPrimary">
+              {isBookingConfirmed ? "Booking Confirmed!" : "Request Sent!"}
+            </h1>
           </div>
-          <h1 className="text-h2-sm md:text-h2 font-bold text-textPrimary mb-2">
-            Booking Confirmed!
-          </h1>
           <p className="text-textSecondary text-body-sm lg:text-body">
-            Pack your bags! Your stay at{" "}
-            <span className="font-semibold text-textPrimary">{bookingData.pgName || "the PG"}</span> is all set.
+            {isBookingConfirmed ? (
+              <>
+                Pack your bags! Your stay at{" "}
+                <span className="font-semibold text-textPrimary">{bookingData.pgName || "the PG"}</span> is all set.
+              </>
+            ) : (
+              <>
+                Your request has been sent. Please wait for booking confirmation for{" "}
+                <span className="font-semibold text-textPrimary">{bookingData.pgName || "the PG"}</span>.
+              </>
+            )}
           </p>
         </div>
 
