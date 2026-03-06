@@ -325,7 +325,7 @@ const DashboardHome = () => {
           <ActionButton label="Manage Tenants" icon={<FaUsers />} onClick={() => navigate("/owner/dashboard/tenantManagement")} />
           <ActionButton label="View Agreements" icon={<FaFileContract />} onClick={() => navigate("/owner/dashboard/oAgreements")} />
           <ActionButton
-            label="Month Pending Payments"
+            label="Monthy Pending Payments"
             icon={<FaClock />}
             onClick={() => navigate("/owner/dashboard/monthPendingPayments")}
           />

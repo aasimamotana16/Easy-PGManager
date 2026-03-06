@@ -70,7 +70,7 @@ const OwnerContact = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
             <Info icon={<FaUser />} label="Owner Name" value={ownerData.name} />
             <Info icon={<FaPhoneAlt />} label="Phone Number" value={ownerData.phone} />
-            <Info icon={<FaEnvelope />} label="Email Address" value={ownerData.email} />
+            <Info icon={<FaEnvelope />} label="Email Address" value={ownerData.email} noWrap />
             <Info icon={<FaBuilding />} label="PG Name" value={ownerData.pgName} />
             <Info
               icon={<FaMapMarkerAlt />}
@@ -85,7 +85,7 @@ const OwnerContact = () => {
   );
 };
 
-const Info = ({ label, value, icon, className = "" }) => (
+const Info = ({ label, value, icon, className = "", noWrap = false }) => (
   <div className={`flex flex-col gap-1.5 group transition-all ${className}`}>
     <div className="flex items-center gap-2 text-gray-400 group-hover:text-orange-500 transition-colors">
       <span className="text-xs lg:text-sm">{icon}</span>
@@ -93,7 +93,12 @@ const Info = ({ label, value, icon, className = "" }) => (
         {label}
       </p>
     </div>
-    <p className="text-sm md:text-lg lg:text-2xl font-black text-gray-900 break-words leading-tight">
+    <p
+      className={`text-sm md:text-lg lg:text-2xl font-black text-gray-900 leading-tight ${
+        noWrap ? "truncate whitespace-nowrap overflow-hidden text-ellipsis max-w-full" : "break-words"
+      }`}
+      title={noWrap ? String(value || "") : undefined}
+    >
       {value || "---"}
     </p>
   </div>

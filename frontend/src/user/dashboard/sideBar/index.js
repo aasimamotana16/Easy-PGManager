@@ -21,7 +21,7 @@ const UserSidebar = ({ isOpen, closeSidebar }) => {
     { to: "/user/dashboard/dashboardHome", label: "Dashboard", icon: <FaHome /> },
     { to: "/user/dashboard/payments", label: "Payments", icon: <FaWallet /> },
     { to: "/user/dashboard/agreements", label: "Agreements", icon: <FaFileAlt /> },
-    { to: "/user/dashboard/check-ins", label: "Check-ins", icon: <FaCalendarCheck /> },
+    { to: "/user/dashboard/check-ins", label: "Move-ins", icon: <FaCalendarCheck /> },
     { to: "/user/dashboard/documents", label: "Documents", icon: <FaFileAlt /> },
     { to: "/user/dashboard/timeline", label: "Timeline", icon: <FaHistory /> },
     { to: "/user/dashboard/owner-contact", label: "Owner Contact", icon: <FaPhone /> },

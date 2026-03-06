@@ -113,7 +113,7 @@ const MonthPendingPayments = () => {
   return (
     <div className="p-4 md:p-6 bg-gray-200 min-h-screen space-y-6">
       <div>
-        <h2 className="text-textPrimary">Month Pending Payments</h2>
+        <h2 className="text-textPrimary">Monthy Pending Payments</h2>
         <p className="text-primary">Showing only current-month pending payments.</p>
       </div>
 

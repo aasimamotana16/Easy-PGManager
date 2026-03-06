@@ -1,17 +1,13 @@
 import React, { useState, useEffect } from "react";
-import ReactDOM from "react-dom"; // Required for Portal
 import CButton from "../../../components/cButton";
 import Swal from "sweetalert2";
 import { getMyAgreement } from "../../../api/api";
 import {
   FaDownload, 
-  FaListUl, 
-  FaShieldAlt, 
-  FaTimes 
+  FaShieldAlt
 } from "react-icons/fa";
 
 const Agreements = () => {
-  const [showRules, setShowRules] = useState(false);
   const [agreementInfo, setAgreementInfo] = useState(null);
   const [loading, setLoading] = useState(true);
   const apiBaseUrl = (process.env.REACT_APP_API_URL || "http://localhost:5000").replace(/\/+$/, "");
@@ -42,18 +38,6 @@ const Agreements = () => {
     };
     fetchAgreement();
   }, []);
-
-  const agreementRules = [
-    "No smoking inside the PG.",
-    "Guests allowed only between 8 AM - 10 PM.",
-    "Maintain cleanliness in the room and common areas.",
-    "No pets allowed.",
-    "Any damage to property will be deducted from security deposit.",
-    "Rent must be paid before the 5th of every month.",
-    "Early termination by tenant requires 1 month's notice.",
-    "Security deposit may be adjusted for unpaid rent or damages.",
-    "Any breach of rules may incur fines or penalties.",
-  ];
 
   const resolveAgreementUrl = (fileUrl) => {
     if (!fileUrl) return "";
@@ -155,9 +139,6 @@ const Agreements = () => {
             </div>
           </div>
           <div className="flex flex-col sm:flex-row gap-4 pt-8 border-t border-gray-100">
-            <CButton variant="outline" className="font-bold flex items-center justify-center gap-2 w-full sm:w-auto" onClick={() => setShowRules(true)}>
-              <FaListUl /> View House Rules
-            </CButton>
             <CButton className="font-bold flex items-center justify-center gap-2 w-full sm:w-auto" onClick={handleDownloadPDF}>
               <FaDownload /> Get PDF Copy
             </CButton>
@@ -170,53 +151,6 @@ const Agreements = () => {
           </span>
         </div>
       </div>
-
-      {/* --- MODAL USING PORTAL TO COVER ENTIRE SCREEN --- */}
-      {showRules && ReactDOM.createPortal(
-        <div className="fixed inset-0 w-screen h-screen flex items-center justify-center z-[99999] p-4">
-          <div 
-            className="absolute inset-0 bg-black/70 backdrop-blur-sm" 
-            onClick={() => setShowRules(false)}
-          />
-          
-          <div className="bg-white w-full max-w-lg rounded-md shadow-2xl relative overflow-hidden transition-all animate-in zoom-in duration-200 z-[100000]">
-            
-            {/* UPDATED: Solid Header Background using primary color */}
-            <div className="bg-primary px-6 py-4 flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-white uppercase">
-                PG  Occupancy  Rules
-              </h2>
-              <button 
-                onClick={() => setShowRules(false)} 
-                className="text-white/80 hover:text-white transition-colors"
-              >
-                <FaTimes size={20} />
-              </button>
-            </div>
-            
-            <div className="p-6 md:p-10">
-              <div className="max-h-[50vh] overflow-y-auto pr-3 custom-scrollbar">
-                <ul className="space-y-4">
-                  {agreementRules.map((rule, index) => (
-                    <li key={index} className="flex gap-4 text-sm md:text-base text-[#4B4B4B] border-b border-gray-50 pb-3 leading-relaxed">
-                      <span className="text-[#D97706] font-bold">{index + 1}.</span> 
-                      {rule}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <CButton 
-                className="mt-8 w-full py-4 text-sm font-bold uppercase tracking-widest"
-                onClick={() => setShowRules(false)}
-              >
-                Acknowledge Rules
-              </CButton>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
     </div>
   );
 };

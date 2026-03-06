@@ -30,6 +30,8 @@ const CheckIns = () => {
   const [hasApprovedMoveIn, setHasApprovedMoveIn] = useState(false);
   const authToken = localStorage.getItem("userToken");
 
+  const canRequestMoveOut = hasPaidFirstRent && hasApprovedMoveIn;
+
   useEffect(() => {
     if (authToken) {
       fetchCheckInHistory();
@@ -144,6 +146,15 @@ const CheckIns = () => {
   };
   // --- LOGIC: MOVE-OUT (notice date + long-term fine rule) ---
   const handleMoveOut = () => {
+    if (!canRequestMoveOut) {
+      Swal.fire({
+        title: "Move-Out Not Allowed",
+        text: "You can request move-out only after your move-in is completed.",
+        icon: "warning",
+        confirmButtonColor: "#D97706"
+      });
+      return;
+    }
     Swal.fire({
       title: "Initiate Permanent Move-Out?",
       html: `
@@ -285,14 +296,15 @@ const CheckIns = () => {
                 Request Move-In
               </CButton>
             )}
-            {hasApprovedMoveIn && (
-              <CButton
-                onClick={handleMoveOut}
-                className="max-w-md w-full py-4 text-lg font-bold mt-3"
-              >
-                Request Move-Out
-              </CButton>
-            )}
+            <CButton
+              onClick={handleMoveOut}
+              disabled={!canRequestMoveOut}
+              className={`max-w-md w-full py-4 text-lg font-bold mt-3 ${
+                !canRequestMoveOut ? "bg-gray-400 hover:bg-gray-400 border-gray-400 cursor-not-allowed" : ""
+              }`}
+            >
+              Request Move-Out
+            </CButton>
           </div>
         </div>
 
