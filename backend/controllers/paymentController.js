@@ -57,9 +57,13 @@ const addMonths = (dateInput, months) => {
   return d;
 };
 
-const deriveSecurityDepositAmount = (monthlyRent) => {
+const deriveSecurityDepositAmount = (monthlyRent, configuredDeposit) => {
+  const explicitDeposit = Number(configuredDeposit);
+  if (Number.isFinite(explicitDeposit) && explicitDeposit >= 0) {
+    return explicitDeposit;
+  }
   const rent = Math.max(0, Number(monthlyRent) || 0);
-  return rent * 2;
+  return rent > 0 ? 0 : 0;
 };
 
 const getNextCycleDueDate = (anchorDateInput) => {
@@ -119,7 +123,7 @@ const ensureBookingCompletionRecords = async ({ booking, tenantUser, pgDoc, tena
     fallbackDeposit: Number(booking.securityDeposit || pgDoc.securityDeposit || 0)
   });
   const safeRent = Number(booking.rentAmount || booking.bookingAmount || bookingPricing.rentAmount || rentAmount || 0);
-  const securityDeposit = deriveSecurityDepositAmount(safeRent);
+  const securityDeposit = deriveSecurityDepositAmount(safeRent, bookingPricing.securityDeposit);
   const variantLabel = booking.variantLabel || bookingPricing.variantLabel || booking.roomType || "N/A";
 
   booking.rentAmount = safeRent;
@@ -333,6 +337,7 @@ const verifyPayment = async (req, res) => {
       razorpay_signature, 
       amountPaid, 
       pgId,
+      type,
       month, // Added to record the specific rent month
       bookingId
     } = req.body;
@@ -440,7 +445,7 @@ const verifyPayment = async (req, res) => {
         targetBooking.isPaid = true;
         targetBooking.paymentStatus = "Paid";
         const monthlyRent = Number(targetBooking.rentAmount || targetBooking.bookingAmount || 0);
-        const requiredDeposit = Number(targetBooking.securityDeposit || deriveSecurityDepositAmount(monthlyRent));
+        const requiredDeposit = Number(targetBooking.securityDeposit ?? 0);
         const paidSoFarQuery = {
           paymentStatus: { $in: ["Success", "Paid", "PAID"] },
           $and: [
@@ -461,9 +466,29 @@ const verifyPayment = async (req, res) => {
         }
         const paidSoFarRaw = await Payment.find(paidSoFarQuery).select("amountPaid");
         const runningTotal = paidSoFarRaw.reduce((sum, p) => sum + (Number(p.amountPaid) || 0), 0);
-        targetBooking.initialRentPaid = Boolean(targetBooking.initialRentPaid) || runningTotal >= monthlyRent;
-        targetBooking.securityDepositPaid =
-          Boolean(targetBooking.securityDepositPaid) || requiredDeposit <= 0 || runningTotal >= (monthlyRent + requiredDeposit);
+        const paymentType = String(type || "").toUpperCase();
+        const paidAmount = Number(amountPaid || 0);
+        const isDepositOnly = paymentType === "DEPOSIT_ONLY";
+        const isRentOnly = paymentType === "RENT_ONLY" || paymentType === "MONTHLY_RENT";
+        const isCombined = paymentType === "MOVE_IN_PAYMENT" || paymentType === "RENT_AND_DEPOSIT";
+
+        if (isDepositOnly) {
+          targetBooking.securityDepositPaid =
+            Boolean(targetBooking.securityDepositPaid) || requiredDeposit <= 0 || paidAmount >= requiredDeposit;
+        } else if (isRentOnly) {
+          targetBooking.initialRentPaid =
+            Boolean(targetBooking.initialRentPaid || targetBooking.isPaid) || paidAmount >= monthlyRent;
+        } else if (isCombined) {
+          targetBooking.initialRentPaid =
+            Boolean(targetBooking.initialRentPaid || targetBooking.isPaid) || paidAmount >= monthlyRent;
+          targetBooking.securityDepositPaid =
+            Boolean(targetBooking.securityDepositPaid) || requiredDeposit <= 0 || paidAmount >= (monthlyRent + requiredDeposit);
+        } else {
+          // Backward-compatible fallback for old clients not sending payment intent
+          targetBooking.initialRentPaid = Boolean(targetBooking.initialRentPaid || targetBooking.isPaid) || runningTotal >= monthlyRent;
+          targetBooking.securityDepositPaid =
+            Boolean(targetBooking.securityDepositPaid) || requiredDeposit <= 0 || runningTotal >= (monthlyRent + requiredDeposit);
+        }
         if (targetBooking.ownerApproved && String(targetBooking.status || "") !== "Cancelled") {
           targetBooking.status = "Confirmed";
         }
@@ -631,7 +656,7 @@ const getUserPaymentStats = async (req, res) => {
     );
 
     const totalPaid = filteredHistoryRaw.reduce((sum, p) => sum + (Number(p.amountPaid) || 0), 0);
-    const history = filteredHistoryRaw.map((p) => ({
+    let history = filteredHistoryRaw.map((p) => ({
       id: p._id,
       month: p.month,
       date: new Date(p.paymentDate).toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" }),
@@ -640,6 +665,12 @@ const getUserPaymentStats = async (req, res) => {
       pgId: p.pgId || null,
       pgName: p.pgName || null
     }));
+
+    const bookingMatchers = [
+      { tenantUserId: req.user.id },
+      tenantEmail ? { tenantEmail: new RegExp(`^${tenantEmail}$`, "i") } : null,
+      { tenantName }
+    ].filter(Boolean);
 
     const booking = await Booking.findOne({
       status: { $in: ["Pending", "Confirmed"] },
@@ -651,13 +682,12 @@ const getUserPaymentStats = async (req, res) => {
           ]
         },
         {
-          $or: [
-            { tenantUserId: req.user.id },
-            tenantEmail ? { tenantEmail: new RegExp(`^${tenantEmail}$`, "i") } : null,
-            { tenantName }
-          ].filter(Boolean)
+          $or: bookingMatchers
         }
       ]
+    }).sort({ createdAt: -1 });
+    const pricingBooking = await Booking.findOne({
+      $or: bookingMatchers
     }).sort({ createdAt: -1 });
 
     const pendingPaymentsRaw = await PendingPayment.find({
@@ -668,9 +698,41 @@ const getUserPaymentStats = async (req, res) => {
       ]
     }).sort({ dueDate: 1 });
     const pendingPayment = pickRelevantPendingPayment(pendingPaymentsRaw);
+    let currentRentDue = 0;
+    const sourceBooking = pricingBooking || booking;
+    let bookingPgId = sourceBooking?.pgId || null;
+    let bookingPgName = sourceBooking?.pgName || "";
+    if (sourceBooking) {
+      const pg = sourceBooking.pgId
+        ? await Pg.findById(sourceBooking.pgId).select("price securityDeposit roomPrices")
+        : sourceBooking.pgName
+          ? await Pg.findOne({ pgName: sourceBooking.pgName }).select("price securityDeposit roomPrices")
+          : null;
+      const pricing = resolveVariantPricing({
+        roomPrices: pg?.roomPrices,
+        roomType: sourceBooking.roomType || sourceBooking.variantLabel || "",
+        variantLabel: sourceBooking.variantLabel || "",
+        fallbackRent: Number(sourceBooking.rentAmount || sourceBooking.bookingAmount || pg?.price || 0),
+        fallbackDeposit: Number(sourceBooking.securityDeposit || pg?.securityDeposit || 0)
+      });
+      currentRentDue = Number(pricing.rentAmount || sourceBooking.rentAmount || sourceBooking.bookingAmount || pg?.price || 0);
+      if (!bookingPgId && pg?._id) bookingPgId = pg._id;
+      if (!bookingPgName && pg?.pgName) bookingPgName = pg.pgName;
+      if (currentRentDue > 0) {
+        history = history.map((row) => ({
+          ...row,
+          amount: currentRentDue
+        }));
+      }
+    }
 
     let nextPayment = null;
     let lateFine = 0;
+    const bookingSecurityDeposit = Math.max(0, Number(booking?.securityDeposit || 0));
+    const securityDepositDue =
+      booking && !Boolean(booking.securityDepositPaid) && bookingSecurityDeposit > 0
+        ? bookingSecurityDeposit
+        : 0;
 
     if (pendingPayment) {
       const due = getNextCycleDueDate(pendingPayment.dueDate) || new Date(pendingPayment.dueDate);
@@ -679,29 +741,28 @@ const getUserPaymentStats = async (req, res) => {
       today.setHours(0, 0, 0, 0);
       const overdueDays = Math.max(0, Math.floor((today - due) / (24 * 60 * 60 * 1000)));
       lateFine = overdueDays * 100;
+      const rentDue = Number(currentRentDue || pendingPayment.amount || 0);
+      const amount = rentDue + securityDepositDue;
       nextPayment = {
-        amount: Number(pendingPayment.amount) || 0,
-        pgId: pendingPayment.pg || booking?.pgId || null,
-        pgName: pendingPayment.pgName || booking?.pgName || "",
+        amount,
+        rentDue,
+        securityDepositDue,
+        pgId: pendingPayment.pg || bookingPgId || null,
+        pgName: pendingPayment.pgName || bookingPgName || "",
         bookingId: booking?._id || null,
         month: due.toLocaleString("en-US", { month: "short", year: "numeric" }),
         dueDate: due.toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" })
       };
     } else if (booking) {
-      const pg = booking.pgId ? await Pg.findById(booking.pgId).select("price securityDeposit roomPrices") : null;
-      const pricing = resolveVariantPricing({
-        roomPrices: pg?.roomPrices,
-        roomType: booking.roomType || booking.variantLabel || "",
-        variantLabel: booking.variantLabel || "",
-        fallbackRent: Number(booking.rentAmount || booking.bookingAmount || pg?.price || 0),
-        fallbackDeposit: Number(booking.securityDeposit || pg?.securityDeposit || 0)
-      });
-      const rent = Number(booking.rentAmount || booking.bookingAmount || pricing.rentAmount || 0);
+      const rentDue = Number(currentRentDue || 0);
+      const amount = rentDue + securityDepositDue;
       const fallbackDue = getNextCycleDueDate(booking.checkInDate || new Date());
       nextPayment = {
-        amount: rent,
-        pgId: booking.pgId || null,
-        pgName: booking.pgName || "",
+        amount,
+        rentDue,
+        securityDepositDue,
+        pgId: bookingPgId || null,
+        pgName: bookingPgName || "",
         bookingId: booking._id,
         month: (fallbackDue || new Date()).toLocaleString("en-US", { month: "short", year: "numeric" }),
         dueDate: (fallbackDue || new Date()).toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" })
@@ -736,7 +797,35 @@ const downloadReceipt = async (req, res) => {
     ]);
     const issuedDate = new Date();
     const paymentDate = new Date(payment.paymentDate);
-    const amount = Number(payment.amountPaid || 0);
+    const bookingQuery = {
+      tenantUserId: req.user.id
+    };
+    if (payment.pgId?._id || payment.pgId) {
+      bookingQuery.pgId = payment.pgId._id || payment.pgId;
+    } else if (payment.pgName) {
+      bookingQuery.pgName = payment.pgName;
+    }
+    const linkedBooking = await Booking.findOne(bookingQuery).sort({ createdAt: -1 });
+    const linkedPg = payment.pgId?._id
+      ? await Pg.findById(payment.pgId._id).select("price securityDeposit roomPrices")
+      : payment.pgName
+        ? await Pg.findOne({ pgName: payment.pgName }).select("price securityDeposit roomPrices")
+        : null;
+    const receiptPricing = resolveVariantPricing({
+      roomPrices: linkedPg?.roomPrices,
+      roomType: linkedBooking?.roomType || linkedBooking?.variantLabel || "",
+      variantLabel: linkedBooking?.variantLabel || "",
+      fallbackRent: Number(linkedBooking?.rentAmount || linkedBooking?.bookingAmount || linkedPg?.price || payment.amountPaid || 0),
+      fallbackDeposit: Number(linkedBooking?.securityDeposit || linkedPg?.securityDeposit || 0)
+    });
+    const amount = Number(
+      receiptPricing.rentAmount ||
+      linkedBooking?.rentAmount ||
+      linkedBooking?.bookingAmount ||
+      linkedPg?.price ||
+      payment.amountPaid ||
+      0
+    );
     const propertyName = payment.pgId?.pgName || payment.pgName || 'N/A';
     const propertyLocation = payment.pgId?.location || payment.pgId?.city || 'N/A';
     const receiptNo = String(payment._id);

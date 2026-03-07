@@ -43,6 +43,25 @@ const resolveTenantBooking = async ({ bookingIdentifier, user }) => {
   return booking;
 };
 
+const findActiveTenantBooking = async ({ userId, emails = [] }) => {
+  const emailMatchers = emails
+    .map((email) => String(email || "").trim().toLowerCase())
+    .filter(Boolean)
+    .map((email) => ({ tenantEmail: new RegExp(`^${email}$`, "i") }));
+
+  const identityMatchers = [
+    userId ? { tenantUserId: userId } : null,
+    ...emailMatchers
+  ].filter(Boolean);
+
+  if (identityMatchers.length === 0) return null;
+
+  return Booking.findOne({
+    status: { $ne: "Cancelled" },
+    $or: identityMatchers
+  }).sort({ createdAt: -1 });
+};
+
 // 1. Create booking (public) - associates booking with PG owner and notifies owner via email
 router.post("/create", protect, async (req, res) => {
   try {
@@ -67,6 +86,24 @@ router.post("/create", protect, async (req, res) => {
     const tenantEmail = (members && members.length > 0 && members[0].email)
       ? String(members[0].email || '').trim().toLowerCase()
       : String(req.user?.email || '').trim().toLowerCase();
+
+    const existingTenantBooking = await findActiveTenantBooking({
+      userId: req.user?._id,
+      emails: [tenantEmail, req.user?.email]
+    });
+    if (existingTenantBooking) {
+      return res.status(409).json({
+        success: false,
+        message: `You already have an active booking (${existingTenantBooking.bookingId || existingTenantBooking._id}) for ${existingTenantBooking.pgName || "a PG"}. Cancel/complete it before booking another PG.`,
+        data: {
+          bookingId: existingTenantBooking.bookingId || null,
+          pgId: existingTenantBooking.pgId || null,
+          pgName: existingTenantBooking.pgName || null,
+          status: existingTenantBooking.status || null
+        }
+      });
+    }
+
     const checkInDate = stayDetails?.checkIn || new Date().toISOString().split('T')[0];
     const checkOutDate = stayDetails?.checkOut || 'Long Term';
     const pricing = resolveVariantPricing({

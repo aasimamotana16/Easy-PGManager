@@ -58,9 +58,13 @@ const resolveMonthRangeFromShortName = (monthShort) => {
   };
 };
 
-const deriveSecurityDepositAmount = (monthlyRent) => {
+const deriveSecurityDepositAmount = (monthlyRent, configuredDeposit) => {
+  const explicitDeposit = Number(configuredDeposit);
+  if (Number.isFinite(explicitDeposit) && explicitDeposit >= 0) {
+    return explicitDeposit;
+  }
   const rent = Math.max(0, Number(monthlyRent) || 0);
-  return rent * 2;
+  return rent > 0 ? 0 : 0;
 };
 
 const normalizeBaseUrl = (value, fallback = "http://localhost:3000") => {
@@ -305,7 +309,7 @@ const ensureTenantLinkedRecords = async ({ ownerId, tenant, pg }) => {
       checkOutDate: addMonths(effectiveJoiningDate, 11).toISOString().split('T')[0],
       seatsBooked: 1,
       rentAmount: Number(tenantPricing.rentAmount || 0),
-      securityDeposit: deriveSecurityDepositAmount(Number(tenantPricing.rentAmount || 0)),
+      securityDeposit: deriveSecurityDepositAmount(Number(tenantPricing.rentAmount || 0), tenantPricing.securityDeposit),
       pricingSnapshot: {
         billingCycle: tenantPricing.billingCycle || "Monthly",
         acType: tenantPricing.acType || "Non-AC",
@@ -316,7 +320,7 @@ const ensureTenantLinkedRecords = async ({ ownerId, tenant, pg }) => {
       ownerApproved: true,
       ownerApprovalStatus: "approved",
       initialRentPaid: true,
-      securityDepositPaid: deriveSecurityDepositAmount(Number(tenantPricing.rentAmount || 0)) <= 0,
+      securityDepositPaid: deriveSecurityDepositAmount(Number(tenantPricing.rentAmount || 0), tenantPricing.securityDeposit) <= 0,
       bookingSource: "tenant_sync"
     });
     bookingCreated = true;
@@ -324,7 +328,7 @@ const ensureTenantLinkedRecords = async ({ ownerId, tenant, pg }) => {
 
   const pricing = tenantPricing;
   const rentAmount = Number(pricing.rentAmount || 0);
-  const securityDeposit = deriveSecurityDepositAmount(rentAmount);
+  const securityDeposit = deriveSecurityDepositAmount(rentAmount, pricing.securityDeposit);
   const joinDateObj = new Date(effectiveJoiningDate);
   const currentMonthLabel = getMonthLabel(joinDateObj);
   const nextMonthDate = addMonths(joinDateObj, 1);
@@ -498,7 +502,7 @@ const ensureBookingConfirmationData = async ({ booking, ownerId }) => {
     fallbackDeposit: Number(booking.securityDeposit || pg?.securityDeposit || 0)
   });
   const rentAmount = Number(booking.rentAmount || booking.bookingAmount || bookingPricing.rentAmount || 0);
-  const securityDeposit = deriveSecurityDepositAmount(rentAmount);
+  const securityDeposit = deriveSecurityDepositAmount(rentAmount, bookingPricing.securityDeposit);
   const resolvedVariantLabel = booking.variantLabel || bookingPricing.variantLabel || room;
   const checkInDate = booking.checkInDate || new Date().toISOString().split('T')[0];
   const checkOutDate = booking.checkOutDate || addMonths(checkInDate, 11).toISOString().split('T')[0];
@@ -1361,7 +1365,7 @@ const addTenant = async (req, res) => {
     const { name, phone, email, pgId, room, joiningDate } = req.body;
     const ownerId = req.user._id;
 
-    const pg = await Pg.findOne({ _id: pgId, ownerId }).select('pgName occupancy roomPrices price');
+    const pg = await Pg.findOne({ _id: pgId, ownerId }).select('pgName occupancy roomPrices price securityDeposit');
     if (!pg) {
       return res.status(404).json({ success: false, message: "Selected PG not found for this owner" });
     }
@@ -1375,7 +1379,7 @@ const addTenant = async (req, res) => {
       fallbackDeposit: Number(pg?.securityDeposit || 0)
     });
     const rentAmount = Number(pricing.rentAmount || 0);
-    const securityDeposit = deriveSecurityDepositAmount(rentAmount);
+    const securityDeposit = deriveSecurityDepositAmount(rentAmount, pricing.securityDeposit);
 
     const newTenant = await Tenant.create({
       ownerId,
@@ -2189,7 +2193,7 @@ const addBooking = async (req, res) => {
       fallbackDeposit: Number(templatePg?.securityDeposit || 0)
     });
     const monthlyRent = Number(pricing.rentAmount || 0);
-    const securityDeposit = deriveSecurityDepositAmount(monthlyRent);
+    const securityDeposit = deriveSecurityDepositAmount(monthlyRent, pricing.securityDeposit);
     const linkedUser = tenantEmail
       ? await User.findOne({
           email: new RegExp(`^${String(tenantEmail).trim()}$`, 'i'),

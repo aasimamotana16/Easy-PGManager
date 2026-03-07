@@ -253,7 +253,10 @@ const DashboardHome = () => {
   const pgName = dashboardData?.currentBooking?.pgName || user?.bookedPgName || "No PG Booked";
   const roomType = dashboardData?.currentBooking?.roomType || user?.roomType || "N/A";
   const monthlyRent = dashboardData?.currentBooking?.monthlyRent || user?.monthlyRent || 0;
-  const bookingStatus = dashboardData?.currentBooking?.status || user?.bookingStatus || "Inactive";
+  const bookingStatusRaw = dashboardData?.currentBooking?.status || user?.bookingStatus || "Inactive";
+  const bookingStatus = ["Active", "Pending Move-In Approval"].includes(String(bookingStatusRaw))
+    ? "Active Tenant"
+    : bookingStatusRaw;
   const rawDueDate = dashboardData?.nextPayment?.dueDate || user?.paymentDueDate || null;
   const nextPaymentDate = getUpcomingDueDate(rawDueDate) || (monthlyRent > 0 ? "Due date not available" : "No due");
   const dueAmount = Number(dashboardData?.nextPayment?.amount || monthlyRent || 0);

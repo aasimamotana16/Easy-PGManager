@@ -28,20 +28,13 @@ useEffect(() => {
           }
         }
       } catch (error) {
-        console.error("Backend fetch failed, using fallback:", error);
-        // We only set this data if the backend call fails
+        console.error("Backend fetch failed:", error);
         setTimelineData({
-          keyEvents: [
-            { id: 1, title: "Booking Confirmed", type: "booking", date: "12 Dec 2025", status: "Confirmed" },
-            { id: 2, title: "Checked In", type: "checkin", date: "15 Dec 2025", status: "Check-In" },
-            { id: 3, title: "Checked Out", type: "checkout", date: "20 Dec 2025", status: "Check-Out" },
-            { id: 4, title: "Last Rent Paid: ₹6,000", type: "payment", date: "01 Jan 2026", status: "Paid" },
-            { id: 5, title: "Agreement Uploaded", type: "agreement", date: "02 Jan 2026", status: "Uploaded" }
-          ],
+          keyEvents: [],
           chartData: {
-            months: ["Jan", "Feb", "Mar", "Apr", "May"],
-            checkins: [20, 18, 22, 19, 21], 
-            payments: [2, 3, 4, 3, 3]       
+            months: [],
+            checkins: [],
+            payments: []
           }
         });
       } finally {
@@ -54,13 +47,13 @@ useEffect(() => {
  // Transform backend data for frontend use
   // Transform backend data for frontend use
 const timelineEvents = timelineData?.keyEvents?.map(event => {
-  // ✅ 1. Only extract the Date part. This does NOT change the status or the day.
-  const dateOnly = event.date 
-    ? new Date(event.date).toLocaleDateString('en-GB', { 
-        day: '2-digit', 
-        month: 'short', 
-        year: 'numeric' 
-      }) 
+  const parsedDate = event.date ? new Date(event.date) : null;
+  const dateOnly = parsedDate && !Number.isNaN(parsedDate.getTime())
+    ? parsedDate.toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric"
+      })
     : "Pending";
 
   return {
@@ -74,14 +67,20 @@ const timelineEvents = timelineData?.keyEvents?.map(event => {
   };
 }) || [];
 
-  console.log("Timeline: timelineEvents:", timelineEvents);
-  console.log("Timeline: timelineData:", timelineData);
-
   const activityData = timelineData?.chartData?.months?.map((month, index) => ({
     month: month,
     CheckIns: timelineData.chartData.checkins[index] || 0,
     Payments: timelineData.chartData.payments[index] || 0
   })) || [];
+  const filteredActivityData = selectedMonth === "All"
+    ? activityData
+    : activityData.filter((row) => row.month === selectedMonth);
+  const filteredTimelineEvents = selectedMonth === "All"
+    ? timelineEvents
+    : timelineEvents.filter((event) => {
+        const parts = String(event.date || "").split(" ");
+        return parts[1] === selectedMonth;
+      });
 const downloadTimelinePDF = async () => {
   try {
     const token = localStorage.getItem("userToken");
@@ -114,7 +113,7 @@ const downloadTimelinePDF = async () => {
       doc.setTextColor(249, 115, 22);
       doc.text("EasyPG STAY REPORT (Local)", 14, 20);
       
-      const eventRows = timelineEvents.map(ev => [ev.date, ev.text]);
+      const eventRows = filteredTimelineEvents.map(ev => [ev.date, ev.text]);
       autoTable(doc, {
         startY: 35,
         head: [['Date', 'Activity']],
@@ -177,7 +176,7 @@ const downloadTimelinePDF = async () => {
             </div>
 
             <div className="relative space-y-8 before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:ml-[22px] before:h-full before:w-0.5 before:bg-gradient-to-b before:from-orange-500 before:via-gray-200 before:to-transparent">
-              {timelineEvents.map((event, index) => (
+              {filteredTimelineEvents.map((event, index) => (
                 <div key={index} className="relative flex items-center gap-6 group">
                   <div className="flex h-10 w-10 md:h-12 md:w-12 shrink-0 items-center justify-center rounded-md bg-white border border-orange-500 shadow-sm z-10 group-hover:scale-110 transition-transform">
                     <span className="text-lg md:text-xl">{event.icon}</span>
@@ -222,7 +221,7 @@ const downloadTimelinePDF = async () => {
 
             <div className="h-[300px] md:h-[500px] lg:h-[400px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={activityData}>
+                <LineChart data={filteredActivityData}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
                   <XAxis 
                     dataKey="month" 

@@ -3,6 +3,22 @@ const Booking = require('../models/bookingModel');
 // Handle new booking submission [cite: 2026-01-06]
 exports.createBooking = async (req, res) => {
   try {
+    const normalizedEmail = String(req.body?.tenantEmail || req.body?.email || "").trim().toLowerCase();
+    const existingBooking = await Booking.findOne({
+      status: { $ne: "Cancelled" },
+      $or: [
+        req.body?.tenantUserId ? { tenantUserId: req.body.tenantUserId } : null,
+        normalizedEmail ? { tenantEmail: new RegExp(`^${normalizedEmail}$`, "i") } : null
+      ].filter(Boolean)
+    }).sort({ createdAt: -1 });
+
+    if (existingBooking) {
+      return res.status(409).json({
+        success: false,
+        message: "Tenant already has an active booking. Cancel/complete it before creating another."
+      });
+    }
+
     // Generate a unique bookingId since it's required in your model [cite: 2026-01-01]
     const customBookingId = "BK-" + Math.floor(1000 + Math.random() * 9000);
 

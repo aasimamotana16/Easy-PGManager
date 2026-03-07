@@ -164,7 +164,12 @@ const Payments = () => {
               <h2 className="text-5xl font-black mt-1 text-white">₹{totalDue}</h2>
               {paymentData.lateFine > 0 && (
                 <p className="text-red-400 text-xs mt-2 font-bold flex items-center gap-1">
-                  <FaExclamationTriangle /> Includes Late Fine: ₹{paymentData.lateFine}
+                  <FaExclamationTriangle /> Includes Late Fine: â‚¹{paymentData.lateFine}
+                </p>
+              )}
+              {Number(paymentData.nextPayment?.securityDepositDue || 0) > 0 && (
+                <p className="text-orange-300 text-xs mt-1 font-bold">
+                  Includes Security Deposit: â‚¹{Number(paymentData.nextPayment?.securityDepositDue || 0)}
                 </p>
               )}
             </div>

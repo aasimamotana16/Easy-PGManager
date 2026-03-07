@@ -15,7 +15,7 @@ const PayNowButton = ({ amount, pgId, bookingId, intentType, description, childr
       const resp = await fetch('http://localhost:5000/api/payments/create-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ amount: Number(amount || 0), pgId, type: intentType })
+        body: JSON.stringify({ amount: Number(amount || 0), pgId, bookingId, type: intentType })
       });
       if (!resp.ok) throw new Error('Failed to create order');
       const { order } = await resp.json();
@@ -38,7 +38,8 @@ const PayNowButton = ({ amount, pgId, bookingId, intentType, description, childr
                 razorpay_signature: response.razorpay_signature,
                 amountPaid: order.amount / 100,
                 pgId,
-                bookingId
+                bookingId,
+                type: intentType
               })
             });
             const result = await verifyRes.json();

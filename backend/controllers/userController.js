@@ -17,6 +17,7 @@ const ExtensionRequest = require("../models/extensionRequestModel");
 const fs = require('fs');
 const path = require('path');
 const { validateMoveIn } = require("../utils/leaseUtils");
+const { resolveVariantPricing } = require("../utils/pricingUtils");
 // Moved to top to avoid redundant requiring during PDF generation
 const { jsPDF } = require('jspdf');
 const { autoTable } = require('jspdf-autotable');
@@ -227,11 +228,39 @@ const getUserDashboard = async (req, res) => {
       .sort((a, b) => new Date(b.paymentDate) - new Date(a.paymentDate))
       .slice(0, 5);
 
+    const roomType = latestAgreement?.roomType || booking?.roomType || "N/A";
+    let linkedPg = null;
+    let pricing = null;
+    let monthlyRent = Number(booking?.rentAmount || booking?.bookingAmount || 0);
+    if (booking) {
+      linkedPg = booking.pgId
+        ? await PG.findById(booking.pgId).select("price securityDeposit roomPrices")
+        : booking.pgName
+          ? await PG.findOne({ pgName: booking.pgName }).select("price securityDeposit roomPrices")
+          : null;
+      pricing = resolveVariantPricing({
+        roomPrices: linkedPg?.roomPrices,
+        roomType: booking.roomType || booking.variantLabel || roomType,
+        variantLabel: booking.variantLabel || "",
+        fallbackRent: Number(booking?.rentAmount || booking?.bookingAmount || linkedPg?.price || 0),
+        fallbackDeposit: Number(booking?.securityDeposit || linkedPg?.securityDeposit || 0)
+      });
+      monthlyRent = Number(pricing.rentAmount || booking?.rentAmount || booking?.bookingAmount || linkedPg?.price || 0);
+    }
+    const initialRentPaid = Boolean(booking?.initialRentPaid || booking?.isPaid);
+    const securityDepositAmount = Math.max(
+      0,
+      Number(pricing?.securityDeposit ?? booking?.securityDeposit ?? linkedPg?.securityDeposit ?? 0)
+    );
+    const securityDepositPaid = Boolean(booking?.securityDepositPaid) || securityDepositAmount <= 0;
+    const moveInDuesPaid = initialRentPaid && securityDepositPaid;
+
     let bookingStatus = "Inactive";
     if (booking) {
       if (booking.status === "Cancelled") {
         bookingStatus = "Cancelled";
-      } else if (booking.isPaid && booking.status === "Confirmed") {
+      } else if (booking.ownerApproved && initialRentPaid) {
+        // Once rent is paid, do not keep showing "Awaiting Payment".
         bookingStatus = hasApprovedMoveIn ? "Active" : "Pending Move-In Approval";
       } else if (booking.ownerApproved) {
         bookingStatus = "Awaiting Payment";
@@ -239,9 +268,6 @@ const getUserDashboard = async (req, res) => {
         bookingStatus = "Pending Approval";
       }
     }
-
-    const roomType = latestAgreement?.roomType || booking?.roomType || "N/A";
-    const monthlyRent = Number(booking?.rentAmount || booking?.bookingAmount || 0);
     const normalizedPendingDueDate = getNextCycleDueDate(pendingPayment?.dueDate || null);
     const fallbackCycleDueDate = getNextCycleDueDate(booking?.checkInDate || user.paymentDueDate || null);
     const dueDateValue = normalizedPendingDueDate || fallbackCycleDueDate || null;
@@ -257,10 +283,12 @@ const getUserDashboard = async (req, res) => {
       const daysUntilDue = Math.floor((dueDateObj - today) / DAY_MS);
       canPayNow = daysUntilDue <= TENANT_PAY_WINDOW_DAYS_BEFORE_DUE;
     }
+    const rentDue = Number(pendingPayment?.amount || monthlyRent || 0);
+    const securityDepositDue = securityDepositPaid ? 0 : securityDepositAmount;
     const recentPayments = filteredRecentPayments.map((payment) => ({
       id: payment._id,
       month: payment.month || new Date(payment.paymentDate).toLocaleString("en-US", { month: "short", year: "numeric" }),
-      amount: Number(payment.amountPaid) || 0,
+      amount: Number(monthlyRent || payment.amountPaid || 0),
       status: "Paid"
     }));
 
@@ -275,12 +303,17 @@ const getUserDashboard = async (req, res) => {
         status: bookingStatus,
         monthlyRent: monthlyRent,
         isPaid: Boolean(booking?.isPaid),
+        initialRentPaid,
+        securityDepositPaid,
+        moveInDuesPaid,
         ownerApproved: Boolean(booking?.ownerApproved),
         hasApprovedMoveIn: hasApprovedMoveIn,
         bookingState: booking?.status || "Pending",
       },
       nextPayment: {
-        amount: Number(pendingPayment?.amount || monthlyRent || 0),
+        amount: Number(rentDue + securityDepositDue),
+        rentDue,
+        securityDepositDue,
         dueDate: dueDateLabel,
         canPayNow
       },
@@ -487,6 +520,13 @@ const getMe = async (req, res) => {
 
 const getMyAgreement = async (req, res) => {
   try {
+    const userDocWithAgreementCopy = await User.findById(req.user._id).select(
+      "+rentalAgreementCopy.status +rentalAgreementCopy.fileUrl"
+    );
+    const signedAgreementDocStatus = String(userDocWithAgreementCopy?.rentalAgreementCopy?.status || "");
+    const hasUploadedSignedAgreement = Boolean(userDocWithAgreementCopy?.rentalAgreementCopy?.fileUrl) &&
+      ["uploaded", "verified"].includes(signedAgreementDocStatus.toLowerCase());
+
     const userId = req.user?._id;
     const tenantEmail = String(req.user?.email || "").trim().toLowerCase();
     const booking = await Booking.findOne({
@@ -501,9 +541,19 @@ const getMyAgreement = async (req, res) => {
       ? await Agreement.findOne({ bookingId: booking.bookingId }).sort({ createdAt: -1 })
       : await Agreement.findOne({ userId }).sort({ createdAt: -1 });
 
-    const bookingPg = booking?.pgId ? await PG.findById(booking.pgId).select("agreementTemplate pgName") : null;
+    const bookingPg = booking?.pgId
+      ? await PG.findById(booking.pgId).select("agreementTemplate pgName roomPrices price securityDeposit")
+      : null;
     const ownerTemplateUrl = bookingPg?.agreementTemplate?.agreementFileUrl || "";
+    const ownerTemplateSignatureUrl = bookingPg?.agreementTemplate?.ownerSignatureUrl || "";
     const generatedAgreementUrl = booking?.agreementPdfUrl || "";
+    const agreementPricing = resolveVariantPricing({
+      roomPrices: bookingPg?.roomPrices,
+      roomType: booking?.roomType || agreement?.roomType || "",
+      variantLabel: booking?.variantLabel || agreement?.variantLabel || "",
+      fallbackRent: Number(agreement?.rentAmount || booking?.rentAmount || booking?.bookingAmount || bookingPg?.price || 0),
+      fallbackDeposit: Number(agreement?.securityDeposit || booking?.securityDeposit || bookingPg?.securityDeposit || 0)
+    });
 
     if (!agreement) {
       return res.status(200).json({
@@ -512,7 +562,7 @@ const getMyAgreement = async (req, res) => {
           pgName: booking?.pgName || bookingPg?.pgName || "",
           roomNo: "",
           tenantName: req.user?.fullName || "",
-          rentAmount: Number(booking?.rentAmount || booking?.bookingAmount || 0) || null,
+          rentAmount: Number(agreementPricing.rentAmount || booking?.rentAmount || booking?.bookingAmount || 0) || null,
           securityDeposit: Number(booking?.securityDeposit || 0) || null,
           agreementId: "",
           bookingId: booking?.bookingId || "",
@@ -523,12 +573,28 @@ const getMyAgreement = async (req, res) => {
           isLongTerm: String(booking?.checkOutDate || "").toLowerCase() === "long term",
           fileUrl: generatedAgreementUrl || "",
           ownerSignatureUrl: "",
-          status: booking?.status === "Confirmed"
+          signatureVerified: hasUploadedSignedAgreement,
+          status: hasUploadedSignedAgreement
+            ? "Signature Verified"
+            : booking?.status === "Confirmed"
             ? (booking?.isPaid ? "Awaiting Agreement Signature" : "Awaiting Payment")
             : (booking?.ownerApproved ? "Awaiting Payment" : "Pending Approval")
         },
         message: "No agreement available yet. It will appear after booking confirmation."
       });
+    }
+
+    const resolvedOwnerSignatureUrl = agreement.ownerSignatureUrl || ownerTemplateSignatureUrl || "";
+    const resolvedSigned = Boolean(agreement.signed || resolvedOwnerSignatureUrl || hasUploadedSignedAgreement);
+    if (!agreement.signed && resolvedSigned) {
+      agreement.signed = true;
+      if (!agreement.ownerSignatureUrl && ownerTemplateSignatureUrl) {
+        agreement.ownerSignatureUrl = ownerTemplateSignatureUrl;
+      }
+      await agreement.save();
+    } else if (!agreement.ownerSignatureUrl && ownerTemplateSignatureUrl) {
+      agreement.ownerSignatureUrl = ownerTemplateSignatureUrl;
+      await agreement.save();
     }
 
     res.status(200).json({
@@ -537,7 +603,7 @@ const getMyAgreement = async (req, res) => {
         pgName: agreement.pgName || "N/A",
         roomNo: agreement.roomNo || "N/A",
         tenantName: agreement.tenantName || "N/A",
-        rentAmount: agreement.rentAmount,
+        rentAmount: Number(agreementPricing.rentAmount || agreement.rentAmount || 0),
         securityDeposit: agreement.securityDeposit,
         agreementId: agreement.agreementId,
         bookingId: agreement.bookingId,
@@ -547,8 +613,9 @@ const getMyAgreement = async (req, res) => {
         checkOutDate: agreement.checkOutDate || agreement.endDate,
         isLongTerm: agreement.isLongTerm || String(agreement.endDate || "").toLowerCase() === "long term",
         fileUrl: generatedAgreementUrl || agreement.fileUrl || "",
-        ownerSignatureUrl: agreement.ownerSignatureUrl || "",
-        status: agreement.signed ? "Active" : "Pending Signature"
+        ownerSignatureUrl: resolvedOwnerSignatureUrl,
+        signatureVerified: resolvedSigned,
+        status: resolvedSigned ? "Signature Verified" : "Pending Signature"
       }
     });
   } catch (error) {
@@ -726,69 +793,136 @@ const getMyOwnerContact = async (req, res) => {
 const getMyTimeline = async (req, res) => {
   try {
     const userId = req.user._id;
+    const now = new Date();
+    const firstMonth = new Date(now.getFullYear(), now.getMonth() - 4, 1);
+    const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
 
-    // 1. Fetch real Check-In history for this user
-    const checkIns = await CheckIn.find({ userId }).sort({ checkInDate: -1 }).limit(10);
-
-    // 2. Fetch real Payment history (if you have a Payment model)
-    // Note: If you don't have a Payment model yet, this part can remain empty for now
-    let payments = [];
-    try {
-      const Payment = mongoose.model("Payment"); // Dynamic check
-      const rawPayments = await Payment.find({
+    const [checkIns, rawPayments, checkInsForChart, paymentsForChart] = await Promise.all([
+      CheckIn.find({ userId })
+        .sort({ checkInDate: -1 })
+        .limit(20)
+        .select("_id checkInDate status"),
+      Payment.find({
         user: userId,
         paymentStatus: { $in: ["Success", "Paid", "PAID"] }
       })
         .sort({ paymentDate: -1 })
-        .limit(20);
+        .limit(50)
+        .select("_id paymentDate amountPaid month"),
+      CheckIn.find({
+        userId,
+        checkInDate: { $gte: firstMonth, $lt: nextMonth }
+      }).select("checkInDate"),
+      Payment.find({
+        user: userId,
+        paymentStatus: { $in: ["Success", "Paid", "PAID"] },
+        paymentDate: { $gte: firstMonth, $lt: nextMonth }
+      }).select("paymentDate")
+    ]);
 
-      // Keep only the latest payment per month to remove stale duplicate legacy entries.
-      const latestByMonth = new Map();
-      rawPayments.forEach((payment) => {
-        const monthKey = payment.month || new Date(payment.paymentDate).toLocaleString("en-US", { month: "short", year: "numeric" });
-        if (!latestByMonth.has(monthKey)) {
-          latestByMonth.set(monthKey, payment);
-        }
+    const latestPaymentByMonth = new Map();
+    rawPayments.forEach((payment) => {
+      const monthKey =
+        payment.month ||
+        new Date(payment.paymentDate).toLocaleString("en-US", { month: "short", year: "numeric" });
+      if (!latestPaymentByMonth.has(monthKey)) {
+        latestPaymentByMonth.set(monthKey, payment);
+      }
+    });
+    const payments = Array.from(latestPaymentByMonth.values())
+      .sort((a, b) => new Date(b.paymentDate) - new Date(a.paymentDate))
+      .slice(0, 5);
+    const pricingBooking = await getLatestTenantBookingForUser(
+      userId,
+      req.user?.email || "",
+      req.user?.fullName || ""
+    );
+    let timelineRentAmount = 0;
+    if (pricingBooking) {
+      const linkedPg = pricingBooking.pgId
+        ? await PG.findById(pricingBooking.pgId).select("price securityDeposit roomPrices")
+        : pricingBooking.pgName
+          ? await PG.findOne({ pgName: pricingBooking.pgName }).select("price securityDeposit roomPrices")
+          : null;
+      const pricing = resolveVariantPricing({
+        roomPrices: linkedPg?.roomPrices,
+        roomType: pricingBooking.roomType || pricingBooking.variantLabel || "",
+        variantLabel: pricingBooking.variantLabel || "",
+        fallbackRent: Number(pricingBooking.rentAmount || pricingBooking.bookingAmount || linkedPg?.price || 0),
+        fallbackDeposit: Number(pricingBooking.securityDeposit || linkedPg?.securityDeposit || 0)
       });
-      payments = Array.from(latestByMonth.values())
-        .sort((a, b) => new Date(b.paymentDate) - new Date(a.paymentDate))
-        .slice(0, 5);
-    } catch (e) {
-      console.log("Payment model not found, skipping payment events");
+      timelineRentAmount = Number(
+        pricing.rentAmount ||
+          pricingBooking.rentAmount ||
+          pricingBooking.bookingAmount ||
+          linkedPg?.price ||
+          0
+      );
     }
 
-    // 3. Construct Key Events from DB records
     const keyEvents = [
-      ...checkIns.map(ci => ({
+      ...checkIns.map((ci) => ({
         id: ci._id,
         title: ci.status === "Present" ? "Checked In" : "Checked Out",
         type: ci.status === "Present" ? "checkin" : "checkout",
-        date: new Date(ci.checkInDate).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }),
+        date: ci.checkInDate,
         status: ci.status
       })),
-      ...payments.map(p => ({
+      ...payments.map((p) => ({
         id: p._id,
-        title: `Rent Paid: ?${p.amountPaid}`,
+        title: `Rent Paid: INR ${Number(timelineRentAmount || p.amountPaid || 0).toLocaleString("en-IN")}`,
         type: "payment",
-        date: new Date(p.paymentDate).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }),
+        date: p.paymentDate,
         status: "Paid"
       }))
-    ].sort((a, b) => new Date(b.date) - new Date(a.date)); // Sort newest first
+    ]
+      .sort((a, b) => new Date(b.date) - new Date(a.date))
+      .slice(0, 10);
 
-    // 4. Monthly Activity Chart Data (Aggregated from real counts)
-    // For now, we'll keep the structure but we can eventually aggregate this properly
+    const monthKeys = [];
+    const monthLabels = [];
+    for (let i = 0; i < 5; i += 1) {
+      const date = new Date(firstMonth.getFullYear(), firstMonth.getMonth() + i, 1);
+      monthKeys.push(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`);
+      monthLabels.push(date.toLocaleString("en-US", { month: "short" }));
+    }
+
+    const checkInBuckets = monthKeys.reduce((acc, key) => {
+      acc[key] = 0;
+      return acc;
+    }, {});
+    const paymentBuckets = monthKeys.reduce((acc, key) => {
+      acc[key] = 0;
+      return acc;
+    }, {});
+
+    checkInsForChart.forEach((ci) => {
+      const d = new Date(ci.checkInDate);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      if (Object.prototype.hasOwnProperty.call(checkInBuckets, key)) {
+        checkInBuckets[key] += 1;
+      }
+    });
+    paymentsForChart.forEach((p) => {
+      const d = new Date(p.paymentDate);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      if (Object.prototype.hasOwnProperty.call(paymentBuckets, key)) {
+        paymentBuckets[key] += 1;
+      }
+    });
+
     const chartData = {
-      months: ["Jan", "Feb", "Mar", "Apr", "May"],
-      checkins: [checkIns.length, 18, 22, 19, 21], // Using real count for current month
-      payments: [payments.length, 3, 4, 3, 3]       // Using real count for current month
+      months: monthLabels,
+      checkins: monthKeys.map((key) => checkInBuckets[key]),
+      payments: monthKeys.map((key) => paymentBuckets[key])
     };
 
     res.status(200).json({
       success: true,
       data: {
-        keyEvents: keyEvents.length > 0 ? keyEvents : [
-          { id: "empty", title: "No Activities Found", type: "info", date: "Today", status: "New" }
-        ],
+        keyEvents: keyEvents.length > 0
+          ? keyEvents
+          : [{ id: "empty", title: "No Activities Found", type: "info", date: new Date(), status: "New" }],
         chartData
       }
     });
@@ -828,7 +962,7 @@ const downloadTenantReport = async (req, res) => {
         ].filter(Boolean)
       })
         .sort({ createdAt: -1 })
-        .select("_id checkInDate status isPaid")
+        .select("_id pgId pgName roomType variantLabel rentAmount bookingAmount checkInDate status isPaid")
     ]);
 
     const latestPaymentByMonth = new Map();
@@ -840,6 +974,28 @@ const downloadTenantReport = async (req, res) => {
     });
     const payments = Array.from(latestPaymentByMonth.values())
       .sort((a, b) => new Date(b.paymentDate) - new Date(a.paymentDate));
+    let timelineRentAmount = 0;
+    if (latestBooking) {
+      const linkedPg = latestBooking.pgId
+        ? await PG.findById(latestBooking.pgId).select("price securityDeposit roomPrices")
+        : latestBooking.pgName
+          ? await PG.findOne({ pgName: latestBooking.pgName }).select("price securityDeposit roomPrices")
+          : null;
+      const pricing = resolveVariantPricing({
+        roomPrices: linkedPg?.roomPrices,
+        roomType: latestBooking.roomType || latestBooking.variantLabel || "",
+        variantLabel: latestBooking.variantLabel || "",
+        fallbackRent: Number(latestBooking.rentAmount || latestBooking.bookingAmount || linkedPg?.price || 0),
+        fallbackDeposit: Number(latestBooking.securityDeposit || linkedPg?.securityDeposit || 0)
+      });
+      timelineRentAmount = Number(
+        pricing.rentAmount ||
+          latestBooking.rentAmount ||
+          latestBooking.bookingAmount ||
+          linkedPg?.price ||
+          0
+      );
+    }
 
     const checkInEvents = checkIns.map((ci) => {
       const eventDate = new Date(ci.checkInDate);
@@ -853,7 +1009,7 @@ const downloadTenantReport = async (req, res) => {
 
     const paymentEvents = payments.map((p) => {
       const eventDate = new Date(p.paymentDate);
-      const amount = Number(p.amountPaid || 0);
+      const amount = Number(timelineRentAmount || p.amountPaid || 0);
       return {
         eventDate,
         date: eventDate.toLocaleDateString("en-GB"),

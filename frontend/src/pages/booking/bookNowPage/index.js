@@ -262,6 +262,17 @@ const BookingPage = () => {
           Swal.fire({ icon: 'success', title: 'Request Sent!', text: 'Owner notified. You will be able to pay once approved.', confirmButtonColor: "#D97706" })
             .then(() => navigate(`/confirmBook/${activePg._id}`, { state: { bookingData: created } }));
         } else {
+          setIsSubmitted(false);
+          if (res.status === 409) {
+            const existingPg = body?.data?.pgName ? ` (${body.data.pgName})` : "";
+            Swal.fire({
+              icon: 'warning',
+              title: 'Booking Already Exists',
+              text: body?.message || `You already have an active booking${existingPg}.`,
+              confirmButtonColor: "#D97706"
+            });
+            return;
+          }
           throw new Error(body.message || 'Booking request failed');
         }
       } catch (err) {

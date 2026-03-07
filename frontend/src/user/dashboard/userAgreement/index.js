@@ -11,6 +11,11 @@ const Agreements = () => {
   const [agreementInfo, setAgreementInfo] = useState(null);
   const [loading, setLoading] = useState(true);
   const apiBaseUrl = (process.env.REACT_APP_API_URL || "http://localhost:5000").replace(/\/+$/, "");
+  const hasSignatureForThisPg = Boolean(agreementInfo?.signatureVerified || agreementInfo?.ownerSignatureUrl);
+  const agreementHeaderText = hasSignatureForThisPg
+    ? "Verified Legal Document - Signature Verified"
+    : "Verified Legal Document";
+  const agreementBadgeText = hasSignatureForThisPg ? "Signature Verified" : "Signature Awaited";
 
   useEffect(() => {
     const fetchAgreement = async () => {
@@ -112,14 +117,16 @@ const Agreements = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-1">
         <div>
           <h2 className=" font-bold text-textPrimary"> Digital Agreement </h2>
-          <h3 className=" text-primary "> Verified Legal Document • E-Signed </h3>
+          <h3 className=" text-primary ">
+            {agreementHeaderText}
+          </h3>
         </div>
         <div className={`self-start md:self-center px-4 py-2 rounded-md text-xs font-bold border ${
-          agreementInfo?.status === 'Active' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-orange-50 text-[#D97706] border-orange-200'
+          hasSignatureForThisPg ? 'bg-green-50 text-green-700 border-green-200' : 'bg-orange-50 text-[#D97706] border-orange-200'
         }`}>
           <span className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-md bg-current animate-pulse"></span>
-            {agreementInfo?.status || "Pending"}
+            {agreementBadgeText}
           </span>
         </div>
       </div>
@@ -168,3 +175,4 @@ const Info = ({ label, value }) => {
 };
 
 export default Agreements;
+

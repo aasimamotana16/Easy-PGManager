@@ -5,6 +5,7 @@ import Navbar from "../../components/navbar";
 import Footer from "../../components/footer";
 import Loader from "../../components/loader";
 import { motion, AnimatePresence } from "framer-motion"; 
+import Swal from "sweetalert2";
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -616,6 +617,51 @@ const PGDetails = () => {
     }
   };
 
+  const handleBookNow = async () => {
+    const selectedRoom =
+      selectedRoomIdx >= 0 && filteredRooms[selectedRoomIdx]
+        ? filteredRooms[selectedRoomIdx]
+        : null;
+
+    if (!isLoggedIn) {
+      navigate(`/book/${pg._id}`, { state: { selectedRoom } });
+      return;
+    }
+
+    try {
+      const api = await import("../../api/api");
+      const res = await api.getBookings();
+      const rows = Array.isArray(res?.data?.bookings)
+        ? res.data.bookings
+        : Array.isArray(res?.data?.data)
+          ? res.data.data
+          : [];
+
+      const existingBooking = rows.find((b) => String(b?.status || "").toLowerCase() !== "cancelled");
+      if (existingBooking) {
+        const existingPg = String(existingBooking?.pgName || "another PG").trim();
+        const existingId = existingBooking?.bookingId || existingBooking?._id || "";
+        Swal.fire({
+          icon: "warning",
+          title: "Booking Already Exists",
+          text: `You already have a booking in ${existingPg}${existingId ? ` (${existingId})` : ""}. Please cancel/complete it before booking another PG.`,
+          confirmButtonColor: "#D97706"
+        });
+        return;
+      }
+
+      navigate(`/book/${pg._id}`, { state: { selectedRoom } });
+    } catch (error) {
+      console.error("Book now pre-check failed:", error);
+      Swal.fire({
+        icon: "error",
+        title: "Unable to Verify Booking",
+        text: "Could not verify your booking status right now. Please try again.",
+        confirmButtonColor: "#D97706"
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background text-textPrimary">
       {!isOwnerPreviewRoute && <Navbar />}
@@ -745,13 +791,7 @@ const PGDetails = () => {
                 </div>
                 {!isOwnerPreviewRoute && role !== "owner" && (
                   <button 
-                    onClick={() => navigate(`/book/${pg._id}`, {
-                      state: {
-                        selectedRoom: selectedRoomIdx >= 0 && filteredRooms[selectedRoomIdx]
-                          ? filteredRooms[selectedRoomIdx]
-                          : null
-                      }
-                    })}
+                    onClick={handleBookNow}
                     className="px-10 py-4 bg-primary text-white font-bold uppercase text-xl rounded shadow-lg hover:bg-primaryDark transition-all"
                   >
                     Book Now

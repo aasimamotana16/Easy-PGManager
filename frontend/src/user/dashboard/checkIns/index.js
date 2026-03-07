@@ -51,7 +51,10 @@ const CheckIns = () => {
       const booking = data.currentBooking || {};
       const nextPayment = data.nextPayment || {};
       const bookingStatus = String(booking.status || "").toLowerCase();
-      const bookingPaid = Boolean(booking.isPaid);
+      const bookingPaid = Boolean(
+        booking.moveInDuesPaid ||
+        (booking.initialRentPaid && booking.securityDepositPaid)
+      );
       const moveInApproved = Boolean(booking.hasApprovedMoveIn);
 
       const derivedRent = Number(nextPayment.amount || booking.monthlyRent || 0);
@@ -109,7 +112,7 @@ const CheckIns = () => {
 
     const result = await Swal.fire({
       title: 'Complete Your Move-In',
-      html: `You need to pay the first month's rent of <b>₹${rentAmount}</b> to activate your stay.<br><br><small>You will be redirected to the secure payment page.</small>`,
+      html: `You need to clear move-in dues of <b>Rs. ${rentAmount}</b> (rent/deposit as applicable) to activate your stay.<br><br><small>You will be redirected to the secure payment page.</small>`,
       icon: 'info',
       showCancelButton: true,
       confirmButtonColor: '#D97706', // primary
@@ -290,14 +293,14 @@ const CheckIns = () => {
                 ? (hasApprovedMoveIn
                     ? "Move-In approved by owner."
                     : "Payment completed. Waiting for owner move-in approval.")
-                : "Your room is reserved. Please pay the first month's rent to enable Move-In and notify the owner."}
+                : "Your room is reserved. Please pay move-in dues to enable Move-In and notify the owner."}
             </p>
             <CButton
               onClick={handleMoveIn}
               disabled={disableMoveInPay}
               className={`max-w-md w-full py-4 text-lg font-bold shadow-md ${disableMoveInPay ? "bg-gray-400 hover:bg-gray-400 border-gray-400" : ""}`}
             >
-              {hasPaidFirstRent ? "Payment Completed" : "Pay Rent & Move-In"}
+              Pay Rent & Move-In
             </CButton>
             {hasPaidFirstRent && !hasApprovedMoveIn && (
               <CButton
