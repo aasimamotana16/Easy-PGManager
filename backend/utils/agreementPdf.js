@@ -436,7 +436,7 @@ const generateAgreementPdf = async (bookingId) => {
   };
 };
 
-const generateAgreementPreviewPdfByPgId = async (pgId) => {
+const generateAgreementPreviewPdfByPgId = async (pgId, options = {}) => {
   const pgDoc = await Pg.findById(pgId).lean();
   if (!pgDoc) {
     throw new Error("PG not found for agreement preview");
@@ -445,10 +445,12 @@ const generateAgreementPreviewPdfByPgId = async (pgId) => {
   const owner = pgDoc?.ownerId ? await User.findById(pgDoc.ownerId).select("fullName").lean() : null;
   const agreementSettings = await getAgreementSettingsFromAdminConfig();
 
+  const requestedRoomType = String(options?.roomType || "").trim();
+  const requestedVariantLabel = String(options?.variantLabel || "").trim();
   const previewPricing = resolveVariantPricing({
     roomPrices: pgDoc?.roomPrices,
-    roomType: pgDoc?.occupancy || "Single",
-    variantLabel: "",
+    roomType: requestedRoomType || pgDoc?.occupancy || "Single",
+    variantLabel: requestedVariantLabel,
     fallbackRent: Number(pgDoc?.price || 0),
     fallbackDeposit: Number(pgDoc?.securityDeposit || 0)
   });
@@ -472,7 +474,7 @@ const generateAgreementPreviewPdfByPgId = async (pgId) => {
   const curfew = String(pgDoc?.rules?.curfew || "").trim();
   if (curfew) rules.push(`Gate Closing Time: ${curfew}`);
 
-  const roomTypeLabel = String(previewPricing.variantLabel || pgDoc?.occupancy || "Not specified");
+  const roomTypeLabel = String(previewPricing.variantLabel || requestedRoomType || pgDoc?.occupancy || "Not specified");
   const acTypeLabel = String(previewPricing.acType || "Not specified");
   const rentAmount = Number(previewPricing.rentAmount || pgDoc?.price || 0);
   const securityDeposit = Number(previewPricing.securityDeposit || pgDoc?.securityDeposit || 0);

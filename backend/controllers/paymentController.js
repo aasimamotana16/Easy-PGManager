@@ -59,11 +59,11 @@ const addMonths = (dateInput, months) => {
 
 const deriveSecurityDepositAmount = (monthlyRent, configuredDeposit) => {
   const explicitDeposit = Number(configuredDeposit);
-  if (Number.isFinite(explicitDeposit) && explicitDeposit >= 0) {
+  if (Number.isFinite(explicitDeposit) && explicitDeposit > 0) {
     return explicitDeposit;
   }
   const rent = Math.max(0, Number(monthlyRent) || 0);
-  return rent > 0 ? 0 : 0;
+  return rent > 0 ? Math.max(0, rent * 2) : 0;
 };
 
 const getNextCycleDueDate = (anchorDateInput) => {

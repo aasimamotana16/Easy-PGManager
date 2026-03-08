@@ -20,6 +20,8 @@ const CheckIns = () => {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [currentBooking, setCurrentBooking] = useState(null);
+  const [systemState, setSystemState] = useState("INACTIVE");
   
   // States for Stay Management
   // Possible statuses: "Reserved" (only deposit paid), "PendingConfirmation" (rent paid, waiting for owner), "Active"
@@ -28,7 +30,16 @@ const CheckIns = () => {
   const [rentAmount, setRentAmount] = useState(0);
   const [hasPaidFirstRent, setHasPaidFirstRent] = useState(false);
   const [hasApprovedMoveIn, setHasApprovedMoveIn] = useState(false);
+  const [hasRequestedMoveIn, setHasRequestedMoveIn] = useState(false);
+  const [securityDepositAmount, setSecurityDepositAmount] = useState(0);
+  const [checkInDate, setCheckInDate] = useState(null);
+  const [lastPaymentDate, setLastPaymentDate] = useState(null);
   const authToken = localStorage.getItem("userToken");
+
+  const hasActiveBooking = Boolean(
+    currentBooking &&
+    (currentBooking._id || currentBooking.bookingDbId || currentBooking.bookingId || currentBooking.pgId)
+  );
 
   const canRequestMoveOut = hasPaidFirstRent && hasApprovedMoveIn;
   const disableMoveInPay = hasPaidFirstRent || !Number.isFinite(Number(rentAmount)) || Number(rentAmount) <= 0;
@@ -39,6 +50,37 @@ const CheckIns = () => {
       fetchStayDetails();
     }
   }, [authToken]);
+
+  const formatInr = (value) => {
+    const n = Number(value || 0);
+    return `₹${Number.isFinite(n) ? n.toLocaleString("en-IN") : "0"}`;
+  };
+
+  const deriveSystemState = (bookingLike) => {
+    const booking = bookingLike || {};
+    const isMoveInApproved = Boolean(booking.hasApprovedMoveIn);
+    const isDepositPaid = Boolean(booking.securityDepositPaid);
+    const isRentPaid = Boolean(booking.initialRentPaid);
+    const requestedMoveIn = Boolean(booking.hasRequestedMoveIn);
+
+    const checkIn = booking.checkInDate ? new Date(booking.checkInDate) : null;
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const checkInStart = checkIn && !Number.isNaN(checkIn.getTime()) ? new Date(checkIn) : null;
+    if (checkInStart) checkInStart.setHours(0, 0, 0, 0);
+
+    const isNoShow =
+      Boolean(checkInStart) &&
+      todayStart.getTime() > checkInStart.getTime() &&
+      !isMoveInApproved &&
+      !requestedMoveIn;
+
+    if (isMoveInApproved) return "ACTIVE_STAY";
+    if (isNoShow) return "NO_SHOW";
+    if (isDepositPaid && isRentPaid) return "MOVE_IN_PENDING";
+    if (isDepositPaid && !isRentPaid) return "RESERVED";
+    return "INACTIVE";
+  };
 
   const fetchStayDetails = async () => {
     try {
@@ -57,10 +99,18 @@ const CheckIns = () => {
       );
       const moveInApproved = Boolean(booking.hasApprovedMoveIn);
 
+      setCurrentBooking(booking);
+      setHasRequestedMoveIn(Boolean(booking.hasRequestedMoveIn));
+      setSecurityDepositAmount(Number(booking.securityDepositAmount || 0));
+      setCheckInDate(booking.checkInDate ? new Date(booking.checkInDate) : null);
+      setLastPaymentDate(booking.lastPaymentDate ? new Date(booking.lastPaymentDate) : null);
+
       const derivedRent = Number(nextPayment.amount || booking.monthlyRent || 0);
       setRentAmount(derivedRent);
       setHasPaidFirstRent(bookingPaid);
       setHasApprovedMoveIn(moveInApproved);
+
+      setSystemState(deriveSystemState(booking));
 
       if (bookingStatus === "active") {
         setStayStatus("Active");
@@ -80,6 +130,129 @@ const CheckIns = () => {
       }
     } catch (error) {
       console.error("Stay details fetch error:", error);
+    }
+  };
+
+  const requestCancel = async (reasonLabel) => {
+    const bookingLike = currentBooking || {};
+    const identifier = bookingLike.bookingDbId || bookingLike.pgId;
+    if (!identifier) {
+      Swal.fire({
+        title: "No Active Booking",
+        text: "Could not find an active booking to cancel.",
+        icon: "info",
+        confirmButtonColor: "#D97706"
+      });
+      return;
+    }
+
+    try {
+      const resp = await axios.put(
+        `http://localhost:5000/api/bookings/${identifier}/request-cancel`,
+        { reason: reasonLabel, otherReason: "" },
+        { headers: { Authorization: `Bearer ${authToken}` } }
+      );
+
+      if (resp.data?.success) {
+        Swal.fire({
+          title: "Cancellation Requested",
+          text: "Your cancellation request has been sent to the owner for approval.",
+          icon: "success",
+          confirmButtonColor: "#D97706"
+        });
+        fetchStayDetails();
+      } else {
+        Swal.fire({
+          title: "Error",
+          text: resp.data?.message || "Failed to request cancellation.",
+          icon: "error",
+          confirmButtonColor: "#D97706"
+        });
+      }
+    } catch (error) {
+      Swal.fire({
+        title: "Error",
+        text: error.response?.data?.message || "Failed to request cancellation.",
+        icon: "error",
+        confirmButtonColor: "#D97706"
+      });
+    }
+  };
+
+  const handleCancelReservation = async () => {
+    const deposit = Math.max(0, Number(securityDepositAmount || 0));
+    const deduction = Math.min(deposit, 1000);
+    const refund = Math.max(0, deposit - deduction);
+
+    const result = await Swal.fire({
+      title: "Cancel Reservation?",
+      html: `
+        <div style="text-align:left; font-size: 14px; line-height: 1.6;">
+          <p><b>System state:</b> RESERVED</p>
+          <p>Deposit paid: <b>${formatInr(deposit)}</b></p>
+          <p>Reservation fee deduction: <b>${formatInr(deduction)}</b></p>
+          <hr style="border:0;border-top:1px solid #E5E0D9; margin: 10px 0;" />
+          <p>Refund (remaining deposit): <b>${formatInr(refund)}</b></p>
+          <small>Note: This shows the policy calculation; actual refunds depend on payment processing.</small>
+        </div>
+      `,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Cancel Reservation",
+      confirmButtonColor: "#D97706",
+      cancelButtonColor: "#4B4B4B",
+      reverseButtons: true
+    });
+
+    if (result.isConfirmed) {
+      await requestCancel("Cancel Reservation");
+    }
+  };
+
+  const handleCancelMoveIn = async () => {
+    const deposit = Math.max(0, Number(securityDepositAmount || 0));
+    const monthlyRent = Math.max(0, Number((currentBooking || {})?.monthlyRent || 0));
+    const dailyRent = monthlyRent / 30;
+
+    const lastPaid = lastPaymentDate && !Number.isNaN(lastPaymentDate.getTime()) ? lastPaymentDate : null;
+    const within24h = lastPaid ? (Date.now() - lastPaid.getTime()) <= (24 * 60 * 60 * 1000) : null;
+    const minDays = within24h === true ? 1 : 3;
+    const maxDays = within24h === true ? 2 : 5;
+
+    const minDeduction = Math.max(0, dailyRent * minDays);
+    const maxDeduction = Math.max(0, dailyRent * maxDays);
+    const minRefund = Math.max(0, deposit + monthlyRent - maxDeduction);
+    const maxRefund = Math.max(0, deposit + monthlyRent - minDeduction);
+
+    const ruleLabel = within24h === true
+      ? "Cancel within 24 hours"
+      : within24h === false
+        ? "Cancel after 24 hours (before move-in)"
+        : "Cancellation policy";
+
+    const result = await Swal.fire({
+      title: "Cancel Move-In?",
+      html: `
+        <div style="text-align:left; font-size: 14px; line-height: 1.6;">
+          <p><b>System state:</b> MOVE_IN_PENDING</p>
+          <p><b>Rule:</b> ${ruleLabel}</p>
+          <p>Deposit refund: <b>${formatInr(deposit)}</b></p>
+          <p>Rent deduction: <b>${formatInr(minDeduction)}</b> to <b>${formatInr(maxDeduction)}</b> (${minDays}–${maxDays} days)</p>
+          <hr style="border:0;border-top:1px solid #E5E0D9; margin: 10px 0;" />
+          <p>Estimated refund: <b>${formatInr(minRefund)}</b> to <b>${formatInr(maxRefund)}</b></p>
+          <small>Note: This shows the policy calculation; actual refunds depend on payment processing.</small>
+        </div>
+      `,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Cancel Move-In",
+      confirmButtonColor: "#D97706",
+      cancelButtonColor: "#4B4B4B",
+      reverseButtons: true
+    });
+
+    if (result.isConfirmed) {
+      await requestCancel("Cancel Move-In");
     }
   };
 
@@ -289,36 +462,110 @@ const CheckIns = () => {
             </div>
             <h2 className="text-xl font-bold uppercase tracking-tight">Activate Your Stay</h2>
             <p className="text-[#4B4B4B] mb-6 max-w-sm">
-              {hasPaidFirstRent
-                ? (hasApprovedMoveIn
-                    ? "Move-In approved by owner."
-                    : "Payment completed. Waiting for owner move-in approval.")
-                : "Your room is reserved. Please pay move-in dues to enable Move-In and notify the owner."}
+              {systemState === "ACTIVE_STAY"
+                ? "Move-In approved by owner."
+                : systemState === "MOVE_IN_PENDING"
+                  ? "Rent + deposit paid. Request move-in to proceed, or cancel move-in if needed."
+                  : systemState === "RESERVED"
+                    ? "Your room is reserved. Pay rent at move-in, or cancel reservation." 
+                    : systemState === "NO_SHOW"
+                      ? "No-show recorded (move-in not requested before check-in date)."
+                      : "No active stay found."}
             </p>
-            <CButton
-              onClick={handleMoveIn}
-              disabled={disableMoveInPay}
-              className={`max-w-md w-full py-4 text-lg font-bold shadow-md ${disableMoveInPay ? "bg-gray-400 hover:bg-gray-400 border-gray-400" : ""}`}
-            >
-              Pay Rent & Move-In
-            </CButton>
-            {hasPaidFirstRent && !hasApprovedMoveIn && (
-              <CButton
-                onClick={handleRequestMoveIn}
-                className="max-w-md w-full py-4 text-lg font-bold mt-3"
-              >
-                Request Move-In
-              </CButton>
-            )}
-            <CButton
-              onClick={handleMoveOut}
-              disabled={!canRequestMoveOut}
-              className={`max-w-md w-full py-4 text-lg font-bold mt-3 ${
-                !canRequestMoveOut ? "bg-gray-400 hover:bg-gray-400 border-gray-400 cursor-not-allowed" : ""
-              }`}
-            >
-              Request Move-Out
-            </CButton>
+
+            <div className="w-full max-w-4xl">
+              {/* Mobile: stacked. Desktop: aligned horizontally. */}
+              {systemState === "RESERVED" && (
+                <div className="flex flex-col sm:flex-row gap-3 w-full">
+                  <CButton
+                    onClick={handleMoveIn}
+                      disabled={disableMoveInPay || !hasActiveBooking}
+                      className={`w-full flex-1 py-4 lg:py-4 text-lg shadow-md ${(disableMoveInPay || !hasActiveBooking) ? "bg-gray-400 hover:bg-gray-400 border-gray-400" : ""}`}
+                  >
+                    Pay Rent & Move-In
+                  </CButton>
+                  <CButton
+                    onClick={handleCancelReservation}
+                      disabled={!hasActiveBooking}
+                      className={`w-full flex-1 py-4 lg:py-4 text-lg shadow-md ${!hasActiveBooking ? "bg-gray-400 hover:bg-gray-400 border-gray-400" : ""}`}
+                  >
+                    Cancel Reservation
+                  </CButton>
+                  <CButton
+                    onClick={handleMoveOut}
+                      disabled={!hasActiveBooking || !canRequestMoveOut}
+                    className={`w-full flex-1 py-4 lg:py-4 text-lg shadow-md ${
+                        (!hasActiveBooking || !canRequestMoveOut) ? "bg-gray-400 hover:bg-gray-400 border-gray-400 cursor-not-allowed" : ""
+                    }`}
+                  >
+                    Request Move-Out
+                  </CButton>
+                </div>
+              )}
+
+              {systemState === "MOVE_IN_PENDING" && (
+                <div className="flex flex-col sm:flex-row gap-3 w-full">
+                  <CButton
+                    onClick={handleRequestMoveIn}
+                    disabled={!hasActiveBooking}
+                    className={`w-full flex-1 py-4 lg:py-4 text-lg shadow-md ${!hasActiveBooking ? "bg-gray-400 hover:bg-gray-400 border-gray-400" : ""}`}
+                  >
+                    Request Move-In
+                  </CButton>
+                  <CButton
+                    onClick={handleCancelMoveIn}
+                    disabled={!hasActiveBooking}
+                    className={`w-full flex-1 py-4 lg:py-4 text-lg shadow-md ${!hasActiveBooking ? "bg-gray-400 hover:bg-gray-400 border-gray-400" : ""}`}
+                  >
+                    Cancel Move-In
+                  </CButton>
+                  <CButton
+                    onClick={handleMoveOut}
+                    disabled={!hasActiveBooking || !canRequestMoveOut}
+                    className={`w-full flex-1 py-4 lg:py-4 text-lg shadow-md ${
+                      (!hasActiveBooking || !canRequestMoveOut) ? "bg-gray-400 hover:bg-gray-400 border-gray-400 cursor-not-allowed" : ""
+                    }`}
+                  >
+                    Request Move-Out
+                  </CButton>
+                </div>
+              )}
+
+              {systemState !== "RESERVED" && systemState !== "MOVE_IN_PENDING" && systemState !== "ACTIVE_STAY" && (
+                <div className="flex flex-col sm:flex-row gap-3 w-full">
+                  <CButton
+                    onClick={handleMoveIn}
+                    disabled={disableMoveInPay || !hasActiveBooking}
+                    className={`w-full flex-1 py-4 lg:py-4 text-lg shadow-md ${(disableMoveInPay || !hasActiveBooking) ? "bg-gray-400 hover:bg-gray-400 border-gray-400" : ""}`}
+                  >
+                    Pay Rent & Move-In
+                  </CButton>
+                  <CButton
+                    onClick={handleMoveOut}
+                    disabled={!hasActiveBooking || !canRequestMoveOut}
+                    className={`w-full flex-1 py-4 lg:py-4 text-lg shadow-md ${
+                      (!hasActiveBooking || !canRequestMoveOut) ? "bg-gray-400 hover:bg-gray-400 border-gray-400 cursor-not-allowed" : ""
+                    }`}
+                  >
+                    Request Move-Out
+                  </CButton>
+                </div>
+              )}
+
+              {systemState === "ACTIVE_STAY" && (
+                <div className="flex flex-col sm:flex-row gap-3 w-full">
+                  <CButton
+                    onClick={handleMoveOut}
+                    disabled={!hasActiveBooking || !canRequestMoveOut}
+                    className={`w-full flex-1 py-4 lg:py-4 text-lg shadow-md ${
+                      (!hasActiveBooking || !canRequestMoveOut) ? "bg-gray-400 hover:bg-gray-400 border-gray-400 cursor-not-allowed" : ""
+                    }`}
+                  >
+                    Request Move-Out
+                  </CButton>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

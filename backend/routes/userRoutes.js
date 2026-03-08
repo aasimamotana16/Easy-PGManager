@@ -25,7 +25,8 @@ const {
     moveOut,
   requestExtension,
   createCheckIn,
-  verifySecurityAction 
+  verifySecurityAction,
+  deleteMyAccount 
 } = require("../controllers/userController");
 
 // Import the new profile controller functions
@@ -38,7 +39,7 @@ const {
   getPaymentProfile 
 } = require("../controllers/profileController");
 
-const { protect } = require("../middleware/authMiddleware");
+const { protect, isTenant } = require("../middleware/authMiddleware");
 const upload = require("../middleware/uploadMiddleware");
 
 /* =========================
@@ -102,5 +103,10 @@ router.put("/request-extension", protect, requestExtension);
     SECURITY
 ========================= */
 router.post("/verify-security", protect, verifySecurityAction);
+
+/* =========================
+  ACCOUNT
+========================= */
+router.delete("/delete-account", protect, isTenant, deleteMyAccount);
 
 module.exports = router;

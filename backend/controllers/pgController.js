@@ -382,7 +382,12 @@ exports.getPgById = async (req, res) => {
 
 exports.getPgAgreementPreview = async (req, res) => {
   try {
-    const result = await generateAgreementPreviewPdfByPgId(req.params.id);
+    const roomType = String(req.query?.roomType || "").trim();
+    const variantLabel = String(req.query?.variantLabel || "").trim();
+    const result = await generateAgreementPreviewPdfByPgId(req.params.id, {
+      roomType,
+      variantLabel
+    });
     return res.redirect(result.agreementPdfUrl);
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });

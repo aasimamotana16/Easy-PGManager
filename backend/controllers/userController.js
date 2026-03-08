@@ -14,6 +14,8 @@ const PendingPayment = require("../models/pendingPaymentModel");
 const Booking = require("../models/bookingModel");
 const Payment = require("../models/paymentModel");
 const ExtensionRequest = require("../models/extensionRequestModel");
+const Review = require("../models/reviewModel");
+const SupportTicket = require("../models/supportTicketModel");
 const fs = require('fs');
 const path = require('path');
 const { validateMoveIn } = require("../utils/leaseUtils");
@@ -90,6 +92,89 @@ const pickRelevantPendingPayment = (payments = []) => {
 // @desc Generate Custom CAPTCHA (Function kept but logic cleared to avoid errors)
 const generateCaptcha = async (req, res) => {
   res.status(200).json({ success: true, message: "Puzzle CAPTCHA enabled on frontend" });
+};
+
+// @desc Delete my account (tenant/user) only if no active bookings exist
+const deleteMyAccount = async (req, res) => {
+  try {
+    const userId = req.user?._id;
+    if (!userId) return res.status(401).json({ success: false, message: "Not authorized" });
+
+    const role = String(req.user?.role || "").toLowerCase();
+    if (!(role === "tenant" || role === "user")) {
+      return res.status(403).json({ success: false, message: "Access denied" });
+    }
+
+    const userDoc = await User.findById(userId)
+      .select("email role +profilePicture +idDocument +aadharCard +rentalAgreementCopy");
+    if (!userDoc) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    const email = String(userDoc.email || "").trim();
+    const emailRegex = email ? new RegExp(`^${email.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i") : null;
+
+    const anyBookingExists = await Booking.exists({
+      $or: [
+        { tenantUserId: userId },
+        ...(emailRegex ? [{ tenantEmail: emailRegex }] : [])
+      ]
+    });
+
+    if (anyBookingExists) {
+      return res.status(409).json({
+        success: false,
+        message: "You cannot delete your account because you have booking history."
+      });
+    }
+
+    // Best-effort cleanup of uploaded user files.
+    const fileUrls = [
+      userDoc?.profilePicture,
+      userDoc?.idDocument?.fileUrl,
+      userDoc?.aadharCard?.fileUrl,
+      userDoc?.rentalAgreementCopy?.fileUrl
+    ].filter(Boolean);
+
+    for (const url of fileUrls) {
+      try {
+        const rel = String(url).startsWith("/uploads/") ? url : (String(url).startsWith("uploads/") ? `/${url}` : "");
+        if (!rel) continue;
+        const abs = path.join(__dirname, "..", rel);
+        if (fs.existsSync(abs)) fs.unlinkSync(abs);
+      } catch (_) {
+        // ignore file deletion errors
+      }
+    }
+
+    await Promise.all([
+      Profile.deleteOne({ userId }),
+      Agreement.deleteMany({ userId }),
+      Review.deleteMany({ $or: [{ userId }, ...(emailRegex ? [{ userEmail: emailRegex }] : [])] }),
+      Payment.deleteMany({ user: userId }),
+      PendingPayment.deleteMany({ tenant: userId }),
+      Booking.deleteMany({ $or: [{ tenantUserId: userId }, ...(emailRegex ? [{ tenantEmail: emailRegex }] : [])] }),
+      CheckIn.deleteMany({ userId }),
+      Timeline.deleteMany({ userId }),
+      ExtensionRequest.deleteMany({ $or: [{ tenantId: userId }, { ownerId: userId }] }),
+      Tenant.deleteMany(emailRegex ? { email: emailRegex } : { _id: null }),
+      SupportTicket.deleteMany(emailRegex ? { emailAddress: emailRegex } : { _id: null }),
+    ]);
+
+    await User.findByIdAndDelete(userId);
+
+    try {
+      res.clearCookie("userToken");
+      res.clearCookie("token");
+    } catch (_) {
+      // ignore cookie clearing errors
+    }
+
+    return res.status(200).json({ success: true, message: "Account deleted successfully" });
+  } catch (error) {
+    console.error("deleteMyAccount error:", error);
+    return res.status(500).json({ success: false, message: "Failed to delete account" });
+  }
 };
 
 // @desc Register new user
@@ -197,6 +282,9 @@ const getUserDashboard = async (req, res) => {
     const approvedMoveIn = await CheckIn.findOne({ userId: user._id, status: "Present" })
       .sort({ checkInDate: -1 })
       .select("_id");
+    const pendingMoveIn = await CheckIn.findOne({ userId: user._id, status: "Pending" })
+      .sort({ checkInDate: -1 })
+      .select("_id");
     const activeTenantRecord = await Tenant.findOne({
       status: "Active",
       $or: [
@@ -205,6 +293,7 @@ const getUserDashboard = async (req, res) => {
       ]
     }).select("_id");
     const hasApprovedMoveIn = Boolean(approvedMoveIn?._id || activeTenantRecord?._id);
+    const hasRequestedMoveIn = Boolean(pendingMoveIn?._id);
     const pendingPaymentsRaw = await PendingPayment.find({
       status: { $in: ["Pending", "Overdue"] },
       $or: [{ tenant: user._id }, { tenantName: user.fullName }]
@@ -216,6 +305,28 @@ const getUserDashboard = async (req, res) => {
     })
       .sort({ paymentDate: -1 })
       .select("month amountPaid paymentStatus paymentDate _id");
+
+    const lastBookingPayment = booking
+      ? await Payment.findOne({
+          paymentStatus: { $in: ["Success", "Paid", "PAID"] },
+          $and: [
+            {
+              $or: [
+                { user: user._id },
+                booking?.tenantName ? { tenantName: booking.tenantName } : null
+              ].filter(Boolean)
+            },
+            {
+              $or: [
+                booking?.pgId ? { pgId: booking.pgId } : null,
+                booking?.pgName ? { pgName: booking.pgName } : null
+              ].filter(Boolean)
+            }
+          ]
+        })
+          .sort({ paymentDate: -1 })
+          .select("paymentDate")
+      : null;
     const latestByMonth = new Map();
     recentPaymentsRaw.forEach((payment) => {
       const monthKey =
@@ -296,6 +407,8 @@ const getUserDashboard = async (req, res) => {
       fullName: user.fullName || user.name, 
       profileCompletion: user.profileCompletion || 0,
       currentBooking: {
+        bookingDbId: booking?._id || null,
+        bookingId: booking?.bookingId || null,
         pgId: booking?.pgId || user.assignedPg || null,
         pgName: booking?.pgName || user.bookedPgName || "No PG Booked",
         roomNo: latestAgreement?.roomNo || user.roomNo || "N/A",
@@ -305,9 +418,13 @@ const getUserDashboard = async (req, res) => {
         isPaid: Boolean(booking?.isPaid),
         initialRentPaid,
         securityDepositPaid,
+        securityDepositAmount,
         moveInDuesPaid,
         ownerApproved: Boolean(booking?.ownerApproved),
         hasApprovedMoveIn: hasApprovedMoveIn,
+        hasRequestedMoveIn,
+        checkInDate: booking?.checkInDate || null,
+        lastPaymentDate: lastBookingPayment?.paymentDate || null,
         bookingState: booking?.status || "Pending",
       },
       nextPayment: {
@@ -1758,6 +1875,7 @@ module.exports = {
   createCheckIn,
   generateCaptcha,
   verifySecurityAction, 
+  deleteMyAccount,
   submitSupportTicket,
   moveIn,
   moveOut,

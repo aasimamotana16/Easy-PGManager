@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Swal from "sweetalert2";
+import { useNavigate } from "react-router-dom";
 import { 
   FaUserEdit, FaCamera, FaTrash, FaCheckCircle, 
   FaUserShield, FaUserAlt, FaBriefcase, FaWallet, FaCreditCard 
@@ -20,9 +21,11 @@ import {
   updateProfilePicture,
   removeProfilePicture,
   updateUserProfile,
+  deleteMyAccount,
 } from "../../../api/api";
 
 const Profile = () => {
+  const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -151,6 +154,68 @@ const Profile = () => {
       } catch (err) {
         Swal.fire({ title: "Error", icon: "error" });
       }
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    const result = await Swal.fire({
+      title: "Delete account?",
+      text: "This will permanently delete your account. This is only allowed if you have no booking history.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Delete",
+      confirmButtonColor: "#DC2626",
+      cancelButtonColor: "#1F1F1F",
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      setLoading(true);
+      await deleteMyAccount();
+
+      try {
+        localStorage.removeItem("userToken");
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        localStorage.removeItem("userName");
+        localStorage.removeItem("userEmail");
+        localStorage.removeItem("role");
+        localStorage.removeItem("isLoggedIn");
+      } catch (_) {
+        // ignore storage issues
+      }
+
+      await Swal.fire({
+        title: "Account Deleted",
+        text: "Your account has been deleted successfully.",
+        icon: "success",
+        confirmButtonColor: "#D97706",
+      });
+
+      navigate("/");
+    } catch (err) {
+      const status = err?.response?.status;
+      const message = err?.response?.data?.message;
+
+      if (status === 409) {
+        Swal.fire({
+          title: "Cannot Delete Account",
+          text: message || "You have booking history, so account deletion is not allowed.",
+          icon: "info",
+          confirmButtonColor: "#D97706",
+        });
+        return;
+      }
+
+      Swal.fire({
+        title: "Delete Failed",
+        text: message || "Could not delete your account right now.",
+        icon: "error",
+        confirmButtonColor: "#D97706",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -310,6 +375,15 @@ const Profile = () => {
                 />
               </div>
             </div>
+
+            <div className="mt-4">
+              <CButton
+                onClick={handleDeleteAccount}
+                className="w-full bg-white !text-red-600 border border-red-200 hover:bg-red-50 hover:border-red-300 transition-all text-[10px]"
+              >
+                <FaTrash className="inline mr-2" /> Delete Account
+              </CButton>
+            </div>
           </div>
         </motion.div>
 
@@ -430,7 +504,7 @@ const Profile = () => {
             </motion.div>
           </AnimatePresence>
         </div>
-      </div>
+      </div>r
 
       <Footer />
 

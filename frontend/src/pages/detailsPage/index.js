@@ -85,10 +85,13 @@ const PGDetails = () => {
   const isOwnerPreviewRoute = location.pathname.startsWith("/owner/dashboard/pg/");
 
   const [currentIndex, setCurrentIndex] = useState(0);
+  const lastManualNavAtRef = useRef(0);
   const [isGalleryHovered, setIsGalleryHovered] = useState(false);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [ownerPgData, setOwnerPgData] = useState(null);
+
+  const [isPgDescriptionExpanded, setIsPgDescriptionExpanded] = useState(false);
 
   const [selectedRoomIdx, setSelectedRoomIdx] = useState(-1);
   const [filterType, setFilterType] = useState("All");
@@ -518,13 +521,26 @@ const PGDetails = () => {
     return pgGallery;
   }, [selectedRoomIdx, filteredRooms, roomTypeImages, pgGallery, pg]);
 
+  const goToGalleryIndex = (nextIndex) => {
+    lastManualNavAtRef.current = Date.now();
+    setCurrentIndex(nextIndex);
+  };
+
   useEffect(() => {
     setCurrentIndex(0);
-  }, [activeGallery]);
+  }, [selectedRoomIdx]);
+
+  useEffect(() => {
+    setCurrentIndex((prev) => {
+      if (!Array.isArray(activeGallery) || activeGallery.length === 0) return 0;
+      return Math.min(prev, activeGallery.length - 1);
+    });
+  }, [activeGallery.length]);
 
   useEffect(() => {
     if (activeGallery.length <= 1 || isGalleryHovered) return;
     const timer = setInterval(() => {
+      if (Date.now() - lastManualNavAtRef.current < 2000) return;
       setCurrentIndex((prev) => (prev + 1) % activeGallery.length);
     }, 3500);
     return () => clearInterval(timer);
@@ -573,8 +589,11 @@ const PGDetails = () => {
 
   if (loading) return <Loader />;
   if (!pg) return <NotFoundState />;
-  const reviews = normalizedReviews.length ? normalizedReviews : [{ user: "User", rating: 5, comment: "Nice stay." }];
-  const averageRating = (reviews.reduce((sum, r) => sum + Number(r.rating || 0), 0) / reviews.length).toFixed(1);
+  const reviews = normalizedReviews;
+  const hasReviews = reviews.length > 0;
+  const averageRating = hasReviews
+    ? (reviews.reduce((sum, r) => sum + Number(r.rating || 0), 0) / reviews.length).toFixed(1)
+    : "0.0";
 
   const openReviewModal = () => {
     if (!isLoggedIn || !hasBookedCurrentPg) return;
@@ -639,6 +658,19 @@ const PGDetails = () => {
 
       const existingBooking = rows.find((b) => String(b?.status || "").toLowerCase() !== "cancelled");
       if (existingBooking) {
+        const paymentStatus = String(existingBooking?.paymentStatus || "").trim().toLowerCase();
+        const isPaymentDone =
+          existingBooking?.isPaid === true ||
+          paymentStatus === "paid" ||
+          (existingBooking?.initialRentPaid === true && existingBooking?.securityDepositPaid === true);
+
+        if (!isPaymentDone) {
+          navigate(`/confirmBook/${existingBooking?._id || existingBooking?.pgId || pg._id}`,
+            { state: { bookingData: existingBooking } }
+          );
+          return;
+        }
+
         const existingPg = String(existingBooking?.pgName || "another PG").trim();
         const existingId = existingBooking?.bookingId || existingBooking?._id || "";
         Swal.fire({
@@ -683,15 +715,15 @@ const PGDetails = () => {
                 </AnimatePresence>
                 {activeGallery.length > 1 && (
                   <>
-                    <button onClick={() => setCurrentIndex(currentIndex === 0 ? activeGallery.length - 1 : currentIndex - 1)} className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/80 p-2 rounded-full shadow z-10"><ChevronLeftIcon className="h-5 w-5"/></button>
-                    <button onClick={() => setCurrentIndex((currentIndex + 1) % activeGallery.length)} className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/80 p-2 rounded-full shadow z-10"><ChevronRightIcon className="h-5 w-5"/></button>
-                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-2 z-10 bg-black/25 px-2 py-1 rounded-full">
+                    <button onClick={() => goToGalleryIndex(currentIndex === 0 ? activeGallery.length - 1 : currentIndex - 1)} className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/80 p-2 rounded-full shadow z-20"><ChevronLeftIcon className="h-5 w-5"/></button>
+                    <button onClick={() => goToGalleryIndex((currentIndex + 1) % activeGallery.length)} className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/80 p-2 rounded-full shadow z-20"><ChevronRightIcon className="h-5 w-5"/></button>
+                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-2 z-20 bg-black/25 px-2 py-1 rounded-full pointer-events-auto">
                       {activeGallery.map((_, idx) => (
                         <button
                           key={`dot-${idx}`}
                           type="button"
                           aria-label={`Go to image ${idx + 1}`}
-                          onClick={() => setCurrentIndex(idx)}
+                          onClick={() => goToGalleryIndex(idx)}
                           className={`w-2.5 h-2.5 rounded-full transition-all ${
                             idx === currentIndex ? "bg-white scale-110" : "bg-white/60 hover:bg-white/90"
                           }`}
@@ -840,13 +872,43 @@ const PGDetails = () => {
         <motion.div variants={fadeInUp} className="hidden lg:flex w-[35%] flex-col gap-6 sticky h-fit">
           <div className="bg-white rounded-md shadow p-6 border border-primary">
             <h2 className="  font-semibold text-textPrimary mb-2">{pg.name}</h2>
+            {(() => {
+              const description = String(pg?.description || "").trim();
+              if (!description) return null;
+              const showToggle = description.length > 120;
+              return (
+                <>
+                  <p className={`text-textSecondary text-sm mb-1 ${isPgDescriptionExpanded ? "" : "line-clamp-3"}`}>
+                    {description}
+                  </p>
+                  {showToggle ? (
+                    <button
+                      type="button"
+                      onClick={() => setIsPgDescriptionExpanded((v) => !v)}
+                      className="text-primary text-xs font-bold mb-3"
+                    >
+                      {isPgDescriptionExpanded ? "Read less" : "Read more"}
+                    </button>
+                  ) : (
+                    <div className="mb-3" />
+                  )}
+                </>
+              );
+            })()}
             <p className="text-textSecondary text-sm flex items-center gap-2"><MapPinIcon className="h-4 w-4" /> {pg.city}</p>
             <div className="mt-3 bg-background px-3 py-2.5 rounded-md border border-border">
               <p className=" text-textSecondary font-bold inline-flex items-center gap-1 leading-tight">
                 <StarIcon className="h-4 w-4 text-primary" />
                 Community Rating
               </p>
-              <div className="ml-5 text-base font-bold leading-tight">{averageRating} / 5.0</div>
+              {hasReviews ? (
+                <div className="ml-5 text-base font-bold leading-tight">{averageRating} / 5.0</div>
+              ) : (
+                <>
+                  <div className="ml-5 text-base font-bold leading-tight">0.0 / 5.0</div>
+                  <div className="ml-5 text-sm text-textSecondary leading-tight">Be the first tenant to rate this PG</div>
+                </>
+              )}
             </div>
           </div>
           <FeatureList title="Amenities" items={amenitiesList} icon="⭐" />
@@ -973,7 +1035,8 @@ const GuestRatingsReviews = ({ reviews, averageRating }) => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {items.length === 0 ? (
           <div className="col-span-full bg-background p-4 rounded-md border border-border text-textSecondary">
-            No reviews yet.
+            <div className="font-semibold">No reviews yet.</div>
+            <div className="text-sm">Be the first tenant to rate this PG</div>
           </div>
         ) : (
           items.map((review, idx) => (

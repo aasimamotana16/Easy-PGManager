@@ -52,6 +52,9 @@ export const updateProfilePicture = (formData) =>
   });
 export const removeProfilePicture = () => API.delete("/users/profile/picture");
 
+// Account
+export const deleteMyAccount = () => API.delete('/users/delete-account');
+
 // Document & Action Management
 export const getMyDocuments = () => API.get("/users/documents");
 export const uploadUserDocument = (formData) => 

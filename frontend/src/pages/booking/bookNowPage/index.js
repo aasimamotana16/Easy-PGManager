@@ -264,6 +264,43 @@ const BookingPage = () => {
         } else {
           setIsSubmitted(false);
           if (res.status === 409) {
+            const conflict = body?.data || {};
+            try {
+              const api = await import("../../../api/api");
+              const bookingsRes = await api.getBookings();
+              const rows = Array.isArray(bookingsRes?.data?.bookings)
+                ? bookingsRes.data.bookings
+                : Array.isArray(bookingsRes?.data?.data)
+                  ? bookingsRes.data.data
+                  : [];
+
+              const match = rows.find((b) => {
+                if (String(b?.status || "").toLowerCase() === "cancelled") return false;
+                const bookingIdA = String(b?.bookingId || "").trim();
+                const bookingIdB = String(conflict?.bookingId || "").trim();
+                if (bookingIdA && bookingIdB && bookingIdA === bookingIdB) return true;
+                const pgIdA = String(b?.pgId || "");
+                const pgIdB = String(conflict?.pgId || "");
+                if (pgIdA && pgIdB && pgIdA === pgIdB) return true;
+                return false;
+              });
+
+              if (match) {
+                const paymentStatus = String(match?.paymentStatus || "").trim().toLowerCase();
+                const isPaymentDone =
+                  match?.isPaid === true ||
+                  paymentStatus === "paid" ||
+                  (match?.initialRentPaid === true && match?.securityDepositPaid === true);
+
+                if (!isPaymentDone) {
+                  navigate(`/confirmBook/${match?._id || match?.pgId || activePg._id}`, { state: { bookingData: match } });
+                  return;
+                }
+              }
+            } catch (_) {
+              // Fall back to warning dialog below.
+            }
+
             const existingPg = body?.data?.pgName ? ` (${body.data.pgName})` : "";
             Swal.fire({
               icon: 'warning',
@@ -387,7 +424,11 @@ const BookingPage = () => {
                 {activePg?._id && (
                     <div className="mt-2 pt-2 border-t border-border">
                         <a
-                            href={`http://localhost:5000/api/pg/${activePg._id}/agreement-preview?t=${Date.now()}`}
+                      href={`http://localhost:5000/api/pg/${activePg._id}/agreement-preview?t=${Date.now()}${
+                        selectedRoom?.type
+                        ? `&roomType=${encodeURIComponent(String(selectedRoom.type))}&variantLabel=${encodeURIComponent(String(selectedRoom.type))}`
+                        : ""
+                      }`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-[11px] text-primary hover:underline flex items-center gap-1"

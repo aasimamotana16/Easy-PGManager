@@ -1,56 +1,5 @@
 const Review = require("../models/reviewModel");
 
-const DEFAULT_REVIEW_POOL = [
-  { userName: "Ananya", comment: "Clean rooms and very safe environment.", rating: 5 },
-  { userName: "Riya", comment: "Good facilities, food quality can be improved.", rating: 4 },
-  { userName: "Neha", comment: "Owner support is quick and polite.", rating: 5 },
-  { userName: "Harsh", comment: "Location is great and commute is easy.", rating: 4 },
-  { userName: "Kavya", comment: "Rooms are neat and maintenance is on time.", rating: 5 },
-  { userName: "Manav", comment: "Overall good stay experience for students.", rating: 4 },
-  { userName: "Ishita", comment: "Food and cleanliness are both reliable.", rating: 5 },
-  { userName: "Rohan", comment: "Budget-friendly and well-managed property.", rating: 4 }
-];
-
-const hashText = (text = "") => {
-  let h = 0;
-  const value = String(text);
-  for (let i = 0; i < value.length; i += 1) {
-    h = ((h << 5) - h) + value.charCodeAt(i);
-    h |= 0;
-  }
-  return Math.abs(h);
-};
-
-const buildDefaultPgReviews = (pgId) => {
-  const pool = DEFAULT_REVIEW_POOL;
-  const start = hashText(pgId) % pool.length;
-  const first = pool[start];
-  const second = pool[(start + 3) % pool.length];
-
-  return [
-    {
-      _id: `sample-${pgId}-1`,
-      pgId,
-      userName: first.userName,
-      userRole: "tenant",
-      comment: first.comment,
-      rating: first.rating,
-      isVisible: true,
-      createdAt: new Date("2026-01-10T10:30:00.000Z")
-    },
-    {
-      _id: `sample-${pgId}-2`,
-      pgId,
-      userName: second.userName,
-      userRole: "tenant",
-      comment: second.comment,
-      rating: second.rating,
-      isVisible: true,
-      createdAt: new Date("2026-01-05T08:15:00.000Z")
-    }
-  ];
-};
-
 const ensureAdmin = (req, res) => {
   if (!req.user || req.user.role !== "admin") {
     res.status(403).json({ success: false, message: "Access denied. Admin only." });
@@ -174,11 +123,7 @@ exports.getReviewsByPg = async (req, res) => {
     if (!pgId) return res.status(400).json({ success: false, message: 'pgId required' });
     const reviews = await Review.find({ pgId, isVisible: true }).sort({ createdAt: -1 });
 
-    if (!reviews || reviews.length === 0) {
-      return res.status(200).json({ success: true, data: buildDefaultPgReviews(pgId) });
-    }
-
-    res.status(200).json({ success: true, data: reviews });
+    res.status(200).json({ success: true, data: Array.isArray(reviews) ? reviews : [] });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
