@@ -19,6 +19,12 @@ const FineTransaction = require('../models/fineTransactionModel');
 const { mergeRoomPriceVariants, resolveVariantPricing } = require('../utils/pricingUtils');
 const { generateAgreementPdf } = require('../utils/agreementPdf');
 const { calculateLateFine, validateMoveIn } = require('../utils/leaseUtils');
+const {
+  DEFAULT_PLATFORM_COMMISSION_PERCENT,
+  computeCommissionBreakdown,
+  computeCancellationRefundSummary,
+  getOwnerPayoutAmount
+} = require('../utils/paymentPolicyUtils');
 const { jsPDF } = require('jspdf');
 const { autoTable } = require('jspdf-autotable');
 
@@ -37,6 +43,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const LATE_FINE_PER_DAY = 100;
 const PENDING_PAYMENT_VISIBLE_DAYS_BEFORE_DUE = 5;
 const MONTH_SHORT_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const SUCCESS_PAYMENT_STATUSES = ['Success', 'PAID', 'Paid'];
 
 const resolveMonthRangeFromShortName = (monthShort) => {
   const normalized = String(monthShort || "").trim().toLowerCase();
@@ -354,12 +361,23 @@ const ensureTenantLinkedRecords = async ({ ownerId, tenant, pg }) => {
     });
 
     if (!existingPayment) {
+      const manualBreakdown = computeCommissionBreakdown({
+        amount: rentAmount,
+        commissionPercent: 0
+      });
       payment = await Payment.create({
         user: paymentActorId,
+        ownerId,
+        bookingRef: booking?._id || null,
+        bookingCode: booking?.bookingId || null,
         pgId: pg._id,
         pgName: pg.pgName || "",
         tenantName: tenant.name,
-        amountPaid: rentAmount,
+        amountPaid: manualBreakdown.grossAmount,
+        grossAmount: manualBreakdown.grossAmount,
+        commissionRatePercent: manualBreakdown.commissionRatePercent,
+        platformCommissionAmount: manualBreakdown.platformCommissionAmount,
+        ownerPayoutAmount: manualBreakdown.ownerPayoutAmount,
         month: currentMonthLabel,
         paymentDate: new Date(),
         paymentMethod: "Cash",
@@ -434,6 +452,74 @@ const resolveTenantUserForBooking = async (booking) => {
     role: { $in: ['user', 'tenant'] }
   }).select('_id fullName email phone');
   return byName || null;
+};
+
+const hasTenantMovedInForBooking = async ({ booking, tenantUser }) => {
+  if (!booking) return false;
+
+  const activeTenant = await Tenant.findOne({
+    ownerId: booking.ownerId,
+    status: "Active",
+    $and: [
+      {
+        $or: [
+          booking.pgId ? { pgId: booking.pgId } : null,
+          booking.pgName ? { pgName: booking.pgName } : null
+        ].filter(Boolean)
+      },
+      {
+        $or: [
+          booking.tenantEmail ? { email: new RegExp(`^${escapeRegex(String(booking.tenantEmail).trim())}$`, "i") } : null,
+          booking.tenantName ? { name: booking.tenantName } : null
+        ].filter(Boolean)
+      }
+    ]
+  }).select("_id");
+  if (activeTenant?._id) return true;
+
+  if (tenantUser?._id) {
+    const activeCheckIn = await CheckIn.findOne({ userId: tenantUser._id, status: "Present" }).select("_id");
+    if (activeCheckIn?._id) return true;
+  }
+
+  return false;
+};
+
+const getSuccessfulPaymentsForBooking = async ({ booking, tenantUser }) => {
+  if (!booking) return [];
+
+  const filters = [];
+
+  if (booking?._id) {
+    filters.push({ bookingRef: booking._id });
+  }
+  if (booking?.bookingId) {
+    filters.push({ bookingCode: booking.bookingId });
+  }
+
+  const identityMatchers = [
+    tenantUser?._id ? { user: tenantUser._id } : null,
+    booking?.tenantName ? { tenantName: booking.tenantName } : null
+  ].filter(Boolean);
+  const pgMatchers = [
+    booking?.pgId ? { pgId: booking.pgId } : null,
+    booking?.pgName ? { pgName: booking.pgName } : null
+  ].filter(Boolean);
+
+  if (identityMatchers.length > 0 && pgMatchers.length > 0) {
+    filters.push({
+      $and: [
+        { $or: identityMatchers },
+        { $or: pgMatchers }
+      ]
+    });
+  }
+
+  if (filters.length === 0) return [];
+  return Payment.find({
+    paymentStatus: { $in: SUCCESS_PAYMENT_STATUSES },
+    $or: filters
+  }).sort({ paymentDate: 1 });
 };
 
 const clearTenantDashboardDataForCancelledBooking = async ({ booking, tenantUser }) => {
@@ -784,7 +870,11 @@ const getOwnerDashboardData = async (req, res) => {
         {
           $group: {
             _id: null,
-            totalRevenue: { $sum: '$amountPaid' }
+            totalRevenue: {
+              $sum: {
+                $ifNull: ['$ownerPayoutAmount', '$amountPaid']
+              }
+            }
           }
         }
       ])
@@ -2237,7 +2327,7 @@ const addBooking = async (req, res) => {
 const updateBookingStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    const { status } = req.body; 
+    const { status, cancelReason = "", cancelOtherReason = "" } = req.body; 
     const ownerId = req.user._id;
     const normalizedStatus = String(status || '').trim();
     if (!['Pending', 'Confirmed', 'Cancelled'].includes(normalizedStatus)) {
@@ -2265,30 +2355,69 @@ const updateBookingStatus = async (req, res) => {
     const source = String(booking.bookingSource || '').toLowerCase();
     const requiresPaymentBeforeConfirm = source === 'tenant_request';
 
+    let cancellationRefundSummary = null;
+
     if (normalizedStatus === 'Cancelled') {
       const cancellationRequested = Boolean(booking?.cancelRequest?.requested && booking?.cancelRequest?.status === 'Pending');
-      // Tenant-side bookings must be cancelled only after tenant request + owner approval.
-      if (source === 'tenant_request' && !cancellationRequested) {
-        return res.status(400).json({
-          success: false,
-          message: "Tenant cancellation request not found. Cancel only after tenant request."
+      const cancelledBy = cancellationRequested ? 'tenant' : 'owner';
+      const tenantUser = await resolveTenantUserForBooking(booking);
+      const hasMovedIn = await hasTenantMovedInForBooking({ booking, tenantUser });
+      const successfulPayments = await getSuccessfulPaymentsForBooking({ booking, tenantUser });
+      const totalPaidAmount = successfulPayments.reduce((sum, p) => sum + (Number(p.amountPaid) || 0), 0);
+      const totalCommissionAmount = successfulPayments.reduce((sum, p) => {
+        const explicit = Number(p.platformCommissionAmount);
+        if (Number.isFinite(explicit)) return sum + explicit;
+        const fallback = computeCommissionBreakdown({
+          amount: Number(p.amountPaid || 0),
+          commissionPercent: Number(p.commissionRatePercent || DEFAULT_PLATFORM_COMMISSION_PERCENT)
         });
-      }
+        return sum + fallback.platformCommissionAmount;
+      }, 0);
+
+      cancellationRefundSummary = {
+        ...computeCancellationRefundSummary({
+          cancelledBy,
+          hasMovedIn,
+          cancellationDate: new Date(),
+          checkInDate: booking.checkInDate,
+          totalPaidAmount,
+          securityDepositAmount: Number(booking.securityDeposit || 0),
+          totalCommissionAmount
+        }),
+        refundStatus: totalPaidAmount > 0 ? "Pending" : "None",
+        calculatedAt: new Date()
+      };
 
       booking.status = 'Cancelled';
       booking.ownerApproved = false;
       booking.ownerApprovalStatus = 'rejected';
       booking.paymentStatus = booking.isPaid ? 'Paid' : 'Unpaid';
+      booking.cancellationRefund = cancellationRefundSummary;
       booking.cancelRequest = {
         ...(booking.cancelRequest || {}),
-        requested: Boolean(booking?.cancelRequest?.requested),
-        requestedAt: booking?.cancelRequest?.requestedAt || null,
-        requestedBy: booking?.cancelRequest?.requestedBy || 'tenant',
-        reason: booking?.cancelRequest?.reason || '',
-        otherReason: booking?.cancelRequest?.otherReason || '',
+        requested: Boolean(cancellationRequested),
+        requestedAt: booking?.cancelRequest?.requestedAt || (cancellationRequested ? new Date() : null),
+        requestedBy: cancellationRequested ? (booking?.cancelRequest?.requestedBy || 'tenant') : 'owner',
+        reason: cancellationRequested ? (booking?.cancelRequest?.reason || '') : String(cancelReason || '').trim(),
+        otherReason: cancellationRequested ? (booking?.cancelRequest?.otherReason || '') : String(cancelOtherReason || '').trim(),
         status: 'Approved',
         reviewedAt: new Date()
       };
+
+      if (successfulPayments.length > 0) {
+        const refundable = Number(cancellationRefundSummary?.refundableAmount || 0);
+        const refundStatus = refundable > 0 ? "Pending" : "None";
+        await Payment.updateMany(
+          { _id: { $in: successfulPayments.map((p) => p._id) } },
+          {
+            $set: {
+              refundStatus,
+              refundedAmount: 0,
+              refundedAt: null
+            }
+          }
+        );
+      }
     } else if (normalizedStatus === 'Pending') {
       booking.status = 'Pending';
       booking.ownerApproved = false;
@@ -2442,6 +2571,7 @@ const updateBookingStatus = async (req, res) => {
     res.status(200).json({
       success: true,
       data: updatedBooking,
+      refund: cancellationRefundSummary || updatedBooking?.cancellationRefund || null,
       linked: linkedData
         ? {
             tenantId: linkedData.tenantId || null,
@@ -2922,23 +3052,23 @@ const getOwnerEarnings = async (req, res) => {
     const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
     const payments = await Payment.find({
-      paymentStatus: { $in: ['Success', 'PAID', 'Paid'] },
+      paymentStatus: { $in: SUCCESS_PAYMENT_STATUSES },
       $or: [
         { pgId: { $in: ownerPgIds } },
         { pgName: { $in: ownerPgNames } }
       ]
     }).sort({ paymentDate: -1 });
 
-    const total = payments.reduce((sum, p) => sum + (Number(p.amountPaid) || 0), 0);
+    const total = payments.reduce((sum, p) => sum + getOwnerPayoutAmount(p), 0);
     const todayAmount = payments
       .filter((p) => new Date(p.paymentDate) >= dayStart)
-      .reduce((sum, p) => sum + (Number(p.amountPaid) || 0), 0);
+      .reduce((sum, p) => sum + getOwnerPayoutAmount(p), 0);
 
     const selectedMonthPayments = payments.filter((p) => {
       const d = new Date(p.paymentDate);
       return d >= selectedMonthStart && d < selectedMonthEnd;
     });
-    const selectedMonthAmount = selectedMonthPayments.reduce((sum, p) => sum + (Number(p.amountPaid) || 0), 0);
+    const selectedMonthAmount = selectedMonthPayments.reduce((sum, p) => sum + getOwnerPayoutAmount(p), 0);
 
     const daysInSelectedMonth = new Date(
       selectedMonthStart.getFullYear(),
@@ -2954,7 +3084,7 @@ const getOwnerEarnings = async (req, res) => {
       const d = new Date(p.paymentDate);
       const dayIndex = d.getDate() - 1;
       if (dayIndex >= 0 && dayIndex < dayBuckets.length) {
-        dayBuckets[dayIndex].amount += Number(p.amountPaid) || 0;
+        dayBuckets[dayIndex].amount += getOwnerPayoutAmount(p);
       }
     });
 
@@ -2964,7 +3094,7 @@ const getOwnerEarnings = async (req, res) => {
     const earningsHistory = selectedMonthPayments.slice(0, 50).map((payment) => ({
       date: new Date(payment.paymentDate).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }),
       source: payment.pgName || "Unknown PG",
-      amount: Number(payment.amountPaid) || 0,
+      amount: getOwnerPayoutAmount(payment),
       status: "Paid"
     }));
 
@@ -3289,7 +3419,7 @@ const downloadOwnerEarningsPDF = async (req, res) => {
     const ownerPgNames = ownerPgs.map((pg) => pg.pgName).filter(Boolean);
 
     const payments = await Payment.find({
-      paymentStatus: { $in: ['Success', 'PAID', 'Paid'] },
+      paymentStatus: { $in: SUCCESS_PAYMENT_STATUSES },
       $or: [
         { pgId: { $in: ownerPgIds } },
         { pgName: { $in: ownerPgNames } }
@@ -3310,14 +3440,14 @@ const downloadOwnerEarningsPDF = async (req, res) => {
       return d >= selectedMonthRange.start && d < selectedMonthRange.end;
     });
 
-    const total = payments.reduce((sum, p) => sum + (Number(p.amountPaid) || 0), 0);
+    const total = payments.reduce((sum, p) => sum + getOwnerPayoutAmount(p), 0);
     const now = new Date();
     const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const monthly = monthPayments
-      .reduce((sum, p) => sum + (Number(p.amountPaid) || 0), 0);
+      .reduce((sum, p) => sum + getOwnerPayoutAmount(p), 0);
     const today = payments
       .filter((p) => new Date(p.paymentDate) >= dayStart)
-      .reduce((sum, p) => sum + (Number(p.amountPaid) || 0), 0);
+      .reduce((sum, p) => sum + getOwnerPayoutAmount(p), 0);
 
     const doc = new jsPDF();
     doc.setFontSize(16);
@@ -3341,7 +3471,7 @@ const downloadOwnerEarningsPDF = async (req, res) => {
       body: monthPayments.slice(0, 50).map((p) => [
         new Date(p.paymentDate).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }),
         p.pgName || 'Unknown PG',
-        `Rs. ${(Number(p.amountPaid) || 0).toLocaleString()}`,
+        `Rs. ${getOwnerPayoutAmount(p).toLocaleString()}`,
         'Paid'
       ]),
     });

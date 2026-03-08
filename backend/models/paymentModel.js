@@ -6,9 +6,23 @@ const paymentSchema = mongoose.Schema({
     ref: "User", 
     required: true 
   },
+  ownerId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    default: null
+  },
   pgId: { 
     type: mongoose.Schema.Types.ObjectId, 
     ref: "PG"
+  },
+  bookingRef: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Booking",
+    default: null
+  },
+  bookingCode: {
+    type: String,
+    default: null
   },
   pgName: {
     type: String,
@@ -21,6 +35,35 @@ const paymentSchema = mongoose.Schema({
   amountPaid: { 
     type: Number, 
     required: true 
+  },
+  grossAmount: {
+    type: Number,
+    default: 0
+  },
+  commissionRatePercent: {
+    type: Number,
+    default: 0
+  },
+  platformCommissionAmount: {
+    type: Number,
+    default: 0
+  },
+  ownerPayoutAmount: {
+    type: Number,
+    default: 0
+  },
+  refundStatus: {
+    type: String,
+    enum: ["None", "Pending", "Processed", "Rejected"],
+    default: "None"
+  },
+  refundedAmount: {
+    type: Number,
+    default: 0
+  },
+  refundedAt: {
+    type: Date,
+    default: null
   },
   // ADDED THIS: Crucial for your Payment History table
   month: {

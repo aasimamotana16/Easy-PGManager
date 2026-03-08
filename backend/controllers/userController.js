@@ -680,7 +680,9 @@ const getMyAgreement = async (req, res) => {
           roomNo: "",
           tenantName: req.user?.fullName || "",
           rentAmount: Number(agreementPricing.rentAmount || booking?.rentAmount || booking?.bookingAmount || 0) || null,
-          securityDeposit: Number(booking?.securityDeposit || 0) || null,
+          securityDeposit: Number(
+            agreementPricing.securityDeposit ?? booking?.securityDeposit ?? bookingPg?.securityDeposit ?? 0
+          ),
           agreementId: "",
           bookingId: booking?.bookingId || "",
           startDate: booking?.checkInDate || "",
@@ -721,7 +723,13 @@ const getMyAgreement = async (req, res) => {
         roomNo: agreement.roomNo || "N/A",
         tenantName: agreement.tenantName || "N/A",
         rentAmount: Number(agreementPricing.rentAmount || agreement.rentAmount || 0),
-        securityDeposit: agreement.securityDeposit,
+        securityDeposit: Number(
+          agreementPricing.securityDeposit ??
+          agreement.securityDeposit ??
+          booking?.securityDeposit ??
+          bookingPg?.securityDeposit ??
+          0
+        ),
         agreementId: agreement.agreementId,
         bookingId: agreement.bookingId,
         startDate: agreement.startDate,

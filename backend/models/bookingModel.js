@@ -46,6 +46,18 @@ const bookingSchema = new mongoose.Schema({
     otherReason: { type: String, default: '' },
     status: { type: String, enum: ['None', 'Pending', 'Approved', 'Rejected'], default: 'None' },
     reviewedAt: { type: Date, default: null }
+  },
+  cancellationRefund: {
+    cancelledBy: { type: String, enum: ['tenant', 'owner'], default: 'tenant' },
+    hasMovedIn: { type: Boolean, default: false },
+    grossPaidAmount: { type: Number, default: 0 },
+    nonRefundableCommissionAmount: { type: Number, default: 0 },
+    noShowDeductionAmount: { type: Number, default: 0 },
+    refundableAmount: { type: Number, default: 0 },
+    refundRule: { type: String, default: '' },
+    note: { type: String, default: '' },
+    refundStatus: { type: String, enum: ['None', 'Pending', 'Processed', 'Rejected'], default: 'None' },
+    calculatedAt: { type: Date, default: null }
   }
 }, { timestamps: true });
 

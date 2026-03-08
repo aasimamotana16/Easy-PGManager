@@ -114,10 +114,8 @@ router.post("/create", protect, async (req, res) => {
       fallbackDeposit: Number(pg?.securityDeposit || 0)
     });
     const monthlyRent = Number(pricing.rentAmount || 0);
-    const configuredDeposit = Number(pricing.securityDeposit || 0);
-    const securityDeposit = configuredDeposit > 0
-      ? configuredDeposit
-      : Math.max(0, monthlyRent * 2);
+    const configuredDeposit = Math.max(0, Number(pricing.securityDeposit || 0));
+    const securityDeposit = configuredDeposit;
 
     const newBooking = await Booking.create({
       ownerId: owner ? owner._id : null,

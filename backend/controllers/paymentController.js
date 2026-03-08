@@ -12,6 +12,10 @@ const Profile = require("../models/profileModel");
 const Agreement = require("../models/agreementModel");
 const { resolveVariantPricing } = require("../utils/pricingUtils");
 const { generateAgreementPdf } = require("../utils/agreementPdf");
+const {
+  DEFAULT_PLATFORM_COMMISSION_PERCENT,
+  computeCommissionBreakdown
+} = require("../utils/paymentPolicyUtils");
 
 const pickFirstValid = (...values) => {
   for (const raw of values) {
@@ -59,11 +63,10 @@ const addMonths = (dateInput, months) => {
 
 const deriveSecurityDepositAmount = (monthlyRent, configuredDeposit) => {
   const explicitDeposit = Number(configuredDeposit);
-  if (Number.isFinite(explicitDeposit) && explicitDeposit > 0) {
+  if (Number.isFinite(explicitDeposit) && explicitDeposit >= 0) {
     return explicitDeposit;
   }
-  const rent = Math.max(0, Number(monthlyRent) || 0);
-  return rent > 0 ? Math.max(0, rent * 2) : 0;
+  return 0;
 };
 
 const getNextCycleDueDate = (anchorDateInput) => {
@@ -427,12 +430,23 @@ const verifyPayment = async (req, res) => {
       }
 
       // Create record with fields matching your table
+      const commissionBreakdown = computeCommissionBreakdown({
+        amount: Number(amountPaid || 0),
+        commissionPercent: DEFAULT_PLATFORM_COMMISSION_PERCENT
+      });
       const newPayment = await Payment.create({
         user: req.user.id,
+        ownerId: pgDoc?.ownerId || targetBooking?.ownerId || null,
+        bookingRef: targetBooking?._id || null,
+        bookingCode: targetBooking?.bookingId || null,
         pgId: normalizedPgId, 
         pgName: normalizedPgName,
         tenantName,
-        amountPaid,
+        amountPaid: commissionBreakdown.grossAmount,
+        grossAmount: commissionBreakdown.grossAmount,
+        commissionRatePercent: commissionBreakdown.commissionRatePercent,
+        platformCommissionAmount: commissionBreakdown.platformCommissionAmount,
+        ownerPayoutAmount: commissionBreakdown.ownerPayoutAmount,
         month: paymentMonth,
         transactionId: razorpay_payment_id,
         paymentStatus: "Success",
@@ -593,7 +607,9 @@ const verifyPayment = async (req, res) => {
                 <p><strong>Tenant:</strong> ${targetBooking.tenantName || tenantName}</p>
                 <p><strong>Booking ID:</strong> ${targetBooking.bookingId}</p>
                 <p><strong>PG:</strong> ${normalizedPgName || "N/A"}</p>
-                <p><strong>Amount:</strong> INR ${Number(amountPaid || 0).toLocaleString("en-IN")}</p>
+                <p><strong>Amount Paid:</strong> INR ${commissionBreakdown.grossAmount.toLocaleString("en-IN")}</p>
+                <p><strong>Platform Commission (${commissionBreakdown.commissionRatePercent}%):</strong> INR ${commissionBreakdown.platformCommissionAmount.toLocaleString("en-IN")}</p>
+                <p><strong>Owner Payout:</strong> INR ${commissionBreakdown.ownerPayoutAmount.toLocaleString("en-IN")}</p>
                 <p><strong>Transaction ID:</strong> ${razorpay_payment_id}</p>
               `
             });
@@ -699,6 +715,7 @@ const getUserPaymentStats = async (req, res) => {
     }).sort({ dueDate: 1 });
     const pendingPayment = pickRelevantPendingPayment(pendingPaymentsRaw);
     let currentRentDue = 0;
+    let currentSecurityDeposit = 0;
     const sourceBooking = pricingBooking || booking;
     let bookingPgId = sourceBooking?.pgId || null;
     let bookingPgName = sourceBooking?.pgName || "";
@@ -716,6 +733,10 @@ const getUserPaymentStats = async (req, res) => {
         fallbackDeposit: Number(sourceBooking.securityDeposit || pg?.securityDeposit || 0)
       });
       currentRentDue = Number(pricing.rentAmount || sourceBooking.rentAmount || sourceBooking.bookingAmount || pg?.price || 0);
+      currentSecurityDeposit = Math.max(
+        0,
+        Number(pricing.securityDeposit || sourceBooking.securityDeposit || pg?.securityDeposit || 0)
+      );
       if (!bookingPgId && pg?._id) bookingPgId = pg._id;
       if (!bookingPgName && pg?.pgName) bookingPgName = pg.pgName;
       if (currentRentDue > 0) {
@@ -728,7 +749,7 @@ const getUserPaymentStats = async (req, res) => {
 
     let nextPayment = null;
     let lateFine = 0;
-    const bookingSecurityDeposit = Math.max(0, Number(booking?.securityDeposit || 0));
+    const bookingSecurityDeposit = Math.max(0, Number(currentSecurityDeposit || booking?.securityDeposit || 0));
     const securityDepositDue =
       booking && !Boolean(booking.securityDepositPaid) && bookingSecurityDeposit > 0
         ? bookingSecurityDeposit
