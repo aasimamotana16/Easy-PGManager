@@ -1778,6 +1778,17 @@ const getMyTenants = async (req, res) => {
         pgObj?.roomType ||
         "N/A";
 
+      const rawStatus = String(t.status || "").trim();
+      const statusLower = rawStatus.toLowerCase();
+      const hasMoveOutCompleted = Boolean(t.moveOutCompletedAt);
+
+      let computedStatus = rawStatus;
+      if (hasMoveOutCompleted || statusLower === "inactive") {
+        computedStatus = "Inactive";
+      } else if (hasPaidRent && !rawStatus) {
+        computedStatus = "Pending Arrival";
+      }
+
       return {
         _id: t._id,
         name: t.name,
@@ -1788,7 +1799,7 @@ const getMyTenants = async (req, res) => {
         room: t.room,
         roomType: resolvedRoomType,
         joiningDate: t.joiningDate,
-        status: hasPaidRent && String(t.status || "").toLowerCase() !== "active" ? "Pending Arrival" : t.status,
+        status: computedStatus,
         hasPaidRent,
         securityDeposit: Number(t.securityDeposit) || 0,
         hasMoveOutNotice: Boolean(t.hasMoveOutNotice),

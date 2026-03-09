@@ -9,7 +9,6 @@ import {
   FaUserCheck,
   FaBed,
   FaHistory,
-  FaDownload,
   FaStar
 } from "react-icons/fa";
 import CButton from "../../../components/cButton";
@@ -261,6 +260,7 @@ const DashboardHome = () => {
   const nextPaymentDate = getUpcomingDueDate(rawDueDate) || (monthlyRent > 0 ? "Due date not available" : "No due");
   const dueAmount = Number(dashboardData?.nextPayment?.amount || monthlyRent || 0);
   const canPayNow = Boolean(dashboardData?.nextPayment?.canPayNow) && dueAmount > 0;
+  const moveOutCompleted = Boolean(dashboardData?.moveOutCompleted);
   const completionPercentage = dashboardData?.profileCompletion || user?.profileCompletion || 0;
   const recentPayments = dashboardData?.recentPayments || [];
 
@@ -315,7 +315,6 @@ const DashboardHome = () => {
                   <th className="py-3 px-2">Month</th>
                   <th className="py-3 px-2">Amount</th>
                   <th className="py-3 px-2">Status</th>
-                  <th className="py-3 px-2">Action</th>
                 </tr>
               </thead>
               <tbody className="text-xs sm:text-sm md:text-2xl lg:text-base">
@@ -325,9 +324,6 @@ const DashboardHome = () => {
                     <td className="py-4 px-2">₹{pay.amount}</td>
                     <td className="py-4 px-2">
                       <span className="text-green-500 font-bold">{pay.status}</span>
-                    </td>
-                    <td className="py-4 px-2">
-                      <button className="text-orange-500 hover:text-orange-700"><FaDownload /></button>
                     </td>
                   </tr>
                 ))}
@@ -356,7 +352,11 @@ const DashboardHome = () => {
           <div className="bg-black text-white p-4 sm:p-6 rounded-md shadow-md">
             <p className="text-[10px] sm:text-xs md:text-2xl lg:text-sm text-white uppercase font-medium mb-1">Rent Due</p>
             <p className="text-2xl sm:text-3xl md:text-5xl lg:text-3xl text-orange-500 mb-4">₹{dueAmount.toLocaleString()}</p>
-            {canPayNow ? (
+            {moveOutCompleted ? (
+              <CButton disabled className="w-full !opacity-80 !cursor-not-allowed">
+                MOVE-OUT COMPLETED
+              </CButton>
+            ) : canPayNow ? (
               <PayNowButton amount={dueAmount} pgId={dashboardData?.currentBooking?.pgId || user?.bookedPgId} className="w-full" onSuccess={() => loadData()}>
                 {isProcessing ? "INITIALIZING..." : "PAY NOW"}
               </PayNowButton>

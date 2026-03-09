@@ -3,6 +3,7 @@ const Booking = require('../models/bookingModel'); // Changed from 'import' [cit
 const Agreement = require('../models/agreementModel');
 const Pg = require('../models/pgModel');
 const User = require('../models/userModel');
+const Tenant = require('../models/tenantModel');
 const nodemailer = require('nodemailer');
 const { resolveVariantPricing } = require('../utils/pricingUtils');
 const { protect } = require('../middleware/authMiddleware');
@@ -62,6 +63,20 @@ const findActiveTenantBooking = async ({ userId, emails = [] }) => {
   }).sort({ createdAt: -1 });
 };
 
+const normalizeValue = (value) => String(value || "").trim().toLowerCase();
+
+const buildTenantIdentityMatchers = ({ userId, emails = [] }) => {
+  const emailMatchers = emails
+    .map((email) => normalizeValue(email))
+    .filter(Boolean)
+    .map((email) => ({ tenantEmail: new RegExp(`^${email}$`, "i") }));
+
+  return [
+    userId ? { tenantUserId: userId } : null,
+    ...emailMatchers
+  ].filter(Boolean);
+};
+
 // 1. Create booking (public) - associates booking with PG owner and notifies owner via email
 router.post("/create", protect, async (req, res) => {
   try {
@@ -87,21 +102,56 @@ router.post("/create", protect, async (req, res) => {
       ? String(members[0].email || '').trim().toLowerCase()
       : String(req.user?.email || '').trim().toLowerCase();
 
-    const existingTenantBooking = await findActiveTenantBooking({
+    // If tenant has completed move-out (owner-approved), allow new booking.
+    // We treat latest Tenant record status=Inactive as the source of truth.
+    const authenticatedEmail = normalizeValue(req.user?.email);
+    const authenticatedName = String(req.user?.fullName || '').trim();
+    const normalizedTenantEmail = authenticatedEmail || normalizeValue(tenantEmail);
+
+    const tenantLookupOr = [
+      normalizedTenantEmail ? { email: new RegExp(`^${normalizedTenantEmail}$`, "i") } : null,
+      authenticatedName ? { name: new RegExp(`^${escapeRegex(authenticatedName)}$`, "i") } : null
+    ].filter(Boolean);
+
+    const latestTenant = tenantLookupOr.length > 0
+      ? await Tenant.findOne({ $or: tenantLookupOr })
+          .sort({ createdAt: -1 })
+          .select("status")
+          .lean()
+      : null;
+
+    const tenantStatusLower = normalizeValue(latestTenant?.status);
+    const isInactiveTenant = tenantStatusLower === "inactive";
+
+    const identityMatchers = buildTenantIdentityMatchers({
       userId: req.user?._id,
       emails: [tenantEmail, req.user?.email]
     });
-    if (existingTenantBooking) {
-      return res.status(409).json({
-        success: false,
-        message: `You already have an active booking (${existingTenantBooking.bookingId || existingTenantBooking._id}) for ${existingTenantBooking.pgName || "a PG"}. Cancel/complete it before booking another PG.`,
-        data: {
-          bookingId: existingTenantBooking.bookingId || null,
-          pgId: existingTenantBooking.pgId || null,
-          pgName: existingTenantBooking.pgName || null,
-          status: existingTenantBooking.status || null
+
+    if (!isInactiveTenant && identityMatchers.length > 0) {
+      const activeBookings = await Booking.find({
+        status: { $ne: "Cancelled" },
+        $or: identityMatchers
+      })
+        .sort({ createdAt: -1 })
+        .lean();
+
+      if (activeBookings.length > 0) {
+        let blockingBooking = activeBookings[0];
+
+        if (blockingBooking) {
+          return res.status(409).json({
+            success: false,
+            message: `You already have an active booking (${blockingBooking.bookingId || blockingBooking._id}) for ${blockingBooking.pgName || "a PG"}. Cancel/complete it before booking another PG.`,
+            data: {
+              bookingId: blockingBooking.bookingId || null,
+              pgId: blockingBooking.pgId || null,
+              pgName: blockingBooking.pgName || null,
+              status: blockingBooking.status || null
+            }
+          });
         }
-      });
+      }
     }
 
     const checkInDate = stayDetails?.checkIn || new Date().toISOString().split('T')[0];

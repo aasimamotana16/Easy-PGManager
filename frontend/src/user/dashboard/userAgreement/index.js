@@ -12,9 +12,9 @@ const Agreements = () => {
   const [loading, setLoading] = useState(true);
   const apiBaseUrl = (process.env.REACT_APP_API_URL || "http://localhost:5000").replace(/\/+$/, "");
   const hasSignatureForThisPg = Boolean(agreementInfo?.signatureVerified || agreementInfo?.ownerSignatureUrl);
-  const agreementHeaderText = hasSignatureForThisPg
-    ? "Verified Legal Document - Signature Verified"
-    : "Verified Legal Document";
+  const agreementHeaderText = agreementInfo
+    ? (hasSignatureForThisPg ? "Verified Legal Document - Signature Verified" : "Verified Legal Document")
+    : "No Active Agreement";
   const agreementBadgeText = hasSignatureForThisPg ? "Signature Verified" : "Signature Awaited";
 
   useEffect(() => {
@@ -22,7 +22,7 @@ const Agreements = () => {
       try {
         const res = await getMyAgreement();
         if (res.data.success) {
-          setAgreementInfo(res.data.data);
+          setAgreementInfo(res.data.data || null);
         }
       } catch (err) {
         const status = err?.response?.status;
@@ -121,17 +121,29 @@ const Agreements = () => {
             {agreementHeaderText}
           </h3>
         </div>
-        <div className={`self-start md:self-center px-4 py-2 rounded-md text-xs font-bold border ${
-          hasSignatureForThisPg ? 'bg-green-50 text-green-700 border-green-200' : 'bg-orange-50 text-[#D97706] border-orange-200'
-        }`}>
-          <span className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-md bg-current animate-pulse"></span>
-            {agreementBadgeText}
-          </span>
-        </div>
+        {agreementInfo && (
+          <div className={`self-start md:self-center px-4 py-2 rounded-md text-xs font-bold border ${
+            hasSignatureForThisPg ? 'bg-green-50 text-green-700 border-green-200' : 'bg-orange-50 text-[#D97706] border-orange-200'
+          }`}>
+            <span className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-md bg-current animate-pulse"></span>
+              {agreementBadgeText}
+            </span>
+          </div>
+        )}
       </div>
 
+      {!agreementInfo && !loading && (
+        <div className="bg-white rounded-md shadow-lg border border-[#E5E0D9] overflow-hidden max-w-5xl">
+          <div className="p-10 text-center">
+            <p className="text-sm font-bold text-[#1C1C1C]">No active agreement found.</p>
+            <p className="text-xs text-[#4B4B4B] mt-2">PG agreement details are cleared after move-out.</p>
+          </div>
+        </div>
+      )}
+
       {/* Details Card */}
+      {agreementInfo && (
       <div className="bg-white rounded-md shadow-lg border border-[#E5E0D9] overflow-hidden max-w-5xl">
         <div className="p-6 md:p-10">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-8 rounded-b-md">
@@ -158,6 +170,7 @@ const Agreements = () => {
           </span>
         </div>
       </div>
+      )}
     </div>
   );
 };
