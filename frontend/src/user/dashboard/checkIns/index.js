@@ -34,6 +34,7 @@ const CheckIns = () => {
   const [securityDepositAmount, setSecurityDepositAmount] = useState(0);
   const [checkInDate, setCheckInDate] = useState(null);
   const [lastPaymentDate, setLastPaymentDate] = useState(null);
+  const [moveOutCompleted, setMoveOutCompleted] = useState(false);
   const authToken = localStorage.getItem("userToken");
 
   const hasActiveBooking = Boolean(
@@ -43,6 +44,7 @@ const CheckIns = () => {
 
   const canRequestMoveOut = hasPaidFirstRent && hasApprovedMoveIn;
   const disableMoveInPay = hasPaidFirstRent || !Number.isFinite(Number(rentAmount)) || Number(rentAmount) <= 0;
+  const disableAllActions = moveOutCompleted;
 
   useEffect(() => {
     if (authToken) {
@@ -92,6 +94,7 @@ const CheckIns = () => {
       const data = res.data.data;
       const booking = data.currentBooking || {};
       const nextPayment = data.nextPayment || {};
+      const isMoveOutCompleted = Boolean(data.moveOutCompleted);
       const bookingStatus = String(booking.status || "").toLowerCase();
       const bookingPaid = Boolean(
         booking.moveInDuesPaid ||
@@ -100,6 +103,7 @@ const CheckIns = () => {
       const moveInApproved = Boolean(booking.hasApprovedMoveIn);
 
       setCurrentBooking(booking);
+      setMoveOutCompleted(isMoveOutCompleted);
       setHasRequestedMoveIn(Boolean(booking.hasRequestedMoveIn));
       setSecurityDepositAmount(Number(booking.securityDepositAmount || 0));
       setCheckInDate(booking.checkInDate ? new Date(booking.checkInDate) : null);
@@ -110,9 +114,11 @@ const CheckIns = () => {
       setHasPaidFirstRent(bookingPaid);
       setHasApprovedMoveIn(moveInApproved);
 
-      setSystemState(deriveSystemState(booking));
+      setSystemState(isMoveOutCompleted ? "MOVED_OUT" : deriveSystemState(booking));
 
-      if (bookingStatus === "active") {
+      if (isMoveOutCompleted) {
+        setStayStatus("MovedOut");
+      } else if (bookingStatus === "active") {
         setStayStatus("Active");
       } else if (bookingStatus === "pending move-in approval") {
         setStayStatus("PendingConfirmation");
@@ -462,7 +468,9 @@ const CheckIns = () => {
             </div>
             <h2 className="text-xl font-bold uppercase tracking-tight">Activate Your Stay</h2>
             <p className="text-[#4B4B4B] mb-6 max-w-sm">
-              {systemState === "ACTIVE_STAY"
+              {systemState === "MOVED_OUT"
+                ? "Move-out completed by owner. Your current PG details are cleared."
+                : systemState === "ACTIVE_STAY"
                 ? "Move-In approved by owner."
                 : systemState === "MOVE_IN_PENDING"
                   ? "Rent + deposit paid. Request move-in to proceed, or cancel move-in if needed."
@@ -479,23 +487,23 @@ const CheckIns = () => {
                 <div className="flex flex-col sm:flex-row gap-3 w-full">
                   <CButton
                     onClick={handleMoveIn}
-                      disabled={disableMoveInPay || !hasActiveBooking}
-                      className={`w-full flex-1 py-4 lg:py-4 text-lg shadow-md ${(disableMoveInPay || !hasActiveBooking) ? "bg-gray-400 hover:bg-gray-400 border-gray-400" : ""}`}
+                      disabled={disableAllActions || disableMoveInPay || !hasActiveBooking}
+                      className={`w-full flex-1 py-4 lg:py-4 text-lg shadow-md ${(disableAllActions || disableMoveInPay || !hasActiveBooking) ? "bg-gray-400 hover:bg-gray-400 border-gray-400 cursor-not-allowed" : ""}`}
                   >
                     Pay Rent & Move-In
                   </CButton>
                   <CButton
                     onClick={handleCancelReservation}
-                      disabled={!hasActiveBooking}
-                      className={`w-full flex-1 py-4 lg:py-4 text-lg shadow-md ${!hasActiveBooking ? "bg-gray-400 hover:bg-gray-400 border-gray-400" : ""}`}
+                      disabled={disableAllActions || !hasActiveBooking}
+                      className={`w-full flex-1 py-4 lg:py-4 text-lg shadow-md ${(disableAllActions || !hasActiveBooking) ? "bg-gray-400 hover:bg-gray-400 border-gray-400 cursor-not-allowed" : ""}`}
                   >
                     Cancel Reservation
                   </CButton>
                   <CButton
                     onClick={handleMoveOut}
-                      disabled={!hasActiveBooking || !canRequestMoveOut}
+                      disabled={disableAllActions || !hasActiveBooking || !canRequestMoveOut}
                     className={`w-full flex-1 py-4 lg:py-4 text-lg shadow-md ${
-                        (!hasActiveBooking || !canRequestMoveOut) ? "bg-gray-400 hover:bg-gray-400 border-gray-400 cursor-not-allowed" : ""
+                        (disableAllActions || !hasActiveBooking || !canRequestMoveOut) ? "bg-gray-400 hover:bg-gray-400 border-gray-400 cursor-not-allowed" : ""
                     }`}
                   >
                     Request Move-Out
@@ -507,23 +515,23 @@ const CheckIns = () => {
                 <div className="flex flex-col sm:flex-row gap-3 w-full">
                   <CButton
                     onClick={handleRequestMoveIn}
-                    disabled={!hasActiveBooking}
-                    className={`w-full flex-1 py-4 lg:py-4 text-lg shadow-md ${!hasActiveBooking ? "bg-gray-400 hover:bg-gray-400 border-gray-400" : ""}`}
+                    disabled={disableAllActions || !hasActiveBooking}
+                    className={`w-full flex-1 py-4 lg:py-4 text-lg shadow-md ${(disableAllActions || !hasActiveBooking) ? "bg-gray-400 hover:bg-gray-400 border-gray-400 cursor-not-allowed" : ""}`}
                   >
                     Request Move-In
                   </CButton>
                   <CButton
                     onClick={handleCancelMoveIn}
-                    disabled={!hasActiveBooking}
-                    className={`w-full flex-1 py-4 lg:py-4 text-lg shadow-md ${!hasActiveBooking ? "bg-gray-400 hover:bg-gray-400 border-gray-400" : ""}`}
+                    disabled={disableAllActions || !hasActiveBooking}
+                    className={`w-full flex-1 py-4 lg:py-4 text-lg shadow-md ${(disableAllActions || !hasActiveBooking) ? "bg-gray-400 hover:bg-gray-400 border-gray-400 cursor-not-allowed" : ""}`}
                   >
                     Cancel Move-In
                   </CButton>
                   <CButton
                     onClick={handleMoveOut}
-                    disabled={!hasActiveBooking || !canRequestMoveOut}
+                    disabled={disableAllActions || !hasActiveBooking || !canRequestMoveOut}
                     className={`w-full flex-1 py-4 lg:py-4 text-lg shadow-md ${
-                      (!hasActiveBooking || !canRequestMoveOut) ? "bg-gray-400 hover:bg-gray-400 border-gray-400 cursor-not-allowed" : ""
+                      (disableAllActions || !hasActiveBooking || !canRequestMoveOut) ? "bg-gray-400 hover:bg-gray-400 border-gray-400 cursor-not-allowed" : ""
                     }`}
                   >
                     Request Move-Out
@@ -535,16 +543,16 @@ const CheckIns = () => {
                 <div className="flex flex-col sm:flex-row gap-3 w-full">
                   <CButton
                     onClick={handleMoveIn}
-                    disabled={disableMoveInPay || !hasActiveBooking}
-                    className={`w-full flex-1 py-4 lg:py-4 text-lg shadow-md ${(disableMoveInPay || !hasActiveBooking) ? "bg-gray-400 hover:bg-gray-400 border-gray-400" : ""}`}
+                    disabled={disableAllActions || disableMoveInPay || !hasActiveBooking}
+                    className={`w-full flex-1 py-4 lg:py-4 text-lg shadow-md ${(disableAllActions || disableMoveInPay || !hasActiveBooking) ? "bg-gray-400 hover:bg-gray-400 border-gray-400 cursor-not-allowed" : ""}`}
                   >
                     Pay Rent & Move-In
                   </CButton>
                   <CButton
                     onClick={handleMoveOut}
-                    disabled={!hasActiveBooking || !canRequestMoveOut}
+                    disabled={disableAllActions || !hasActiveBooking || !canRequestMoveOut}
                     className={`w-full flex-1 py-4 lg:py-4 text-lg shadow-md ${
-                      (!hasActiveBooking || !canRequestMoveOut) ? "bg-gray-400 hover:bg-gray-400 border-gray-400 cursor-not-allowed" : ""
+                      (disableAllActions || !hasActiveBooking || !canRequestMoveOut) ? "bg-gray-400 hover:bg-gray-400 border-gray-400 cursor-not-allowed" : ""
                     }`}
                   >
                     Request Move-Out
@@ -556,9 +564,9 @@ const CheckIns = () => {
                 <div className="flex flex-col sm:flex-row gap-3 w-full">
                   <CButton
                     onClick={handleMoveOut}
-                    disabled={!hasActiveBooking || !canRequestMoveOut}
+                    disabled={disableAllActions || !hasActiveBooking || !canRequestMoveOut}
                     className={`w-full flex-1 py-4 lg:py-4 text-lg shadow-md ${
-                      (!hasActiveBooking || !canRequestMoveOut) ? "bg-gray-400 hover:bg-gray-400 border-gray-400 cursor-not-allowed" : ""
+                      (disableAllActions || !hasActiveBooking || !canRequestMoveOut) ? "bg-gray-400 hover:bg-gray-400 border-gray-400 cursor-not-allowed" : ""
                     }`}
                   >
                     Request Move-Out

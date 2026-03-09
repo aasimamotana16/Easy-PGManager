@@ -1,4 +1,5 @@
 const Booking = require('../models/bookingModel');
+const Tenant = require('../models/tenantModel');
 
 // Handle new booking submission [cite: 2026-01-06]
 exports.createBooking = async (req, res) => {
@@ -13,10 +14,22 @@ exports.createBooking = async (req, res) => {
     }).sort({ createdAt: -1 });
 
     if (existingBooking) {
+      const latestTenant = normalizedEmail
+        ? await Tenant.findOne({ email: new RegExp(`^${normalizedEmail}$`, "i") })
+            .sort({ createdAt: -1 })
+            .select("status moveOutCompletedAt")
+            .lean()
+        : null;
+      const tenantStatusLower = String(latestTenant?.status || "").trim().toLowerCase();
+      const moveOutCompleted = tenantStatusLower === "inactive";
+      if (moveOutCompleted) {
+        // Allow creating a new booking after owner-approved move-out.
+      } else {
       return res.status(409).json({
         success: false,
         message: "Tenant already has an active booking. Cancel/complete it before creating another."
       });
+      }
     }
 
     // Generate a unique bookingId since it's required in your model [cite: 2026-01-01]

@@ -269,6 +269,13 @@ const getUserDashboard = async (req, res) => {
     if (!user) return res.status(404).json({ message: "User not found" });
 
     const tenantEmail = String(user.email || "").trim().toLowerCase();
+
+    const tenantRecord = tenantEmail ? await resolveTenantForUser(user) : null;
+    const moveOutCompleted = Boolean(
+      tenantRecord &&
+      String(tenantRecord.status || "").toLowerCase() === "inactive" &&
+      tenantRecord.moveOutCompletedAt
+    );
     const booking = await Booking.findOne({
       status: { $in: ["Pending", "Confirmed"] },
       $or: [
@@ -399,7 +406,7 @@ const getUserDashboard = async (req, res) => {
     const recentPayments = filteredRecentPayments.map((payment) => ({
       id: payment._id,
       month: payment.month || new Date(payment.paymentDate).toLocaleString("en-US", { month: "short", year: "numeric" }),
-      amount: Number(monthlyRent || payment.amountPaid || 0),
+      amount: Number(payment.amountPaid || 0),
       status: "Paid"
     }));
 
@@ -409,12 +416,12 @@ const getUserDashboard = async (req, res) => {
       currentBooking: {
         bookingDbId: booking?._id || null,
         bookingId: booking?.bookingId || null,
-        pgId: booking?.pgId || user.assignedPg || null,
-        pgName: booking?.pgName || user.bookedPgName || "No PG Booked",
-        roomNo: latestAgreement?.roomNo || user.roomNo || "N/A",
-        roomType: roomType,
-        status: bookingStatus,
-        monthlyRent: monthlyRent,
+        pgId: moveOutCompleted ? null : (booking?.pgId || user.assignedPg || null),
+        pgName: moveOutCompleted ? "No PG Booked" : (booking?.pgName || user.bookedPgName || "No PG Booked"),
+        roomNo: moveOutCompleted ? "N/A" : (latestAgreement?.roomNo || user.roomNo || "N/A"),
+        roomType: moveOutCompleted ? "N/A" : roomType,
+        status: moveOutCompleted ? "Moved Out" : bookingStatus,
+        monthlyRent: moveOutCompleted ? 0 : monthlyRent,
         isPaid: Boolean(booking?.isPaid),
         initialRentPaid,
         securityDepositPaid,
@@ -428,13 +435,14 @@ const getUserDashboard = async (req, res) => {
         bookingState: booking?.status || "Pending",
       },
       nextPayment: {
-        amount: Number(rentDue + securityDepositDue),
-        rentDue,
-        securityDepositDue,
-        dueDate: dueDateLabel,
-        canPayNow
+        amount: moveOutCompleted ? 0 : Number(rentDue + securityDepositDue),
+        rentDue: moveOutCompleted ? 0 : rentDue,
+        securityDepositDue: moveOutCompleted ? 0 : securityDepositDue,
+        dueDate: moveOutCompleted ? "No due" : dueDateLabel,
+        canPayNow: moveOutCompleted ? false : canPayNow
       },
-      recentPayments
+      recentPayments,
+      moveOutCompleted
     };
 
     res.status(200).json({ success: true, data: dashboardData });
@@ -640,6 +648,20 @@ const getMyAgreement = async (req, res) => {
     const userDocWithAgreementCopy = await User.findById(req.user._id).select(
       "+rentalAgreementCopy.status +rentalAgreementCopy.fileUrl"
     );
+
+    const tenantRecord = await resolveTenantForUser({ email: req.user?.email || userDocWithAgreementCopy?.email || "" });
+    const moveOutCompleted = Boolean(
+      tenantRecord &&
+      String(tenantRecord.status || "").toLowerCase() === "inactive" &&
+      tenantRecord.moveOutCompletedAt
+    );
+    if (moveOutCompleted) {
+      return res.status(200).json({
+        success: true,
+        data: null,
+        message: "Move-out completed. No active agreement."
+      });
+    }
     const signedAgreementDocStatus = String(userDocWithAgreementCopy?.rentalAgreementCopy?.status || "");
     const hasUploadedSignedAgreement = Boolean(userDocWithAgreementCopy?.rentalAgreementCopy?.fileUrl) &&
       ["uploaded", "verified"].includes(signedAgreementDocStatus.toLowerCase());
@@ -840,6 +862,26 @@ const getMyOwnerContact = async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select("email assignedPg fullName");
     if (!user) return res.status(404).json({ success: false, message: "User not found" });
+
+    const tenantRecord = await resolveTenantForUser(user);
+    const moveOutCompleted = Boolean(
+      tenantRecord &&
+      String(tenantRecord.status || "").toLowerCase() === "inactive" &&
+      tenantRecord.moveOutCompletedAt
+    );
+    if (moveOutCompleted) {
+      return res.status(200).json({
+        success: true,
+        data: {
+          ownerName: "",
+          phone: "",
+          email: "",
+          pgName: "",
+          pgAddress: ""
+        },
+        message: "Move-out completed. No active owner contact."
+      });
+    }
 
     const tenantEmail = String(user.email || "").trim().toLowerCase();
 

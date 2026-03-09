@@ -654,6 +654,17 @@ const getUserPaymentStats = async (req, res) => {
     const tenantName = user?.fullName || "Tenant";
     const tenantEmail = String(user?.email || "").trim().toLowerCase();
 
+    const tenantRecord = tenantEmail
+      ? await Tenant.findOne({ email: new RegExp(`^${tenantEmail}$`, "i") })
+          .sort({ createdAt: -1 })
+          .select("status moveOutCompletedAt")
+      : null;
+    const moveOutCompleted = Boolean(
+      tenantRecord &&
+      String(tenantRecord.status || "").toLowerCase() === "inactive" &&
+      tenantRecord.moveOutCompletedAt
+    );
+
     const historyRaw = await Payment.find({ user: req.user.id, paymentStatus: { $in: ["Success", "Paid", "PAID"] } })
       .sort({ paymentDate: -1 })
       .select("month paymentDate amountPaid paymentStatus _id pgId pgName tenantName");
@@ -681,6 +692,27 @@ const getUserPaymentStats = async (req, res) => {
       pgId: p.pgId || null,
       pgName: p.pgName || null
     }));
+
+    if (moveOutCompleted) {
+      return res.status(200).json({
+        success: true,
+        totalPaid,
+        nextPayment: {
+          amount: 0,
+          rentDue: 0,
+          securityDepositDue: 0,
+          pgId: null,
+          pgName: "",
+          bookingId: null,
+          month: "",
+          dueDateMs: null,
+          dueDate: "No due"
+        },
+        lateFine: 0,
+        history,
+        moveOutCompleted: true
+      });
+    }
 
     const bookingMatchers = [
       { tenantUserId: req.user.id },
@@ -739,12 +771,6 @@ const getUserPaymentStats = async (req, res) => {
       );
       if (!bookingPgId && pg?._id) bookingPgId = pg._id;
       if (!bookingPgName && pg?.pgName) bookingPgName = pg.pgName;
-      if (currentRentDue > 0) {
-        history = history.map((row) => ({
-          ...row,
-          amount: currentRentDue
-        }));
-      }
     }
 
     let nextPayment = null;
@@ -772,12 +798,15 @@ const getUserPaymentStats = async (req, res) => {
         pgName: pendingPayment.pgName || bookingPgName || "",
         bookingId: booking?._id || null,
         month: due.toLocaleString("en-US", { month: "short", year: "numeric" }),
+        dueDateMs: due.getTime(),
         dueDate: due.toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" })
       };
     } else if (booking) {
       const rentDue = Number(currentRentDue || 0);
       const amount = rentDue + securityDepositDue;
       const fallbackDue = getNextCycleDueDate(booking.checkInDate || new Date());
+      const due = new Date(fallbackDue || new Date());
+      due.setHours(0, 0, 0, 0);
       nextPayment = {
         amount,
         rentDue,
@@ -785,8 +814,9 @@ const getUserPaymentStats = async (req, res) => {
         pgId: bookingPgId || null,
         pgName: bookingPgName || "",
         bookingId: booking._id,
-        month: (fallbackDue || new Date()).toLocaleString("en-US", { month: "short", year: "numeric" }),
-        dueDate: (fallbackDue || new Date()).toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" })
+        month: due.toLocaleString("en-US", { month: "short", year: "numeric" }),
+        dueDateMs: due.getTime(),
+        dueDate: due.toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" })
       };
     }
 
@@ -795,7 +825,8 @@ const getUserPaymentStats = async (req, res) => {
       totalPaid,
       nextPayment,
       lateFine,
-      history
+      history,
+      moveOutCompleted: false
     });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
@@ -839,14 +870,7 @@ const downloadReceipt = async (req, res) => {
       fallbackRent: Number(linkedBooking?.rentAmount || linkedBooking?.bookingAmount || linkedPg?.price || payment.amountPaid || 0),
       fallbackDeposit: Number(linkedBooking?.securityDeposit || linkedPg?.securityDeposit || 0)
     });
-    const amount = Number(
-      receiptPricing.rentAmount ||
-      linkedBooking?.rentAmount ||
-      linkedBooking?.bookingAmount ||
-      linkedPg?.price ||
-      payment.amountPaid ||
-      0
-    );
+    const amount = Math.max(0, Number(payment.amountPaid || 0));
     const propertyName = payment.pgId?.pgName || payment.pgName || 'N/A';
     const propertyLocation = payment.pgId?.location || payment.pgId?.city || 'N/A';
     const receiptNo = String(payment._id);
