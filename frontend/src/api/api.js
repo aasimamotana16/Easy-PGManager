@@ -1,5 +1,7 @@
 import axios from "axios";
 
+const AUTH_TIMEOUT_MS = 15000;
+
 const API = axios.create({
   baseURL: "http://localhost:5000/api",
   withCredentials: true,
@@ -24,13 +26,13 @@ API.interceptors.request.use((req) => {
 /* =========================
     AUTH & USER APIs 
 ========================= */
-export const registerUser = (userData) => API.post("/auth/signup", userData);
-export const loginUser = (userData) => API.post("/auth/login", userData);
-export const sendOtp = (data) => API.post("/auth/send-otp", data);
-export const forgotPassword = (email) => API.post("/auth/forgot-password", { email });
-export const verifyOtpAndResetPassword = (data) => API.post("/auth/verify-otp-reset", data);
-export const resetPassword = (token, password) => API.post(`/auth/reset-password/${token}`, { password });
-export const verifySecurityAction = (data) => API.post("/auth/verify-action", data);
+export const registerUser = (userData) => API.post("/auth/signup", userData, { timeout: AUTH_TIMEOUT_MS });
+export const loginUser = (userData) => API.post("/auth/login", userData, { timeout: AUTH_TIMEOUT_MS });
+export const sendOtp = (data) => API.post("/auth/send-otp", data, { timeout: AUTH_TIMEOUT_MS });
+export const forgotPassword = (email) => API.post("/auth/forgot-password", { email }, { timeout: AUTH_TIMEOUT_MS });
+export const verifyOtpAndResetPassword = (data) => API.post("/auth/verify-otp-reset", data, { timeout: AUTH_TIMEOUT_MS });
+export const resetPassword = (token, password) => API.post(`/auth/reset-password/${token}`, { password }, { timeout: AUTH_TIMEOUT_MS });
+export const verifySecurityAction = (data) => API.post("/auth/verify-action", data, { timeout: AUTH_TIMEOUT_MS });
 
 // Profile & Dashboard
 export const getUserProfile = () => API.get("/users/me"); 

@@ -113,7 +113,34 @@ const SignUp = () => {
       const response = await sendOtp({ email, recaptchaToken: "development_bypass" });
       if (response?.data?.success) setOtpStage(true);
     } catch (error) {
-      setErrors({ server: "Failed to send OTP" });
+      const rawMessage = String(error?.message || "");
+      const isTimeout = error?.code === "ECONNABORTED" || /timeout/i.test(rawMessage);
+      const isNetwork = !error?.response;
+
+      if (isTimeout) {
+        Swal.fire({
+          icon: "error",
+          title: "Request Timed Out",
+          text: "Sending OTP is taking too long. Please try again.",
+          confirmButtonColor: "#D97706"
+        });
+      } else if (isNetwork) {
+        Swal.fire({
+          icon: "error",
+          title: "Cannot Reach Server",
+          text: "Backend is not responding. Please start the server and try again.",
+          confirmButtonColor: "#D97706"
+        });
+      } else {
+        Swal.fire({
+          icon: "error",
+          title: "Failed to Send OTP",
+          text: error.response?.data?.message || "Failed to send OTP",
+          confirmButtonColor: "#D97706"
+        });
+      }
+
+      setErrors({ server: error.response?.data?.message || "Failed to send OTP" });
     } finally {
       setLoading(false);
     }
@@ -158,9 +185,39 @@ const SignUp = () => {
         }, 1500);
       }
     } catch (err) {
+      const rawMessage = String(err?.message || "");
+      const isTimeout = err?.code === "ECONNABORTED" || /timeout/i.test(rawMessage);
+      const isNetwork = !err?.response;
       const msg = err.response?.data?.message || "Registration failed";
+
       setErrors({ ...errors, server: msg });
-      Swal.fire("Error", msg, "error");
+
+      if (isTimeout) {
+        Swal.fire({
+          icon: "error",
+          title: "Request Timed Out",
+          text: "Registration is taking too long. Please try again.",
+          confirmButtonColor: "#D97706"
+        });
+        return;
+      }
+
+      if (isNetwork) {
+        Swal.fire({
+          icon: "error",
+          title: "Cannot Reach Server",
+          text: "Backend is not responding. Please start the server and try again.",
+          confirmButtonColor: "#D97706"
+        });
+        return;
+      }
+
+      Swal.fire({
+        icon: "error",
+        title: "Registration Failed",
+        text: msg,
+        confirmButtonColor: "#D97706"
+      });
     } finally {
       setLoading(false);
     }
@@ -172,7 +229,36 @@ const SignUp = () => {
       await sendOtp({ email, recaptchaToken: "development_bypass" });
       Swal.fire({ icon: "success", title: "OTP Sent", timer: 1200, showConfirmButton: false });
     } catch (err) {
-      Swal.fire("Error", "Failed to resend OTP", "error");
+      const rawMessage = String(err?.message || "");
+      const isTimeout = err?.code === "ECONNABORTED" || /timeout/i.test(rawMessage);
+      const isNetwork = !err?.response;
+
+      if (isTimeout) {
+        Swal.fire({
+          icon: "error",
+          title: "Request Timed Out",
+          text: "Resending OTP is taking too long. Please try again.",
+          confirmButtonColor: "#D97706"
+        });
+        return;
+      }
+
+      if (isNetwork) {
+        Swal.fire({
+          icon: "error",
+          title: "Cannot Reach Server",
+          text: "Backend is not responding. Please start the server and try again.",
+          confirmButtonColor: "#D97706"
+        });
+        return;
+      }
+
+      Swal.fire({
+        icon: "error",
+        title: "Failed to Resend OTP",
+        text: err.response?.data?.message || "Failed to resend OTP",
+        confirmButtonColor: "#D97706"
+      });
     } finally {
       setLoading(false);
     }

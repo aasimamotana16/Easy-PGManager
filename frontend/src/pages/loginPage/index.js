@@ -71,6 +71,28 @@ const Login = () => {
     }
   };
 
+  const handleCaptchaExpired = () => {
+    setCaptchaToken(null);
+    Swal.fire({
+      icon: "info",
+      title: "Captcha Expired",
+      text: "Please verify the captcha again.",
+      confirmButtonColor: "#D97706"
+    });
+  };
+
+  const handleCaptchaErrored = () => {
+    setCaptchaToken(null);
+    setShowCaptchaModal(false);
+    setLoading(false);
+    Swal.fire({
+      icon: "error",
+      title: "Captcha Failed to Load",
+      text: "reCAPTCHA could not be loaded (network/adblock). Please try again or disable the blocker.",
+      confirmButtonColor: "#D97706"
+    });
+  };
+
   const executeLogin = async (token) => {
     try {
       setLoading(true);
@@ -122,7 +144,32 @@ const Login = () => {
         }, 1500);
       }
     } catch (err) {
-      console.error("Login Error:", err.response?.data);
+      const rawMessage = String(err?.message || "");
+      const isTimeout = err?.code === "ECONNABORTED" || /timeout/i.test(rawMessage);
+      const isNetwork = !err?.response;
+
+      console.error("Login Error:", err?.response?.data || rawMessage);
+
+      if (isTimeout) {
+        Swal.fire({
+          icon: "error",
+          title: "Request Timed Out",
+          text: "Login is taking too long. Please check your internet and try again.",
+          confirmButtonColor: "#D97706"
+        });
+        return;
+      }
+
+      if (isNetwork) {
+        Swal.fire({
+          icon: "error",
+          title: "Cannot Reach Server",
+          text: "Backend is not responding. Please start the server and try again.",
+          confirmButtonColor: "#D97706"
+        });
+        return;
+      }
+
       Swal.fire({
         icon: "error",
         title: "Login Failed",
@@ -287,6 +334,8 @@ const Login = () => {
                 <ReCAPTCHA
                   sitekey="6LfT_lksAAAAAOanKI3_z06JdciUMm5vg3emlZgL"
                   onChange={handleCaptchaChange}
+                  onExpired={handleCaptchaExpired}
+                  onErrored={handleCaptchaErrored}
                 />
               </div>
 

@@ -124,13 +124,13 @@ const BookingManagement = () => {
     }
   };
 
-  const openAgreementPdf = (booking) => {
-    const agreementPdfUrl = booking?.agreementPdfUrl;
-    if (!agreementPdfUrl) {
-      const ownerApproved = Boolean(booking?.ownerApproved);
-      const paid = Boolean(booking?.isPaid);
-      const status = String(booking?.status || "Pending");
+  const openAgreementPdf = async (booking) => {
+    const status = String(booking?.status || "Pending");
+    const ownerApproved = Boolean(booking?.ownerApproved);
+    const paid = Boolean(booking?.isPaid);
 
+    // Keep the existing UX messaging for non-confirmed / unavailable states.
+    if (status !== "Confirmed") {
       let reason = "Available after confirmation.";
       if (status === "Pending" && !ownerApproved) reason = "Available after owner approval.";
       if (ownerApproved && !paid) reason = "Available after tenant payment.";
@@ -145,9 +145,51 @@ const BookingManagement = () => {
       return;
     }
 
-    const normalizedPath = String(agreementPdfUrl).replace(/^\/+/, "");
-    const finalUrl = `${apiBaseUrl}/${normalizedPath}`;
-    window.open(finalUrl, "_blank", "noopener,noreferrer");
+    const token = localStorage.getItem("userToken");
+    if (!token) {
+      Swal.fire({
+        title: "Unauthorized",
+        text: "Please login again.",
+        icon: "error",
+        confirmButtonColor: "#D97706"
+      });
+      return;
+    }
+
+    const bookingId = booking?._id;
+    if (!bookingId) return;
+
+    try {
+      Swal.fire({
+        title: "Preparing Agreement...",
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+      });
+
+      // Generates (or refreshes) the PDF and returns the current URL.
+      const res = await axios.post(
+        `${apiBaseUrl}/api/owner/booking/${bookingId}/generate-agreement-pdf`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      const agreementPdfUrl = res.data?.data?.agreementPdfUrl || booking?.agreementPdfUrl;
+      if (!agreementPdfUrl) {
+        throw new Error("Agreement URL not available");
+      }
+
+      const normalizedPath = String(agreementPdfUrl).replace(/^\/+/, "");
+      const finalUrl = `${apiBaseUrl}/${normalizedPath}`;
+      Swal.close();
+      window.open(finalUrl, "_blank", "noopener,noreferrer");
+    } catch (error) {
+      Swal.fire({
+        title: "Failed",
+        text: error?.response?.data?.message || error?.message || "Unable to open agreement.",
+        icon: "error",
+        confirmButtonColor: "#D97706"
+      });
+    }
   };
 
   return (

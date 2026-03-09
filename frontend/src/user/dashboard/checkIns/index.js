@@ -565,6 +565,15 @@ const CheckIns = () => {
                   </CButton>
                 </div>
               )}
+
+              <div className="mt-5 w-full rounded-md border border-[#E5E0D9] bg-gray-50 p-4 text-left">
+                <p className="text-sm font-bold text-[#1C1C1C]">Note:</p>
+                <ul className="mt-2 list-disc pl-5 text-sm text-[#4B4B4B] space-y-1">
+                  <li>If move-in is not completed before the check-in date, the booking will be marked as No-Show.</li>
+                  <li>In No-Show cases, 15% of the security deposit will be deducted as a reservation fee.</li>
+                  <li>The remaining 85% of the deposit will be refunded after booking cancellation processing.</li>
+                </ul>
+              </div>
             </div>
           </div>
         </div>
