@@ -242,7 +242,9 @@ const BookingPage = () => {
         members: personsData,
         stayDetails,
         persons,
-        roomType: selectedRoom?.type || activePg.occupancy || "Single Sharing"
+        roomType: selectedRoom?.type || activePg.occupancy || "Single Sharing",
+        variantLabel: selectedRoom?.type || "",
+        paymentOption
       };
 
       try {

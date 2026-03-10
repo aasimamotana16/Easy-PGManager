@@ -56,7 +56,10 @@ const Payments = () => {
   const fetchPaymentDetails = async () => {
     const token = localStorage.getItem("userToken");
     try {
-      const response = await fetch("http://localhost:5000/api/payments/user-stats", { headers: { Authorization: `Bearer ${token}` } });
+      const statsUrl = queryBookingId
+        ? `http://localhost:5000/api/payments/user-stats?bookingId=${encodeURIComponent(queryBookingId)}`
+        : "http://localhost:5000/api/payments/user-stats";
+      const response = await fetch(statsUrl, { headers: { Authorization: `Bearer ${token}` } });
       const data = await response.json();
       if (data.success) {
         setPaymentData({ 
@@ -129,6 +132,15 @@ const Payments = () => {
   const selectedBaseDue = paymentData.moveOutCompleted ? 0 : (intentAmount != null ? Number(intentAmount) : baseDue);
   const totalDue = selectedBaseDue + Number(paymentData.lateFine || 0);
   const disablePayActions = !Number.isFinite(totalDue) || totalDue <= 0;
+
+  const derivedMoveInIntentType = (() => {
+    const rentDue = Number(paymentData.nextPayment?.rentDue || 0);
+    const depositDue = Number(paymentData.nextPayment?.securityDepositDue || 0);
+    if (depositDue > 0 && rentDue <= 0) return 'DEPOSIT_ONLY';
+    if (rentDue > 0 && depositDue <= 0) return 'RENT_ONLY';
+    if (rentDue > 0 && depositDue > 0) return 'RENT_AND_DEPOSIT';
+    return 'MOVE_IN_PAYMENT';
+  })();
 
   let showPayNow = false;
   let showExtendStay = false;
@@ -303,7 +315,7 @@ const Payments = () => {
                   amount={totalDue} 
                   pgId={paymentData.nextPayment?.pgId || ""} 
                   bookingId={queryBookingId || paymentData.nextPayment?.bookingId || ""}
-                  intentType={intentType || (stayStatus === 'Active' ? "MONTHLY_RENT" : "MOVE_IN_PAYMENT")} 
+                  intentType={intentType || (stayStatus === 'Active' ? "MONTHLY_RENT" : derivedMoveInIntentType)} 
                   disabled={disablePayActions}
                   className="px-8 py-3 rounded-md font-bold text-white shadow-lg transition-transform active:scale-95"
                   style={{ backgroundColor: colors.primary }}
@@ -349,7 +361,7 @@ const Payments = () => {
                   amount={totalDue} 
                   pgId={paymentData.nextPayment?.pgId || ""} 
                   bookingId={queryBookingId || paymentData.nextPayment?.bookingId || ""}
-                  intentType="MOVE_IN_PAYMENT"
+                  intentType={derivedMoveInIntentType}
                   disabled={disablePayActions}
                   className="px-8 py-3 rounded-md font-bold text-white"
                   style={{ backgroundColor: colors.primary }}

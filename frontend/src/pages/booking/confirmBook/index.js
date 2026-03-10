@@ -1,8 +1,9 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import Navbar from "../../../components/navbar";
 import Footer from "../../../components/footer";
 import CButton from "../../../components/cButton";
+import Swal from "sweetalert2";
 import {
   CheckCircleIcon,
   CalendarIcon,
@@ -15,7 +16,14 @@ const ConfirmBooking = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
+  const [isCancelling, setIsCancelling] = useState(false);
+
   const bookingData = location.state?.bookingData;
+
+  const bookingIdentifier = useMemo(() => {
+    // Prefer DB booking id from state, fallback to route param.
+    return String(bookingData?._id || bookingData?.bookingId || id || "").trim();
+  }, [bookingData, id]);
 
   useEffect(() => {
     if (!bookingData) {
@@ -39,6 +47,127 @@ const ConfirmBooking = () => {
     bookingStatus.includes("active") ||
     bookingStatus.includes("approved") ||
     bookingData.isConfirmed === true;
+
+  const cancelStatus = String(bookingData?.cancelRequest?.status || "").trim();
+  const cancelRequested = Boolean(bookingData?.cancelRequest?.requested);
+  const isCancelPending = cancelRequested && cancelStatus.toLowerCase() === "pending";
+  const isCancelled = String(bookingData?.status || "") === "Cancelled";
+
+  const handleCancelBooking = async () => {
+    if (!bookingIdentifier) {
+      Swal.fire({
+        title: "Booking Missing",
+        text: "Booking id not found. Please open the booking from your dashboard and try again.",
+        icon: "warning",
+        confirmButtonColor: "#D97706"
+      });
+      return;
+    }
+
+    const token = localStorage.getItem("userToken");
+    if (!token) {
+      Swal.fire({
+        title: "Session Expired",
+        text: "Please login again.",
+        icon: "warning",
+        confirmButtonColor: "#D97706"
+      });
+      return;
+    }
+
+    let estimateNoteHtml = '';
+    try {
+      const estimateResp = await fetch(
+        `http://localhost:5000/api/bookings/${encodeURIComponent(bookingIdentifier)}/cancellation-estimate`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const estimateJson = await estimateResp.json();
+      if (estimateResp.ok && estimateJson?.success && estimateJson?.data) {
+        const est = estimateJson.data;
+        const refundable = Number(est.refundableAmount || 0);
+        const nonRefundableCommission = Number(est.nonRefundableCommissionAmount || 0);
+        const noShowDeduction = Number(est.noShowDeductionAmount || 0);
+        estimateNoteHtml = `
+          <div style="margin-top:10px;padding:10px;border:1px dashed #D97706;border-radius:8px;background:#FEF3C7;">
+            <div style="font-size:12px;font-weight:700;color:#1C1C1C;">Estimated Refund</div>
+            <div style="font-size:12px;color:#4B4B4B;margin-top:4px;">Refundable: <b>₹${refundable.toLocaleString()}</b></div>
+            <div style="font-size:11px;color:#4B4B4B;margin-top:4px;">Non-refundable commission: ₹${nonRefundableCommission.toLocaleString()}</div>
+            ${noShowDeduction > 0 ? `<div style="font-size:11px;color:#4B4B4B;margin-top:4px;">No-show deduction: ₹${noShowDeduction.toLocaleString()}</div>` : ''}
+            ${est.refundRule ? `<div style="font-size:11px;color:#4B4B4B;margin-top:6px;">Rule: <b>${String(est.refundRule)}</b></div>` : ''}
+          </div>
+        `;
+      }
+    } catch (_) {
+      // ignore estimate failures
+    }
+
+    const result = await Swal.fire({
+      title: "Cancel Booking?",
+      html: `
+        <div style="text-align:left;">
+          <label style="font-size:12px;font-weight:600;">Reason</label>
+          <select id="cancel-reason" class="swal2-input" style="width:100%;">
+            <option value="">Select reason</option>
+            <option value="Change of plans">Change of plans</option>
+            <option value="Found another PG">Found another PG</option>
+            <option value="Budget issue">Budget issue</option>
+            <option value="Other">Other</option>
+          </select>
+          <label style="font-size:12px;font-weight:600;display:block;margin-top:10px;">Other reason (optional)</label>
+          <textarea id="cancel-other" class="swal2-textarea" placeholder="Write a short note (optional)"></textarea>
+          <p style="font-size:11px;color:#4B4B4B;margin-top:10px;">This will send a cancellation request to the owner for approval.</p>
+          ${estimateNoteHtml}
+        </div>
+      `,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Send Request",
+      confirmButtonColor: "#D97706",
+      cancelButtonColor: "#4B4B4B",
+      preConfirm: () => {
+        const reason = String(document.getElementById("cancel-reason")?.value || "").trim();
+        const otherReason = String(document.getElementById("cancel-other")?.value || "").trim();
+        if (!reason) {
+          Swal.showValidationMessage("Please select a reason");
+          return null;
+        }
+        return { reason, otherReason };
+      }
+    });
+
+    if (!result.isConfirmed || !result.value) return;
+
+    try {
+      setIsCancelling(true);
+      const resp = await fetch(`http://localhost:5000/api/bookings/${encodeURIComponent(bookingIdentifier)}/request-cancel`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(result.value)
+      });
+      const data = await resp.json();
+      if (!resp.ok || !data?.success) {
+        throw new Error(data?.message || "Failed to request cancellation");
+      }
+      Swal.fire({
+        title: "Request Sent",
+        text: data?.message || "Cancellation request sent to owner for approval.",
+        icon: "success",
+        confirmButtonColor: "#D97706"
+      }).then(() => navigate("/Home"));
+    } catch (e) {
+      Swal.fire({
+        title: "Failed",
+        text: e?.message || "Unable to request cancellation right now.",
+        icon: "error",
+        confirmButtonColor: "#D97706"
+      });
+    } finally {
+      setIsCancelling(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -117,10 +246,11 @@ const ConfirmBooking = () => {
           
 
             <button
-              onClick={() => navigate(`/cancel/${id}`)}
-              className="flex-1 py-3 px-4 border border-primarySoft rounded-md text-primaryDark hover:bg-primarySoft transition-colors text-sm font-medium"
+              onClick={handleCancelBooking}
+              disabled={isCancelling || isCancelPending || isCancelled}
+              className="flex-1 py-3 px-4 border border-primarySoft rounded-md text-primaryDark hover:bg-primarySoft transition-colors text-sm font-medium disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              Cancel Booking
+              {isCancelled ? "Booking Cancelled" : isCancelPending ? "Cancellation Requested" : (isCancelling ? "Sending..." : "Cancel Booking")}
             </button>
           </div>
         </div>

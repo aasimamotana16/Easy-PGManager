@@ -284,6 +284,39 @@ const createOrder = async (req, res) => {
       return res.status(503).json({ success: false, message: "Payment gateway not configured. Please contact admin." });
     }
 
+    // Guard: block monthly rent payments until required KYC/docs are uploaded.
+    // First/move-in payments remain allowed.
+    if (String(type || "").toUpperCase() === "MONTHLY_RENT") {
+      const userDocs = await User.findById(req.user.id)
+        .select(
+          "+idDocument.status +idDocument.fileUrl " +
+          "+aadharCard.status +aadharCard.fileUrl " +
+          "+rentalAgreementCopy.status +rentalAgreementCopy.fileUrl"
+        )
+        .lean();
+
+      const docData = userDocs || {};
+      const requiredFields = [
+        { key: "idDocument", label: "ID Document" },
+        { key: "aadharCard", label: "Aadhar Card" },
+        { key: "rentalAgreementCopy", label: "Signed Agreement" }
+      ];
+      const missing = requiredFields
+        .filter((r) => {
+          const status = String(docData?.[r.key]?.status || "Pending");
+          const fileUrl = String(docData?.[r.key]?.fileUrl || "").trim();
+          return status === "Pending" || !fileUrl;
+        })
+        .map((r) => r.label);
+
+      if (missing.length > 0) {
+        return res.status(400).json({
+          success: false,
+          message: `Please upload required documents before paying rent: ${missing.join(", ")}.`
+        });
+      }
+    }
+
     const requesterEmail = String(req.user?.email || "").trim().toLowerCase();
     let resolvedPgId = pgId || "";
     if (!bookingId && pgId) {
@@ -355,7 +388,32 @@ const verifyPayment = async (req, res) => {
       .update(sign.toString())
       .digest("hex");
 
-    if (razorpay_signature === expectedSign) {
+    let signatureOk = razorpay_signature === expectedSign;
+
+    // Fallback: if signature validation fails, cross-check payment via Razorpay API.
+    // This helps avoid rejecting valid payments due to misconfigured signature flows.
+    // Still enforces strict matching (order_id, amount, currency, and payment status).
+    if (!signatureOk && razorpay && razorpay_payment_id && razorpay_order_id) {
+      try {
+        const payment = await razorpay.payments.fetch(String(razorpay_payment_id));
+        const expectedAmountPaise = Math.round(Number(amountPaid || 0) * 100);
+        const paymentAmountPaise = Number(payment?.amount || 0);
+        const paymentCurrency = String(payment?.currency || '').toUpperCase();
+        const paymentStatus = String(payment?.status || '').toLowerCase();
+        const paymentOrderId = String(payment?.order_id || '');
+
+        const statusOk = paymentStatus === 'authorized' || paymentStatus === 'captured';
+        const amountOk = expectedAmountPaise > 0 && paymentAmountPaise === expectedAmountPaise;
+        const orderOk = paymentOrderId && paymentOrderId === String(razorpay_order_id);
+        const currencyOk = paymentCurrency === 'INR';
+
+        signatureOk = Boolean(statusOk && amountOk && orderOk && currencyOk);
+      } catch (fallbackErr) {
+        // ignore fallback errors; we'll return invalid signature below
+      }
+    }
+
+    if (signatureOk) {
       const tenantUser = await User.findById(req.user.id).select("fullName name email phone ownerId assignedPg");
       const tenantEmail = String(tenantUser?.email || "").trim().toLowerCase();
       const tenantName = await getTenantDisplayName(req.user.id, tenantUser?.fullName || tenantUser?.name || "Tenant");
@@ -456,8 +514,18 @@ const verifyPayment = async (req, res) => {
       if (targetBooking) {
         targetBooking.ownerApproved = Boolean(targetBooking.ownerApproved || String(targetBooking.status || "") === "Confirmed");
         targetBooking.ownerApprovalStatus = targetBooking.ownerApproved ? "approved" : "pending";
-        targetBooking.isPaid = true;
-        targetBooking.paymentStatus = "Paid";
+        const paymentType = String(type || "").toUpperCase();
+        // Booking.isPaid is used by owner booking UI as "move-in payment received".
+        // Do NOT mark isPaid for monthly rent cycles.
+        const countsAsMoveInPayment =
+          !paymentType ||
+          paymentType === "MOVE_IN_PAYMENT" ||
+          paymentType === "RENT_AND_DEPOSIT" ||
+          paymentType === "RENT_ONLY";
+        if (countsAsMoveInPayment) {
+          targetBooking.isPaid = true;
+          targetBooking.paymentStatus = "Paid";
+        }
         const monthlyRent = Number(targetBooking.rentAmount || targetBooking.bookingAmount || 0);
         const requiredDeposit = Number(targetBooking.securityDeposit ?? 0);
         const paidSoFarQuery = {
@@ -480,7 +548,7 @@ const verifyPayment = async (req, res) => {
         }
         const paidSoFarRaw = await Payment.find(paidSoFarQuery).select("amountPaid");
         const runningTotal = paidSoFarRaw.reduce((sum, p) => sum + (Number(p.amountPaid) || 0), 0);
-        const paymentType = String(type || "").toUpperCase();
+        // Reuse the computed paymentType above for move-in breakdown.
         const paidAmount = Number(amountPaid || 0);
         const isDepositOnly = paymentType === "DEPOSIT_ONLY";
         const isRentOnly = paymentType === "RENT_ONLY" || paymentType === "MONTHLY_RENT";
@@ -526,64 +594,67 @@ const verifyPayment = async (req, res) => {
         }
       }
 
-      // Mark pending due as paid for this tenant/PG/month.
-      const pgMatcher = [
-        normalizedPgId ? { pg: normalizedPgId } : null,
-        normalizedPgName ? { pgName: normalizedPgName } : null
-      ].filter(Boolean);
-      const pendingQuery = {
-        status: { $in: ["Pending", "Overdue"] },
-        month: paymentMonth,
-        $or: [
-          { tenant: req.user.id },
-          { tenantName: tenantName }
-        ]
-      };
-      if (pgMatcher.length > 0) {
-        pendingQuery.$and = [{ $or: pgMatcher }];
-      }
-
-      const paidPending = await PendingPayment.findOneAndUpdate(
-        pendingQuery,
-        { $set: { status: "Paid" } },
-        { sort: { dueDate: 1 } }
-      );
-
-      // After marking current cycle as paid, create the next cycle pending entry.
-      // This prevents "next due date" from getting stuck on an old month.
-      const nextAmount =
-        Number(paidPending?.amount) ||
-        Number(targetBooking?.rentAmount || targetBooking?.bookingAmount || 0) ||
-        Number(amountPaid || 0);
-      if (nextAmount > 0) {
-        const nextDueAnchor = paidPending?.dueDate ? new Date(paidPending.dueDate) : new Date();
-        const nextDueDate = addMonths(nextDueAnchor, 1);
-        const nextMonth = getMonthLabel(nextDueDate);
-
-        const nextPendingQuery = {
+      const normalizedPaymentType = String(type || "").toUpperCase();
+      if (normalizedPaymentType === "MONTHLY_RENT") {
+        // Mark pending due as paid for this tenant/PG/month.
+        const pgMatcher = [
+          normalizedPgId ? { pg: normalizedPgId } : null,
+          normalizedPgName ? { pgName: normalizedPgName } : null
+        ].filter(Boolean);
+        const pendingQuery = {
           status: { $in: ["Pending", "Overdue"] },
-          month: nextMonth,
+          month: paymentMonth,
           $or: [
             { tenant: req.user.id },
-            { tenantName }
+            { tenantName: tenantName }
           ]
         };
         if (pgMatcher.length > 0) {
-          nextPendingQuery.$and = [{ $or: pgMatcher }];
+          pendingQuery.$and = [{ $or: pgMatcher }];
         }
 
-        const existingNextPending = await PendingPayment.findOne(nextPendingQuery).select("_id");
-        if (!existingNextPending) {
-          await PendingPayment.create({
-            tenant: req.user.id,
-            pg: normalizedPgId || undefined,
-            pgName: normalizedPgName || "",
-            tenantName,
-            amount: nextAmount,
-            dueDate: nextDueDate,
-            status: "Pending",
-            month: nextMonth
-          });
+        const paidPending = await PendingPayment.findOneAndUpdate(
+          pendingQuery,
+          { $set: { status: "Paid" } },
+          { sort: { dueDate: 1 } }
+        );
+
+        // After marking current cycle as paid, create the next cycle pending entry.
+        // This prevents "next due date" from getting stuck on an old month.
+        const nextAmount =
+          Number(paidPending?.amount) ||
+          Number(targetBooking?.rentAmount || targetBooking?.bookingAmount || 0) ||
+          Number(amountPaid || 0);
+        if (nextAmount > 0) {
+          const nextDueAnchor = paidPending?.dueDate ? new Date(paidPending.dueDate) : new Date();
+          const nextDueDate = addMonths(nextDueAnchor, 1);
+          const nextMonth = getMonthLabel(nextDueDate);
+
+          const nextPendingQuery = {
+            status: { $in: ["Pending", "Overdue"] },
+            month: nextMonth,
+            $or: [
+              { tenant: req.user.id },
+              { tenantName }
+            ]
+          };
+          if (pgMatcher.length > 0) {
+            nextPendingQuery.$and = [{ $or: pgMatcher }];
+          }
+
+          const existingNextPending = await PendingPayment.findOne(nextPendingQuery).select("_id");
+          if (!existingNextPending) {
+            await PendingPayment.create({
+              tenant: req.user.id,
+              pg: normalizedPgId || undefined,
+              pgName: normalizedPgName || "",
+              tenantName,
+              amount: nextAmount,
+              dueDate: nextDueDate,
+              status: "Pending",
+              month: nextMonth
+            });
+          }
         }
       }
 
@@ -628,7 +699,10 @@ const verifyPayment = async (req, res) => {
         data: populatedPayment 
       });
     } else {
-      return res.status(400).json({ success: false, message: "Invalid signature!" });
+      return res.status(400).json({
+        success: false,
+        message: "Invalid signature! (Razorpay verification failed — check that backend RAZORPAY_KEY_SECRET matches the Key Secret for the Key ID used in checkout.)"
+      });
     }
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -654,16 +728,53 @@ const getUserPaymentStats = async (req, res) => {
     const tenantName = user?.fullName || "Tenant";
     const tenantEmail = String(user?.email || "").trim().toLowerCase();
 
+    const requestedBookingId = String(req.query?.bookingId || "").trim();
+
+    const bookingMatchers = [
+      { tenantUserId: req.user.id },
+      tenantEmail ? { tenantEmail: new RegExp(`^${tenantEmail}$`, "i") } : null,
+      { tenantName }
+    ].filter(Boolean);
+
+    let requestedBooking = null;
+    if (requestedBookingId && requestedBookingId.match(/^[a-fA-F0-9]{24}$/)) {
+      requestedBooking = await Booking.findById(requestedBookingId);
+      if (requestedBooking && !canUserPayForBooking(requestedBooking, req.user.id, tenantEmail, tenantName)) {
+        requestedBooking = null;
+      }
+    }
+
     const tenantRecord = tenantEmail
       ? await Tenant.findOne({ email: new RegExp(`^${tenantEmail}$`, "i") })
           .sort({ createdAt: -1 })
           .select("status moveOutCompletedAt")
       : null;
-    const moveOutCompleted = Boolean(
+
+    const baseMoveOutCompleted = Boolean(
       tenantRecord &&
       String(tenantRecord.status || "").toLowerCase() === "inactive" &&
       tenantRecord.moveOutCompletedAt
     );
+
+    // If a newer booking exists after move-out completion, treat the user as active again.
+    let moveOutCompleted = baseMoveOutCompleted;
+    if (baseMoveOutCompleted) {
+      const latestBooking = requestedBooking
+        ? requestedBooking
+        : await Booking.findOne({
+            status: { $in: ["Pending", "Confirmed"] },
+            $or: bookingMatchers
+          })
+            .sort({ createdAt: -1 })
+            .select("createdAt");
+      const hasPostMoveOutBooking = Boolean(
+        latestBooking &&
+        (!tenantRecord?.moveOutCompletedAt ||
+          !latestBooking?.createdAt ||
+          new Date(latestBooking.createdAt) > new Date(tenantRecord.moveOutCompletedAt))
+      );
+      moveOutCompleted = baseMoveOutCompleted && !hasPostMoveOutBooking;
+    }
 
     const historyRaw = await Payment.find({ user: req.user.id, paymentStatus: { $in: ["Success", "Paid", "PAID"] } })
       .sort({ paymentDate: -1 })
@@ -714,29 +825,24 @@ const getUserPaymentStats = async (req, res) => {
       });
     }
 
-    const bookingMatchers = [
-      { tenantUserId: req.user.id },
-      tenantEmail ? { tenantEmail: new RegExp(`^${tenantEmail}$`, "i") } : null,
-      { tenantName }
-    ].filter(Boolean);
-
-    const booking = await Booking.findOne({
-      status: { $in: ["Pending", "Confirmed"] },
-      $and: [
-        {
-          $or: [
-            { ownerApproved: true },
-            { status: "Confirmed" }
+    const booking = requestedBooking
+      ? requestedBooking
+      : await Booking.findOne({
+          status: { $in: ["Pending", "Confirmed"] },
+          $and: [
+            {
+              $or: [{ ownerApproved: true }, { status: "Confirmed" }]
+            },
+            {
+              $or: bookingMatchers
+            }
           ]
-        },
-        {
+        }).sort({ createdAt: -1 });
+    const pricingBooking = requestedBooking
+      ? requestedBooking
+      : await Booking.findOne({
           $or: bookingMatchers
-        }
-      ]
-    }).sort({ createdAt: -1 });
-    const pricingBooking = await Booking.findOne({
-      $or: bookingMatchers
-    }).sort({ createdAt: -1 });
+        }).sort({ createdAt: -1 });
 
     const pendingPaymentsRaw = await PendingPayment.find({
       status: { $in: ["Pending", "Overdue"] },
@@ -781,11 +887,104 @@ const getUserPaymentStats = async (req, res) => {
         ? bookingSecurityDeposit
         : 0;
 
+    const inferPaymentOptionForBooking = async (targetBooking) => {
+      const explicit = String(targetBooking?.paymentOption || "").trim().toLowerCase();
+      if (explicit) return explicit;
+
+      if (!targetBooking?._id) return "deposit_only";
+
+      const payments = await Payment.find({
+        paymentStatus: { $in: ["Success", "Paid", "PAID"] },
+        $or: [
+          { bookingRef: targetBooking._id },
+          targetBooking.bookingId ? { bookingCode: targetBooking.bookingId } : null
+        ].filter(Boolean)
+      })
+        .sort({ paymentDate: 1 })
+        .select("amountPaid");
+
+      const firstPaid = Number(payments?.[0]?.amountPaid || 0);
+      const rent = Number(targetBooking.rentAmount || targetBooking.bookingAmount || 0);
+      const deposit = Number(targetBooking.securityDeposit || 0);
+      const full = rent + deposit;
+
+      if (full > 0 && firstPaid >= full) return "full_payment";
+      if (deposit > 0 && firstPaid >= deposit && firstPaid < full) return "deposit_only";
+
+      // Backward-compat: booking UI historically defaulted to deposit-only.
+      return "deposit_only";
+    };
+
+    const normalizedPaymentOption = booking ? await inferPaymentOptionForBooking(booking) : "deposit_only";
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const checkInDateObj = booking?.checkInDate ? new Date(booking.checkInDate) : null;
+    const checkInMs = checkInDateObj && !Number.isNaN(checkInDateObj.getTime()) ? checkInDateObj.setHours(0, 0, 0, 0) : NaN;
+    const initialRentDueNow = Number.isFinite(checkInMs) ? today.getTime() >= checkInMs : true;
+
+    // If tenant chose deposit-only at booking time, handle deposit first,
+    // and only allow rent payment on/after check-in date.
+    if (booking && normalizedPaymentOption === "deposit_only") {
+      const rentDue = !Boolean(booking.initialRentPaid) && initialRentDueNow ? Number(currentRentDue || 0) : 0;
+      const depositDue = securityDepositDue;
+
+      if (depositDue > 0) {
+        const due = new Date();
+        due.setHours(0, 0, 0, 0);
+        nextPayment = {
+          amount: Number(depositDue),
+          rentDue: 0,
+          securityDepositDue: depositDue,
+          pgId: bookingPgId || null,
+          pgName: bookingPgName || "",
+          bookingId: booking._id,
+          month: due.toLocaleString("en-US", { month: "short", year: "numeric" }),
+          dueDateMs: due.getTime(),
+          dueDate: due.toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" })
+        };
+      } else if (rentDue > 0) {
+        const due = Number.isFinite(checkInMs) ? new Date(checkInMs) : new Date();
+        due.setHours(0, 0, 0, 0);
+        nextPayment = {
+          amount: Number(rentDue),
+          rentDue,
+          securityDepositDue: 0,
+          pgId: bookingPgId || null,
+          pgName: bookingPgName || "",
+          bookingId: booking._id,
+          month: due.toLocaleString("en-US", { month: "short", year: "numeric" }),
+          dueDateMs: due.getTime(),
+          dueDate: due.toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" })
+        };
+      } else {
+        // Deposit paid, rent not yet due.
+        const due = Number.isFinite(checkInMs) ? new Date(checkInMs) : null;
+        nextPayment = {
+          amount: 0,
+          rentDue: 0,
+          securityDepositDue: 0,
+          pgId: bookingPgId || null,
+          pgName: bookingPgName || "",
+          bookingId: booking._id,
+          month: due ? due.toLocaleString("en-US", { month: "short", year: "numeric" }) : "",
+          dueDateMs: due ? due.getTime() : null,
+          dueDate: due ? due.toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" }) : "No due"
+        };
+      }
+
+      return res.status(200).json({
+        success: true,
+        totalPaid,
+        nextPayment,
+        lateFine: 0,
+        history,
+        moveOutCompleted: false
+      });
+    }
+
     if (pendingPayment) {
       const due = getNextCycleDueDate(pendingPayment.dueDate) || new Date(pendingPayment.dueDate);
-      const today = new Date();
       due.setHours(0, 0, 0, 0);
-      today.setHours(0, 0, 0, 0);
       const overdueDays = Math.max(0, Math.floor((today - due) / (24 * 60 * 60 * 1000)));
       lateFine = overdueDays * 100;
       const rentDue = Number(currentRentDue || pendingPayment.amount || 0);

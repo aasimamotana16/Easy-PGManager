@@ -12,6 +12,7 @@ const CancelForm = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const [showModal, setShowModal] = useState(false);
+  const [estimateHtml, setEstimateHtml] = useState("");
 
   const [form, setForm] = useState({
     email: "",
@@ -20,6 +21,32 @@ const CancelForm = () => {
   });
 
   const [errors, setErrors] = useState({});
+
+  const formatInr = (value) => {
+    const n = Number(value || 0);
+    return `₹${Number.isFinite(n) ? n.toLocaleString("en-IN") : "0"}`;
+  };
+
+  const buildEstimateHtml = (estimatePayload) => {
+    const summary = estimatePayload?.summary || {};
+    const refundable = Number(summary.refundableAmount || 0);
+    const commission = Number(summary.nonRefundableCommissionAmount || 0);
+    const noShowDeduction = Number(summary.noShowDeductionAmount || 0);
+    const grossPaid = Number(summary.grossPaidAmount || estimatePayload?.totalPaidAmount || 0);
+    const rule = String(summary.refundRule || "");
+    const note = String(summary.note || "");
+
+    return `
+      <div style="text-align:left; font-size: 14px; line-height: 1.6;">
+        <p><b>Paid so far:</b> ${formatInr(grossPaid)}</p>
+        <p><b>Estimated refundable:</b> <span style="color:#059669; font-weight:700;">${formatInr(refundable)}</span></p>
+        <p><b>Non-refundable commission:</b> ${formatInr(commission)}</p>
+        ${noShowDeduction > 0 ? `<p><b>No-show deduction:</b> ${formatInr(noShowDeduction)}</p>` : ""}
+        ${rule ? `<hr style="border:0;border-top:1px solid #E5E0D9; margin: 10px 0;" /><p><b>Rule:</b> ${rule}</p>` : ""}
+        ${note ? `<p style="color:#4B4B4B;"><small>${note}</small></p>` : ""}
+      </div>
+    `;
+  };
 
   const validate = () => {
     const newErrors = {};
@@ -37,8 +64,29 @@ const CancelForm = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleCancelClick = () => {
-    if (validate()) {
+  const handleCancelClick = async () => {
+    if (!validate()) return;
+
+    const token = localStorage.getItem("userToken");
+    if (!token) {
+      setEstimateHtml("");
+      setShowModal(true);
+      return;
+    }
+
+    try {
+      const res = await axios.get(
+        `http://localhost:5000/api/bookings/${encodeURIComponent(id)}/cancellation-estimate`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (res.data?.success) {
+        setEstimateHtml(buildEstimateHtml(res.data.data));
+      } else {
+        setEstimateHtml("");
+      }
+    } catch (_) {
+      setEstimateHtml("");
+    } finally {
       setShowModal(true);
     }
   };
@@ -120,6 +168,7 @@ const CancelForm = () => {
       {showModal && (
         <CancelConfirmModal
           onClose={() => setShowModal(false)}
+          estimateHtml={estimateHtml}
           onConfirm={async () => {
             try {
               const token = localStorage.getItem("userToken");

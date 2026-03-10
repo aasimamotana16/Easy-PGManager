@@ -2222,21 +2222,25 @@ const getMyBookings = async (req, res) => {
       if (a.fileUrl) agreementUrlByBookingCode.set(key, a.fileUrl);
     });
 
-    const successfulPayments = await Payment.find({
-      paymentStatus: { $in: ['Success', 'PAID', 'Paid'] },
-      $or: [
-        { pgId: { $in: pgIds } },
-        { pgName: { $in: pgNames } }
-      ]
-    }).select('pgId pgName tenantName');
+    // IMPORTANT: Treat a booking as paid only if the payment is linked to that booking.
+    // Do NOT infer paid status from "same tenant + same PG" because monthly rent payments
+    // would incorrectly mark a new booking as paid.
+    const bookingMongoIds = bookings.map((b) => b._id).filter(Boolean);
+    const successfulPayments = bookingMongoIds.length > 0
+      ? await Payment.find({
+          paymentStatus: { $in: ['Success', 'PAID', 'Paid'] },
+          $or: [
+            { bookingRef: { $in: bookingMongoIds } },
+            bookingCodes.length > 0 ? { bookingCode: { $in: bookingCodes } } : null
+          ].filter(Boolean)
+        }).select('bookingRef bookingCode')
+      : [];
 
-    const paidKeyByPgId = new Set();
-    const paidKeyByPgName = new Set();
+    const paidBookingRefs = new Set();
+    const paidBookingCodes = new Set();
     successfulPayments.forEach((p) => {
-      const tenant = String(p.tenantName || '').trim().toLowerCase();
-      if (!tenant) return;
-      if (p.pgId) paidKeyByPgId.add(`${String(p.pgId)}|${tenant}`);
-      if (p.pgName) paidKeyByPgName.add(`${String(p.pgName).trim().toLowerCase()}|${tenant}`);
+      if (p.bookingRef) paidBookingRefs.add(String(p.bookingRef));
+      if (p.bookingCode) paidBookingCodes.add(String(p.bookingCode).trim());
     });
 
     const filteredBookings = bookings.filter((b) => {
@@ -2245,13 +2249,12 @@ const getMyBookings = async (req, res) => {
       // Show all owner-related bookings with basic tenant/property identity.
       return Boolean(tenantName || pgName);
     }).map((b) => {
-      const tenant = String(b.tenantName || '').trim().toLowerCase();
-      const pgIdKey = b.pgId ? String(b.pgId) : '';
-      const pgNameKey = String(b.pgName || '').trim().toLowerCase();
+      const bookingRefKey = String(b._id || '');
+      const bookingCodeKey = String(b.bookingId || '').trim();
       const paid = Boolean(
         b.isPaid ||
-        (tenant && pgIdKey && paidKeyByPgId.has(`${pgIdKey}|${tenant}`)) ||
-        (tenant && pgNameKey && paidKeyByPgName.has(`${pgNameKey}|${tenant}`))
+        (bookingRefKey && paidBookingRefs.has(bookingRefKey)) ||
+        (bookingCodeKey && paidBookingCodes.has(bookingCodeKey))
       );
       return {
         ...b.toObject(),
@@ -2264,6 +2267,100 @@ const getMyBookings = async (req, res) => {
     res.status(200).json({ success: true, data: filteredBookings });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const getOwnerBookingCancellationEstimate = async (req, res) => {
+  try {
+    const ownerId = req.user?._id;
+    const bookingId = req.params?.id;
+    if (!bookingId || !mongoose.Types.ObjectId.isValid(bookingId)) {
+      return res.status(400).json({ success: false, message: "Invalid booking id" });
+    }
+
+    const ownerPgs = await Pg.find({ ownerId }).select('_id pgName').lean();
+    const pgIds = ownerPgs.map((pg) => pg._id);
+    const pgNames = ownerPgs.map((pg) => pg.pgName).filter(Boolean);
+
+    const booking = await Booking.findOne({
+      _id: bookingId,
+      $or: [
+        { ownerId },
+        { pgId: { $in: pgIds } },
+        { pgName: { $in: pgNames } }
+      ]
+    }).lean();
+
+    if (!booking) {
+      return res.status(404).json({ success: false, message: "Booking not found" });
+    }
+
+    const bookingCode = String(booking?.bookingId || "").trim();
+    const successfulPayments = await Payment.find({
+      paymentStatus: { $in: SUCCESS_PAYMENT_STATUSES },
+      $or: [
+        { bookingRef: booking._id },
+        bookingCode ? { bookingCode } : null
+      ].filter(Boolean)
+    })
+      .select('amountPaid platformCommissionAmount commissionRatePercent paymentStatus')
+      .lean();
+
+    let totalPaidAmount = 0;
+    let totalCommissionAmount = 0;
+    successfulPayments.forEach((p) => {
+      const paid = Number(p?.amountPaid || 0);
+      if (Number.isFinite(paid) && paid > 0) totalPaidAmount += paid;
+
+      const storedCommission = Number(p?.platformCommissionAmount);
+      if (Number.isFinite(storedCommission) && storedCommission >= 0) {
+        totalCommissionAmount += storedCommission;
+      } else {
+        const computed = computeCommissionBreakdown({ amount: paid, commissionPercent: p?.commissionRatePercent });
+        totalCommissionAmount += Number(computed.platformCommissionAmount || 0);
+      }
+    });
+
+    const cancelledByQuery = String(req.query?.cancelledBy || "").trim().toLowerCase();
+    const cancelledBy = cancelledByQuery === "owner"
+      ? "owner"
+      : booking?.cancelRequest?.requested
+        ? "tenant"
+        : "owner";
+
+    const hasMovedIn = Boolean(booking?.hasApprovedMoveIn) || String(booking?.status || "").toLowerCase() === "active";
+    const securityDepositAmount = pickFirstNumeric(
+      booking?.securityDepositAmount,
+      booking?.securityDeposit,
+      booking?.depositAmount,
+      0
+    );
+
+    const summary = computeCancellationRefundSummary({
+      cancelledBy,
+      hasMovedIn,
+      cancellationDate: new Date(),
+      checkInDate: booking?.checkInDate,
+      totalPaidAmount,
+      securityDepositAmount,
+      totalCommissionAmount
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        bookingId: booking?._id,
+        bookingCode,
+        tenantName: booking?.tenantName || "",
+        pgName: booking?.pgName || "",
+        totalPaidAmount: Math.max(0, Number(totalPaidAmount) || 0),
+        totalCommissionAmount: Math.max(0, Number(totalCommissionAmount) || 0),
+        securityDepositAmount: Math.max(0, Number(securityDepositAmount) || 0),
+        summary
+      }
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -2501,7 +2598,24 @@ const updateBookingStatus = async (req, res) => {
     if (normalizedStatus === 'Confirmed') {
       // Notify tenant that owner approved and payment can be completed.
       const tenantUser = await resolveTenantUserForBooking(updatedBooking);
-      if (tenantUser?.email && process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+      let recipientEmail = String(tenantUser?.email || updatedBooking.tenantEmail || '').trim();
+      if (!recipientEmail) {
+        try {
+          const tenantRecord = await Tenant.findOne({
+            ownerId,
+            name: updatedBooking.tenantName,
+            $or: [
+              updatedBooking.pgId ? { pgId: updatedBooking.pgId } : null,
+              updatedBooking.pgName ? { pgName: updatedBooking.pgName } : null
+            ].filter(Boolean)
+          }).sort({ createdAt: -1 }).select('email');
+          if (tenantRecord?.email) recipientEmail = String(tenantRecord.email).trim();
+        } catch (_) {
+          // ignore tenant email lookup failures
+        }
+      }
+
+      if (recipientEmail && process.env.EMAIL_USER && process.env.EMAIL_PASS) {
         try {
           const frontendUrl = normalizeBaseUrl(process.env.FRONTEND_URL || req.headers.origin || "http://localhost:3000");
           const loginLink = `${frontendUrl}/loginPage`;
@@ -2516,7 +2630,7 @@ const updateBookingStatus = async (req, res) => {
 
           await transporter.sendMail({
             from: process.env.EMAIL_USER,
-            to: tenantUser.email,
+            to: recipientEmail,
             subject: `Booking Approved - ${updatedBooking.pgName}`,
             html: `
               <h2>Your booking has been approved</h2>
@@ -2547,7 +2661,7 @@ const updateBookingStatus = async (req, res) => {
             rentAmount: Number(confirmedData?.rentAmount || updatedBooking.rentAmount || updatedBooking.bookingAmount || 0),
             securityDeposit: Number(confirmedData?.agreement?.securityDeposit || updatedBooking.securityDeposit || 0),
             agreementPdfUrl: agreementPdfResult?.agreementPdfUrl || updatedBooking.agreementPdfUrl || "",
-            awaitsPayment: false
+            awaitsPayment: !Boolean(updatedBooking.isPaid)
           };
         } catch (linkErr) {
           console.warn("Booking confirmation sync warning:", linkErr.message || linkErr);
@@ -2564,7 +2678,7 @@ const updateBookingStatus = async (req, res) => {
             rentAmount: Number(updatedBooking.rentAmount || updatedBooking.bookingAmount || 0),
             securityDeposit: Number(updatedBooking.securityDeposit || 0),
             agreementPdfUrl,
-            awaitsPayment: false
+            awaitsPayment: !Boolean(updatedBooking.isPaid)
           };
         }
       } else {
@@ -3174,7 +3288,7 @@ const getOwnerEarnings = async (req, res) => {
       ]
     })
       .sort({ createdAt: -1 })
-      .select("_id pgId pgName tenantName status isPaid");
+      .select("_id pgId pgName tenantName tenantEmail status isPaid rentAmount bookingAmount securityDeposit checkInDate createdAt bookingSource");
 
     const bookingByKey = new Map();
     const bookingByTenantKey = new Map();
@@ -3258,7 +3372,63 @@ const getOwnerEarnings = async (req, res) => {
       };
     });
 
-    const pendingSummary = pendingPayments.reduce((acc, payment) => {
+    // Also show pending move-in payments for bookings that are confirmed but not paid yet.
+    // These are not represented by PendingPayment rows.
+    const alreadyLinkedBookingIds = new Set(
+      pendingPayments
+        .map((p) => (p.bookingId ? String(p.bookingId) : ""))
+        .filter(Boolean)
+    );
+
+    const isWithinCurrentMonth = (dateInput) => {
+      const d = dateInput ? new Date(dateInput) : null;
+      if (!(d instanceof Date) || Number.isNaN(d.getTime())) return true;
+      return d >= monthStart && d < monthEnd;
+    };
+
+    const pendingBookingPayments = bookingsRaw
+      .filter((b) => String(b.status || "") === "Confirmed" && !Boolean(b.isPaid))
+      .filter((b) => !alreadyLinkedBookingIds.has(String(b._id)))
+      .filter((b) => (showOnlyCurrentMonthPending ? isWithinCurrentMonth(b.createdAt || b.checkInDate) : true))
+      .map((b) => {
+        const baseAmount = Math.max(
+          0,
+          Number(b.rentAmount || b.bookingAmount || 0) + Number(b.securityDeposit || 0)
+        );
+        const dueDateRaw = b.checkInDate || b.createdAt || null;
+        const dueDate = dueDateRaw ? new Date(dueDateRaw) : null;
+        const dueLabel = (dueDate instanceof Date && !Number.isNaN(dueDate.getTime()))
+          ? dueDate.toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' })
+          : "-";
+
+        return {
+          id: b._id,
+          tenant: String(b.tenantName || "Unknown Tenant"),
+          userName: String(b.tenantName || "Unknown Tenant"),
+          pg: String(b.pgName || "Unknown PG"),
+          amount: baseAmount,
+          lateFee: 0,
+          totalAmount: baseAmount,
+          due: dueLabel,
+          actualDueDate: dueLabel,
+          overdueDays: 0,
+          isFinePaused: false,
+          status: "Pending",
+          month: getMonthLabel(new Date()),
+          bookingId: b._id
+        };
+      });
+
+    const mergedPendingPayments = [...pendingBookingPayments, ...pendingPayments]
+      .sort((a, b) => {
+        const aDate = a.actualDueDate ? new Date(a.actualDueDate) : null;
+        const bDate = b.actualDueDate ? new Date(b.actualDueDate) : null;
+        const aTime = aDate && !Number.isNaN(aDate.getTime()) ? aDate.getTime() : 0;
+        const bTime = bDate && !Number.isNaN(bDate.getTime()) ? bDate.getTime() : 0;
+        return aTime - bTime;
+      });
+
+    const pendingSummary = mergedPendingPayments.reduce((acc, payment) => {
       acc.baseAmount += Number(payment.amount) || 0;
       acc.lateFee += Number(payment.lateFee) || 0;
       acc.totalAmount += Number(payment.totalAmount) || 0;
@@ -3288,7 +3458,7 @@ const getOwnerEarnings = async (req, res) => {
         },
         selectedMonthAmount,
         earningsHistory,
-        pendingPayments,
+        pendingPayments: mergedPendingPayments,
         pendingSummary
       }
     });
@@ -3811,6 +3981,7 @@ module.exports = {
   submitDamageReport,
   processRefund,
   getMyBookings, 
+  getOwnerBookingCancellationEstimate,
   addBooking, 
   updateBookingStatus,
   generateBookingAgreementPdf,

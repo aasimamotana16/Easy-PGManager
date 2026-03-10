@@ -4,8 +4,14 @@ const Agreement = require('../models/agreementModel');
 const Pg = require('../models/pgModel');
 const User = require('../models/userModel');
 const Tenant = require('../models/tenantModel');
+const Payment = require('../models/paymentModel');
 const nodemailer = require('nodemailer');
 const { resolveVariantPricing } = require('../utils/pricingUtils');
+const {
+  computeCancellationRefundSummary,
+  computeCommissionBreakdown,
+  DEFAULT_PLATFORM_COMMISSION_PERCENT
+} = require('../utils/paymentPolicyUtils');
 const { protect } = require('../middleware/authMiddleware');
 
 const router = express.Router();
@@ -65,6 +71,8 @@ const findActiveTenantBooking = async ({ userId, emails = [] }) => {
 
 const normalizeValue = (value) => String(value || "").trim().toLowerCase();
 
+const escapeRegex = (value = "") => String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
 const buildTenantIdentityMatchers = ({ userId, emails = [] }) => {
   const emailMatchers = emails
     .map((email) => normalizeValue(email))
@@ -85,7 +93,7 @@ router.post("/create", protect, async (req, res) => {
       return res.status(403).json({ success: false, message: "Only tenant/user accounts can create booking requests" });
     }
 
-    const { pgId, members, stayDetails, persons, roomType, variantLabel } = req.body;
+    const { pgId, members, stayDetails, persons, roomType, variantLabel, paymentOption } = req.body;
 
     if (!pgId) return res.status(400).json({ success: false, message: 'pgId is required' });
 
@@ -156,6 +164,9 @@ router.post("/create", protect, async (req, res) => {
 
     const checkInDate = stayDetails?.checkIn || new Date().toISOString().split('T')[0];
     const checkOutDate = stayDetails?.checkOut || 'Long Term';
+    const normalizedPaymentOption = ['deposit_only', 'full_payment'].includes(String(paymentOption || '').toLowerCase())
+      ? String(paymentOption || '').toLowerCase()
+      : 'full_payment';
     const pricing = resolveVariantPricing({
       roomPrices: pg?.roomPrices,
       roomType,
@@ -180,6 +191,7 @@ router.post("/create", protect, async (req, res) => {
       seatsBooked: Number(persons) || 1,
       rentAmount: monthlyRent,
       securityDeposit,
+      paymentOption: normalizedPaymentOption,
       pricingSnapshot: {
         billingCycle: pricing.billingCycle || "Monthly",
         acType: pricing.acType || "Non-AC",
@@ -306,6 +318,66 @@ router.put("/:bookingId/request-cancel", protect, async (req, res) => {
       success: true,
       message: "Cancellation request sent to owner for approval",
       data: booking
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// 3b. Estimate cancellation refund (tenant-facing)
+router.get("/:bookingId/cancellation-estimate", protect, async (req, res) => {
+  try {
+    const role = String(req.user?.role || '').toLowerCase();
+    if (!['user', 'tenant'].includes(role)) {
+      return res.status(403).json({ success: false, message: "Only tenant/user accounts can view cancellation estimate" });
+    }
+
+    const booking = await resolveTenantBooking({ bookingIdentifier: req.params.bookingId, user: req.user });
+    if (!booking) {
+      return res.status(404).json({ success: false, message: "Booking not found for this user" });
+    }
+
+    const successfulPayments = await Payment.find({
+      paymentStatus: { $in: ['Success', 'Paid', 'PAID'] },
+      $or: [
+        { bookingRef: booking._id },
+        booking.bookingId ? { bookingCode: booking.bookingId } : null
+      ].filter(Boolean)
+    }).select('amountPaid platformCommissionAmount commissionRatePercent');
+
+    const totalPaidAmount = successfulPayments.reduce((sum, p) => sum + (Number(p.amountPaid) || 0), 0);
+    const totalCommissionAmount = successfulPayments.reduce((sum, p) => {
+      const explicit = Number(p.platformCommissionAmount);
+      if (Number.isFinite(explicit)) return sum + explicit;
+      const rate = Number(p.commissionRatePercent);
+      const breakdown = computeCommissionBreakdown({
+        amount: Number(p.amountPaid || 0),
+        commissionPercent: Number.isFinite(rate) ? rate : DEFAULT_PLATFORM_COMMISSION_PERCENT
+      });
+      return sum + (Number(breakdown.platformCommissionAmount) || 0);
+    }, 0);
+
+    const summary = computeCancellationRefundSummary({
+      cancelledBy: 'tenant',
+      hasMovedIn: false,
+      cancellationDate: new Date(),
+      checkInDate: booking.checkInDate,
+      totalPaidAmount,
+      securityDepositAmount: Number(booking.securityDeposit || 0),
+      totalCommissionAmount
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        bookingId: booking._id,
+        bookingCode: booking.bookingId,
+        pgName: booking.pgName,
+        checkInDate: booking.checkInDate,
+        totalPaidAmount: Number(totalPaidAmount || 0),
+        totalCommissionAmount: Number(totalCommissionAmount || 0),
+        ...summary
+      }
     });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });

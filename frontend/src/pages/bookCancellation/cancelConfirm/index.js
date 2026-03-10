@@ -1,7 +1,7 @@
 import React from "react";
 import CButton from "../../../components/cButton";
 
-const CancelConfirmModal = ({ onClose, onConfirm }) => {
+const CancelConfirmModal = ({ onClose, onConfirm, estimateHtml }) => {
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 backdrop-blur-sm px-4">
       {/* Background set to your theme's default white [cite: 2026-02-09] */}
@@ -16,6 +16,13 @@ const CancelConfirmModal = ({ onClose, onConfirm }) => {
         <p className="text-textSecondary text-body-sm mb-6">
           This action is permanent and cannot be reversed.
         </p>
+
+        {estimateHtml ? (
+          <div
+            className="bg-primarySoft/30 border border-border rounded-md p-4 mb-6"
+            dangerouslySetInnerHTML={{ __html: estimateHtml }}
+          />
+        ) : null}
 
         <ul className="text-body-sm text-textSecondary mb-8 space-y-3">
           

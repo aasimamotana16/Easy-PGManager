@@ -13,6 +13,7 @@ const {
   addTenant, 
   getMyTenants, 
   getMyBookings, 
+  getOwnerBookingCancellationEstimate,
   addBooking, 
   updateBookingStatus, 
   generateBookingAgreementPdf,
@@ -80,6 +81,7 @@ router.post('/sync-tenant-linked-data', protect, isOwner, syncTenantLinkedData);
 router.get('/my-bookings', protect, isOwner, getMyBookings);
 router.post('/add-booking', protect, isOwner, addBooking);
 router.put('/update-booking/:id', protect, isOwner, updateBookingStatus);
+router.get('/booking/:id/cancellation-estimate', protect, isOwner, getOwnerBookingCancellationEstimate);
 router.post('/booking/:id/generate-agreement-pdf', protect, isOwner, generateBookingAgreementPdf);
 router.post('/send-payment-link/:id', protect, isOwner, sendPaymentLink);
 

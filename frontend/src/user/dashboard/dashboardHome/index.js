@@ -58,6 +58,124 @@ const DashboardHome = () => {
   const [reviewError, setReviewError] = useState("");
   const [reviewSuccess, setReviewSuccess] = useState("");
 
+  const formatInr = (value) => {
+    const n = Number(value || 0);
+    return `₹${Number.isFinite(n) ? n.toLocaleString("en-IN") : "0"}`;
+  };
+
+  const formatEstimateHtml = (estimatePayload) => {
+    const summary = estimatePayload?.summary || {};
+    const refundable = Number(summary.refundableAmount || 0);
+    const commission = Number(summary.nonRefundableCommissionAmount || 0);
+    const noShowDeduction = Number(summary.noShowDeductionAmount || 0);
+    const grossPaid = Number(summary.grossPaidAmount || estimatePayload?.totalPaidAmount || 0);
+    const rule = String(summary.refundRule || "");
+    const note = String(summary.note || "");
+
+    return `
+      <div style="text-align:left; font-size: 14px; line-height: 1.6;">
+        <p><b>Paid so far:</b> ${formatInr(grossPaid)}</p>
+        <p><b>Estimated refundable:</b> <span style="color:#059669; font-weight:700;">${formatInr(refundable)}</span></p>
+        <p><b>Non-refundable commission:</b> ${formatInr(commission)}</p>
+        ${noShowDeduction > 0 ? `<p><b>No-show deduction:</b> ${formatInr(noShowDeduction)}</p>` : ""}
+        ${rule ? `<hr style="border:0;border-top:1px solid #E5E0D9; margin: 10px 0;" /><p><b>Rule:</b> ${rule}</p>` : ""}
+        ${note ? `<p style="color:#4B4B4B;"><small>${note}</small></p>` : ""}
+        <small>Note: This is an estimate. Actual refunds depend on owner approval and payment processing.</small>
+      </div>
+    `;
+  };
+
+  const handleRequestCancellation = async () => {
+    const token = localStorage.getItem("userToken");
+    const bookingIdentifier = dashboardData?.currentBooking?.bookingDbId;
+    if (!token || token === "null") {
+      return Swal.fire({
+        title: "Session Expired",
+        text: "Please log in again.",
+        icon: "warning",
+        confirmButtonColor: "#f97316",
+      });
+    }
+
+    if (!bookingIdentifier) {
+      return Swal.fire({
+        title: "No Active Booking",
+        text: "Could not find an active booking to cancel.",
+        icon: "info",
+        confirmButtonColor: "#f97316",
+      });
+    }
+
+    try {
+      let estimateHtml = "";
+      try {
+        const estimateRes = await fetch(
+          `http://localhost:5000/api/bookings/${encodeURIComponent(bookingIdentifier)}/cancellation-estimate`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        const estimateJson = await estimateRes.json();
+        if (estimateRes.ok && estimateJson?.success) {
+          estimateHtml = formatEstimateHtml(estimateJson.data);
+        }
+      } catch (_) {
+        estimateHtml = "";
+      }
+
+      const result = await Swal.fire({
+        title: "Request Cancellation?",
+        html: `
+          ${estimateHtml || "<p style='text-align:left;'>Refund estimate is not available right now.</p>"}
+          <hr style="border:0;border-top:1px solid #E5E0D9; margin: 12px 0;" />
+          <div style="text-align:left;">
+            <label style="font-size:12px;font-weight:600;">Reason</label>
+            <textarea id="cancel-reason" class="swal2-textarea" placeholder="Reason for cancellation (optional)"></textarea>
+          </div>
+        `,
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "Send Request",
+        confirmButtonColor: "#f97316",
+        cancelButtonColor: "#4B4B4B",
+        preConfirm: () => {
+          const reason = document.getElementById("cancel-reason")?.value || "";
+          return { reason: String(reason).trim() };
+        },
+      });
+
+      if (!result.isConfirmed) return;
+      const reason = result.value?.reason || "";
+
+      const resp = await fetch(`http://localhost:5000/api/bookings/${encodeURIComponent(bookingIdentifier)}/request-cancel`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ reason: reason || "Cancellation requested", otherReason: "" }),
+      });
+
+      const json = await resp.json();
+      if (!resp.ok || !json?.success) {
+        throw new Error(json?.message || "Failed to request cancellation");
+      }
+
+      await Swal.fire({
+        title: "Cancellation Requested",
+        text: "Your cancellation request has been sent to the owner for approval.",
+        icon: "success",
+        confirmButtonColor: "#f97316",
+      });
+      loadData();
+    } catch (err) {
+      Swal.fire({
+        title: "Error",
+        text: err?.message || "Failed to request cancellation.",
+        icon: "error",
+        confirmButtonColor: "#f97316",
+      });
+    }
+  };
+
   const loadData = async () => {
     try {
       const profileRes = await getUserProfile();
@@ -149,6 +267,13 @@ const DashboardHome = () => {
               confirmButtonColor: "#f97316",
             });
             loadData();
+          } else {
+            Swal.fire({
+              title: "Verification Failed",
+              text: String(result?.message || "Payment could not be verified."),
+              icon: "error",
+              confirmButtonColor: "#f97316",
+            });
           }
         },
         theme: { color: "#f97316" },
@@ -256,6 +381,11 @@ const DashboardHome = () => {
   const bookingStatus = ["Active", "Pending Move-In Approval"].includes(String(bookingStatusRaw))
     ? "Active Tenant"
     : bookingStatusRaw;
+
+  const cancelStatus = String(dashboardData?.currentBooking?.cancelRequest?.status || "").trim().toLowerCase();
+  const cancelRequested = Boolean(dashboardData?.currentBooking?.cancelRequest?.requested);
+  const isCancelPending = cancelRequested && (cancelStatus === "pending" || !cancelStatus);
+  const isCancelled = String(dashboardData?.currentBooking?.bookingState || "").trim().toLowerCase() === "cancelled";
   const rawDueDate = dashboardData?.nextPayment?.dueDate || user?.paymentDueDate || null;
   const nextPaymentDate = getUpcomingDueDate(rawDueDate) || (monthlyRent > 0 ? "Due date not available" : "No due");
   const dueAmount = Number(dashboardData?.nextPayment?.amount || monthlyRent || 0);
@@ -357,13 +487,27 @@ const DashboardHome = () => {
                 MOVE-OUT COMPLETED
               </CButton>
             ) : canPayNow ? (
-              <PayNowButton amount={dueAmount} pgId={dashboardData?.currentBooking?.pgId || user?.bookedPgId} className="w-full" onSuccess={() => loadData()}>
+              <PayNowButton amount={dueAmount} pgId={dashboardData?.currentBooking?.pgId || user?.bookedPgId} intentType="MONTHLY_RENT" className="w-full" onSuccess={() => loadData()}>
                 {isProcessing ? "INITIALIZING..." : "PAY NOW"}
               </PayNowButton>
             ) : (
               <CButton disabled className="w-full !opacity-80 !cursor-not-allowed">
                 PAID FOR THIS CYCLE
               </CButton>
+            )}
+
+            {Boolean(dashboardData?.currentBooking?.bookingDbId) && !moveOutCompleted && !isCancelled && (
+              <div className="mt-3">
+                {isCancelPending ? (
+                  <CButton disabled className="w-full !opacity-80 !cursor-not-allowed">
+                    CANCELLATION REQUESTED
+                  </CButton>
+                ) : (
+                  <CButton onClick={handleRequestCancellation} className="w-full bg-gray-900 hover:bg-black">
+                    REQUEST CANCELLATION
+                  </CButton>
+                )}
+              </div>
             )}
           </div>
           <div className="bg-primarySoft border border-primary p-4 sm:p-5 rounded-md shadow-md space-y-3">

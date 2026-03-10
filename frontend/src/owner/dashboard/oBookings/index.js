@@ -124,6 +124,68 @@ const BookingManagement = () => {
     }
   };
 
+  const formatInr = (value) => {
+    const n = Number(value || 0);
+    return `₹${Number.isFinite(n) ? n.toLocaleString("en-IN") : "0"}`;
+  };
+
+  const renderEstimateHtml = (estimatePayload) => {
+    const summary = estimatePayload?.summary || {};
+    const refundable = Number(summary.refundableAmount || 0);
+    const commission = Number(summary.nonRefundableCommissionAmount || 0);
+    const noShowDeduction = Number(summary.noShowDeductionAmount || 0);
+    const grossPaid = Number(summary.grossPaidAmount || estimatePayload?.totalPaidAmount || 0);
+    const rule = String(summary.refundRule || "");
+    const note = String(summary.note || "");
+
+    return `
+      <div style="text-align:left; font-size: 14px; line-height: 1.6;">
+        <p><b>Tenant:</b> ${String(estimatePayload?.tenantName || "")}</p>
+        <p><b>Paid so far:</b> ${formatInr(grossPaid)}</p>
+        <p><b>Estimated refundable:</b> <span style="color:#059669; font-weight:700;">${formatInr(refundable)}</span></p>
+        <p><b>Non-refundable commission:</b> ${formatInr(commission)}</p>
+        ${noShowDeduction > 0 ? `<p><b>No-show deduction:</b> ${formatInr(noShowDeduction)}</p>` : ""}
+        ${rule ? `<hr style="border:0;border-top:1px solid #E5E0D9; margin: 10px 0;" /><p><b>Rule:</b> ${rule}</p>` : ""}
+        ${note ? `<p style="color:#4B4B4B;"><small>${note}</small></p>` : ""}
+      </div>
+    `;
+  };
+
+  const showCancellationEstimate = async (booking) => {
+    const bookingId = booking?._id;
+    if (!bookingId) return;
+
+    try {
+      const token = localStorage.getItem("userToken");
+      if (!token) throw new Error("Unauthorized");
+
+      Swal.fire({
+        title: "Loading estimate...",
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading(),
+      });
+
+      const res = await axios.get(
+        `${apiBaseUrl}/api/owner/booking/${encodeURIComponent(bookingId)}/cancellation-estimate`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      Swal.fire({
+        title: "Cancellation Refund Estimate",
+        html: renderEstimateHtml(res.data?.data || {}),
+        icon: "info",
+        confirmButtonColor: "#D97706",
+      });
+    } catch (error) {
+      Swal.fire({
+        title: "Failed",
+        text: error.response?.data?.message || error?.message || "Unable to load estimate.",
+        icon: "error",
+        confirmButtonColor: "#D97706",
+      });
+    }
+  };
+
   const openAgreementPdf = async (booking) => {
     const status = String(booking?.status || "Pending");
     const ownerApproved = Boolean(booking?.ownerApproved);
@@ -281,9 +343,15 @@ const BookingManagement = () => {
                         {b.status === "Cancelled" && <FaTimes />}
                         {b.status}
                       </span>
-                      {b.status === "Confirmed" && (
+                      {b.status === "Confirmed" && (b.isPaid || !Boolean(b?.cancelRequest?.requested)) && (
                         <span className="text-[10px] text-[#B45309] font-medium italic leading-none mt-1">
                           {b.isPaid ? "Payment Received" : "Awaiting Payment"}
+                        </span>
+                      )}
+
+                      {Boolean(b?.cancelRequest?.requested) && b.status !== "Cancelled" && (
+                        <span className="text-[10px] text-red-700 font-semibold leading-none mt-1">
+                          Cancellation Requested
                         </span>
                       )}
                     </div>
@@ -301,7 +369,7 @@ const BookingManagement = () => {
                           ]}
                         />
                       )}
-                      {b.status === "Confirmed" && !b.isPaid && (
+                      {b.status === "Confirmed" && !b.isPaid && !Boolean(b?.cancelRequest?.requested) && (
                         <button 
                           onClick={() => handleResendEmail(b._id)}
                           className="p-2 text-[#D97706] hover:bg-[#FEF3C7] rounded-md transition-all"
@@ -310,6 +378,26 @@ const BookingManagement = () => {
                           <FaRegPaperPlane size={16} />
                         </button>
                       )}
+
+                      {Boolean(b?.cancelRequest?.requested) && b.status !== "Cancelled" && (
+                        <>
+                          <button
+                            onClick={() => showCancellationEstimate(b)}
+                            className="px-3 py-2 text-[10px] font-bold uppercase rounded-md border border-[#E5E0D9] text-[#4B4B4B] hover:text-[#D97706] hover:bg-[#FEF3C7] transition-all"
+                            title="View Cancellation Refund Estimate"
+                          >
+                            View Estimate
+                          </button>
+                          <button
+                            onClick={() => handleUpdateStatus(b._id, "Cancelled")}
+                            className="px-3 py-2 text-[10px] font-bold uppercase rounded-md border border-[#E5E0D9] text-red-700 hover:bg-red-50 transition-all"
+                            title="Approve Cancellation (mark as Cancelled)"
+                          >
+                            Approve Cancel
+                          </button>
+                        </>
+                      )}
+
                       <button
                         onClick={() => openAgreementPdf(b)}
                         className={`px-3 py-2 text-[10px] font-bold uppercase rounded-md border border-[#E5E0D9] transition-all ${

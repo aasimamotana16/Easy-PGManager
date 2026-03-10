@@ -271,7 +271,7 @@ const getUserDashboard = async (req, res) => {
     const tenantEmail = String(user.email || "").trim().toLowerCase();
 
     const tenantRecord = tenantEmail ? await resolveTenantForUser(user) : null;
-    const moveOutCompleted = Boolean(
+    const baseMoveOutCompleted = Boolean(
       tenantRecord &&
       String(tenantRecord.status || "").toLowerCase() === "inactive" &&
       tenantRecord.moveOutCompletedAt
@@ -284,6 +284,14 @@ const getUserDashboard = async (req, res) => {
         { tenantName: user.fullName }
       ].filter(Boolean)
     }).sort({ createdAt: -1 });
+
+    const hasPostMoveOutBooking =
+      baseMoveOutCompleted &&
+      booking &&
+      (!tenantRecord?.moveOutCompletedAt ||
+        !booking?.createdAt ||
+        new Date(booking.createdAt) > new Date(tenantRecord.moveOutCompletedAt));
+    const moveOutCompleted = baseMoveOutCompleted && !hasPostMoveOutBooking;
 
     const latestAgreement = await Agreement.findOne({ userId: user._id }).sort({ createdAt: -1 });
     const approvedMoveIn = await CheckIn.findOne({ userId: user._id, status: "Present" })
@@ -389,7 +397,7 @@ const getUserDashboard = async (req, res) => {
     const normalizedPendingDueDate = getNextCycleDueDate(pendingPayment?.dueDate || null);
     const fallbackCycleDueDate = getNextCycleDueDate(booking?.checkInDate || user.paymentDueDate || null);
     const dueDateValue = normalizedPendingDueDate || fallbackCycleDueDate || null;
-    const dueDateLabel = dueDateValue
+    let dueDateLabel = dueDateValue
       ? new Date(dueDateValue).toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" })
       : "No due";
     let canPayNow = false;
@@ -401,8 +409,40 @@ const getUserDashboard = async (req, res) => {
       const daysUntilDue = Math.floor((dueDateObj - today) / DAY_MS);
       canPayNow = daysUntilDue <= TENANT_PAY_WINDOW_DAYS_BEFORE_DUE;
     }
-    const rentDue = Number(pendingPayment?.amount || monthlyRent || 0);
-    const securityDepositDue = securityDepositPaid ? 0 : securityDepositAmount;
+    let rentDue = Number(pendingPayment?.amount || monthlyRent || 0);
+    let securityDepositDue = securityDepositPaid ? 0 : securityDepositAmount;
+
+    const normalizedPaymentOption = String(booking?.paymentOption || "").trim().toLowerCase() || "deposit_only";
+    if (booking && normalizedPaymentOption === "deposit_only") {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const checkInDateObj = booking?.checkInDate ? new Date(booking.checkInDate) : null;
+      const checkInMs =
+        checkInDateObj && !Number.isNaN(checkInDateObj.getTime()) ? checkInDateObj.setHours(0, 0, 0, 0) : NaN;
+      const initialRentDueNow = Number.isFinite(checkInMs) ? today.getTime() >= checkInMs : true;
+
+      if (securityDepositDue > 0) {
+        // Deposit-only: pay deposit now, rent later.
+        rentDue = 0;
+        canPayNow = true;
+        dueDateLabel = today.toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" });
+      } else if (!initialRentPaid) {
+        if (initialRentDueNow) {
+          rentDue = Number(monthlyRent || 0);
+          canPayNow = true;
+          if (Number.isFinite(checkInMs)) {
+            dueDateLabel = new Date(checkInMs).toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" });
+          }
+        } else {
+          // Deposit paid; rent not yet due.
+          rentDue = 0;
+          canPayNow = false;
+          if (Number.isFinite(checkInMs)) {
+            dueDateLabel = new Date(checkInMs).toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" });
+          }
+        }
+      }
+    }
     const recentPayments = filteredRecentPayments.map((payment) => ({
       id: payment._id,
       month: payment.month || new Date(payment.paymentDate).toLocaleString("en-US", { month: "short", year: "numeric" }),
@@ -433,6 +473,7 @@ const getUserDashboard = async (req, res) => {
         checkInDate: booking?.checkInDate || null,
         lastPaymentDate: lastBookingPayment?.paymentDate || null,
         bookingState: booking?.status || "Pending",
+        cancelRequest: booking?.cancelRequest || null,
       },
       nextPayment: {
         amount: moveOutCompleted ? 0 : Number(rentDue + securityDepositDue),
@@ -650,18 +691,11 @@ const getMyAgreement = async (req, res) => {
     );
 
     const tenantRecord = await resolveTenantForUser({ email: req.user?.email || userDocWithAgreementCopy?.email || "" });
-    const moveOutCompleted = Boolean(
+    const baseMoveOutCompleted = Boolean(
       tenantRecord &&
       String(tenantRecord.status || "").toLowerCase() === "inactive" &&
       tenantRecord.moveOutCompletedAt
     );
-    if (moveOutCompleted) {
-      return res.status(200).json({
-        success: true,
-        data: null,
-        message: "Move-out completed. No active agreement."
-      });
-    }
     const signedAgreementDocStatus = String(userDocWithAgreementCopy?.rentalAgreementCopy?.status || "");
     const hasUploadedSignedAgreement = Boolean(userDocWithAgreementCopy?.rentalAgreementCopy?.fileUrl) &&
       ["uploaded", "verified"].includes(signedAgreementDocStatus.toLowerCase());
@@ -676,6 +710,21 @@ const getMyAgreement = async (req, res) => {
         { tenantName: req.user?.fullName || "" }
       ].filter(Boolean)
     }).sort({ createdAt: -1 });
+
+    const hasPostMoveOutBooking =
+      baseMoveOutCompleted &&
+      booking &&
+      (!tenantRecord?.moveOutCompletedAt ||
+        !booking?.createdAt ||
+        new Date(booking.createdAt) > new Date(tenantRecord.moveOutCompletedAt));
+    const moveOutCompleted = baseMoveOutCompleted && !hasPostMoveOutBooking;
+    if (moveOutCompleted) {
+      return res.status(200).json({
+        success: true,
+        data: null,
+        message: "Move-out completed. No active agreement."
+      });
+    }
     const agreement = booking?.bookingId
       ? await Agreement.findOne({ bookingId: booking.bookingId }).sort({ createdAt: -1 })
       : await Agreement.findOne({ userId }).sort({ createdAt: -1 });
@@ -864,11 +913,31 @@ const getMyOwnerContact = async (req, res) => {
     if (!user) return res.status(404).json({ success: false, message: "User not found" });
 
     const tenantRecord = await resolveTenantForUser(user);
-    const moveOutCompleted = Boolean(
+    const baseMoveOutCompleted = Boolean(
       tenantRecord &&
       String(tenantRecord.status || "").toLowerCase() === "inactive" &&
       tenantRecord.moveOutCompletedAt
     );
+
+    const tenantEmail = String(user.email || "").trim().toLowerCase();
+
+    // Primary source: latest booking for this tenant.
+    const latestBooking = await Booking.findOne({
+      status: { $in: ["Pending", "Confirmed"] },
+      $or: [
+        { tenantUserId: user._id },
+        tenantEmail ? { tenantEmail: new RegExp(`^${tenantEmail}$`, "i") } : null,
+        { tenantName: user.fullName || "" }
+      ].filter(Boolean)
+    }).sort({ createdAt: -1 }).select("pgId pgName ownerId createdAt");
+
+    const hasPostMoveOutBooking =
+      baseMoveOutCompleted &&
+      latestBooking &&
+      (!tenantRecord?.moveOutCompletedAt ||
+        !latestBooking?.createdAt ||
+        new Date(latestBooking.createdAt) > new Date(tenantRecord.moveOutCompletedAt));
+    const moveOutCompleted = baseMoveOutCompleted && !hasPostMoveOutBooking;
     if (moveOutCompleted) {
       return res.status(200).json({
         success: true,
@@ -882,18 +951,6 @@ const getMyOwnerContact = async (req, res) => {
         message: "Move-out completed. No active owner contact."
       });
     }
-
-    const tenantEmail = String(user.email || "").trim().toLowerCase();
-
-    // Primary source: latest booking for this tenant.
-    const latestBooking = await Booking.findOne({
-      status: { $in: ["Pending", "Confirmed"] },
-      $or: [
-        { tenantUserId: user._id },
-        tenantEmail ? { tenantEmail: new RegExp(`^${tenantEmail}$`, "i") } : null,
-        { tenantName: user.fullName || "" }
-      ].filter(Boolean)
-    }).sort({ createdAt: -1 }).select("pgId pgName ownerId");
 
     let pg = null;
     if (latestBooking?.pgId) {

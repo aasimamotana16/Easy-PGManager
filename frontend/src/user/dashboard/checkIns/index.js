@@ -42,6 +42,11 @@ const CheckIns = () => {
     (currentBooking._id || currentBooking.bookingDbId || currentBooking.bookingId || currentBooking.pgId)
   );
 
+  const cancelStatus = String(currentBooking?.cancelRequest?.status || "").trim().toLowerCase();
+  const cancelRequested = Boolean(currentBooking?.cancelRequest?.requested);
+  const isCancelPending = cancelRequested && (cancelStatus === "pending" || !cancelStatus);
+  const isBookingCancelled = String(currentBooking?.bookingState || currentBooking?.status || "").trim().toLowerCase() === "cancelled";
+
   const canRequestMoveOut = hasPaidFirstRent && hasApprovedMoveIn;
   const disableMoveInPay = hasPaidFirstRent || !Number.isFinite(Number(rentAmount)) || Number(rentAmount) <= 0;
   const disableAllActions = moveOutCompleted;
@@ -56,6 +61,42 @@ const CheckIns = () => {
   const formatInr = (value) => {
     const n = Number(value || 0);
     return `₹${Number.isFinite(n) ? n.toLocaleString("en-IN") : "0"}`;
+  };
+
+  const formatEstimateHtml = (estimatePayload) => {
+    const summary = estimatePayload?.summary || {};
+    const refundable = Number(summary.refundableAmount || 0);
+    const commission = Number(summary.nonRefundableCommissionAmount || 0);
+    const noShowDeduction = Number(summary.noShowDeductionAmount || 0);
+    const grossPaid = Number(summary.grossPaidAmount || estimatePayload?.totalPaidAmount || 0);
+    const rule = String(summary.refundRule || "");
+    const note = String(summary.note || "");
+
+    return `
+      <div style="text-align:left; font-size: 14px; line-height: 1.6;">
+        <p><b>Paid so far:</b> ${formatInr(grossPaid)}</p>
+        <p><b>Estimated refundable:</b> <span style="color:#059669; font-weight:700;">${formatInr(refundable)}</span></p>
+        <p><b>Non-refundable commission:</b> ${formatInr(commission)}</p>
+        ${noShowDeduction > 0 ? `<p><b>No-show deduction:</b> ${formatInr(noShowDeduction)}</p>` : ""}
+        ${rule ? `<hr style="border:0;border-top:1px solid #E5E0D9; margin: 10px 0;" /><p><b>Rule:</b> ${rule}</p>` : ""}
+        ${note ? `<p style="color:#4B4B4B;"><small>${note}</small></p>` : ""}
+        <small>Note: This is an estimate. Actual refunds depend on owner approval and payment processing.</small>
+      </div>
+    `;
+  };
+
+  const fetchCancellationEstimate = async (bookingIdentifier) => {
+    if (!bookingIdentifier) return null;
+    try {
+      const res = await axios.get(
+        `http://localhost:5000/api/bookings/${encodeURIComponent(bookingIdentifier)}/cancellation-estimate`,
+        { headers: { Authorization: `Bearer ${authToken}` } }
+      );
+      if (res.data?.success) return res.data?.data;
+      return null;
+    } catch (_) {
+      return null;
+    }
   };
 
   const deriveSystemState = (bookingLike) => {
@@ -141,11 +182,31 @@ const CheckIns = () => {
 
   const requestCancel = async (reasonLabel) => {
     const bookingLike = currentBooking || {};
-    const identifier = bookingLike.bookingDbId || bookingLike.pgId;
+    const identifier = bookingLike._id || bookingLike.bookingDbId;
     if (!identifier) {
       Swal.fire({
         title: "No Active Booking",
         text: "Could not find an active booking to cancel.",
+        icon: "info",
+        confirmButtonColor: "#D97706"
+      });
+      return;
+    }
+
+    if (isBookingCancelled) {
+      Swal.fire({
+        title: "Already Cancelled",
+        text: "This booking is already cancelled.",
+        icon: "info",
+        confirmButtonColor: "#D97706"
+      });
+      return;
+    }
+
+    if (isCancelPending) {
+      Swal.fire({
+        title: "Cancellation Already Requested",
+        text: "Your cancellation request is already pending owner approval.",
         icon: "info",
         confirmButtonColor: "#D97706"
       });
@@ -186,22 +247,14 @@ const CheckIns = () => {
   };
 
   const handleCancelReservation = async () => {
-    const deposit = Math.max(0, Number(securityDepositAmount || 0));
-    const deduction = Math.min(deposit, 1000);
-    const refund = Math.max(0, deposit - deduction);
+    const bookingLike = currentBooking || {};
+    const identifier = bookingLike._id || bookingLike.bookingDbId;
+    const estimate = await fetchCancellationEstimate(identifier);
+    const estimateHtml = estimate ? formatEstimateHtml(estimate) : "<p style=\"text-align:left;\">Refund estimate is not available right now.</p>";
 
     const result = await Swal.fire({
       title: "Cancel Reservation?",
-      html: `
-        <div style="text-align:left; font-size: 14px; line-height: 1.6;">
-          <p><b>System state:</b> RESERVED</p>
-          <p>Deposit paid: <b>${formatInr(deposit)}</b></p>
-          <p>Reservation fee deduction: <b>${formatInr(deduction)}</b></p>
-          <hr style="border:0;border-top:1px solid #E5E0D9; margin: 10px 0;" />
-          <p>Refund (remaining deposit): <b>${formatInr(refund)}</b></p>
-          <small>Note: This shows the policy calculation; actual refunds depend on payment processing.</small>
-        </div>
-      `,
+      html: estimateHtml,
       icon: "warning",
       showCancelButton: true,
       confirmButtonText: "Cancel Reservation",
@@ -216,39 +269,14 @@ const CheckIns = () => {
   };
 
   const handleCancelMoveIn = async () => {
-    const deposit = Math.max(0, Number(securityDepositAmount || 0));
-    const monthlyRent = Math.max(0, Number((currentBooking || {})?.monthlyRent || 0));
-    const dailyRent = monthlyRent / 30;
-
-    const lastPaid = lastPaymentDate && !Number.isNaN(lastPaymentDate.getTime()) ? lastPaymentDate : null;
-    const within24h = lastPaid ? (Date.now() - lastPaid.getTime()) <= (24 * 60 * 60 * 1000) : null;
-    const minDays = within24h === true ? 1 : 3;
-    const maxDays = within24h === true ? 2 : 5;
-
-    const minDeduction = Math.max(0, dailyRent * minDays);
-    const maxDeduction = Math.max(0, dailyRent * maxDays);
-    const minRefund = Math.max(0, deposit + monthlyRent - maxDeduction);
-    const maxRefund = Math.max(0, deposit + monthlyRent - minDeduction);
-
-    const ruleLabel = within24h === true
-      ? "Cancel within 24 hours"
-      : within24h === false
-        ? "Cancel after 24 hours (before move-in)"
-        : "Cancellation policy";
+    const bookingLike = currentBooking || {};
+    const identifier = bookingLike._id || bookingLike.bookingDbId;
+    const estimate = await fetchCancellationEstimate(identifier);
+    const estimateHtml = estimate ? formatEstimateHtml(estimate) : "<p style=\"text-align:left;\">Refund estimate is not available right now.</p>";
 
     const result = await Swal.fire({
       title: "Cancel Move-In?",
-      html: `
-        <div style="text-align:left; font-size: 14px; line-height: 1.6;">
-          <p><b>System state:</b> MOVE_IN_PENDING</p>
-          <p><b>Rule:</b> ${ruleLabel}</p>
-          <p>Deposit refund: <b>${formatInr(deposit)}</b></p>
-          <p>Rent deduction: <b>${formatInr(minDeduction)}</b> to <b>${formatInr(maxDeduction)}</b> (${minDays}–${maxDays} days)</p>
-          <hr style="border:0;border-top:1px solid #E5E0D9; margin: 10px 0;" />
-          <p>Estimated refund: <b>${formatInr(minRefund)}</b> to <b>${formatInr(maxRefund)}</b></p>
-          <small>Note: This shows the policy calculation; actual refunds depend on payment processing.</small>
-        </div>
-      `,
+      html: estimateHtml,
       icon: "warning",
       showCancelButton: true,
       confirmButtonText: "Cancel Move-In",

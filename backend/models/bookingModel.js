@@ -26,6 +26,11 @@ const bookingSchema = new mongoose.Schema({
   bookingAmount: { type: Number, default: 0 },
   rentAmount: { type: Number, default: 0 },
   securityDeposit: { type: Number, default: 0 },
+  paymentOption: {
+    type: String,
+    enum: ['deposit_only', 'full_payment'],
+    default: 'full_payment'
+  },
   variantLabel: { type: String, default: "" },
   agreementPdfUrl: { type: String, default: "" },
   pricingSnapshot: {
