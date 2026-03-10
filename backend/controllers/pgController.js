@@ -1,5 +1,6 @@
 const PG = require('../models/pgModel');
 const Booking = require('../models/bookingModel');
+const Tenant = require('../models/tenantModel');
 const { generateAgreementPreviewPdfByPgId } = require('../utils/agreementPdf');
 
 const CITY_ALIASES = {
@@ -69,6 +70,82 @@ const getReservedBedsMap = async (pgIds) => {
         pgId: { $in: pgIds },
         status: "Confirmed",
         isPaid: true
+      }
+    },
+    // Exclude bookings whose tenant has completed move-out.
+    // A move-out completion sets Tenant.status="Inactive" and moveOutCompletedAt.
+    {
+      $lookup: {
+        from: Tenant.collection.name,
+        let: {
+          bookingPgId: "$pgId",
+          bookingOwnerId: "$ownerId",
+          bookingTenantEmail: { $ifNull: ["$tenantEmail", ""] },
+          bookingTenantName: { $ifNull: ["$tenantName", ""] }
+        },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $and: [
+                  { $eq: ["$pgId", "$$bookingPgId"] },
+                  { $eq: ["$ownerId", "$$bookingOwnerId"] },
+                  {
+                    $or: [
+                      {
+                        $and: [
+                          {
+                            $gt: [
+                              { $strLenCP: { $trim: { input: "$$bookingTenantEmail" } } },
+                              0
+                            ]
+                          },
+                          {
+                            $eq: [
+                              { $toLower: { $trim: { input: "$email" } } },
+                              { $toLower: { $trim: { input: "$$bookingTenantEmail" } } }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        $eq: [
+                          { $toLower: { $trim: { input: "$name" } } },
+                          { $toLower: { $trim: { input: "$$bookingTenantName" } } }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          { $sort: { createdAt: -1 } },
+          { $limit: 1 },
+          { $project: { status: 1, moveOutCompletedAt: 1 } }
+        ],
+        as: "_matchedTenant"
+      }
+    },
+    {
+      $addFields: {
+        _latestTenant: { $arrayElemAt: ["$_matchedTenant", 0] }
+      }
+    },
+    {
+      $addFields: {
+        _tenantMovedOut: {
+          $and: [
+            { $ne: ["$_latestTenant", null] },
+            { $eq: [{ $toLower: { $ifNull: ["$_latestTenant.status", ""] } }, "inactive"] },
+            { $ne: ["$_latestTenant.moveOutCompletedAt", null] }
+          ]
+        }
+      }
+    },
+    {
+      $match: {
+        _tenantMovedOut: { $ne: true }
       }
     },
     {
