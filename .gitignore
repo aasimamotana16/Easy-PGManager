@@ -30,4 +30,13 @@ yarn-error.log*
 yarn.lock
 .next
 
+backend/.env
+# frontend/src/pages/loginPage/index.js
+
 /test-project
+
+# Admin Panel Sub-folder Ignores
+Admin-panel/admin-backend/node_modules/
+Admin-panel/admin-frontend/node_modules/
+Admin-panel/admin-backend/.env
+Admin-panel/admin-frontend/.env

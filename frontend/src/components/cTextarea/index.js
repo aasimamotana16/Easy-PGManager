@@ -19,7 +19,7 @@ const CTextArea = ({
         onChange={onChange}
         rows={rows}
         placeholder={placeholder}
-        className="w-full px-4 py-2 rounded-xl border border-border bg-card text-text-secondary focus:outline-none focus:ring-2 focus:ring-button-DEFAULT transition"
+        className="w-full px-4 py-2 rounded-md border border-border bg-card text-text-secondary focus:outline-none focus:ring-2 focus:ring-button-DEFAULT transition"
       />
     </div>
   );

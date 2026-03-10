@@ -1,91 +1,46 @@
-// src/pages/about/index.js
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Navbar from "../../components/navbar";
 import Footer from "../../components/footer";
-import Section from "../../components/aSection";
-import {
-  aboutIntro,
-  aboutWhoWeServe,
-  aboutFeatures,
-  aboutWhyChooseUs,
-  aboutReviews,
-} from "../../config/staticData";
+import Loader from "../../components/loader";
+import { getAboutPageData } from "../../api/api";
+
+import AboutIntro from "./aboutIntro";
+import AboutWhoWeServe from "./aboutWhoWeServe";
+import AboutFeatures from "./aboutFeatures";
+import AboutWhyChooseUs from "./aboutWhyChooseUs";
 
 const About = () => {
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Simulate page loading (same UX as Home)
+  useEffect(() => {
+    // Trigger backend connection for About page without changing current UI/data rendering.
+    getAboutPageData().catch((err) => {
+      console.error("About API connection failed:", err);
+    });
+
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 800); // short branded loader
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (isLoading) {
+    return <Loader />;
+  }
+
   return (
-    <div className="min-h-screen flex flex-col bg-background.DEFAULT text-text-secondary font-roboto">
-      {/* Navbar */}
+    <div className="min-h-screen flex flex-col bg-background.DEFAULT text-text-secondary">
       <Navbar />
 
-      {/* PAGE CONTENT — STARTS FROM VERY LEFT */}
-      <main className="flex-1 px-2 md:px-6 lg:px-8 py-12 mt-6">
-
-        {/* Introduction */}
-        <Section>
-          <h1 className="text-3xl md:text-4xl font-bold text-primary mb-4">
-            {aboutIntro.title}
-          </h1>
-          <p className="text-lg md:text-xl text-text-secondary">
-            {aboutIntro.description}
-          </p>
-        </Section>
-
-        {/* Who We Serve */}
-        <Section title="Who We Serve">
-          <ul className="list-disc pl-6 space-y-2">
-            {aboutWhoWeServe.map((item, i) => (
-              <li key={i}>
-                <span className="font-semibold">{item.role}:</span>{" "}
-                {item.desc}
-              </li>
-            ))}
-          </ul>
-        </Section>
-
-        {/* Key Features */}
-        <Section title="Our Key Features">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {aboutFeatures.map((feature, i) => (
-              <div
-                key={i}
-                className="bg-card border border-border rounded-xl shadow-card hover:shadow-hover p-6 transition"
-              >
-                <h3 className="text-xl font-semibold text-primary mb-2">
-                  {feature.title}
-                </h3>
-                <p className="text-text-secondary">{feature.desc}</p>
-              </div>
-            ))}
-          </div>
-        </Section>
-
-        {/* Why Choose Us */}
-        <Section title="Why Choose Us">
-          <p className="text-text-secondary leading-relaxed">
-            {aboutWhyChooseUs}
-          </p>
-        </Section>
-
-        {/* Reviews */}
-        <Section title="What Our Users Say">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {aboutReviews.map((review, i) => (
-              <div
-                key={i}
-                className="bg-card border border-border rounded-xl shadow-card hover:shadow-hover p-6 transition"
-              >
-                <p className="italic text-text-secondary">{review.text}</p>
-                <p className="font-bold text-primary mt-4">
-                  – {review.author}
-                </p>
-              </div>
-            ))}
-          </div>
-        </Section>
-
+      <main className="flex-1 space-y-10">
+        <AboutIntro />
+        <AboutWhoWeServe />
+        <AboutFeatures />
+        <AboutWhyChooseUs />
       </main>
 
-      {/* Footer */}
       <Footer />
     </div>
   );

@@ -1,272 +1,139 @@
+import React, { useState, useEffect } from "react";
 import Navbar from "../../components/navbar";
 import Footer from "../../components/footer";
 import ServiceCard from "../../components/sCard";
-import ListingCard from "../../components/listingCard";
 import CButton from "../../components/cButton";
-import CInput from "../../components/cInput";
-
-import {
-  services,
-  pgdetails,
-  hosteldetails,
-  genderOptions,
-  occupancyOptions,
-  rentCycleOptions,
-  amenitiesList,
-} from "../../config/staticData";
-
-import { useState, useMemo } from "react";
-import { Link } from "react-router-dom";
+import Loader from "../../components/loader";
+import { services as staticServices } from "../../config/staticData";
+import { getServicesPageData } from "../../api/api";
+import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion"; // Add this import
 
 export default function Services() {
-  const [filters, setFilters] = useState({
-    lookingFor: "Any",
-    occupancy: "Any",
-    minPrice: "",
-    maxPrice: "",
-    rentCycle: "Any",
-    amenities: [],
-    sortBy: "",
-  });
+  const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(true);
+  const [serviceList, setServiceList] = useState(staticServices);
 
-  const handleFilterChange = (key, value) => {
-    setFilters((prev) => ({ ...prev, [key]: value }));
-  };
+  useEffect(() => {
+    let mounted = true;
 
-  const toggleAmenity = (amenity) => {
-    setFilters((prev) => ({
-      ...prev,
-      amenities: prev.amenities.includes(amenity)
-        ? prev.amenities.filter((a) => a !== amenity)
-        : [...prev.amenities, amenity],
-    }));
-  };
-
-  const applyFilters = (list) => {
-    return list.filter((item) => {
-      if (
-        filters.lookingFor !== "Any" &&
-        item.gender &&
-        item.gender !== filters.lookingFor
-      )
-        return false;
-      if (
-        filters.occupancy !== "Any" &&
-        item.occupancy &&
-        item.occupancy !== filters.occupancy
-      )
-        return false;
-      if (
-        filters.rentCycle !== "Any" &&
-        item.rentCycle &&
-        item.rentCycle !== filters.rentCycle
-      )
-        return false;
-      if (filters.minPrice && item.rent < parseInt(filters.minPrice)) return false;
-      if (filters.maxPrice && item.rent > parseInt(filters.maxPrice)) return false;
-      if (filters.amenities.length > 0) {
-        for (let amenity of filters.amenities) {
-          if (!item.amenities.includes(amenity)) return false;
+    const loadServices = async () => {
+      try {
+        const res = await getServicesPageData();
+        if (mounted && res?.data?.success && Array.isArray(res.data.data)) {
+          setServiceList(res.data.data);
+        }
+      } catch (error) {
+        console.error("Services API failed, using static fallback:", error);
+      } finally {
+        if (mounted) {
+          setTimeout(() => setIsLoading(false), 300);
         }
       }
-      return true;
-    });
+    };
+
+    loadServices();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  // Animation Variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1, // Cards appear one after another
+      },
+    },
   };
 
-  const sortedList = useMemo(() => {
-    const sortList = (list) => {
-      if (filters.sortBy === "priceAsc")
-        return [...list].sort((a, b) => a.rent - b.rent);
-      if (filters.sortBy === "priceDesc")
-        return [...list].sort((a, b) => b.rent - a.rent);
-      return list;
-    };
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+  };
 
-    return {
-      pg: sortList(applyFilters(pgdetails)),
-      hostel: sortList(applyFilters(hosteldetails)),
-    };
-  }, [filters]);
+  if (isLoading) return <Loader />;
 
   return (
-    <div className="bg-gray-50 min-h-screen">
+    <div className="bg-background min-h-screen flex flex-col text-textSecondary">
       <Navbar />
 
-      <div className="max-w-7xl mx-auto px-6 sm:px-8 py-20">
-        {/* Heading */}
-        <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-center mb-8">
-          Our Services
-        </h1>
+      <main className="flex-1">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-16 lg:py-20">
 
-        <p className="text-lg sm:text-xl md:text-2xl text-center max-w-3xl mx-auto mb-20">
-          EasyPG Manager helps you discover, filter, and manage PGs & Hostels effortlessly.
-        </p>
+          {/* PAGE TITLE */}
+          <motion.div 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center mb-10 md:mb-16"
+          >
+            <h1 className="text-h1-sm lg:text-h1 font-bold text-textPrimary tracking-tight mb-4">
+              Our Services
+            </h1>
+            <p className="text-base md:text-xl lg:text-2xl text-textSecondary max-w-3xl mx-auto px-2">
+              EasyPG Manager provides verified PGs, smart booking, and
+              seamless property management tailored for your comfort.
+            </p>
+          </motion.div>
 
-        {/* Service Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-12 mb-28">
-          {services.map((service, idx) => (
-            <ServiceCard key={idx} {...service} />
-          ))}
-        </div>
+          {/* SERVICE CARDS GRID */}
+          <motion.div 
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 mb-16 md:mb-24"
+          >
+            {serviceList.map((service, idx) => (
+              <motion.div key={idx} variants={itemVariants} className="h-full">
+                <ServiceCard {...service} />
+              </motion.div>
+            ))}
+          </motion.div>
 
-        {/* Filters */}
-        <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-10">
-          Filter Options
-        </h2>
-
-        <div className="bg-white p-8 sm:p-10 rounded-2xl shadow-xl space-y-12">
-
-          {/* Basic Filters */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-10">
-            <CInput
-              type="select"
-              label="Looking For"
-              value={filters.lookingFor}
-              onChange={(e) =>
-                handleFilterChange("lookingFor", e.target.value)
-              }
-              options={genderOptions}
-            />
-
-            <CInput
-              type="select"
-              label="Occupancy"
-              value={filters.occupancy}
-              onChange={(e) =>
-                handleFilterChange("occupancy", e.target.value)
-              }
-              options={occupancyOptions}
-            />
-          </div>
-
-          {/* Price + Rent Cycle */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-10">
-            <div>
-              <label className="block text-lg font-semibold mb-3">
-                Price Range (₹)
-              </label>
-              <div className="flex gap-5">
-                <CInput
-                  type="number"
-                  placeholder="Min"
-                  value={filters.minPrice}
-                  onChange={(e) =>
-                    handleFilterChange("minPrice", e.target.value)
-                  }
-                />
-                <CInput
-                  type="number"
-                  placeholder="Max"
-                  value={filters.maxPrice}
-                  onChange={(e) =>
-                    handleFilterChange("maxPrice", e.target.value)
-                  }
-                />
-              </div>
+          {/* FIND YOUR PG SECTION (CTA) */}
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="max-w-4xl mx-auto bg-white rounded-2xl shadow-xl border border-primary p-6 sm:p-10 lg:p-12 text-center overflow-hidden"
+          >
+            <div className="relative group mb-8 overflow-hidden rounded-md">
+              <motion.img
+                whileHover={{ scale: 1.05 }}
+                transition={{ duration: 0.4 }}
+                src={`${process.env.PUBLIC_URL}/images/serviceImage/mapimage.png`}
+                alt="Map View"
+                className="w-full h-48 sm:h-64 lg:h-72 object-cover shadow-md"
+              />
+              <div className="absolute inset-0 bg-primary/5 pointer-events-none"></div>
             </div>
 
-            <CInput
-              type="select"
-              label="Rent Cycle"
-              value={filters.rentCycle}
-              onChange={(e) =>
-                handleFilterChange("rentCycle", e.target.value)
-              }
-              options={rentCycleOptions}
-            />
-          </div>
+            <h2 className="text-2xl md:text-4xl font-bold text-textPrimary mb-4 tracking-tight">
+              Find Your Perfect Stay
+            </h2>
 
-          {/* Amenities */}
-          <div>
-            <label className="block text-lg font-semibold mb-5">
-              Amenities
-            </label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-              {amenitiesList.map((amenity) => {
-                const selected = filters.amenities.includes(amenity);
-                return (
-                  <CButton
-                    key={amenity}
-                    size="sm"
-                    variant={selected ? "contained" : "outlined"}
-                    onClick={() => toggleAmenity(amenity)}
-                  >
-                    {amenity}
-                  </CButton>
-                );
-              })}
-            </div>
-          </div>
+            <p className="text-sm md:text-lg text-textSecondary mb-8 max-w-2xl mx-auto">
+              Ready to move? Start your search instantly and discover 
+              hand-picked, verified PGs that match your budget and lifestyle.
+            </p>
 
-          {/* Sort + Reset */}
-          <div className="flex flex-col md:flex-row justify-between items-center gap-6 pt-6 border-t">
-            <CInput
-              type="select"
-              label="Sort By"
-              value={filters.sortBy}
-              onChange={(e) =>
-                handleFilterChange("sortBy", e.target.value)
-              }
-              options={[
-                { label: "Default", value: "" },
-                { label: "Price: Low → High", value: "priceAsc" },
-                { label: "Price: High → Low", value: "priceDesc" },
-              ]}
-            />
-
-            <CButton
-              variant="contained"
-              size="md"
-              className="bg-red-600 hover:bg-red-700"
-              onClick={() =>
-                setFilters({
-                  lookingFor: "Any",
-                  occupancy: "Any",
-                  minPrice: "",
-                  maxPrice: "",
-                  rentCycle: "Any",
-                  amenities: [],
-                  sortBy: "",
-                })
-              }
-            >
-              Reset Filters
-            </CButton>
-          </div>
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <CButton
+                size="lg"
+                variant="contained"
+                onClick={() => navigate("/findMypg", { state: { fromServices: true } })}
+                className="w-full sm:w-auto px-10 py-4 text-lg font-bold shadow-lg shadow-primary/20"
+              >
+                Start Searching Now
+              </CButton>
+            </motion.div>
+          </motion.div>
         </div>
-
-        {/* PG Listings */}
-        <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mt-24 mb-10">
-          Available PGs
-        </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-12">
-          {sortedList.pg.map((pg) => (
-            <Link
-              key={pg.id}
-              to={`/pg/${pg.id}`}
-              className="hover:scale-[1.03] transition"
-            >
-              <ListingCard {...pg} />
-            </Link>
-          ))}
-        </div>
-
-        {/* Hostel Listings */}
-        <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mt-24 mb-10">
-          Available Hostels
-        </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-12">
-          {sortedList.hostel.map((hostel) => (
-            <Link
-              key={hostel.id}
-              to={`/pg/${hostel.id}`}
-              className="hover:scale-[1.03] transition"
-            >
-              <ListingCard {...hostel} />
-            </Link>
-          ))}
-        </div>
-      </div>
+      </main>
 
       <Footer />
     </div>

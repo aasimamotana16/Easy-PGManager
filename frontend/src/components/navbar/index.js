@@ -1,51 +1,289 @@
-import React from "react";
-import { Link, useNavigate } from "react-router-dom";
-import CButton from "../../components/cButton"; // make sure the path is correct
+import React, { useEffect, useState, useRef } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { FaUserCircle, FaBars, FaTimes } from "react-icons/fa";
+import axios from "axios";
+import CButton from "../../components/cButton";
+import { getUserProfile } from "../../api/api";
 
 const Navbar = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const dropdownRef = useRef(null);
+
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userName, setUserName] = useState("");
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isLogoutSuccessful, setIsLogoutSuccessful] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const role = localStorage.getItem("role");
+
+  // UPDATED: Robust name checking logic
+  const checkLoginStatus = () => {
+    const loggedIn = localStorage.getItem("isLoggedIn") === "true";
+    setIsLoggedIn(loggedIn);
+
+    if (loggedIn) {
+      // 1. Try to get the name from a stored user object (best practice)
+      const storedUser = localStorage.getItem("user");
+      if (storedUser) {
+        try {
+          const userData = JSON.parse(storedUser);
+          setUserName(userData.name || userData.fullName || "User");
+        } catch (e) {
+          // Fallback if JSON is corrupted
+          setUserName(localStorage.getItem("userName") || "User");
+        }
+      } else {
+        // 2. Fallback to direct userName key
+        setUserName(localStorage.getItem("userName") || "User");
+      }
+    }
+  };
+
+  useEffect(() => {
+    checkLoginStatus();
+    setIsMobileMenuOpen(false);
+  }, [location.pathname]);
+
+  // Click outside listener for profile dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setProfileOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener("storage", checkLoginStatus);
+    return () => window.removeEventListener("storage", checkLoginStatus);
+  }, []);
+
+  useEffect(() => {
+    const handleProfileUpdate = (event) => {
+      if (event.key === "user" || event.key === "userName") {
+        checkLoginStatus();
+      }
+    };
+
+    window.addEventListener("storage", handleProfileUpdate);
+    return () => {
+      window.removeEventListener("storage", handleProfileUpdate);
+    };
+  }, []);
+
+  // Keep navbar name synced with backend profile to avoid stale localStorage values.
+  useEffect(() => {
+    const syncNameFromProfile = async () => {
+      const loggedIn = localStorage.getItem("isLoggedIn") === "true";
+      if (!loggedIn) return;
+      try {
+        const res = await getUserProfile();
+        const freshName = res?.data?.data?.fullName || res?.data?.data?.name || "";
+        if (!freshName) return;
+        setUserName(freshName);
+
+        const existingRaw = localStorage.getItem("user");
+        let existingUser = {};
+        if (existingRaw) {
+          try { existingUser = JSON.parse(existingRaw) || {}; } catch (e) { existingUser = {}; }
+        }
+        localStorage.setItem("user", JSON.stringify({ ...existingUser, fullName: freshName, name: freshName }));
+        localStorage.setItem("userName", freshName);
+      } catch (err) {
+        // Silent fallback to localStorage name if profile fetch fails.
+      }
+    };
+
+    syncNameFromProfile();
+  }, [location.pathname]);
+
+  const handleLogout = async () => {
+    try {
+      const token = localStorage.getItem("userToken");
+      if (token) {
+        await axios.post(
+          "http://localhost:5000/api/users/logout",
+          {},
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+      }
+      setIsLogoutSuccessful(true);
+      setTimeout(() => {
+        localStorage.clear();
+        setProfileOpen(false);
+        setIsLogoutModalOpen(false);
+        setIsLogoutSuccessful(false);
+        navigate("/");
+        window.dispatchEvent(new Event("storage"));
+      }, 1500);
+    } catch (error) {
+      console.error("Logout failed", error);
+      localStorage.clear();
+      navigate("/");
+    }
+  };
+
+  const goToDashboard = () => {
+    navigate(role === "owner" ? "/owner/dashboard/dashboardHome" : "/user/dashboard/dashboardHome");
+    setProfileOpen(false);
+  };
+
+  const goToProfile = () => {
+    navigate(role === "owner" ? "/owner/dashboard/profileStatus" : "/user/userProfile");
+    setProfileOpen(false);
+  };
+
+  const allNavLinks = [
+    ["/", "Home"],
+    ["/about", "About"],
+    ["/services", "Services"],
+    ["/findmypg", "FindMyPG"],
+    ["/contact", "Contact"],
+    ["/faq", "FAQ"],
+  ];
+
+  const navLinks = allNavLinks.filter(([path, label]) => {
+    if (role === "owner") {
+      return label !== "Services" && label !== "FindMyPG";
+    }
+    return true;
+  });
 
   return (
-    <nav className="bg-background-dark border-b border-white/10">
-      <div className="flex justify-between items-center px-2 md:px-4 lg:px-6 py-1.5 md:py-2 lg:py-2.5">
-
-        {/* Logo + Text */}
-        <div className="flex items-center">
-          <img
-            src="/logos/logo1.png"
-            alt="EasyPG Manager Logo"
-            className="h-8 md:h-9 lg:h-10 w-auto mr-2"
-          />
-          <span className="font-bold tracking-wide text-text-light hidden sm:block text-sm md:text-base lg:text-lg">
-            EASYPGMANAGER
+    <>
+      <nav className="bg-[#1F1F1F] border-b border-[#E5E0D9]/10 px-4 md:px-6 py-4 flex justify-between items-center sticky top-0 z-[1000]">
+        
+        {/* LEFT: LOGO */}
+        <div className="flex items-center cursor-pointer shrink-0" onClick={() => navigate("/")}>
+          <img src="/logos/logo1.png" className="h-8 w-auto mr-2" alt="logo" />
+          <span className="text-white text-base md:text-base font-medium">
+            EasyPG <span className="text-[#D97706]">Manager</span>
           </span>
         </div>
 
-        {/* Navigation Links */}
-        <div className="hidden md:flex gap-3 lg:gap-5">
-          {["Home", "Services", "About", "Contact", "FAQ"].map((item, index) => (
-            <Link
-              key={index}
-              to={item === "Home" ? "/" : `/${item.toLowerCase()}`}
-              className="font-semibold text-text-light/80 text-sm md:text-sm lg:text-base
-                         transition duration-300 hover:text-text-light hover:border-b-2 hover:border-primary"
+        {/* CENTER: NAV LINKS */}
+        <div className="hidden lg:flex items-center gap-8">
+          {navLinks.map(([path, label]) => (
+            <button
+              key={path}
+              onClick={() => navigate(path)}
+              className={`relative py-2 text-sm transition-all duration-300 ${
+                location.pathname === path ? "text-[#D97706]" : "text-white hover:text-[#D97706]"
+              } group`}
             >
-              {item}
-            </Link>
+              {label}
+              <span className={`absolute bottom-0 left-0 h-[2px] bg-[#D97706] transition-all duration-300 ${
+                location.pathname === path ? "w-full" : "w-0 group-hover:w-full"
+              }`}></span>
+            </button>
           ))}
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex gap-2">
-          <CButton title="" size="md" text="Sign Up" onClick={() => navigate("/signup")} />
-        
+        {/* RIGHT: PROFILE & MOBILE TOGGLE */}
+        <div className="flex items-center gap-3 md:gap-4">
+          {!isLoggedIn ? (
+            <div className="hidden sm:flex gap-3">
+              <CButton variant="outline" text="Login" onClick={() => navigate("/loginPage")} />
+              <CButton text="Sign Up" onClick={() => navigate("/signup")} />
+            </div>
+          ) : (
+            <div className="relative" ref={dropdownRef}>
+              <button className="flex items-center gap-3 text-white" onClick={() => setProfileOpen((p) => !p)}>
+                <div className="hidden md:flex flex-col items-end leading-tight">
+                  <span className="text-sm font-medium">{userName}</span>
+                  <span className="text-[10px] text-[#D97706] uppercase font-bold tracking-widest">
+                    {role === "owner" ? "Property Owner" : "Tenant"}
+                  </span>
+                </div>
+                <FaUserCircle size={28} className="text-[#D97706]" />
+              </button>
+              
+              {profileOpen && (
+                <div className="absolute right-0 top-12 w-48 bg-white rounded-md shadow-xl z-[110] overflow-hidden border border-[#E5E0D9]">
+                  <div className="py-1">
+                    <button onClick={goToDashboard} className="w-full px-4 py-2 hover:bg-primarySoft text-[#1C1C1C] text-sm text-left">Dashboard</button>
+                    <button onClick={goToProfile} className="w-full px-4 py-2 hover:bg-primarySoft text-[#1C1C1C] text-sm text-left">My Profile</button>
+                    <button 
+                      onClick={() => { setProfileOpen(false); setIsLogoutModalOpen(true); }} 
+                      className="w-full px-4 py-2 text-red-600 hover:bg-red-50 text-sm text-left font-medium"
+                    >
+                      Sign Out
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
-          <CButton size="md"  text="Login" onClick={() => navigate("/login")} />
-          
+          <button className="lg:hidden text-white p-1" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+            {isMobileMenuOpen ? <FaTimes size={22} /> : <FaBars size={22} />}
+          </button>
         </div>
 
-      </div>
-    </nav>
+        {/* MOBILE SIDEBAR MENU */}
+        <div className={`fixed inset-0 bg-[#1F1F1F] z-[90] transition-transform duration-300 lg:hidden ${isMobileMenuOpen ? "translate-x-0" : "translate-x-full"}`} style={{ top: '72px' }}>
+          <div className="flex flex-col p-6 gap-6">
+            {navLinks.map(([path, label]) => (
+              <button
+                key={path}
+                onClick={() => navigate(path)}
+                className={`text-xl text-left font-medium ${location.pathname === path ? "text-[#D97706]" : "text-white"}`}
+              >
+                {label}
+              </button>
+            ))}
+            {!isLoggedIn && (
+              <div className="flex flex-col gap-4 mt-4">
+                <CButton text="Login" onClick={() => navigate("/loginPage")} />
+                <CButton text="Sign Up" onClick={() => navigate("/signup")} />
+              </div>
+            )}
+          </div>
+        </div>
+      </nav>
+
+      {/* --- LOGOUT POPUP --- */}
+      {isLogoutModalOpen && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center transition-all animate-in zoom-in duration-200">
+            {!isLogoutSuccessful ? (
+              <>
+                <h3 className="text-2xl font-bold text-[#1C1C1C]">Confirm Logout</h3>
+                <p className="text-[#4B4B4B] my-4 font-medium">
+                  Are you sure you want to end your session?
+                </p>
+                <div className="flex gap-3 mt-6">
+                  <CButton 
+                    text="No"
+                    variant="outline"
+                    onClick={() => setIsLogoutModalOpen(false)}
+                    className="flex-1"
+                  />
+                  <CButton 
+                    text="Yes"
+                    onClick={handleLogout}
+                    className="flex-1"
+                  />
+                </div>
+              </>
+            ) : (
+              <div className="flex flex-col items-center py-4 animate-in zoom-in duration-300">
+                <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-4xl mb-4 border border-green-200">
+                  ✓
+                </div>
+                <h3 className="text-2xl font-bold text-[#1C1C1C]">Success!</h3>
+                <p className="text-[#4B4B4B] mt-2 font-medium">Logged out successfully.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 

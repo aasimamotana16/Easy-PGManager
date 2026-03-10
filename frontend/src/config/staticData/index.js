@@ -1,4 +1,4 @@
-// src/config/staticData/index.js
+﻿// src/config/staticData/index.js
 
 // Banner images (from public/images/homeImages)
 export const bannerImages = [
@@ -16,29 +16,100 @@ export const bannerText = {
 };
 
 export const features = [
+  // OWNER FEATURES
   {
     title: "Easy Room Management",
-    desc: "Add, edit, and manage rooms effortlessly with our intuitive interface."
+    desc: "Add, edit, and manage rooms effortlessly with our intuitive interface.",
+    role: "owner"
   },
   {
     title: "Automated Billing",
-    desc: "Generate invoices automatically and keep track of payments with ease."
+    desc: "Generate invoices automatically and keep track of payments with ease.",
+    role: "owner"
   },
   {
     title: "Tenant Tracking",
-    desc: "Monitor tenants' details, lease periods, and history efficiently."
-  },
-  {
-    title: "Attendance Management",
-    desc: "Keep track of tenant attendance and room usage for smooth operations."
-  },
-  {
-    title: "Custom Notifications",
-    desc: "Send reminders, alerts, and announcements to tenants directly."
+    desc: "Monitor tenants' details, lease periods, and history efficiently.",
+    role: "owner"
   },
   {
     title: "Reports & Analytics",
-    desc: "Gain insights with detailed reports and analytics for smarter decisions."
+    desc: "Gain insights with detailed reports and analytics for smarter decisions.",
+    role: "owner"
+  },
+  {
+    title: "Booking Oversight",
+    desc: "Track incoming bookings, approvals, and occupancy from one clear panel.",
+    role: "owner"
+  },
+  {
+    title: "Agreement Control",
+    desc: "Create and manage tenant agreements digitally with complete audit visibility.",
+    role: "owner"
+  },
+  // TENANT / USER FEATURES
+  {
+    title: "Find My PG",
+    desc: "Search through verified listings to find the perfect stay near your university.",
+    role: "tenant"
+  },
+  {
+    title: "Instant Mobile Updates",
+    desc: "Receive real-time notifications for rent reminders and announcements.",
+    role: "tenant"
+  },
+  {
+    title: "Easy Payments",
+    desc: "Pay your rent securely online and download receipts instantly.",
+    role: "tenant"
+  },
+  {
+    title: "24/7 Support",
+    desc: "Raise maintenance requests and get support directly through the app.",
+    role: "tenant"
+  },
+  {
+    title: "Owner Contact",
+    desc: "Connect with your property owner quickly for rent, move-in, and agreement help.",
+    role: "tenant"
+  },
+  {
+    title: "Digital Agreements",
+    desc: "View and download your agreement anytime with transparent rental terms.",
+    role: "tenant"
+  }
+];
+
+export const guestFeatures = [
+  {
+    title: "Verified Properties",
+    desc: "All PGs are verified and inspected for quality and safety.",
+    role: "guest"
+  },
+  {
+    title: "Easy Booking",
+    desc: "Simple and quick booking process with instant confirmation.",
+    role: "guest"
+  },
+  {
+    title: "Secure Payments",
+    desc: "Safe and secure payment gateway with multiple options.",
+    role: "guest"
+  },
+  {
+    title: "Real-time Updates",
+    desc: "Get instant notifications for bookings and payments.",
+    role: "guest"
+  },
+  {
+    title: "24/7 Support",
+    desc: "Round-the-clock support for all your stay and onboarding needs.",
+    role: "guest"
+  },
+  {
+    title: "Digital Agreements",
+    desc: "Transparent agreements and documents available online anytime.",
+    role: "guest"
   }
 ];
 
@@ -48,7 +119,7 @@ export const contactInfo = {
   email: "business-support@easyPGmanager.com",
   supportPhone: "+91 0000000000",
   infoPhone: "+91 000000000",
-  timing: "Monday–Friday [9:00 AM to 6:00 PM]",
+  timing: "Mondayâ€“Friday [9:00 AM to 6:00 PM]",
 };
 
 export const contactCTA = {
@@ -56,7 +127,7 @@ export const contactCTA = {
     title: "What are you still waiting for?",
     description:
       "Automate your operations, manage your hostel/PGs business efficiently, and boost profits!",
-    button: "SCHEDULE A DEMO →",
+    button: "SCHEDULE A DEMO â†’",
   },
   touch: {
     title: "Get in touch with us!",
@@ -114,11 +185,11 @@ export const aboutWhyChooseUs =
 
 export const aboutReviews = [
   {
-    text: "“Managing my PG has never been easier. Billing and complaints are all in one place.”",
+    text: "â€œManaging my PG has never been easier. Billing and complaints are all in one place.â€",
     author: "PG Owner",
   },
   {
-    text: "“I love the transparency. I can see my rent breakdown and contact my owner instantly.”",
+    text: "â€œI love the transparency. I can see my rent breakdown and contact my owner instantly.â€",
     author: "Tenant",
   },
 ];
@@ -128,79 +199,212 @@ export const services = [
     id: 1,
     title: "PG Management",
     description: "Streamline tenant records, rent tracking, and PG operations with ease.",
-    icon: "🏠",
+    icon: "ðŸ ",
   },
   {
     id: 2,
     title: "Billing & Payments",
     description: "Automated invoices, reminders, and secure payment integrations.",
-    icon: "💳",
+    icon: "ðŸ’³",
   },
   {
     id: 3,
     title: "Support & Maintenance",
     description: "Track service requests and manage maintenance schedules efficiently.",
-    icon: "🛠️",
-  },
-];
-
-  export const faqs = [
-  {
-    id: 1,
-    question: "What is EasyPG Manager?",
-    answer: "EasyPG Manager is a platform designed to simplify PG and hostel management with modern tools."
-  },
-  {
-    id: 2,
-    question: "Can tenants pay rent online?",
-    answer: "Yes, tenants can pay securely online through integrated billing and payment features."
-  },
-  {
-    id: 3,
-    question: "Is there support for PG owners?",
-    answer: "Absolutely. Owners can track tenants, manage billing, and handle service requests efficiently."
+    icon: "ðŸ› ï¸",
   },
   {
     id: 4,
+    title: "Verified Listings",
+    description: "Browse verified PGs and hostels with all the details you need.",
+    icon: "ðŸ“‹", // you can replace with another emoji or SVG icon
+  },
+  {
+    id: 5,
+    title: "Smart Booking & Agreements",
+    description: "Seamless property booking with automated rental agreements and secure online payments.",
+    icon: "📄",
+  },
+  {
+    id: 6,
+    title: "Analytics & Reports",
+    description: "Gain complete financial and occupancy insights with real-time dashboards and detailed reports.",
+    icon: "📊",
+  },
+];
+
+export const faqs = [
+  // General Questions
+  {
+    id: 1,
+    category: "General Questions",
+    question: "What is EasyPG Manager?",
+    answer:
+      "EasyPG Manager is a platform designed to simplify PG and hostel management with modern tools."
+  },
+  {
+    id: 2,
+    category: "General Questions",
+    question: "Can tenants pay rent online?",
+    answer:
+      "Yes, tenants can pay securely online through integrated billing and payment features."
+  },
+    // Support Team
+  {
+    id: 4,
+    category: "Support Team",
+    question: "Is there support for PG owners?",
+    answer:
+      "Absolutely. Owners can track tenants, manage billing, and handle service requests efficiently."
+  },
+  {
+    id: 5,
+    category: "Support Team",
+    question: "How can I contact support?",
+    answer:
+      "You can reach our support team via email, live chat, or phone. Response times are typically under 24 hours."
+  },
+  {
+    id: 6,
+    category: "Support Team",
+    question: "Can I request a feature for the dashboard?",
+    answer:
+      "Yes, feature requests can be submitted directly from your dashboard, and our team reviews them regularly."
+  },
+
+  // Miscellaneous
+  {
+    id: 7,
+    category: "Miscellaneous",
     question: "Does EasyPG Manager provide maintenance tracking?",
-    answer: "Yes, you can log service requests and track maintenance schedules directly in the dashboard."
+    answer:
+      "Yes, you can log service requests and track maintenance schedules directly in the dashboard."
+  },
+  {
+    id: 8,
+    category: "Miscellaneous",
+    question: "Can I integrate third-party tools?",
+    answer:
+      "EasyPG Manager supports integrations with payment gateways, accounting software, and notification services."
+  },
+  {
+    id: 9,
+    category: "Miscellaneous",
+    question: "Is my data secure?",
+    answer:
+      "Yes, we use industry-standard encryption and secure servers to ensure your data is fully protected."
+  },
+
+  // Other Category Example
+  {
+    id: 10,
+    category: "Billing & Payments",
+    question: "Are online payments secure?",
+    answer:
+      "Yes, all online payments are processed securely through trusted gateways with encryption."
+  },
+  {
+    id: 11,
+    category: "Billing & Payments",
+    question: "Can I get a receipt for every payment?",
+    answer:
+      "Absolutely, all payments generate digital receipts which you can download or email."
   }
 ];
 
 
+
+// =====================
 // Gender options
-export const genderOptions = ["Any", "Boys", "Girls", "Co-living"];
+// =====================
+export const genderOptions = [
+  { label: "Any", value: "Any" },
+  { label: "Boys", value: "Boys" },
+  { label: "Girls", value: "Girls" },
+];
+export const propertyTypes = [
+  { label: "PG", value: "PG" },
+  //{ label: "Hostel", value: "Hostel" },
+  { label: "Flat", value: "Flat" },
+];
 
+// =====================
 // Occupancy options
-export const occupancyOptions = ["Any", "Single", "Double", "Triple", "3+"];
+// =====================
+export const occupancyOptions = [
+  { label: "Any", value: "Any" },
+  { label: "Single Sharing", value: "Single" },
+  { label: "Double Sharing", value: "Double" },
+  { label: "Triple Sharing", value: "Triple" },
+  { label: "3+ Sharing", value: "3+" },
+];
 
+
+// =====================
 // Rent cycle options
-export const rentCycleOptions = ["Any", "01-01", "10-10", "15-15"];
+// =====================
+export const rentCycleOptions = [
+  { label: "Any", value: "Any" },
+  { label: "Monthly", value: "Monthly" },
+  { label: "Quarterly", value: "Quarterly" },
+  { label: "Yearly", value: "Yearly" },
+];
 
-// Grace period options
-export const gracePeriodOptions = ["Any", "Nil", "5 Days", "7 Days", "10 Days"];
 
+// =====================
 // Amenities list
+// =====================
 export const amenitiesList = [
-  "Hygienic Food", "Daily Newspaper", "Power Backup", "Wi-fi", "Fully Furnished",
-  "RO Water", "Water Cooler", "Parking", "CCTV", "Attached Washroom", "AC",
-  "Geyser", "Peaceful Living", "Balcony", "Desert Cooler", "Gas/Induction",
-  "Fridge", "Laundry/Washing Machine", "Bed + Mattress", "TV/LED", "Wardrobe/Almirah",
+  "Hygienic Food",
+  "Daily Newspaper",
+  "Power Backup",
+  "Wi-fi",
+  "Fully Furnished",
+  "RO Water",
+  "Water Cooler",
+  "Parking",
+  "CCTV",
+  "Attached Washroom",
+  "AC",
+  "Geyser",
+  "Peaceful Living",
+  "Balcony",
+  "Desert Cooler",
+  "Gas/Induction",
+  "Fridge",
+  "Laundry/Washing Machine",
+  "Bed + Mattress",
+  "TV/LED",
+  "Wardrobe/Almirah",
 ];
 
+
+// =====================
 // Additional facilities list
+// =====================
 export const extrasList = [
-  "Kitchen Amenities", "Table-Chair", "Library", "First Aid Medical Facility", "Cleaning", "GYM"
+  "Kitchen Amenities",
+  "Table-Chair",
+  "Library",
+  "First Aid Medical Facility",
+  "Cleaning",
+  "GYM",
 ];
+
 
 export const pgdetails = [
   {
     id: 1,
     name: "Sunrise PG",
     location: "Nadiad",
-    address: "123 MG Road, Nadiad",
+    address: "Salman park society , Barkosia Road, Nadiad, Gujarat, India",
+    gender: "Male",
 
-    startingPrice: "₹4500 / month",
+
+    startingPrice: "â‚¹4500 / month",
+    startingPriceNumber: 4500,
+
+    roomPricing: { single: 6500, double: 4500 },
 
     amenities: ["WiFi", "Laundry", "Meals"],
     facilities: ["WiFi", "Laundry", "Meals", "Common Room", "Hot Water"],
@@ -217,49 +421,274 @@ export const pgdetails = [
     ],
 
     sharing: [
-      { type: "Single Sharing", price: "₹6500 / month" },
-      { type: "Double Sharing", price: "₹4500 / month" },
+      { type: "Single Sharing", price: 6500 },
+      { type: "Double Sharing", price: 4500 },
     ],
 
-    gender: "Male",
-    rating: 4.3,
-
-    image: "/images/sunrise-pg.jpg",
+    image: "/images/serviceImage/availablePGsImg/sunriseimg/roomimg3.jpeg",
     roomImages: [
-      "/images/sunriseimg/roomimg1.jpeg",
-      "/images/sunriseimg/roomimg2.jpeg",
-      "/images/sunriseimg/roomimg3.jpeg",
+      "/images/serviceImage/availablePGsImg/sunriseimg/roomimg3.jpeg",
+      "/images/serviceImage/availablePGsImg/sunriseimg/roomimg2.jpeg",
+      "/images/serviceImage/availablePGsImg/sunriseimg/roomimg1.jpeg",
     ],
   },
+
   {
     id: 2,
     name: "GreenNest PG",
     location: "Ahmedabad",
-    address: "45 Green Street, Ahmedabad",
-    price: "₹5500/month",
-    rent: 5500,
+    gender: "Female",
+
+    startingPrice: "â‚¹5500 / month",
+    startingPriceNumber: 5500,
+
+    roomPricing: { single: 7000, double: 5500 },
+
     amenities: ["AC", "Parking", "Security"],
     facilities: ["AC", "Parking", "Security", "Gym", "Common Kitchen"],
+
     ownerName: "Mrs. Seema Shah",
     ownerContact: "9123456780",
+
     rulesList: [
       { icon: "noguest", text: "No guests allowed" },
       { icon: "clean", text: "Keep the premises clean" },
     ],
+
+    sharing: [
+      { type: "Single Sharing", price: 7000 },
+      { type: "Double Sharing", price: 5500 },
+    ],
+
+    image: "/images/serviceImage/availablePGsImg/greeNestImg/greenNest2.jpg",
+    roomImages: [
+      "/images/serviceImage/availablePGsImg/greeNestImg/greenNest2.jpg",
+      "/images/serviceImage/availablePGsImg/greeNestImg/GreenNest3.jpg",
+      "/images/serviceImage/availablePGsImg/greeNestImg/greenNest1.jpg",
+    ],
+  },
+
+  {
+    id: 3,
+    name: "Shree PG",
+    location: "Surat",
+    gender: "Male",
+
+    startingPrice: "â‚¹4800 / month",
+    startingPriceNumber: 4800,
+
+    roomPricing: { single: 6500, double: 4800 },
+
+    amenities: ["WiFi", "Meals", "Security"],
+    facilities: ["WiFi", "Meals", "Security", "Laundry", "Common Room"],
+
+    ownerName: "Mr. Ketan Joshi",
+    ownerContact: "9876543211",
+
+    rulesList: [
+      { icon: "nosmoke", text: "No smoking" },
+      { icon: "clean", text: "Maintain cleanliness" },
+    ],
+
+    sharing: [
+      { type: "Single Sharing", price: 6500 },
+      { type: "Double Sharing", price: 4800 },
+    ],
+
+    image: "/images/serviceImage/availablePGsImg/shreeImg/shree1.jpg",
+    roomImages: [
+      "/images/serviceImage/availablePGsImg/shreeImg/shree2.jpg",
+      "/images/serviceImage/availablePGsImg/shreeImg/shree3.jpg",
+      "/images/serviceImage/availablePGsImg/shreeImg/shree1.jpg",
+    ],
+  },
+
+  {
+    id: 4,
+    name: "Harmony PG",
+    location: "Rajkot",
     gender: "Female",
-    rating: 4.7,
-    image: "/images/greennest-pg.jpg",
-    roomImages: []
+
+    startingPrice: "â‚¹5000 / month",
+    startingPriceNumber: 5000,
+
+    roomPricing: { single: 7000, double: 5000 },
+
+    amenities: ["AC", "WiFi", "Meals"],
+    facilities: ["AC", "WiFi", "Meals", "Study Room", "Security"],
+
+    ownerName: "Ms. Priya Trivedi",
+    ownerContact: "9876543212",
+
+    rulesList: [
+      { icon: "music", text: "No loud music" },
+      { icon: "noguest", text: "No guests allowed" },
+    ],
+
+    sharing: [
+      { type: "Single Sharing", price: 7000 },
+      { type: "Double Sharing", price: 5000 },
+    ],
+
+    image: "/images/serviceImage/availablePGsImg/harmonyimg/haarmony1.jpg",
+    roomImages: [
+      "/images/serviceImage/availablePGsImg/harmonyimg/harmony2.jpg",
+      "/images/serviceImage/availablePGsImg/harmonyimg/harmony3.jpg",
+      "/images/serviceImage/availablePGsImg/harmonyimg/haarmony1.jpg",
+    ],
+  },
+
+  {
+    id: 5,
+    name: "Lotus PG",
+    location: "Bhavnagar",
+    gender: "Male",
+
+    startingPrice: "â‚¹4200 / month",
+    startingPriceNumber: 4200,
+
+    roomPricing: { single: 6000, double: 4200 },
+
+    amenities: ["WiFi", "Laundry"],
+    facilities: ["WiFi", "Laundry", "Meals", "Security"],
+
+    ownerName: "Mr. Arvind Desai",
+    ownerContact: "9876543213",
+
+    rulesList: [
+      { icon: "clean", text: "Keep rooms clean" },
+      { icon: "nosmoke", text: "No smoking" },
+    ],
+
+    sharing: [
+      { type: "Single Sharing", price: 6000 },
+      { type: "Double Sharing", price: 4200 },
+    ],
+
+    image: "/images/serviceImage/availablePGsImg/lotusImg/lotus1.jpg",
+    roomImages: [
+      "/images/serviceImage/availablePGsImg/lotusImg/lotus2.jpg",
+      "/images/serviceImage/availablePGsImg/lotusImg/lotus3.jpg",
+      "/images/serviceImage/availablePGsImg/lotusImg/lotus1.jpg",
+    ],
+  },
+
+  {
+    id: 6,
+    name: "Pearl PG",
+    location: "Anand",
+    gender: "Female",
+
+    startingPrice: "â‚¹4700 / month",
+    startingPriceNumber: 4700,
+
+    roomPricing: { single: 6500, double: 4700 },
+
+    amenities: ["WiFi", "Meals", "Parking"],
+    facilities: ["WiFi", "Meals", "Parking", "Security"],
+
+    ownerName: "Mrs. Neha Shah",
+    ownerContact: "9876543214",
+
+    rulesList: [
+      { icon: "noguest", text: "No guests allowed" },
+      { icon: "clean", text: "Maintain cleanliness" },
+    ],
+
+    sharing: [
+      { type: "Single Sharing", price: 6500 },
+      { type: "Double Sharing", price: 4700 },
+    ],
+
+    image: "/images/serviceImage/availablePGsImg/pearlImg/pearl3.jpeg",
+    roomImages: [
+      "/images/serviceImage/availablePGsImg/pearlImg/pearl2.jpeg",
+      "/images/serviceImage/availablePGsImg/pearlImg/img3.jpg",
+      "/images/serviceImage/availablePGsImg/pearlImg/pearl1.jpg",
+      "/images/serviceImage/availablePGsImg/pearlImg/pearl3.jpeg",
+
+    ],
+  },
+
+  {
+    id: 7,
+    name: "Skyline PG",
+    location: "Gandhinagar",
+    gender: "Male",
+
+    startingPrice: "â‚¹5300 / month",
+    startingPriceNumber: 5300,
+
+    roomPricing: { single: 7000, double: 5300 },
+
+    amenities: ["AC", "WiFi", "Security"],
+    facilities: ["AC", "WiFi", "Security", "Gym"],
+
+    ownerName: "Mr. Manish Patel",
+    ownerContact: "9876543215",
+
+    rulesList: [
+      { icon: "nosmoke", text: "No smoking" },
+      { icon: "music", text: "Maintain silence after 10 PM" },
+    ],
+
+    sharing: [
+      { type: "Single Sharing", price: 7000 },
+      { type: "Double Sharing", price: 5300 },
+    ],
+
+    image: "/images/serviceImage/availablePGsImg/skylineImg/skyline2.jpeg",
+    roomImages: [
+      "/images/serviceImage/availablePGsImg/skylineImg/skyline2.jpeg",
+      "/images/serviceImage/availablePGsImg/skylineImg/img5.jpg",
+      "/images/serviceImage/availablePGsImg/skylineImg/skyline1.jpeg",
+    ],
+  },
+
+  {
+    id: 8,
+    name: "RoyalStay PG",
+    location: "Junagadh",
+    gender: "Female",
+
+    startingPrice: "â‚¹4600 / month",
+    startingPriceNumber: 4600,
+
+    roomPricing: { single: 6500, double: 4600 },
+
+    amenities: ["WiFi", "Meals", "Laundry"],
+    facilities: ["WiFi", "Meals", "Laundry", "Security"],
+
+    ownerName: "Ms. Rupal Mehta",
+    ownerContact: "9876543216",
+
+    rulesList: [
+      { icon: "nopet", text: "No pets allowed" },
+      { icon: "clean", text: "Keep premises clean" },
+    ],
+
+    sharing: [
+      { type: "Single Sharing", price: 6500 },
+      { type: "Double Sharing", price: 4600 },
+    ],
+
+    image: "/images/serviceImage/availablePGsImg/royalstayImg/royalstay2.jpg",
+    roomImages: [
+      "/images/serviceImage/availablePGsImg/royalstayImg/royalstay2.jpg",
+      "/images/serviceImage/availablePGsImg/royalstayImg/royalstay3.jpg",
+      "/images/serviceImage/availablePGsImg/royalstayImg/royalstay1.jpg",
+    ],
   },
 ];
 
+{/*
 export const hosteldetails = [
   {
     id: 102,
     name: "CityHostel",
     location: "Vadodara",
     address: "89 Central Avenue, Vadodara",
-    price: "₹4000/month",
+    price: "â‚¹4000/month",
     rent: 4000,
     amenities: ["WiFi", "Gym", "CCTV"],
     facilities: ["WiFi", "Gym", "CCTV", "Common Area", "Laundry"],
@@ -271,16 +700,23 @@ export const hosteldetails = [
       { icon: "clean", text: "Keep common areas clean" },
     ],
     gender: "Male",
-    rating: 4.2,
-    image: "/images/cityhostel.jpg",
-    roomImages: []
+   image:
+"/images/serviceImage/availableHostelsimg/cityHostelimg/cityhostel2.jpeg",
+
+roomImages: [
+  "/images/serviceImage/availableHostelsimg/cityHostelimg/cityhostel2.jpg",
+  "/images/servicemImage/availableHostelsimg/cityHostelimg/cityhostel1.jpeg",
+  "/images/serviceImage/availableHostelsimg/cityHostelimg/cityhostel3.jpg",
+],
+
   },
+
   {
     id: 101,
     name: "Elite Hostel",
     location: "Nadiad",
     address: "22 Elite Street, Nadiad",
-    price: "₹6000/month",
+    price: "â‚¹6000/month",
     rent: 6000,
     amenities: ["AC", "Meals", "Security"],
     facilities: ["AC", "Meals", "Security", "Study Room", "Hot Water"],
@@ -291,11 +727,98 @@ export const hosteldetails = [
       { icon: "nopet", text: "No pets allowed" },
     ],
     gender: "Female",
-    rating: 4.6,
-    image: "/images/elitehostel.jpg",
-    roomImages: []
+    image:
+"/images/serviceImage/availableHostelsimg/eliteHostelimg/elitehostel1.jpg",
+
+roomImages: [
+  "/images/serviceImage/availableHostelsimg/eliteHostelimg/elitehostel1.jpg",
+  "/images/serviceImage/availableHostelsimg/eliteHostelimg/elite2.jpeg",
+  "/images/serviceImage/availableHostelsimg/eliteHostelimg/elite3.jpeg",
+],
+
   },
-];
+
+  {
+    id: 103,
+    name: "RiverView Hostel",
+    location: "Surat",
+    address: "12 Riverside Road, Surat",
+    price: "â‚¹4500/month",
+    rent: 4500,
+    amenities: ["WiFi", "Meals", "Security"],
+    facilities: ["WiFi", "Meals", "Security", "Laundry", "Common Room"],
+    ownerName: "Mr. Harsh Patel",
+    ownerContact: "9876543217",
+    rulesList: [
+      { icon: "nosmoke", text: "No smoking" },
+      { icon: "noguest", text: "No guests allowed" },
+    ],
+    gender: "Male",
+    image:
+"/images/serviceImage/availableHostelsimg/riverviewHostelimg/riverview1.jpeg",
+
+roomImages: [
+  "/images/serviceImage/availableHostelsimg/riverviewHostelimg/riverview1.jpeg",
+  "/images/serviceImage/availableHostelsimg/riverviewHostelimg/riverview2.jpeg",
+  "/images/serviceImage/availableHostelsimg/riverviewHostelimg/riverview3.jpeg",
+],
+
+  },
+
+  {
+    id: 104,
+    name: "BrightStay Hostel",
+    location: "Rajkot",
+    address: "78 College Road, Rajkot",
+    price: "â‚¹5000/month",
+    rent: 5000,
+    amenities: ["AC", "WiFi", "Meals"],
+    facilities: ["AC", "WiFi", "Meals", "Study Room", "Security"],
+    ownerName: "Ms. Kavita Joshi",
+    ownerContact: "9876543218",
+    rulesList: [
+      { icon: "music", text: "No loud music" },
+      { icon: "clean", text: "Maintain cleanliness" },
+    ],
+    gender: "Female",
+   image:
+"/images/serviceImage/availableHostelsimg/brightstayHostelimg/brightstay1.jpeg",
+
+roomImages: [
+  "/images/serviceImage/availableHostelsimg/brightstayHostelimg/brightstay1.jpeg",
+  "/images/serviceImage/availableHostelsimg/brightstayHostelimg/brightstay2.jpeg",
+  "/images/serviceImage/availableHostelsimg/brightstayHostelimg/brightstay3.jpeg",
+],
+
+  },
+
+  {
+    id: 105,
+    name: "OceanView Hostel",
+    location: "Bhavnagar",
+    address: "56 Seaside Road, Bhavnagar",
+    price: "â‚¹4200/month",
+    rent: 4200,
+    amenities: ["WiFi", "Laundry"],
+    facilities: ["WiFi", "Laundry", "Meals", "Security"],
+    ownerName: "Mr. Rajesh Shah",
+    ownerContact: "9876543219",
+    rulesList: [
+      { icon: "clean", text: "Keep rooms clean" },
+      { icon: "nosmoke", text: "No smoking" },
+    ],
+    gender: "Male",
+   image:
+"/images/serviceImage/availableHostelsimg/oceanviewHostelImg/oceanview1.jpeg",
+
+roomImages: [
+  "/images/serviceImage/availableHostelsimg/oceanviewHostelImg/oceanview1.jpeg",
+  "/images/serviceImage/availableHostelsimg/oceanviewHostelImg/oceanview2.jpeg",
+  "/images/serviceImage/availableHostelsimg/oceanviewHostelImg/oceanview3.jpeg",
+],
+
+  },
+];*/}
 
 
 // =====================
@@ -380,4 +903,16 @@ export const homeBannerStats = [
     label: "Worth of Rent Managed",
   },
 ];
+
+export const cancelReasons = [
+  "Change in plans",
+  "Found another PG",
+  "Location issue",
+  "Price issue",
+  "Facility issue",
+  "Personal reason",
+  "Other",
+];
+
+
 

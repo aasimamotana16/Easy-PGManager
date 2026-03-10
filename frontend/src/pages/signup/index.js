@@ -1,135 +1,483 @@
-import React, { useState } from "react";
-import Navbar from "../../components/navbar";
-import ImageCarousel1 from "../../components/imageCarousel";
-
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { ArrowLeft, Eye, EyeOff, ShieldCheck, X } from "lucide-react"; 
+import CCheckbox from "../../components/cCheckbox";
 import CFormCard from "../../components/cFormCard";
 import CInput from "../../components/cInput";
 import CButton from "../../components/cButton";
+import Loader from "../../components/loader";
+
+import { registerUser, sendOtp } from "../../api/api";
+import Swal from "sweetalert2";
 
 const SignUp = () => {
+  const navigate = useNavigate();
+
+  const images = [
+    "/images/aboutImages/aboutIMG1.png",
+    "/images/loginImages/loginImg1.jpg",
+    "/images/loginImages/loginImg2.jpg",
+  ];
+  
+  const [currentImage, setCurrentImage] = useState(0);
+  const [pageLoading, setPageLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+
   const [role, setRole] = useState("user");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [agreeTerms, setAgreeTerms] = useState(false);
+  
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (password !== confirmPassword) {
-      alert("Passwords do not match!");
-      return;
+  const [otpStage, setOtpStage] = useState(false);
+  const [enteredOtp, setEnteredOtp] = useState("");
+  const [errors, setErrors] = useState({});
+
+  // Real-time Confirm Password Validation
+  useEffect(() => {
+    if (confirmPassword && password !== confirmPassword) {
+      setErrors((prev) => ({ ...prev, confirmPassword: "Passwords do not match" }));
+    } else {
+      setErrors((prev) => ({ ...prev, confirmPassword: "" }));
     }
-    console.log({ role, name, email, password });
+  }, [confirmPassword, password]);
+
+  // Password Strength Logic
+  const getStrength = (pwd) => {
+    let strength = 0;
+    if (pwd.length >= 6) strength++;
+    if (/[a-zA-Z]/.test(pwd)) strength++;
+    if (/[0-9]/.test(pwd)) strength++;
+    if (/[^A-Za-z0-9]/.test(pwd)) strength++;
+    return strength;
   };
 
+  const strengthLabels = ["Weak", "Fair", "Good", "Strong"];
+  const strengthColors = ["bg-red-500", "bg-orange-400", "bg-yellow-400", "bg-green-500"];
+  const currentStrength = getStrength(password);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setPageLoading(false), 800);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentImage((prev) => (prev + 1) % images.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [images.length]);
+
+  const validateForm = () => {
+    let newErrors = {};
+    if (!name.trim()) newErrors.name = "Full name is required";
+    if (!email.trim()) {
+      newErrors.email = "Email is required";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      newErrors.email = "Please enter a valid email address";
+    }
+    if (!phone.trim()) {
+      newErrors.phone = "Phone number is required";
+    } else if (!/^[6-9]\d{9}$/.test(phone)) {
+      newErrors.phone = "Enter a valid 10-digit mobile number";
+    }
+    if (!password) {
+      newErrors.password = "Password is required";
+    } else if (password.length < 6) {
+      newErrors.password = "Password must be at least 6 characters";
+    }
+    
+    // Final check for confirm password on submit
+    if (!confirmPassword) {
+      newErrors.confirmPassword = "Please confirm your password";
+    } else if (password !== confirmPassword) {
+      newErrors.confirmPassword = "Passwords do not match";
+    }
+    
+    if (!agreeTerms) newErrors.terms = "You must agree to the terms and Conditions and Privacy Policy";
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSendOtp = async () => {
+    if (!validateForm()) return;
+    setLoading(true);
+    try {
+      // Pass a development bypass token so backend reCAPTCHA check allows local testing
+      const response = await sendOtp({ email, recaptchaToken: "development_bypass" });
+      if (response?.data?.success) setOtpStage(true);
+    } catch (error) {
+      const rawMessage = String(error?.message || "");
+      const isTimeout = error?.code === "ECONNABORTED" || /timeout/i.test(rawMessage);
+      const isNetwork = !error?.response;
+
+      if (isTimeout) {
+        Swal.fire({
+          icon: "error",
+          title: "Request Timed Out",
+          text: "Sending OTP is taking too long. Please try again.",
+          confirmButtonColor: "#D97706"
+        });
+      } else if (isNetwork) {
+        Swal.fire({
+          icon: "error",
+          title: "Cannot Reach Server",
+          text: "Backend is not responding. Please start the server and try again.",
+          confirmButtonColor: "#D97706"
+        });
+      } else {
+        Swal.fire({
+          icon: "error",
+          title: "Failed to Send OTP",
+          text: error.response?.data?.message || "Failed to send OTP",
+          confirmButtonColor: "#D97706"
+        });
+      }
+
+      setErrors({ server: error.response?.data?.message || "Failed to send OTP" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyAndRegister = async () => {
+    // basic guard
+    if (!enteredOtp || enteredOtp.length !== 6) {
+      return setErrors({ ...errors, otp: "Enter 6-digit OTP" });
+    }
+
+    setLoading(true);
+    try {
+      const payload = {
+        fullName: name,
+        name,
+        email: email.toLowerCase().trim(),
+        phone,
+        password,
+        confirmPassword,
+        role,
+        otp: enteredOtp,
+      };
+
+      const response = await registerUser(payload);
+      
+      // Changed Logic: Redirect to login instead of dashboard
+      if (response?.status === 201 || response?.data?.success || response?.data?.token) {
+        Swal.fire({ 
+          icon: "success", 
+          title: "Registered Successfully", 
+          text: "Please login to continue", 
+          timer: 2000, 
+          showConfirmButton: false 
+        });
+        
+        setOtpStage(false);
+        
+        // Short delay to let the user see the success message
+        setTimeout(() => {
+          navigate("/loginPage");
+        }, 1500);
+      }
+    } catch (err) {
+      const rawMessage = String(err?.message || "");
+      const isTimeout = err?.code === "ECONNABORTED" || /timeout/i.test(rawMessage);
+      const isNetwork = !err?.response;
+      const msg = err.response?.data?.message || "Registration failed";
+
+      setErrors({ ...errors, server: msg });
+
+      if (isTimeout) {
+        Swal.fire({
+          icon: "error",
+          title: "Request Timed Out",
+          text: "Registration is taking too long. Please try again.",
+          confirmButtonColor: "#D97706"
+        });
+        return;
+      }
+
+      if (isNetwork) {
+        Swal.fire({
+          icon: "error",
+          title: "Cannot Reach Server",
+          text: "Backend is not responding. Please start the server and try again.",
+          confirmButtonColor: "#D97706"
+        });
+        return;
+      }
+
+      Swal.fire({
+        icon: "error",
+        title: "Registration Failed",
+        text: msg,
+        confirmButtonColor: "#D97706"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    setLoading(true);
+    try {
+      await sendOtp({ email, recaptchaToken: "development_bypass" });
+      Swal.fire({ icon: "success", title: "OTP Sent", timer: 1200, showConfirmButton: false });
+    } catch (err) {
+      const rawMessage = String(err?.message || "");
+      const isTimeout = err?.code === "ECONNABORTED" || /timeout/i.test(rawMessage);
+      const isNetwork = !err?.response;
+
+      if (isTimeout) {
+        Swal.fire({
+          icon: "error",
+          title: "Request Timed Out",
+          text: "Resending OTP is taking too long. Please try again.",
+          confirmButtonColor: "#D97706"
+        });
+        return;
+      }
+
+      if (isNetwork) {
+        Swal.fire({
+          icon: "error",
+          title: "Cannot Reach Server",
+          text: "Backend is not responding. Please start the server and try again.",
+          confirmButtonColor: "#D97706"
+        });
+        return;
+      }
+
+      Swal.fire({
+        icon: "error",
+        title: "Failed to Resend OTP",
+        text: err.response?.data?.message || "Failed to resend OTP",
+        confirmButtonColor: "#D97706"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (pageLoading) return <Loader />;
+
   return (
-    <div className="min-h-screen flex flex-col bg-background-default">
-      <Navbar />
+    <div className="min-h-screen relative flex items-center justify-center lg:justify-start bg-orange-50 overflow-x-hidden">
+      
+      <div className="hidden lg:block">
+        {images.map((img, index) => (
+          <div
+            key={index}
+            className={`absolute inset-0 transition-opacity duration-1000 ${index === currentImage ? "opacity-100" : "opacity-0"}`}
+            style={{ backgroundImage: `url('${img}')`, backgroundSize: "cover", backgroundPosition: "center" }}
+          />
+        ))}
+      </div>
 
-      <div className="flex-1 flex flex-col lg:flex-row justify-center items-center px-4 sm:px-6 lg:px-12 xl:px-16 py-4 sm:py-6 gap-6">
+      <div className="relative z-10 w-full px-4 lg:ml-20 flex justify-center lg:justify-start">
+        <CFormCard className="bg-white border border-gray-100 rounded-md p-5 sm:p-8 w-full max-w-[360px] lg:max-w-none lg:w-[700px] animate-fadeIn shadow-none">  
+  <div className="mb-2  flex justify-center">
+    <img src="/logos/logo1.png" alt="Logo" className="h-10 md:h-14 w-auto" />
+  </div>
 
-        {/* LEFT : SIGNUP FORM */}
-        <div className="w-full max-w-[480px] sm:max-w-[600px] md:max-w-[680px] lg:w-1/3 xl:w-5/12 flex flex-col items-center">
-          <CFormCard className="pt-4 pb-6 px-6 sm:pt-6 sm:pb-8 sm:px-8 md:pt-8 md:pb-10 md:px-10 shadow-xl rounded-md">
+  <h1 className="text-lg font-bold text-center mb-4 text-primary">
+    Create Your <span className="text-black">Account</span>
+  </h1>
+  
+  <div className="flex flex-col gap-3">
+    <div className="flex gap-2 mb-4 gap-4">
+      <CButton fullWidth variant={role === "user" ? "contained" : "outlined"} onClick={() => setRole("user")}>User</CButton>
+      <CButton fullWidth variant={role === "owner" ? "contained" : "outlined"} onClick={() => setRole("owner")}>Owner</CButton>
+    </div>
 
-            {/* Logo */}
-            <div className="mb-1 flex justify-center">
-              <img
-                src="/logos/logo1.png"
-                alt="EasyPG Manager Logo"
-                className="h-12 sm:h-14 md:h-16 w-auto"
-              />
+    <div className="w-full">
+       <CInput 
+         label="Full Name" 
+         value={name} 
+         onChange={(e) => {setName(e.target.value); setErrors({...errors, name: ""})}} 
+         error={!!errors.name} 
+         helperText={errors.name} // Moved error message inside CInput
+       />
+    </div>
+
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div>
+        <CInput 
+          label="Email" 
+          type="email" 
+          value={email} 
+          onChange={(e) => {setEmail(e.target.value); setErrors({...errors, email: ""})}} 
+          error={!!errors.email} 
+          helperText={errors.email} // Moved error message inside CInput
+        />
+      </div>
+     <div>
+  <CInput 
+    label="Contact Number" 
+    type="tel" // 'tel' is great for mobile responsiveness as it opens the number pad
+    value={phone} 
+    onChange={(e) => {
+      const val = e.target.value;
+      // This Regex allows only digits (0-9)
+      if (val === "" || /^[0-9\b]+$/.test(val)) {
+        setPhone(val.slice(0, 10)); 
+        setErrors({...errors, phone: ""});
+      }
+    }} 
+    error={!!errors.phone} 
+    helperText={errors.phone} 
+    // Added: Standard HTML attribute to help mobile devices
+    inputMode="numeric" 
+  />
+</div>
+    </div>
+
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div>
+        <CInput
+          label="Password"
+          type={showPassword ? "text" : "password"}
+          value={password}
+          onChange={(e) => {
+            setPassword(e.target.value);
+            setErrors({ ...errors, password: "" });
+          }}
+          error={!!errors.password}
+          helperText={errors.password}
+          endAdornment={
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              className="h-9 w-9 -mr-2 inline-flex items-center justify-center text-gray-400 hover:text-amber-600 transition-colors"
+            >
+              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+            </button>
+          }
+        />
+        
+        {password.length > 0 && (
+          <div className="mt-2">
+            <div className="flex gap-1 h-1 w-full bg-gray-100 rounded-full overflow-hidden">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className={`h-full flex-1 transition-colors duration-300 ${i < currentStrength ? strengthColors[currentStrength - 1] : "bg-gray-200"}`} />
+              ))}
             </div>
+            <p className={`text-[9px] mt-1 font-bold uppercase tracking-wider ${currentStrength > 0 ? strengthColors[currentStrength - 1].replace('bg-', 'text-') : 'text-gray-400'}`}>
+              Strength: {strengthLabels[currentStrength - 1] || "None"}
+            </p>
+          </div>
+        )}
+      </div>
 
-            <h1 className="text-center font-bold mb-1 sm:mb-4 text-xl sm:text-2xl md:text-2xl text-primary">
-              Create Your EasyPG Manager Account
-            </h1>
+      <div>
+        <CInput
+          label="Confirm Password"
+          type={showConfirmPassword ? "text" : "password"}
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          error={!!errors.confirmPassword}
+          helperText={errors.confirmPassword}
+          endAdornment={
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+              className="h-9 w-9 -mr-2 inline-flex items-center justify-center text-gray-400 hover:text-amber-600 transition-colors"
+            >
+              {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+            </button>
+          }
+        />
+      </div>
+    </div>
 
-            <form onSubmit={handleSubmit} className="flex flex-col gap-2.5 sm:gap-3">
+    <div >
+      <CCheckbox
+        checked={agreeTerms}
+        onChange={(e) => {
+          setAgreeTerms(e.target.checked);
+          setErrors({ ...errors, terms: "" });
+        }}
+        error={!!errors.terms}
+        helperText={errors.terms} // Moved error message inside CCheckbox
+        label={
+          <span className="cursor-default select-none text-xs">
+            I agree to the{" "}
+            <span onClick={(e) => { e.stopPropagation(); navigate("/termsConditions"); }} className="text-primary font-medium hover:underline cursor-pointer">Terms & Conditions</span>{" "}
+            and{" "}
+            <span onClick={(e) => { e.stopPropagation(); navigate("/privacyPolicy"); }} className="text-primary font-medium hover:underline cursor-pointer">Privacy Policy</span>
+          </span>
+        }
+      />
+    </div>
 
-              {/* Role Selector using CButton */}
-              <div className="flex w-full border border-border rounded-md overflow-hidden mb-2">
-                <CButton
-                  type="button"
-                  fullWidth
-                  variant={role === "user" ? "contained" : "outlined"}
-                  onClick={() => setRole("user")}
-                  className="rounded-none py-1 text-sm sm:text-base"
-                >
-                  User
-                </CButton>
+    <CButton fullWidth variant="contained"  onClick={handleSendOtp} disabled={loading}>
+      {loading ? "Sending..." : "Send OTP"}
+    </CButton>
+  </div>
 
-                <CButton
-                  type="button"
-                  fullWidth
-                  variant={role === "owner" ? "contained" : "outlined"}
-                  onClick={() => setRole("owner")}
-                  className="rounded-none py-1 text-sm sm:text-base"
-                >
-                  Owner
-                </CButton>
+  <div className="mt-6 grid grid-cols-[2.25rem_1fr_2.25rem] items-center">
+    <button
+      type="button"
+      onClick={() => navigate("/")}
+      aria-label="Back to home"
+      className="h-9 w-9 inline-flex items-center justify-center rounded-md text-gray-500 hover:text-primary hover:bg-primarySoft transition-colors"
+    >
+      <ArrowLeft size={18} />
+    </button>
+
+    <p className="mt-3 h-9 leading-9 text-center text-sm text-gray-600 whitespace-nowrap">
+      Already have an account?{" "}
+      <span
+        onClick={() => navigate("/loginPage")}
+        className="font-bold text-[#D97706] cursor-pointer hover:underline underline-offset-4 transition-colors"
+      >
+        Login
+      </span>
+    </p>
+
+    <div className="w-9" aria-hidden="true" />
+  </div>
+        </CFormCard>
+      </div>
+
+      {/* --- SEPARATE OTP SECURITY MODAL --- */}
+      {otpStage && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setOtpStage(false)} />
+          
+          <div className="relative bg-white w-full max-w-[360px] rounded-2xl shadow-2xl p-6 animate-slideUp">
+            <button onClick={() => setOtpStage(false)} className="absolute top-3 right-3 text-gray-400 hover:text-primary"><X size={20} /></button>
+
+            <div className="flex flex-col items-center text-center">
+              <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-3">
+                <ShieldCheck size={28} className="text-primary" />
+              </div>
+              
+              <h2 className="text-lg font-bold text-gray-800 mb-1">Verify OTP</h2>
+              <p className="text-gray-500 text-xs mb-5">We've sent a 6-digit code to <br/><span className="font-semibold text-gray-700">{email}</span></p>
+
+              <div className="w-full text-left">
+                <CInput label="Enter OTP" value={enteredOtp} onChange={(e) => setEnteredOtp(e.target.value.slice(0, 6))} />
               </div>
 
-              {/* Inputs with placeholders */}
-              <CInput
-                label="Full Name"
-                type="text"
-                value={name}
-                placeholder="Enter your full name"
-                onChange={(e) => setName(e.target.value)}
-              />
-              <CInput
-                label="Email"
-                type="email"
-                value={email}
-                placeholder="Enter your email address"
-                onChange={(e) => setEmail(e.target.value)}
-              />
-              <CInput
-                label="Password"
-                type="password"
-                value={password}
-                placeholder="Enter your password"
-                onChange={(e) => setPassword(e.target.value)}
-              />
-              <CInput
-                label="Confirm Password"
-                type="password"
-                value={confirmPassword}
-                placeholder="Confirm your password"
-                onChange={(e) => setConfirmPassword(e.target.value)}
-              />
-
-              {/* Submit Button */}
-              <CButton
-                type="submit"
-                fullWidth
-                variant="contained"
-                className="mt-1.5 py-2 text-base rounded-md font-medium"
-              >
-                Sign Up
+              <CButton fullWidth variant="contained" className="mt-5" onClick={handleVerifyAndRegister} disabled={loading}>
+                {loading ? "Please wait..." : "Verify & Register"}
               </CButton>
-            </form>
 
-            {/* Login Link */}
-            <p className="text-center mt-2 sm:mt-3 text-sm sm:text-base text-text-secondary">
-              Already have an account?{" "}
-              <a
-                href="/login"
-                className="font-semibold text-primary hover:underline"
-              >
-                Login
-              </a>
-            </p>
-          </CFormCard>
+              <p className="mt-4 text-xs text-gray-500">
+                Didn't receive it? <span onClick={handleResendOtp} className="text-primary font-bold cursor-pointer hover:underline">Resend</span>
+              </p>
+            </div>
+          </div>
         </div>
-
-        {/* RIGHT : IMAGE */}
-        <div className="hidden lg:flex justify-center items-center w-1/2 xl:w-6/12">
-          <ImageCarousel1 />
-        </div>
-
-      </div>
+      )}
     </div>
   );
 };

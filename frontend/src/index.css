@@ -1,3 +1,51 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  html, body {
+    /* Ensures Tailwind's configured sans font is the global default */
+    font-family: theme('fontFamily.sans') !important;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    /* Updated: text-textPrimary and bg-background match your new config keys [cite: 2026-02-09] */
+    @apply font-sans antialiased text-textPrimary bg-background;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Global Headings using the sizes we defined in Tailwind [cite: 2026-02-06, 2026-02-09] */
+  h1 {
+    @apply text-h1 text-textPrimary mb-6 font-bold;
+  }
+
+  h2 {
+    @apply text-h2-sm sm:text-h2 text-textPrimary mb-4 font-semibold;
+  }
+
+  h3 {
+    @apply text-h3 text-textPrimary mb-3 font-normal;
+  }
+
+  p {
+    @apply text-body text-textSecondary mb-4;
+  }
+
+  /* Removes blue tap highlight for a better mobile experience [cite: 2026-02-06] */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Utility to hide native scrollbars while keeping scrolling functional */
+  .hide-scrollbar {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none; /* Chrome, Safari */
+  }
+}

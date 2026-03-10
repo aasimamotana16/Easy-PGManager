@@ -3,76 +3,39 @@ module.exports = {
   content: ["./src/**/*.{js,jsx,ts,tsx}"],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ["Poppins", "sans-serif"],
+      },
       colors: {
-        /* ===== BRAND / PRIMARY ===== */
-        primary: "#D97706",       // Warm amber for headings/buttons
-        primaryDark: "#B45309",   // Hover states for buttons/links
-        primarySoft: "#FEF3C7",   // Soft background accent
-
-        /* ===== BACKGROUNDS ===== */
-        background: {
-          DEFAULT: "#F9FAF7",     // Main page background (soft white)
-          muted: "#F5F3F1",       // Section separation / subtle panels
-          dark: "#1F1F1F",        // Navbar / footer dark mode
-        },
-
-        /* ===== TEXT ===== */
-        text: {
-          primary: "#1C1C1C",     // Main headings
-          secondary: "#4B4B4B",   // Paragraphs / content
-          muted: "#6B6B6B",       // Labels / helper text
-          light: "#FFFFFF",        // On dark background
-        },
-
-        /* ===== CARDS ===== */
-        card: "#FFFFFF",           // White cards
-        cardSky: "#E0F2FE",       // Sky blue cards
-
-        /* ===== BORDERS ===== */
-        border: "#E5E0D9",        // Light beige border
-
-        /* ===== BUTTONS ===== */
-        button: {
-          DEFAULT: "#D97706",     // Amber
-          hover: "#B45309",       // Darker amber
-          ghost: "#FEF3C7",       // Soft button background
-        },
-
-        /* ===== STATUS / ACCENTS ===== */
-        accent: {
-          success: "#16A34A",     // Green
-          warning: "#D97706",     // Amber
-          danger: "#DC2626",      // Red
-        },
+        primary: "#D97706",
+        primaryShade: "#ffb67f7a",
+        primarySoft: "#fff4e7",
+        primaryDark: "#9e4908",
+        background: "#ffffff",
+        backgroundDark: "#1F1F1F",
+        textPrimary: "#1C1C1C",
+        textSecondary: "#4B4B4B",
+        textLight: "#FFFFFF",
+        border: "#E5E0D9",
+        success: "#16A34A",
+        warning: "#D97706",
+        danger: "#DC2626",
       },
 
-      /* ===== BORDER RADIUS ===== */
-      borderRadius: {
-        sm: "6px",
-        md: "10px",
-        lg: "14px",
-        xl: "18px",
-        "2xl": "24px",
-      },
-
-      /* ===== SHADOWS ===== */
-      boxShadow: {
-        soft: "0 2px 8px rgba(28, 28, 28, 0.06)", // subtle
-        card: "0 8px 24px rgba(28, 28, 28, 0.08)",
-        hover: "0 12px 32px rgba(28, 28, 28, 0.12)",
-      },
-
-      /* ===== FONT SIZES ===== */
+      /* ================= TYPOGRAPHY WITH MOBILE (SM) TOKENS ================= */
       fontSize: {
-        xs: ["0.875rem", { lineHeight: "1.4rem" }],      // 14px → small labels, readable
-        sm: ["1rem", { lineHeight: "1.6rem" }],          // 16px → form labels/body text
-        base: ["1.125rem", { lineHeight: "1.8rem" }],    // 18px → normal body text
-        lg: ["1.375rem", { lineHeight: "2rem" }],        // 22px → larger body or subheadings
-        xl: ["1.625rem", { lineHeight: "2.25rem" }],     // 26px → subheadings
-        "2xl": ["2rem", { lineHeight: "2.5rem" }],       // 32px → section headings
-        "3xl": ["2.5rem", { lineHeight: "3rem" }],       // 40px → large headings
-        "4xl": ["3rem", { lineHeight: "3.5rem" }],       // 48px → hero headings
-        "5xl": ["3.75rem", { lineHeight: "4rem" }],      // 60px → main hero or key titles
+        // Desktop Sizes
+        'h1': ["60px", { lineHeight: "60px", fontWeight: "700" }], 
+        'h2': ["45px", { lineHeight: "54px", fontWeight: "600" }], 
+        'h3': ["21px", { lineHeight: "40px", fontWeight: "600" }], 
+        'body': ["18px", { lineHeight: "30px", fontWeight: "400" }], 
+        'p': ["15px", { lineHeight: "20px", fontWeight: "400" }],
+
+        // Mobile (sm) specific sizes for better responsiveness [cite: 2026-02-06]
+        'h1-sm': ["36px", { lineHeight: "42px", fontWeight: "400" }],
+        'h2-sm': ["28px", { lineHeight: "34px", fontWeight: "400" }],
+        'h3-sm': ["22px", { lineHeight: "28px", fontWeight: "400" }],
+        'body-sm': ["16px", { lineHeight: "24px", fontWeight: "400" }],
       },
     },
   },

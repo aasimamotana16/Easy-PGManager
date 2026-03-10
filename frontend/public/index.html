@@ -2,9 +2,39 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>EasyPG Manager</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+    <meta name="theme-color" content="#D97706" />
+    
+    <title>EasyPG Manager | Smart PG Management</title>
+    <meta name="description" content="EasyPG Manager - The smartest way to manage and find your perfect stay." />
+    
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="EasyPG Manager" />
+    <meta property="og:description" content="Manage check-ins, payments, and maintenance—all in one platform." />
+    <meta property="og:image" content="/images/logo-og.png" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <script src="https://checkout.razorpay.com/v1/checkout.js" async></script>
+    
+    <link rel="icon" href="/favicon.ico" />
+
+    <style>
+      /* Prevent white flash before CSS loads [cite: 2026-02-09] */
+      body {
+        background-color: #ffffff;
+        margin: 0;
+      }
+    </style>
   </head>
-  <body>
+  
+  <body class="antialiased">
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    
     <div id="root"></div>
+
+    <div id="portal-root"></div>
   </body>
 </html>

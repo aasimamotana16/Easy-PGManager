@@ -1,99 +1,92 @@
-// src/theme.js
-import { createTheme } from '@mui/material/styles';
+import { createTheme } from "@mui/material/styles";
 
 const theme = createTheme({
+  /* ================= TYPOGRAPHY ================= */
+  typography: {
+    // This forces MUI components to use Poppins
+    fontFamily: "'Poppins', sans-serif",
+    h1: { fontWeight: 700 },
+    h2: { fontWeight: 600 },
+    button: { fontWeight: 700, textTransform: "none" },
+  },
+
+  /* ================= PALETTE ================= */
   palette: {
-    mode: 'light',
+    mode: "light",
     primary: {
-      main: '#d2a86c',        // Light brown (Tan) → matches Tailwind `primary`
-      contrastText: '#000000' // Black text on buttons
+      main: "#D97706", // Your primary orange
+      dark: "#B45309",
+      contrastText: "#FFFFFF",
     },
     secondary: {
-      main: '#A0522D',        // Rich brown → matches Tailwind `secondary`
-      contrastText: '#FFFFFF'
+      main: "#4B4B4B", // Your textSecondary color
     },
     background: {
-      default: '#FFFFFF',     // Page background → Tailwind `background.DEFAULT`
-      paper: '#d6f4ea'        // Soft beige for cards/inputs → Tailwind `background.paper`
+      default: "#ffffff", // Matching your Tailwind background
+      paper: "#FFFFFF",
     },
     text: {
-      primary: '#333333',     // Dark text → Tailwind `text.primary`
-      secondary: '#000000'    // Black text → Tailwind `text.secondary`
+      primary: "#1C1C1C", // Your textPrimary color
+      secondary: "#4B4B4B",
     },
-    navbar: {
-      main: '#000000'         // Black navbar → Tailwind `navbar`
-    },
-    card: {
-      main: '#F5F5DC',        // Soft beige card → Tailwind `card.DEFAULT`
-      mint: '#98FF98'         // Mint card → Tailwind `card.mint`
-    },
-    buttonHover: {
-      main: '#A0522D'         // Hover state for buttons → Tailwind `buttonHover`
-    }
+    divider: "#E5E0D9", // Your border color
+    success: { main: "#16A34A" },
+    warning: { main: "#D97706" },
+    error: { main: "#DC2626" },
   },
+
+  /* ================= COMPONENT OVERRIDES ================= */
   components: {
+    MuiCssBaseline: {
+      styleOverrides: {
+        body: {
+          WebkitFontSmoothing: "antialiased",
+          MozOsxFontSmoothing: "grayscale",
+          // Ensure the global body uses Poppins even when MUI injects styles
+          fontFamily: "'Poppins', sans-serif !important", 
+        },
+      },
+    },
     MuiAppBar: {
       styleOverrides: {
         root: {
-          backgroundColor: '#000000', // Black navbar
-          color: '#FFFFFF'
-        }
-      }
+          backgroundColor: "#1F1F1F", // Your backgroundDark
+          color: "#FFFFFF",
+        },
+      },
     },
     MuiButton: {
       styleOverrides: {
         root: {
-          borderRadius: '8px',
-          textTransform: 'none',
-          fontWeight: 700,
-          transition: '0.3s ease',
-          backgroundColor: '#d2a86c', // Primary tan
-          color: '#000000',           // Black text
-          '&:hover': {
-            backgroundColor: '#A0522D', // Rich brown hover
-            color: '#FFFFFF'
-          }
-        }
-      }
+          borderRadius: "10px", // Consistent with your 'md' border radius
+          padding: "8px 20px",
+          // Using your theme colors for the buttons
+          backgroundColor: "#D97706",
+          color: "#FFFFFF",
+          "&:hover": {
+            backgroundColor: "#B45309",
+          },
+        },
+      },
     },
     MuiCard: {
       styleOverrides: {
         root: {
-          borderRadius: '12px',
-          backgroundColor: '#F5F5DC', // Soft beige card
-          color: '#333333'
-        }
-      }
+          borderRadius: "14px", // Matches your 'lg' border radius
+          boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+        },
+      },
     },
     MuiTextField: {
       styleOverrides: {
         root: {
-          '& .MuiInputBase-root': {
-            backgroundColor: '#FFFFFF', // White input
-            borderRadius: '8px',
-            color: '#333333'
+          "& .MuiInputBase-root": {
+            borderRadius: "10px",
           },
-          '& .MuiInputBase-input::placeholder': {
-            color: '#666666', // Subtle gray placeholder
-            opacity: 1
-          }
-        }
-      }
+        },
+      },
     },
-    MuiLink: {
-      styleOverrides: {
-        root: {
-          color: '#000000',
-          textDecoration: 'none',
-          transition: '0.3s ease',
-          '&:hover': {
-            color: '#A0522D',
-            borderBottom: '2px solid #A0522D'
-          }
-        }
-      }
-    }
-  }
+  },
 });
 
 export default theme;

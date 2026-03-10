@@ -1,38 +1,38 @@
-.App {
-  text-align: center;
-}
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
+@layer base {
+  html, body {
+    /* The !important ensures Roboto cannot override Poppins [cite: 2026-02-09] */
+    font-family: 'Poppins', sans-serif !important;
+    scroll-behavior: smooth;
   }
-}
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
-}
-
-.App-link {
-  color: #61dafb;
-}
-
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
+  body {
+    /* UPDATED: text-textPrimary and bg-background match your flat config [cite: 2026-02-09] */
+    @apply antialiased text-textPrimary bg-background;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
-  to {
-    transform: rotate(360deg);
+
+  /* Global Headings using the sizes we defined in Tailwind [cite: 2026-02-06, 2026-02-09] */
+  h1 {
+    @apply text-h1 text-textPrimary mb-6 font-bold;
+  }
+
+  h2 {
+    @apply text-h2 text-textPrimary mb-4 font-semibold;
+  }
+
+  p {
+    @apply text-body text-textSecondary mb-4;
+  }
+
+  /* Removes the blue tap highlight on mobile for better UX [cite: 2026-02-06] */
+  * {
+    -webkit-tap-highlight-color: transparent;
   }
 }

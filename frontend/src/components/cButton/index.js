@@ -1,4 +1,3 @@
-// src/components/cButton/index.js
 import React from "react";
 
 const CButton = ({
@@ -6,37 +5,43 @@ const CButton = ({
   children,
   onClick,
   type = "button",
-  variant = "contained", // "contained", "outlined", "text"
-  size = "md",           // "sm", "md", "lg"
+  variant = "contained",
   fullWidth = false,
   className = "",
+  disabled = false,
 }) => {
-  // Variant styles
+
   const variantClasses = {
     contained:
-      "bg-primary text-text-primary hover:bg-button-hover hover:text-text-primary",
-    outlined:
-      "border border-button-DEFAULT text-button-DEFAULT hover:bg-button-hover hover:text-text-light",
-    text:
-      "text-button-DEFAULT hover:text-button-hover bg-transparent",
-  };
+      "bg-primary text-textLight hover:bg-primaryDark border border-primary",
 
-  const sizeClasses = {
-    sm: "px-[35px] py-[5px] text-sm",
-    md: "px-[35px] py-[5px] text-base",
-    lg: "px-[35px] py-[5px] text-lg",
+    outlined:
+      "border-2 border-primary text-primary bg-transparent hover:bg-primaryShade hover:text-primary transition-colors",
+
+    text:
+      "text-textPrimary hover:text-primary bg-transparent shadow-none hover:shadow-none",
   };
 
   const finalClasses = `
-    rounded-md font-semibold shadow-soft hover:shadow-hover transition
+    inline-flex items-center justify-center
+    rounded-md font-bold
+    text-body-sm lg:text-body
+    px-8 py-3 lg:px-10 lg:py-1
+    transition-all duration-300
+    disabled:opacity-50 disabled:cursor-not-allowed
+    active:scale-95
     ${variantClasses[variant] || variantClasses.contained}
-    ${sizeClasses[size] || sizeClasses.md}
-    ${fullWidth ? "w-full" : ""}
+    ${fullWidth ? "w-full" : "w-auto"}
     ${className}
   `;
 
   return (
-    <button type={type} onClick={onClick} className={finalClasses}>
+    <button
+      type={type}
+      onClick={onClick}
+      disabled={disabled}
+      className={finalClasses}
+    >
       {text || children}
     </button>
   );
