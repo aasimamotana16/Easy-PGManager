@@ -9,9 +9,7 @@ import {
   FaTrash
 } from "react-icons/fa";
 import { uploadUserDocument, getMyDocuments, deleteUserDocument } from "../../../api/api";
-import { Heading3 } from "lucide-react";
-
-const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
+import { API_ORIGIN } from "../../../config/apiBaseUrl";
 
 const Documents = () => {
   const [pendingDocs, setPendingDocs] = useState([]);
@@ -112,7 +110,7 @@ const Documents = () => {
 
   const handleView = (doc) => {
     if (!doc.fileUrl) return;
-    window.open(`${API_BASE_URL}${doc.fileUrl}`, "_blank");
+    window.open(`${API_ORIGIN}${doc.fileUrl}`, "_blank");
   };
 
   const handleDelete = (doc) => {
@@ -174,7 +172,11 @@ const Documents = () => {
                 <p className="font-bold text-gray-700 uppercase tracking-tight">{doc.name}</p>
                 <p className=" text-gray-400 italic">{doc.guidance}</p>
               </div>
-              <button onClick={() => handleUploadClick(doc.id)} className="text-orange-500 hover:scale-110 transition-transform">
+              <button
+                onClick={() => handleUploadClick(doc.id)}
+                disabled={loading}
+                className="text-orange-500 hover:scale-110 transition-transform disabled:opacity-50 disabled:cursor-not-allowed"
+              >
                 <FaCloudUploadAlt size={35} />
               </button>
             </div>
@@ -211,8 +213,22 @@ const Documents = () => {
                 </div>
                 
                 <div className="flex items-center gap-3">
-                  <button onClick={() => handleView(doc)} title="View" className="text-blue-500 hover:scale-110 transition-all"><FaEye size={18} /></button>
-                  <button onClick={() => handleDelete(doc)} title="Delete" className="text-red-400 hover:text-red-600 transition-all"><FaTrash size={18} /></button>
+                  <button
+                    onClick={() => handleView(doc)}
+                    disabled={loading}
+                    title="View"
+                    className="text-blue-500 hover:scale-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <FaEye size={18} />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(doc)}
+                    disabled={loading}
+                    title="Delete"
+                    className="text-red-400 hover:text-red-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <FaTrash size={18} />
+                  </button>
                 </div>
               </div>
             </div>

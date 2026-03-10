@@ -4,11 +4,12 @@ import { FaHistory, FaDownload, FaWallet, FaCheckCircle, FaExclamationTriangle }
 import CButton from "../../../components/cButton";
 import PayNowButton from '../../../components/payNowButton';
 import Swal from "sweetalert2";
+import { API_BASE } from "../../../config/apiBaseUrl";
 
 const Payments = () => {
   const [paymentData, setPaymentData] = useState({ nextPayment: null, totalPaid: 0, history: [], lateFine: 0, moveOutCompleted: false });
   const [loading, setLoading] = useState(true);
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [isProcessing] = useState(false);
   const [stayStatus, setStayStatus] = useState(null);
   const [agreementInfo, setAgreementInfo] = useState(null);
   const [extensionApproved, setExtensionApproved] = useState(false);
@@ -41,7 +42,7 @@ const Payments = () => {
   const fetchAgreementStatus = async () => {
     try {
       const token = localStorage.getItem('userToken');
-      const res = await fetch('http://localhost:5000/api/users/agreement', { headers: { Authorization: `Bearer ${token}` } });
+      const res = await fetch(`${API_BASE}/users/agreement`, { headers: { Authorization: `Bearer ${token}` } });
       const data = await res.json();
       if (data.success && data.data) {
         setStayStatus(data.data.status);
@@ -57,8 +58,8 @@ const Payments = () => {
     const token = localStorage.getItem("userToken");
     try {
       const statsUrl = queryBookingId
-        ? `http://localhost:5000/api/payments/user-stats?bookingId=${encodeURIComponent(queryBookingId)}`
-        : "http://localhost:5000/api/payments/user-stats";
+        ? `${API_BASE}/payments/user-stats?bookingId=${encodeURIComponent(queryBookingId)}`
+        : `${API_BASE}/payments/user-stats`;
       const response = await fetch(statsUrl, { headers: { Authorization: `Bearer ${token}` } });
       const data = await response.json();
       if (data.success) {

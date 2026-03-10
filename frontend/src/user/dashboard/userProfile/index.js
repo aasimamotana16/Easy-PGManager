@@ -30,7 +30,6 @@ const Profile = () => {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("personal");
-  const [contentVisible, setContentVisible] = useState(true);
   const [formData, setFormData] = useState({});
   const fileInputRef = useRef(null);
 

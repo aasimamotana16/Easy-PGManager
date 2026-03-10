@@ -3,8 +3,9 @@ import CButton from "../../../components/cButton";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { FaHistory, FaDownload, FaCircle, FaFilter } from "react-icons/fa";
+import { FaDownload, FaCircle, FaFilter } from "react-icons/fa";
 import axios from "axios";
+import { API_BASE } from "../../../config/apiBaseUrl";
 
 const Timeline = () => {
   const [selectedMonth, setSelectedMonth] = useState("All");
@@ -17,7 +18,7 @@ useEffect(() => {
         const token = localStorage.getItem("userToken");
         
         if (token) {
-          const response = await axios.get("http://localhost:5000/api/users/timeline", {
+          const response = await axios.get(`${API_BASE}/users/timeline`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           
@@ -43,6 +44,14 @@ useEffect(() => {
     };
     fetchTimeline();
   }, []);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-[60vh]">
+        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-orange-500"></div>
+      </div>
+    );
+  }
 
  // Transform backend data for frontend use
   // Transform backend data for frontend use
@@ -86,7 +95,7 @@ const downloadTimelinePDF = async () => {
     const token = localStorage.getItem("userToken");
     
     // ✅ Change: Added ?month query parameter to the URL
-    const response = await axios.get(`http://localhost:5000/api/users/download-report?month=${selectedMonth}`, {
+    const response = await axios.get(`${API_BASE}/users/download-report?month=${selectedMonth}`, {
       headers: { Authorization: `Bearer ${token}` },
       responseType: 'blob', 
     });
@@ -125,13 +134,6 @@ const downloadTimelinePDF = async () => {
       doc.save(`Stay_Report_${selectedMonth}.pdf`);
     }
   };
-  {/*if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-orange-500"></div>
-      </div>
-    );
-  }*/}
 
   return (
     <div className="p-4 sm:p-6 lg:p-10 space-y-8 bg-gray-200 min-h-screen">

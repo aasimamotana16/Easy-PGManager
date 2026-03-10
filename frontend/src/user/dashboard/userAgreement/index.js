@@ -104,11 +104,7 @@ const Agreements = () => {
     });
   };
 
-  {/*if (loading) return (
-    <div className="flex justify-center items-center min-h-[60vh]">
-      <div className="animate-spin rounded-md h-10 w-10 border-t-2 border-[#D97706]"></div>
-    </div>
-  );*/}
+
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 bg-gray-200 min-h-screen space-y-6">
