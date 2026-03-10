@@ -20,16 +20,29 @@ const HomePage = () => {
   const showHomeSearch = !isLoggedIn || role !== "owner";
 
   useEffect(() => {
-    fetch(`${API_BASE}/home-stats`)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 6000);
+
+    fetch(`${API_BASE}/home-stats`, { signal: controller.signal })
       .then(res => res.json())
       .then(data => {
         setSiteStats(data);
-        setIsLoading(false);
       })
       .catch(err => {
-        console.error("Error connecting to backend:", err);
+        // Avoid logging noisy abort errors; treat any failure as non-blocking.
+        if (err?.name !== "AbortError") {
+          console.error("Error connecting to backend:", err);
+        }
+      })
+      .finally(() => {
+        clearTimeout(timeoutId);
         setIsLoading(false);
       });
+
+    return () => {
+      clearTimeout(timeoutId);
+      controller.abort();
+    };
   }, []);
 
   if (isLoading) {
