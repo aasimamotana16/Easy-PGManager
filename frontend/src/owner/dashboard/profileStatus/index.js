@@ -12,6 +12,7 @@ import Navbar from "../../../components/navbar";
 import Footer from "../../../components/footer";
 import CButton from "../../../components/cButton";
 import { deleteOwnerAccount } from "../../../api/api";
+import { API_BASE } from "../../../config/apiBaseUrl";
 
 const ProfileStatus = () => {
   const [loading, setLoading] = useState(true);
@@ -88,7 +89,7 @@ const ProfileStatus = () => {
     try {
       const token = localStorage.getItem("userToken");
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      const res = await axios.get("http://localhost:5000/api/owner/profile", config);
+      const res = await axios.get(`${API_BASE}/owner/profile`, config);
       if (res.data.success) {
         const incoming = res.data.data || {};
         const normalized = {
@@ -136,7 +137,7 @@ const ProfileStatus = () => {
     try {
       const token = localStorage.getItem("userToken");
       const res = await axios.put(
-        "http://localhost:5000/api/owner/update-profile",
+        `${API_BASE}/owner/update-profile`,
         { ...tempData, phone: cleanedPhone, emergencyPhone: cleanedEmergency },
         {
         headers: { Authorization: `Bearer ${token}` }
@@ -177,7 +178,7 @@ const ProfileStatus = () => {
       const formData = new FormData();
       formData.append("image", file);
 
-      const res = await axios.put("http://localhost:5000/api/owner/update-profile", formData, {
+      const res = await axios.put(`${API_BASE}/owner/update-profile`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "multipart/form-data",

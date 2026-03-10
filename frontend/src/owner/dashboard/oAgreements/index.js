@@ -9,8 +9,7 @@ import {
   FaCalendarAlt
 } from "react-icons/fa";
 import axios from "axios";
-
-const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
+import { API_BASE, API_ORIGIN } from "../../../config/apiBaseUrl";
 
 const AgreementPage = () => {
   const [tenantSearch, setTenantSearch] = useState("");
@@ -29,7 +28,7 @@ const AgreementPage = () => {
 
   const fetchAgreements = async () => {
     try {
-      const response = await axios.get("http://localhost:5000/api/owner/my-agreements", {
+      const response = await axios.get(`${API_BASE}/owner/my-agreements`, {
         headers: { Authorization: `Bearer ${authToken}` },
       });
       if (response.data.success) {
@@ -184,7 +183,7 @@ const AgreementPage = () => {
 
               {selectedAgreement.fileUrl && (
                 <a
-                  href={`${API_BASE_URL}${selectedAgreement.fileUrl}`}
+                  href={`${API_ORIGIN}${selectedAgreement.fileUrl}`}
                   target="_blank"
                   rel="noreferrer"
                   className="inline-block text-primary font-bold"

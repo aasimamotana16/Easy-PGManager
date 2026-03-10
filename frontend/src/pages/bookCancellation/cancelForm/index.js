@@ -5,6 +5,7 @@ import CButton from "../../../components/cButton";
 import CInput from "../../../components/cInput";
 import CSelect from "../../../components/cSelect";
 import CancelConfirmModal from "../cancelConfirm";
+import { API_BASE } from "../../../config/apiBaseUrl";
 import { cancelReasons } from "../../../config/staticData";
 import { FaExclamationTriangle } from "react-icons/fa";
 
@@ -75,8 +76,8 @@ const CancelForm = () => {
     }
 
     try {
-      const res = await axios.get(
-        `http://localhost:5000/api/bookings/${encodeURIComponent(id)}/cancellation-estimate`,
+          const res = await axios.get(
+            `${API_BASE}/bookings/${encodeURIComponent(id)}/cancellation-estimate`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (res.data?.success) {
@@ -173,7 +174,7 @@ const CancelForm = () => {
             try {
               const token = localStorage.getItem("userToken");
               const res = await axios.put(
-                `http://localhost:5000/api/bookings/${id}/request-cancel`,
+                `${API_BASE}/bookings/${id}/request-cancel`,
                 {
                   reason: form.reason,
                   otherReason: form.reason === "Other" ? form.otherReason : "",

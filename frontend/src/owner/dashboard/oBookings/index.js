@@ -8,17 +8,18 @@ import {
 import axios from "axios";
 import Swal from "sweetalert2";
 import CSelect from "../../../components/cSelect";
+import { API_BASE, API_ORIGIN } from "../../../config/apiBaseUrl";
 
 const BookingManagement = () => {
   const [bookings, setBookings] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedPg, setSelectedPg] = useState("All Properties");
-  const apiBaseUrl = (process.env.REACT_APP_API_URL || "http://localhost:5000").replace(/\/+$/, "");
+  const apiBaseUrl = API_ORIGIN;
 
   const fetchBookings = async () => {
     try {
       const token = localStorage.getItem("userToken");
-      const res = await axios.get("http://localhost:5000/api/owner/my-bookings", {
+      const res = await axios.get(`${API_BASE}/owner/my-bookings`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.data.success) {
@@ -65,7 +66,7 @@ const BookingManagement = () => {
     if (confirm.isConfirmed) {
       try {
         const token = localStorage.getItem("userToken");
-        await axios.put(`http://localhost:5000/api/owner/update-booking/${id}`, 
+        await axios.put(`${API_BASE}/owner/update-booking/${id}`, 
           { status: newStatus }, 
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -104,7 +105,7 @@ const BookingManagement = () => {
         didOpen: () => Swal.showLoading()
       });
 
-      const res = await axios.post(`http://localhost:5000/api/owner/send-payment-link/${id}`, {}, {
+      const res = await axios.post(`${API_BASE}/owner/send-payment-link/${id}`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -166,7 +167,7 @@ const BookingManagement = () => {
       });
 
       const res = await axios.get(
-        `${apiBaseUrl}/api/owner/booking/${encodeURIComponent(bookingId)}/cancellation-estimate`,
+        `${API_BASE}/owner/booking/${encodeURIComponent(bookingId)}/cancellation-estimate`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -230,7 +231,7 @@ const BookingManagement = () => {
 
       // Generates (or refreshes) the PDF and returns the current URL.
       const res = await axios.post(
-        `${apiBaseUrl}/api/owner/booking/${bookingId}/generate-agreement-pdf`,
+        `${API_BASE}/owner/booking/${bookingId}/generate-agreement-pdf`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );

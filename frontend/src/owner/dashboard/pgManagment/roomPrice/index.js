@@ -8,6 +8,7 @@ import { FaTrash, FaPlus, FaSave, FaCheck, FaCalendarAlt, FaSnowflake, FaSun } f
 import Swal from "sweetalert2"; // Standard Swal import
 import CInput from "../../../../components/cInput";
 import CButton from "../../../../components/cButton";
+import { API_BASE } from "../../../../config/apiBaseUrl";
 
 const SetRoomPrice = () => {
   const navigate = useNavigate();
@@ -115,7 +116,7 @@ const SetRoomPrice = () => {
           try {
             const token = localStorage.getItem("userToken");
             const roomResp = await axios.post(
-              "http://localhost:5000/api/owner/add-room",
+              `${API_BASE}/owner/add-room`,
               {
                 roomType: incomingRoomData.roomType,
                 totalRooms: parseInt(incomingRoomData.totalRooms || 0),
@@ -141,7 +142,7 @@ const SetRoomPrice = () => {
                 formData.append("pgId", pgId);
                 if (createdRoom && createdRoom._id) formData.append("roomId", createdRoom._id);
 
-                await axios.post(`http://localhost:5000/api/owner/upload-images/${pgId}`, formData, {
+                await axios.post(`${API_BASE}/owner/upload-images/${pgId}`, formData, {
                   headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" }
                 });
               }

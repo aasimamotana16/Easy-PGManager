@@ -16,6 +16,7 @@ import PayNowButton from '../../../components/payNowButton';
 import { getUserProfile, getUserDashboard, getMyAgreement, createReview } from "../../../api/api";
 import axios from "axios";
 import Swal from "sweetalert2";
+import { API_BASE, API_ORIGIN } from "../../../config/apiBaseUrl";
 
 const formatDueDate = (dateValue) => {
   if (!(dateValue instanceof Date) || Number.isNaN(dateValue.getTime())) return null;
@@ -110,7 +111,7 @@ const DashboardHome = () => {
       let estimateHtml = "";
       try {
         const estimateRes = await fetch(
-          `http://localhost:5000/api/bookings/${encodeURIComponent(bookingIdentifier)}/cancellation-estimate`,
+          `${API_BASE}/bookings/${encodeURIComponent(bookingIdentifier)}/cancellation-estimate`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         const estimateJson = await estimateRes.json();
@@ -145,7 +146,7 @@ const DashboardHome = () => {
       if (!result.isConfirmed) return;
       const reason = result.value?.reason || "";
 
-      const resp = await fetch(`http://localhost:5000/api/bookings/${encodeURIComponent(bookingIdentifier)}/request-cancel`, {
+      const resp = await fetch(`${API_BASE}/bookings/${encodeURIComponent(bookingIdentifier)}/request-cancel`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -223,7 +224,7 @@ const DashboardHome = () => {
     setIsProcessing(true);
 
     try {
-      const orderResponse = await fetch("http://localhost:5000/api/payments/create-order", {
+      const orderResponse = await fetch(`${API_BASE}/payments/create-order`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -243,7 +244,7 @@ const DashboardHome = () => {
         description: `Rent for ${month}`,
         order_id: order.id,
         handler: async (response) => {
-          const verifyRes = await fetch("http://localhost:5000/api/payments/verify", {
+          const verifyRes = await fetch(`${API_BASE}/payments/verify`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -314,7 +315,7 @@ const DashboardHome = () => {
           cancelButtonColor: "#f97316",
         }).then((result) => {
           if (result.dismiss === Swal.DismissReason.cancel && agreement.fileUrl) {
-            window.open(`http://localhost:5000${agreement.fileUrl}`, "_blank");
+            window.open(`${API_ORIGIN}${agreement.fileUrl}`, "_blank");
           }
         });
       } else {

@@ -91,7 +91,7 @@ const Payments = () => {
         return;
       }
 
-      const response = await fetch(`http://localhost:5000/api/payments/receipt/${payment.id}`, {
+      const response = await fetch(`${API_BASE}/payments/receipt/${payment.id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -242,7 +242,7 @@ const Payments = () => {
 
     try {
       const token = localStorage.getItem('userToken');
-      const resp = await fetch('http://localhost:5000/api/users/request-extension', {
+      const resp = await fetch(`${API_BASE}/users/request-extension`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

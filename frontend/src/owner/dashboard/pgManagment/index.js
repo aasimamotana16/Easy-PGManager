@@ -7,6 +7,7 @@ import { FaHome, FaRegEye, FaEdit, FaTrash, FaTimes } from "react-icons/fa";
 import Swal from "sweetalert2";
 import { getMyPgs } from "../../../api/api";
 import { getImageUrl } from "../../../utils/imageUtils";
+import { API_BASE } from "../../../config/apiBaseUrl";
 
 const resolveOwnerPgStatus = (pg) => {
   const approval = String(pg?.approvalStatus || "").toLowerCase();
@@ -103,7 +104,7 @@ const PgManagement = () => {
 
     try {
       const token = localStorage.getItem("userToken");
-      await axios.put(`http://localhost:5000/api/owner/pg/${editingPg.id}`, 
+      await axios.put(`${API_BASE}/owner/pg/${editingPg.id}`, 
         { pgName: editingPg.name, location: editingPg.location },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -130,7 +131,7 @@ const PgManagement = () => {
 
       if (result.isConfirmed) {
         const token = localStorage.getItem("userToken");
-        await axios.delete(`http://localhost:5000/api/owner/pg/${pgId}`, {
+        await axios.delete(`${API_BASE}/owner/pg/${pgId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setMyPgs(prevPgs => prevPgs.filter(pg => pg.id !== pgId));

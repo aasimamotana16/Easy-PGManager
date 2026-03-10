@@ -5,8 +5,7 @@ import Footer from "../../../components/footer";
 import CButton from "../../../components/cButton";
 import { ArrowLeft, Printer, ExternalLink } from "lucide-react";
 import { getBookingAgreement } from "../../../api/api";
-
-const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
+import { API_ORIGIN } from "../../../config/apiBaseUrl";
 
 const BookingAgreement = () => {
   const { id } = useParams();
@@ -117,7 +116,7 @@ const BookingAgreement = () => {
                 <div className="flex items-center justify-between gap-4">
                   <p className="text-sm font-semibold">Owner uploaded signed agreement PDF is available.</p>
                   <a
-                    href={`${API_BASE_URL}${agreement.fileUrl}`}
+                    href={`${API_ORIGIN}${agreement.fileUrl}`}
                     target="_blank"
                     rel="noreferrer"
                     className="inline-flex items-center gap-2 text-primary font-semibold"

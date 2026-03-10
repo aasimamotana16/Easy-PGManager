@@ -4,6 +4,7 @@ import Navbar from "../../../components/navbar";
 import Footer from "../../../components/footer";
 import CButton from "../../../components/cButton";
 import Swal from "sweetalert2";
+import { API_BASE } from "../../../config/apiBaseUrl";
 import {
   CheckCircleIcon,
   CalendarIcon,
@@ -78,7 +79,7 @@ const ConfirmBooking = () => {
     let estimateNoteHtml = '';
     try {
       const estimateResp = await fetch(
-        `http://localhost:5000/api/bookings/${encodeURIComponent(bookingIdentifier)}/cancellation-estimate`,
+        `${API_BASE}/bookings/${encodeURIComponent(bookingIdentifier)}/cancellation-estimate`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       const estimateJson = await estimateResp.json();
@@ -139,7 +140,7 @@ const ConfirmBooking = () => {
 
     try {
       setIsCancelling(true);
-      const resp = await fetch(`http://localhost:5000/api/bookings/${encodeURIComponent(bookingIdentifier)}/request-cancel`, {
+      const resp = await fetch(`${API_BASE}/bookings/${encodeURIComponent(bookingIdentifier)}/request-cancel`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

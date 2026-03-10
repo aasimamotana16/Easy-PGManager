@@ -4,6 +4,7 @@ import Navbar from "../../../components/navbar";
 import Loader from "../../../components/loader";
 import PayNowButton from "../../../components/payNowButton";
 import { CheckBadgeIcon, ShieldCheckIcon, MapPinIcon } from "@heroicons/react/24/solid";
+import { API_BASE } from "../../../config/apiBaseUrl";
 
 const PayNow = () => {
   const { bookingId } = useParams();
@@ -30,7 +31,7 @@ const PayNow = () => {
         
         // If we have a bookingId, try to fetch the actual booking details
         if (bookingId) {
-          const res = await fetch(`http://localhost:5000/api/bookings/${bookingId}`, {
+          const res = await fetch(`${API_BASE}/bookings/${bookingId}`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           const data = await res.json();

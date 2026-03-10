@@ -9,6 +9,7 @@ import CButton from "../../components/cButton";
 
 import Filters from "./servicesFilter";
 import PGListings from "./pgListing";
+import { API_BASE } from "../../config/apiBaseUrl";
 
 const DEFAULT_FILTERS = {
   lookingFor: "Any",
@@ -35,7 +36,7 @@ export default function FindMyPG() {
     const urlParams = new URLSearchParams(window.location.search);
     const currentCity = urlParams.get("city") || "";
     const queryParams = currentCity ? `?city=${encodeURIComponent(currentCity)}` : "";
-    fetch(`http://localhost:5000/api/pg/all${queryParams}`)
+    fetch(`${API_BASE}/pg/all${queryParams}`)
       .then((res) => res.json())
       .then((json) => {
         if (json.success) setPgList(json.data);
@@ -80,7 +81,7 @@ export default function FindMyPG() {
         amenities: tempFilters.amenities.join(","),
       }).toString();
 
-      const response = await fetch(`http://localhost:5000/api/pg/search?${queryParams}`);
+      const response = await fetch(`${API_BASE}/pg/search?${queryParams}`);
       const json = await response.json();
 
       if (json.success) {

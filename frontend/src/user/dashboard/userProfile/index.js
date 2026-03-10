@@ -9,6 +9,7 @@ import {
 
 // Components & API (Assuming these paths are correct as per your snippet)
 import CButton from "../../../components/cButton";
+import { API_ORIGIN } from "../../../config/apiBaseUrl";
 import CInput from "../../../components/cInput";
 import Navbar from "../../../components/navbar";
 import Footer from "../../../components/footer";
@@ -336,7 +337,7 @@ const Profile = () => {
                 className="w-28 h-28 lg:w-40 lg:h-40 rounded-md overflow-hidden border-4 border-[#D97706] shadow-xl"
               >
                 {user?.profilePicture ? (
-                  <img src={`http://localhost:5000${user.profilePicture}`} alt="Profile" className="w-full h-full object-cover" />
+                  <img src={`${API_ORIGIN}${user.profilePicture}`} alt="Profile" className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full bg-[#D97706] flex items-center justify-center text-3xl lg:text-5xl font-black text-white">
                     {user?.fullName?.charAt(0)}

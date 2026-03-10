@@ -6,11 +6,12 @@ import {
   FaDownload, 
   FaShieldAlt
 } from "react-icons/fa";
+import { API_ORIGIN } from "../../../config/apiBaseUrl";
 
 const Agreements = () => {
   const [agreementInfo, setAgreementInfo] = useState(null);
   const [loading, setLoading] = useState(true);
-  const apiBaseUrl = (process.env.REACT_APP_API_URL || "http://localhost:5000").replace(/\/+$/, "");
+  const apiBaseUrl = API_ORIGIN;
   const hasSignatureForThisPg = Boolean(agreementInfo?.signatureVerified || agreementInfo?.ownerSignatureUrl);
   const agreementHeaderText = agreementInfo
     ? (hasSignatureForThisPg ? "Verified Legal Document - Signature Verified" : "Verified Legal Document")

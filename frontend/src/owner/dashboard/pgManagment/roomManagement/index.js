@@ -11,6 +11,7 @@ import {
 } from "react-icons/fa";
 import CButton from "../../../../components/cButton";
 import Swal from "sweetalert2";
+import { API_BASE } from "../../../../config/apiBaseUrl";
 
 const RoomManagement = () => {
   const navigate = useNavigate();
@@ -38,7 +39,7 @@ const RoomManagement = () => {
       }
 
       const pgResponse = await axios.get(
-        `http://localhost:5000/api/owner/pg/${propertyId}`,
+        `${API_BASE}/owner/pg/${propertyId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -164,14 +165,14 @@ const RoomManagement = () => {
           updatedRooms[index] = { ...updatedRooms[index], ...result.value };
           
           await axios.put(
-            `http://localhost:5000/api/owner/pg/${propertyId}`,
+            `${API_BASE}/owner/pg/${propertyId}`,
             { rooms: updatedRooms },
             { headers: { Authorization: `Bearer ${token}` } }
           );
 
           // Fetch updated PG and navigate back so PG Management reflects changes
           try {
-            const pgResp = await axios.get(`http://localhost:5000/api/owner/pg/${propertyId}`, { headers: { Authorization: `Bearer ${token}` } });
+            const pgResp = await axios.get(`${API_BASE}/owner/pg/${propertyId}`, { headers: { Authorization: `Bearer ${token}` } });
             if (pgResp.data && pgResp.data.success) {
               await Swal.fire({
                 icon: 'success',
@@ -218,14 +219,14 @@ const RoomManagement = () => {
         const token = localStorage.getItem("userToken");
         const updatedRooms = rooms.filter((_, i) => i !== index);
         await axios.put(
-          `http://localhost:5000/api/owner/pg/${propertyId}`,
+          `${API_BASE}/owner/pg/${propertyId}`,
           { rooms: updatedRooms },
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
         // Fetch updated PG and navigate back so PG Management reflects changes
         try {
-          const pgResp = await axios.get(`http://localhost:5000/api/owner/pg/${propertyId}`, { headers: { Authorization: `Bearer ${token}` } });
+          const pgResp = await axios.get(`${API_BASE}/owner/pg/${propertyId}`, { headers: { Authorization: `Bearer ${token}` } });
           if (pgResp.data && pgResp.data.success) {
             navigate('/owner/dashboard/pgManagment', { state: { updatedPg: pgResp.data.data } });
             return; // navigated away

@@ -6,6 +6,7 @@ import CButton from "../../../components/cButton";
 import axios from "axios";
 import Swal from "sweetalert2";
 import { requestExtension, requestMoveIn, requestMoveOut } from "../../../api/api";
+import { API_BASE } from "../../../config/apiBaseUrl";
 import { 
   FaHistory, 
   FaSignOutAlt, 
@@ -89,7 +90,7 @@ const CheckIns = () => {
     if (!bookingIdentifier) return null;
     try {
       const res = await axios.get(
-        `http://localhost:5000/api/bookings/${encodeURIComponent(bookingIdentifier)}/cancellation-estimate`,
+        `${API_BASE}/bookings/${encodeURIComponent(bookingIdentifier)}/cancellation-estimate`,
         { headers: { Authorization: `Bearer ${authToken}` } }
       );
       if (res.data?.success) return res.data?.data;
@@ -127,7 +128,7 @@ const CheckIns = () => {
 
   const fetchStayDetails = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/users/dashboard-stats", {
+      const res = await axios.get(`${API_BASE}/users/dashboard-stats`, {
         headers: { Authorization: `Bearer ${authToken}` }
       });
 
@@ -215,7 +216,7 @@ const CheckIns = () => {
 
     try {
       const resp = await axios.put(
-        `http://localhost:5000/api/bookings/${identifier}/request-cancel`,
+        `${API_BASE}/bookings/${identifier}/request-cancel`,
         { reason: reasonLabel, otherReason: "" },
         { headers: { Authorization: `Bearer ${authToken}` } }
       );
@@ -292,7 +293,7 @@ const CheckIns = () => {
 
   const fetchCheckInHistory = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/users/my-checkins", {
+      const res = await axios.get(`${API_BASE}/users/my-checkins`, {
         headers: { Authorization: `Bearer ${authToken}` }
       });
       if (res.data.success) setHistory(res.data.data);

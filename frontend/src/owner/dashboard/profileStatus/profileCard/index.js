@@ -4,6 +4,7 @@ import Swal from "sweetalert2"; // Import SweetAlert2
 import { 
   FaEdit, FaCog, FaFacebookF, FaInstagram, FaLinkedinIn, FaTwitter 
 } from "react-icons/fa";
+import { API_BASE } from "../../../../config/apiBaseUrl";
 
 const ProfileCard = ({ profileData, setProfileData }) => {
   const [editMode, setEditMode] = useState(false);
@@ -62,7 +63,7 @@ const ProfileCard = ({ profileData, setProfileData }) => {
     try {
       const token = localStorage.getItem("userToken") || localStorage.getItem("token");
 
-      const response = await fetch("http://localhost:5000/api/owner/update-profile", {
+      const response = await fetch(`${API_BASE}/owner/update-profile`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

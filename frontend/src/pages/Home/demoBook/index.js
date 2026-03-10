@@ -4,6 +4,7 @@ import CInput from "../../../components/cInput";
 import CButton from "../../../components/cButton";
 import Swal from "sweetalert2";
 import { motion, AnimatePresence } from "framer-motion";
+import { API_BASE } from "../../../config/apiBaseUrl";
 
 const DemoBook = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
@@ -74,7 +75,7 @@ const DemoBook = ({ isOpen, onClose }) => {
 
     setIsSubmitting(true);
     try {
-      const response = await fetch('http://localhost:5000/api/request-demo', {
+      const response = await fetch(`${API_BASE}/request-demo`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

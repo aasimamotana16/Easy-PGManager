@@ -7,6 +7,7 @@ import CSelect from "../../../components/cSelect";
 import Loader from "../../../components/loader";
 import Swal from "sweetalert2";
 import { getPgById } from "../../../api/api";
+import { API_BASE } from "../../../config/apiBaseUrl";
 
 const BookingPage = () => {
   const { id } = useParams();
@@ -249,7 +250,7 @@ const BookingPage = () => {
 
       try {
         const token = localStorage.getItem("userToken");
-        const res = await fetch("http://localhost:5000/api/bookings/create", {
+        const res = await fetch(`${API_BASE}/bookings/create`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -426,7 +427,7 @@ const BookingPage = () => {
                 {activePg?._id && (
                     <div className="mt-2 pt-2 border-t border-border">
                         <a
-                      href={`http://localhost:5000/api/pg/${activePg._id}/agreement-preview?t=${Date.now()}${
+                      href={`${API_BASE}/pg/${activePg._id}/agreement-preview?t=${Date.now()}${
                         selectedRoom?.type
                         ? `&roomType=${encodeURIComponent(String(selectedRoom.type))}&variantLabel=${encodeURIComponent(String(selectedRoom.type))}`
                         : ""

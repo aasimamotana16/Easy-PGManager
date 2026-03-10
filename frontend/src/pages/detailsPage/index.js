@@ -6,6 +6,7 @@ import Footer from "../../components/footer";
 import Loader from "../../components/loader";
 import { motion, AnimatePresence } from "framer-motion"; 
 import Swal from "sweetalert2";
+import { API_ORIGIN } from "../../config/apiBaseUrl";
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -153,8 +154,8 @@ const PGDetails = () => {
 
   const toImageUrl = (imgPath) =>
     imgPath && imgPath.startsWith("/uploads")
-      ? `http://localhost:5000${imgPath}`
-      : (imgPath && imgPath.startsWith("uploads/") ? `http://localhost:5000/${imgPath}` : imgPath);
+      ? `${API_ORIGIN}${imgPath}`
+      : (imgPath && imgPath.startsWith("uploads/") ? `${API_ORIGIN}/${imgPath}` : imgPath);
 
   useEffect(() => {
     if (ownerPgData || (pgList && pgList.length > 0)) {

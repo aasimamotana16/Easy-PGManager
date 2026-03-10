@@ -5,6 +5,7 @@ import HomeBanner from "./homeBanner";
 import HomeSearch from "./homeSearch";
 import HomeFeatures from "./homeFeature";
 import HomeReviews from "./homeReviews";
+import { API_BASE } from "../../config/apiBaseUrl";
 
 const HomePage = () => {
   const [siteStats, setSiteStats] = useState({
@@ -19,7 +20,7 @@ const HomePage = () => {
   const showHomeSearch = !isLoggedIn || role !== "owner";
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/home-stats')
+    fetch(`${API_BASE}/home-stats`)
       .then(res => res.json())
       .then(data => {
         setSiteStats(data);
