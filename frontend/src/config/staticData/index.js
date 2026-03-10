@@ -185,11 +185,11 @@ export const aboutWhyChooseUs =
 
 export const aboutReviews = [
   {
-    text: "â€œManaging my PG has never been easier. Billing and complaints are all in one place.â€",
+    text: "\"Managing my PG has never been easier. Billing and complaints are all in one place.\"",
     author: "PG Owner",
   },
   {
-    text: "â€œI love the transparency. I can see my rent breakdown and contact my owner instantly.â€",
+    text: "\"I love the transparency. I can see my rent breakdown and contact my owner instantly.\"",
     author: "Tenant",
   },
 ];
@@ -199,25 +199,25 @@ export const services = [
     id: 1,
     title: "PG Management",
     description: "Streamline tenant records, rent tracking, and PG operations with ease.",
-    icon: "ðŸ ",
+    icon: "🏠",
   },
   {
     id: 2,
     title: "Billing & Payments",
     description: "Automated invoices, reminders, and secure payment integrations.",
-    icon: "ðŸ’³",
+    icon: "💳",
   },
   {
     id: 3,
     title: "Support & Maintenance",
     description: "Track service requests and manage maintenance schedules efficiently.",
-    icon: "ðŸ› ï¸",
+    icon: "🛠️",
   },
   {
     id: 4,
     title: "Verified Listings",
     description: "Browse verified PGs and hostels with all the details you need.",
-    icon: "ðŸ“‹", // you can replace with another emoji or SVG icon
+    icon: "📋",
   },
   {
     id: 5,
