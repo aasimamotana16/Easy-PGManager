@@ -22,6 +22,7 @@ import axios from "axios";
 import Swal from "sweetalert2";
 import CButton from "../../../components/cButton";
 import CSelect from "../../../components/cSelect";
+import { API_BASE } from "../../../config/apiBaseUrl";
 
 ChartJS.register(
   CategoryScale,
@@ -70,7 +71,7 @@ const TotalEarnings = () => {
           return;
         }
 
-        const response = await axios.get("http://localhost:5000/api/owner/earnings", {
+        const response = await axios.get(`${API_BASE}/owner/earnings`, {
           headers: { Authorization: `Bearer ${token}` },
           params: {
             month: selectedMonth,
@@ -134,7 +135,7 @@ const TotalEarnings = () => {
     });
 
     try {
-      const response = await axios.get(`http://localhost:5000/api/owner/earnings/pdf?month=${selectedMonth}`, {
+      const response = await axios.get(`${API_BASE}/owner/earnings/pdf?month=${selectedMonth}`, {
         headers: { Authorization: `Bearer ${token}` },
         responseType: "blob",
       });
@@ -186,7 +187,7 @@ const TotalEarnings = () => {
         didOpen: () => Swal.showLoading(),
       });
 
-      const res = await axios.post(`http://localhost:5000/api/owner/send-payment-link/${bookingId}`, {}, {
+      const res = await axios.post(`${API_BASE}/owner/send-payment-link/${bookingId}`, {}, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

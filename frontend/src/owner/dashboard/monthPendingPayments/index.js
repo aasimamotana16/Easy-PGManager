@@ -3,6 +3,7 @@ import { FaClock, FaRegPaperPlane } from "react-icons/fa";
 import axios from "axios";
 import Swal from "sweetalert2";
 import CButton from "../../../components/cButton";
+import { API_BASE } from "../../../config/apiBaseUrl";
 
 const ITEMS_PER_PAGE = 5;
 const MONTH_OPTIONS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -28,7 +29,7 @@ const MonthPendingPayments = () => {
           return;
         }
 
-        const response = await axios.get("http://localhost:5000/api/owner/earnings", {
+        const response = await axios.get(`${API_BASE}/owner/earnings`, {
           headers: { Authorization: `Bearer ${token}` },
           params: {
             month: currentMonth,
@@ -90,7 +91,7 @@ const MonthPendingPayments = () => {
         didOpen: () => Swal.showLoading(),
       });
 
-      const res = await axios.post(`http://localhost:5000/api/owner/send-payment-link/${bookingId}`, {}, {
+      const res = await axios.post(`${API_BASE}/owner/send-payment-link/${bookingId}`, {}, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

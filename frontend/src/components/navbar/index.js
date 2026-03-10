@@ -4,6 +4,7 @@ import { FaUserCircle, FaBars, FaTimes } from "react-icons/fa";
 import axios from "axios";
 import CButton from "../../components/cButton";
 import { getUserProfile } from "../../api/api";
+import { API_BASE } from "../../config/apiBaseUrl";
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -107,7 +108,7 @@ const Navbar = () => {
       const token = localStorage.getItem("userToken");
       if (token) {
         await axios.post(
-          "http://localhost:5000/api/users/logout",
+          `${API_BASE}/users/logout`,
           {},
           { headers: { Authorization: `Bearer ${token}` } }
         );

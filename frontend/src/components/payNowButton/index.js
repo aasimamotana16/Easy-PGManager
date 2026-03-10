@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Swal from 'sweetalert2';
 import CButton from '../cButton';
+import { API_BASE } from "../../config/apiBaseUrl";
 
 const PayNowButton = ({ amount, pgId, bookingId, intentType, description, children, className, disabled, onSuccess }) => {
   const [isProcessing, setIsProcessing] = useState(false);
@@ -11,7 +12,7 @@ const PayNowButton = ({ amount, pgId, bookingId, intentType, description, childr
     if (String(intentType || '').toUpperCase() !== 'MONTHLY_RENT') return true;
 
     try {
-      const docsRes = await fetch('http://localhost:5000/api/users/documents', {
+      const docsRes = await fetch(`${API_BASE}/users/documents`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const docsJson = await docsRes.json();
@@ -60,7 +61,7 @@ const PayNowButton = ({ amount, pgId, bookingId, intentType, description, childr
       const okToProceed = await ensureRequiredDocumentsForRent(token);
       if (!okToProceed) return;
 
-      const resp = await fetch('http://localhost:5000/api/payments/create-order', {
+      const resp = await fetch(`${API_BASE}/payments/create-order`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ amount: Number(amount || 0), pgId, bookingId, type: intentType })
@@ -86,7 +87,7 @@ const PayNowButton = ({ amount, pgId, bookingId, intentType, description, childr
         order_id: order.id,
         handler: async (response) => {
           try {
-            const verifyRes = await fetch('http://localhost:5000/api/payments/verify', {
+            const verifyRes = await fetch(`${API_BASE}/payments/verify`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
               body: JSON.stringify({

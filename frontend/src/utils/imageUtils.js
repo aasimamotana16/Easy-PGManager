@@ -1,5 +1,4 @@
-// Backend URL for serving static files (images)
-const BACKEND_URL = "http://localhost:5000";
+import { API_ORIGIN } from "../config/apiBaseUrl";
 
 /**
  * Helper function to get the full image URL
@@ -26,11 +25,11 @@ export const getImageUrl = (imagePath, defaultImage = null) => {
 
   // If it's a relative path (starts with /), prepend backend URL
   if (imagePath.startsWith('/')) {
-    return `${BACKEND_URL}${imagePath}`;
+    return `${API_ORIGIN}${imagePath}`;
   }
 
   // Otherwise, assume it's a relative path and prepend backend URL
-  return `${BACKEND_URL}/${imagePath}`;
+  return `${API_ORIGIN}/${imagePath}`;
 };
 
 /**

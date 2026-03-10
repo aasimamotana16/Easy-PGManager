@@ -8,6 +8,7 @@ import Loader from "../../components/loader";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import { motion } from "framer-motion";
+import { API_BASE } from "../../config/apiBaseUrl";
 
 const Contact = () => {
   const navigate = useNavigate();
@@ -71,7 +72,7 @@ const Contact = () => {
 
     setLoading(true);
     try {
-      const response = await fetch("http://localhost:5000/api/contact-us", {
+      const response = await fetch(`${API_BASE}/contact-us`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

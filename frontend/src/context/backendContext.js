@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect } from 'react';
 import axios from 'axios';
+import { API_BASE } from "../config/apiBaseUrl";
 
 export const BackendContext = createContext();
 export const BackendProvider = ({ children }) => {
@@ -13,7 +14,7 @@ export const BackendProvider = ({ children }) => {
       const currentCity = urlParams.get("city") || "";
 
       // 2. Combine the city with all filter data (Budget, Gender, etc.)
-      const response = await axios.get('http://localhost:5000/api/pg/all', {
+      const response = await axios.get(`${API_BASE}/pg/all`, {
         params: { 
           city: currentCity, 
           ...filters // This spreads all your filter inputs into the request [cite: 2026-01-06]
