@@ -239,9 +239,4 @@ app.post('/api/contact-us', async (req, res) => {
   }
 });
 
-// Use variable for PORT to allow flexibility
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Backend running on port ${PORT}`);
-  console.log(`Test API: http://localhost:${PORT}/api/reviews/public`);
-});
+module.exports = app;
