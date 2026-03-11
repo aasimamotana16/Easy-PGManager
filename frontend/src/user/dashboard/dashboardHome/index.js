@@ -310,9 +310,9 @@ const DashboardHome = () => {
           showCancelButton: !!agreement.fileUrl,
           focusConfirm: false,
           confirmButtonText: "Close",
-          confirmButtonColor: "#f97316",
+          confirmButtonColor: "#D97706",
           cancelButtonText: "View PDF",
-          cancelButtonColor: "#f97316",
+          cancelButtonColor: "#D97706",
         }).then((result) => {
           if (result.dismiss === Swal.DismissReason.cancel && agreement.fileUrl) {
             window.open(`${API_ORIGIN}${agreement.fileUrl}`, "_blank");
@@ -323,7 +323,7 @@ const DashboardHome = () => {
           title: "Not Found",
           text: "Agreement not found",
           icon: "warning",
-          confirmButtonColor: "#f97316",
+          confirmButtonColor: "#D97706",
         });
       }
     } catch (err) {
@@ -332,7 +332,7 @@ const DashboardHome = () => {
         title: "Error",
         text: "Failed to load agreement",
         icon: "error",
-        confirmButtonColor: "#f97316",
+        confirmButtonColor: "#D97706",
       });
     }
   };
