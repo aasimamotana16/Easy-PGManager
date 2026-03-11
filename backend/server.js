@@ -104,7 +104,7 @@ app.get('/', (req, res) => {
 });
 // --- DYNAMIC HOME STATS API ---
 // This provides the numbers for: Customers Worldwide, Daily Users, and Rent Managed
-const homeStatsHandler = async (req, res) => {
+app.get('/api/home-stats', async (req, res) => {
   try {
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
@@ -133,10 +133,7 @@ const homeStatsHandler = async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: "Failed to fetch home stats" });
   }
-};
-
-app.get('/api/home-stats', homeStatsHandler);
-app.get('/home-stats', homeStatsHandler);
+});
 
 // --- UPDATED REQUEST DEMO API (DATABASE + REAL EMAIL) ---
 app.post('/api/request-demo', async (req, res) => {
