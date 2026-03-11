@@ -1,6 +1,6 @@
 {
-  "version": 2,
   "builds": [
+}
     {
       "src": "backend/api/index.js",
       "use": "@vercel/node"
@@ -23,7 +23,7 @@
     },
     {
       "src": "/(.*)",
-      "dest": "frontend/build/index.html"
+      "dest": "/index.html"
     }
   ]
 }
