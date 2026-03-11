@@ -6,8 +6,9 @@ import { getTerms } from "../../api/api";
 
 const TermsConditions = () => {
   const [pageLoading, setPageLoading] = useState(true);
-  const [termsData, setTermsData] = useState([]);
+  const [termsData, setTermsData] = useState(null);
   const [loadingTerms, setLoadingTerms] = useState(true);
+  const [termsError, setTermsError] = useState("");
 
   useEffect(() => {
     const timer = setTimeout(() => setPageLoading(false), 400);
@@ -16,12 +17,24 @@ const TermsConditions = () => {
     const fetchTerms = async () => {
       try {
         const resp = await getTerms();
-        if (resp && resp.data && resp.data.data) {
-          setTermsData(resp.data.data);
+        const data = resp?.data?.data;
+
+        if (typeof data === "string") {
+          setTermsData(data);
+          return;
         }
+
+        if (Array.isArray(data)) {
+          setTermsData(data);
+          return;
+        }
+
+        setTermsData([]);
+        setTermsError("Terms & Conditions content not available.");
       } catch (err) {
-        // keep fallback empty — frontend will render nothing
         console.error('Failed to load terms', err);
+        setTermsData([]);
+        setTermsError("Failed to load Terms & Conditions. Please try again.");
       } finally {
         setLoadingTerms(false);
       }
@@ -56,34 +69,54 @@ const TermsConditions = () => {
         {/* Content Container - Using border: #E5E0D9 */}
         <div className="bg-white border border-[#E5E0D9] rounded-md shadow-sm overflow-hidden">
           <div className="p-6 sm:p-10">
-            {(loadingTerms ? [] : termsData).map((item, index) => (
-              <section 
-                key={index} 
-                className="mb-10 last:mb-0 group"
-              >
-                {/* Section Header */}
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-[#FEF3C7] text-[#D97706] flex items-center justify-center font-bold text-sm">
-                    {index + 1}
+            {loadingTerms ? (
+              <div className="py-10 text-center text-[#4B4B4B]">
+                Loading Terms & Conditions...
+              </div>
+            ) : termsError ? (
+              <div className="py-10 text-center text-red-600">
+                {termsError}
+              </div>
+            ) : typeof termsData === "string" ? (
+              <div
+                className="prose max-w-none"
+                dangerouslySetInnerHTML={{ __html: termsData }}
+              />
+            ) : Array.isArray(termsData) && termsData.length > 0 ? (
+              termsData.map((item, index) => (
+                <section
+                  key={index}
+                  className="mb-10 last:mb-0 group"
+                >
+                  {/* Section Header */}
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-[#FEF3C7] text-[#D97706] flex items-center justify-center font-bold text-sm">
+                      {index + 1}
+                    </div>
+                    <h2 className="text-xl font-bold text-[#1C1C1C] group-hover:text-[#D97706] transition-colors">
+                      {String(item.title || "").replace(/^\s*\d+\s*[\.)-]?\s*/, "")}
+                    </h2>
                   </div>
-                  <h2 className="text-xl font-bold text-[#1C1C1C] group-hover:text-[#D97706] transition-colors">
-                    {String(item.title || "").replace(/^\s*\d+\s*[\.)-]?\s*/, "")}
-                  </h2>
-                </div>
 
-                {/* Description - Using text secondary: #4B4B4B */}
+                  {/* Description - Using text secondary: #4B4B4B */}
                   <div className="ml-0 sm:ml-12">
-                  <p className="text-base leading-relaxed text-[#4B4B4B]">
-                    {item.content || item.description}
-                  </p>
-                </div>
-                
-                {/* Separator */}
-                {index !== ((loadingTerms ? [] : termsData).length - 1) && (
-                  <div className="ml-0 sm:ml-12 mt-8 border-b border-[#E5E0D9]"></div>
-                )}
-              </section>
-            ))}
+                    <div
+                      className="text-base leading-relaxed text-[#4B4B4B]"
+                      dangerouslySetInnerHTML={{ __html: String(item.content || item.description || "") }}
+                    />
+                  </div>
+
+                  {/* Separator */}
+                  {index !== (termsData.length - 1) && (
+                    <div className="ml-0 sm:ml-12 mt-8 border-b border-[#E5E0D9]"></div>
+                  )}
+                </section>
+              ))
+            ) : (
+              <div className="py-10 text-center text-[#4B4B4B]">
+                No Terms & Conditions available.
+              </div>
+            )}
 
             {/* Policy Footer */}
             <div className="mt-16 pt-8 border-t border-[#E5E0D9] text-center">
