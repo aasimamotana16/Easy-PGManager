@@ -22,6 +22,7 @@ const serviceRoutes = require('./routes/serviceRoutes');
 const privacyPolicyRoutes = require('./routes/privacyPolicyRoutes');
 const User = require("./models/userModel"); // Add this if you use it for countDocuments
 const Payment = require("./models/paymentModel");
+const cronRoutes = require('./routes/cronRoutes');
 // 1. Import the new PG routes [cite: 2026-01-06]
 const pgRoutes = require('./routes/pgRoutes');
 const roomRoutes = require('./routes/roomRoutes');
@@ -75,6 +76,9 @@ app.use("/api/payments", paymentRoutes);
 
 // Owner Specific Logic
 app.use('/api/owner', ownerRoutes);
+
+// Cron / scheduled jobs (serverless-safe; called by Vercel Cron or external scheduler)
+app.use('/api/cron', cronRoutes);
 
 // Dynamic Reviews (About Page & Admin Management)
 

@@ -34,6 +34,16 @@ const pendingPaymentSchema = mongoose.Schema({
   month: {
     type: String,
     required: true
+  },
+
+  // Reminder tracking (non-breaking additions)
+  dueDateReminderLastSentAt: {
+    type: Date,
+    default: null
+  },
+  dueDateReminderSentCount: {
+    type: Number,
+    default: 0
   }
 }, { timestamps: true });
 
