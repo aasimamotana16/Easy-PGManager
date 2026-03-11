@@ -157,7 +157,7 @@ const Navbar = () => {
 
   return (
     <>
-      <nav className="bg-[#1F1F1F] border-b border-[#E5E0D9]/10 px-4 md:px-6 py-4 flex justify-between items-center sticky top-0 z-[1000]">
+      <nav className="bg-black border-b border-[#E5E0D9]/10 px-4 md:px-6 py-4 flex justify-between items-center sticky top-0 z-[1000]">
         
         {/* LEFT: LOGO */}
         <div className="flex items-center cursor-pointer shrink-0" onClick={() => navigate("/")}>
