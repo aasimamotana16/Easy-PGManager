@@ -4,6 +4,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import theme from "./theme";
+import ScrollToTop from "./components/ScrollToTop";
 
 /* ================= PUBLIC PAGES ================= */
 import Home from "./pages/Home";
@@ -105,6 +106,7 @@ function App() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Router>
+        <ScrollToTop />
         <Routes>
 
           {/* ===== PUBLIC ===== */}
