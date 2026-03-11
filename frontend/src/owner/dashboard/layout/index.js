@@ -41,6 +41,9 @@ const OwnerLayout = () => {
             >
               <FaBars size={24} />
             </button>
+            <span className="ml-3 font-bold text-gray-900">
+              EasyPG Manager
+            </span>
           </div>
         </div>
 
