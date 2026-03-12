@@ -1878,6 +1878,77 @@ const moveIn = async (req, res) => {
       await checkin.save();
     }
 
+    // Ensure the tenant record exists for the owner's Tenant Management list.
+    // This makes the move-in request visible even if tenant creation during payment didn't happen.
+    try {
+      const pgDoc = booking.pgId
+        ? await PG.findById(booking.pgId).select("_id pgName ownerId")
+        : await PG.findOne({ pgName: booking.pgName }).select("_id pgName ownerId");
+
+      const resolvedOwnerId = pgDoc?.ownerId || booking.ownerId || null;
+      const resolvedPgId = pgDoc?._id || booking.pgId || null;
+      if (resolvedOwnerId && resolvedPgId) {
+        const emailNorm = String(booking.tenantEmail || req.user?.email || "").trim().toLowerCase();
+        const tenantName = String(booking.tenantName || req.user?.fullName || "Tenant").trim() || "Tenant";
+        const todayStr = new Date().toISOString().split("T")[0];
+        const joiningDate = String(booking.checkInDate || todayStr);
+
+        const userDoc = await User.findById(userId).select("phone email");
+        const resolvedPhone = String(userDoc?.phone || "").trim() || "Not provided";
+        const securityDeposit = Number(booking.securityDeposit || 0) || 0;
+
+        const emailRegex = emailNorm
+          ? new RegExp(`^${emailNorm.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\$&")}$`, "i")
+          : null;
+
+        let tenantRecord = null;
+        if (emailRegex) {
+          tenantRecord = await Tenant.findOne({ email: emailRegex }).sort({ createdAt: -1 });
+        }
+        if (!tenantRecord) {
+          tenantRecord = await Tenant.findOne({
+            ownerId: resolvedOwnerId,
+            pgId: resolvedPgId,
+            name: tenantName
+          }).sort({ createdAt: -1 });
+        }
+
+        if (!tenantRecord) {
+          await Tenant.create({
+            ownerId: resolvedOwnerId,
+            name: tenantName,
+            phone: resolvedPhone,
+            email: emailNorm || "no-email@easy-pg.local",
+            pgId: resolvedPgId,
+            pgName: pgDoc?.pgName || booking.pgName || "",
+            room: booking.roomType || "N/A",
+            joiningDate,
+            status: "Pending Arrival",
+            securityDeposit
+          });
+        } else {
+          tenantRecord.ownerId = resolvedOwnerId;
+          tenantRecord.pgId = resolvedPgId;
+          tenantRecord.pgName = pgDoc?.pgName || booking.pgName || tenantRecord.pgName;
+          tenantRecord.room = booking.roomType || tenantRecord.room;
+          tenantRecord.joiningDate = tenantRecord.joiningDate || joiningDate;
+          if (String(tenantRecord.status || "").toLowerCase() !== "inactive") {
+            tenantRecord.status = "Pending Arrival";
+          }
+          tenantRecord.securityDeposit = Number(tenantRecord.securityDeposit || securityDeposit);
+          if (emailNorm && (!tenantRecord.email || tenantRecord.email === "no-email@easy-pg.local")) {
+            tenantRecord.email = emailNorm;
+          }
+          if (resolvedPhone && (!tenantRecord.phone || tenantRecord.phone === "0000000000" || tenantRecord.phone === "Not provided")) {
+            tenantRecord.phone = resolvedPhone;
+          }
+          await tenantRecord.save();
+        }
+      }
+    } catch (syncErr) {
+      console.warn("moveIn tenant sync warning:", syncErr?.message || syncErr);
+    }
+
     return res.status(200).json({ success: true, message: 'Move-in requested', status: 'Pending' });
   } catch (error) {
     console.error('moveIn error:', error);
