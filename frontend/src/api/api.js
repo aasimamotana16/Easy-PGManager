@@ -65,6 +65,8 @@ export const uploadUserDocument = (formData) =>
     headers: { "Content-Type": "multipart/form-data" },
   });
 export const deleteUserDocument = (documentType) => API.post("/users/delete-doc", { documentType });
+export const downloadUserDocumentFile = (documentType) =>
+  API.get(`/users/documents/file/${documentType}`, { responseType: "blob" });
 export const getMyAgreement = () => API.get("/users/agreement");
 export const getMyTimeline = () => API.get("/users/timeline");
 export const getMyCheckIns = () => API.get("/users/checkins");

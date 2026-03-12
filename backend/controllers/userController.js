@@ -20,6 +20,12 @@ const fs = require('fs');
 const path = require('path');
 const { validateMoveIn } = require("../utils/leaseUtils");
 const { resolveVariantPricing } = require("../utils/pricingUtils");
+const {
+  uploadBufferToGridFS,
+  deleteGridFSFile,
+  getGridFSFileInfo,
+  openGridFSDownloadStream
+} = require("../services/gridfsService");
 // Moved to top to avoid redundant requiring during PDF generation
 const { jsPDF } = require('jspdf');
 const { autoTable } = require('jspdf-autotable');
@@ -847,19 +853,62 @@ const getMyDocuments = async (req, res) => {
 
 const uploadUserDocument = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id);
+    const user = await User.findById(req.user._id)
+      .select(
+        "+idDocument.fileUrl +idDocument.storageProvider +idDocument.storageId +idDocument.storageResourceType " +
+        "+aadharCard.fileUrl +aadharCard.storageProvider +aadharCard.storageId +aadharCard.storageResourceType " +
+        "+rentalAgreementCopy.fileUrl +rentalAgreementCopy.storageProvider +rentalAgreementCopy.storageId +rentalAgreementCopy.storageResourceType"
+      );
     const fieldName = req.body.documentType; 
     const allowedDocumentFields = ["idDocument", "aadharCard", "rentalAgreementCopy"];
 
-    if (!req.file) return res.status(400).json({ message: "No file uploaded" });
+    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+    if (!req.file) return res.status(400).json({ success: false, message: "No file uploaded" });
     if (!allowedDocumentFields.includes(fieldName)) {
-      return res.status(400).json({ message: "Invalid document type" });
+      return res.status(400).json({ success: false, message: "Invalid document type" });
+    }
+
+    const originalName = String(req.file.originalname || "document");
+    const ext = path.extname(originalName) || "";
+    const fileBuffer = req.file.buffer || (req.file.path ? fs.readFileSync(req.file.path) : null);
+    if (!fileBuffer) {
+      return res.status(400).json({ success: false, message: "No file uploaded" });
+    }
+
+    // Store in MongoDB GridFS so it works on Vercel (no local disk persistence required).
+    const safeExt = ext && ext.length <= 10 ? ext : "";
+    const filename = `user-${user._id}-${fieldName}-${Date.now()}${safeExt}`;
+    const contentType = String(req.file.mimetype || "application/octet-stream");
+
+    const uploadResult = await uploadBufferToGridFS(fileBuffer, {
+      bucketName: "userDocuments",
+      filename,
+      contentType,
+      metadata: {
+        userId: String(user._id),
+        documentType: fieldName,
+        originalName
+      }
+    });
+
+    const fileUrl = `/api/users/documents/file/${fieldName}`;
+    const storageProvider = "mongo";
+    const storageId = uploadResult.fileId;
+    const storageResourceType = "gridfs";
+
+    // Best-effort cleanup if replacing an existing stored file
+    const prevDoc = user[fieldName] || {};
+    if (prevDoc?.storageProvider === "mongo" && prevDoc?.storageId && prevDoc.storageId !== storageId) {
+      await deleteGridFSFile(prevDoc.storageId, { bucketName: "userDocuments" });
     }
 
     user[fieldName] = {
       status: "Uploaded",
-      fileUrl: `/uploads/documents/${req.file.filename}`,
-      uploadedAt: Date.now(),
+      fileUrl,
+      storageProvider,
+      storageId,
+      storageResourceType,
+      uploadedAt: new Date(),
       reviewedAt: null,
       reviewNote: ""
     };
@@ -867,25 +916,82 @@ const uploadUserDocument = async (req, res) => {
     await user.save();
     res.status(200).json({ success: true, data: user[fieldName] });
   } catch (error) {
-    res.status(500).json({ message: "Upload failed" });
+    console.error("Upload document error:", error);
+
+    if (error?.code === "MONGO_NOT_READY") {
+      return res.status(503).json({ success: false, message: "Upload service is temporarily unavailable. Please retry." });
+    }
+
+    res.status(500).json({ success: false, message: "Upload failed" });
+  }
+};
+
+const getMyDocumentFile = async (req, res) => {
+  try {
+    const documentType = String(req.params.documentType || "").trim();
+    const allowedDocumentFields = ["idDocument", "aadharCard", "rentalAgreementCopy"];
+    if (!allowedDocumentFields.includes(documentType)) {
+      return res.status(400).json({ success: false, message: "Invalid document type" });
+    }
+
+    const user = await User.findById(req.user._id)
+      .select(
+        "+idDocument.storageProvider +idDocument.storageId +idDocument.fileUrl " +
+        "+aadharCard.storageProvider +aadharCard.storageId +aadharCard.fileUrl " +
+        "+rentalAgreementCopy.storageProvider +rentalAgreementCopy.storageId +rentalAgreementCopy.fileUrl"
+      );
+    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+
+    const docMeta = user?.[documentType] || null;
+    if (!docMeta?.storageId || docMeta.storageProvider !== "mongo") {
+      return res.status(404).json({ success: false, message: "Document not found" });
+    }
+
+    const fileInfo = await getGridFSFileInfo(docMeta.storageId, { bucketName: "userDocuments" });
+    if (!fileInfo) return res.status(404).json({ success: false, message: "Document not found" });
+
+    // Enforce ownership
+    const owner = String(fileInfo?.metadata?.userId || "");
+    if (owner && owner !== String(user._id)) {
+      return res.status(403).json({ success: false, message: "Not authorized" });
+    }
+
+    const contentType = String(fileInfo.contentType || "application/octet-stream");
+    const filename = String(fileInfo.filename || `${documentType}`);
+
+    res.setHeader("Content-Type", contentType);
+    res.setHeader("Content-Disposition", `inline; filename=\"${filename.replace(/\"/g, "") }\"`);
+
+    const stream = openGridFSDownloadStream(docMeta.storageId, { bucketName: "userDocuments" });
+    stream.on("error", () => {
+      if (!res.headersSent) res.status(500);
+      res.end();
+    });
+    stream.pipe(res);
+  } catch (error) {
+    console.error("getMyDocumentFile error:", error);
+    res.status(500).json({ success: false, message: "Failed to load document" });
   }
 };
 const deleteUserDocument = async (req, res) => {
   try {
     const { documentType } = req.body; // Matches 'idDocument', 'aadharCard', etc.
-    const user = await User.findById(req.user._id);
+    const user = await User.findById(req.user._id)
+      .select(
+        "+idDocument.fileUrl +idDocument.storageProvider +idDocument.storageId +idDocument.storageResourceType " +
+        "+aadharCard.fileUrl +aadharCard.storageProvider +aadharCard.storageId +aadharCard.storageResourceType " +
+        "+rentalAgreementCopy.fileUrl +rentalAgreementCopy.storageProvider +rentalAgreementCopy.storageId +rentalAgreementCopy.storageResourceType"
+      );
 
     if (!user) return res.status(404).json({ success: false, message: "User not found" });
 
-    // ? Robust Path Resolution using process.cwd()
-    if (user[documentType] && user[documentType].fileUrl) {
-      const relativePath = user[documentType].fileUrl.startsWith('/') 
-        ? user[documentType].fileUrl.substring(1) 
-        : user[documentType].fileUrl;
-
+    const docMeta = user?.[documentType] || null;
+    if (docMeta?.storageProvider === "mongo" && docMeta?.storageId) {
+      await deleteGridFSFile(docMeta.storageId, { bucketName: "userDocuments" });
+    } else if (docMeta?.fileUrl) {
+      // Local disk cleanup (best-effort)
+      const relativePath = docMeta.fileUrl.startsWith('/') ? docMeta.fileUrl.substring(1) : docMeta.fileUrl;
       const filePath = path.join(process.cwd(), relativePath);
-      
-      // ? Only try to delete if the file actually exists on the server
       if (fs.existsSync(filePath)) {
         fs.unlinkSync(filePath);
         console.log(`Successfully deleted file: ${filePath}`);
@@ -896,6 +1002,9 @@ const deleteUserDocument = async (req, res) => {
     user[documentType] = {
       status: "Pending",
       fileUrl: "",
+      storageProvider: "",
+      storageId: "",
+      storageResourceType: "",
       uploadedAt: null
     };
 
@@ -1973,6 +2082,7 @@ module.exports = {
   getMyAgreement,
   getMyDocuments,
   uploadUserDocument,
+  getMyDocumentFile,
   deleteUserDocument,
   getMyOwnerContact,
   getMyTimeline, 

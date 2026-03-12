@@ -8,7 +8,7 @@ import {
   FaFileImport,
   FaTrash
 } from "react-icons/fa";
-import { uploadUserDocument, getMyDocuments, deleteUserDocument } from "../../../api/api";
+import { uploadUserDocument, getMyDocuments, deleteUserDocument, downloadUserDocumentFile } from "../../../api/api";
 import { API_ORIGIN } from "../../../config/apiBaseUrl";
 
 const Documents = () => {
@@ -101,16 +101,44 @@ const Documents = () => {
       }
     } catch (error) {
       console.error("Upload error:", error);
-      Swal.fire({ title: 'FAILED', text: 'Upload failed', icon: 'error', confirmButtonColor: '#000' });
+      const serverMsg = error?.response?.data?.message ? String(error.response.data.message) : '';
+      Swal.fire({
+        title: 'FAILED',
+        text: serverMsg || 'Upload failed',
+        icon: 'error',
+        confirmButtonColor: '#000'
+      });
     } finally {
       setLoading(false);
       e.target.value = null;
     }
   };
 
-  const handleView = (doc) => {
-    if (!doc.fileUrl) return;
-    window.open(`${API_ORIGIN}${doc.fileUrl}`, "_blank");
+  const handleView = async (doc) => {
+    if (!doc?.fileUrl) return;
+
+    const url = String(doc.fileUrl || "");
+    // Backward compatibility: if an older record stored an absolute URL (e.g., Cloudinary), just open it.
+    if (url.match(/^https?:\/\//i)) {
+      window.open(url, "_blank");
+      return;
+    }
+
+    // Prefer authenticated download for API-based file URLs (works on Vercel + GridFS).
+    try {
+      setLoading(true);
+      const response = await downloadUserDocumentFile(doc.fieldName);
+      const contentType = response?.headers?.["content-type"] || "application/octet-stream";
+      const blob = new Blob([response.data], { type: contentType });
+      const blobUrl = window.URL.createObjectURL(blob);
+      window.open(blobUrl, "_blank");
+      setTimeout(() => window.URL.revokeObjectURL(blobUrl), 60 * 1000);
+    } catch (error) {
+      console.error("View document error:", error);
+      Swal.fire({ title: 'ERROR', text: 'Failed to open document', icon: 'error', confirmButtonColor: '#000' });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleDelete = (doc) => {

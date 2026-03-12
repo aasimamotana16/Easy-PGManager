@@ -67,6 +67,9 @@ const userSchema = new mongoose.Schema(
     idDocument: {
       status: { type: String, enum: ["Pending", "Uploaded", "Verified", "Rejected"], select: false },
       fileUrl: { type: String, select: false },
+      storageProvider: { type: String, select: false, default: "" },
+      storageId: { type: String, select: false, default: "" },
+      storageResourceType: { type: String, select: false, default: "" },
       uploadedAt: { type: Date, select: false },
       reviewedAt: { type: Date, select: false },
       reviewNote: { type: String, select: false },
@@ -74,6 +77,9 @@ const userSchema = new mongoose.Schema(
     aadharCard: {
       status: { type: String, enum: ["Pending", "Uploaded", "Verified", "Rejected"], select: false },
       fileUrl: { type: String, select: false },
+      storageProvider: { type: String, select: false, default: "" },
+      storageId: { type: String, select: false, default: "" },
+      storageResourceType: { type: String, select: false, default: "" },
       uploadedAt: { type: Date, select: false },
       reviewedAt: { type: Date, select: false },
       reviewNote: { type: String, select: false },
@@ -81,6 +87,9 @@ const userSchema = new mongoose.Schema(
     rentalAgreementCopy: {
       status: { type: String, enum: ["Pending", "Uploaded", "Verified", "Rejected"], select: false },
       fileUrl: { type: String, select: false },
+      storageProvider: { type: String, select: false, default: "" },
+      storageId: { type: String, select: false, default: "" },
+      storageResourceType: { type: String, select: false, default: "" },
       uploadedAt: { type: Date, select: false },
       reviewedAt: { type: Date, select: false },
       reviewNote: { type: String, select: false },

@@ -14,6 +14,7 @@ const {
   getMyAgreement,
   getMyDocuments,
   uploadUserDocument,
+  getMyDocumentFile,
   deleteUserDocument,
   getMyOwnerContact,
   getMyTimeline,
@@ -41,6 +42,14 @@ const {
 
 const { protect, isTenant } = require("../middleware/authMiddleware");
 const upload = require("../middleware/uploadMiddleware");
+const multer = require("multer");
+
+// Vercel/serverless note: disk writes under the repo are read-only.
+// Use memory storage for user document uploads; controller persists it to MongoDB (GridFS).
+const memoryUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 }
+});
 
 /* =========================
     PUBLIC ROUTES
@@ -83,7 +92,8 @@ router.delete("/profile/picture", protect, removeProfilePicture);
 ========================= */
 router.get("/agreement", protect, getMyAgreement);
 router.get("/documents", protect, getMyDocuments);
-router.post("/upload-doc", protect, upload.single("document"), uploadUserDocument);
+router.get("/documents/file/:documentType", protect, getMyDocumentFile);
+router.post("/upload-doc", protect, memoryUpload.single("document"), uploadUserDocument);
 router.post("/delete-doc", protect, deleteUserDocument);
 router.get("/download-report", protect, downloadTenantReport);
 
