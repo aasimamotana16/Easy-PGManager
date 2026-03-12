@@ -219,11 +219,8 @@ const drawInventoryTable = (doc, inventoryRows) => {
   doc.x = CONTENT_LEFT;
 };
 
-const writePdf = async ({ outputPath, agreementData }) => {
-  await fs.promises.mkdir(path.dirname(outputPath), { recursive: true });
-
+const writePdfToStream = async ({ stream, agreementData }) => {
   const doc = new PDFDocument({ size: "A4", margin: 50 });
-  const stream = fs.createWriteStream(outputPath);
   doc.pipe(stream);
 
   doc.font("Helvetica-Bold").fontSize(18).fillColor("#111111").text("ELECTRONIC RENTAL AGREEMENT", {
@@ -316,7 +313,98 @@ const writePdf = async ({ outputPath, agreementData }) => {
   await new Promise((resolve, reject) => {
     stream.on("finish", resolve);
     stream.on("error", reject);
+    doc.on("error", reject);
   });
+};
+
+const writePdf = async ({ outputPath, agreementData }) => {
+  await fs.promises.mkdir(path.dirname(outputPath), { recursive: true });
+  const stream = fs.createWriteStream(outputPath);
+  await writePdfToStream({ stream, agreementData });
+};
+
+const buildAgreementPreviewDataByPgId = async (pgId, options = {}) => {
+  const pgDoc = await Pg.findById(pgId).lean();
+  if (!pgDoc) {
+    throw new Error("PG not found for agreement preview");
+  }
+
+  const owner = pgDoc?.ownerId ? await User.findById(pgDoc.ownerId).select("fullName").lean() : null;
+  const agreementSettings = await getAgreementSettingsFromAdminConfig();
+
+  const requestedRoomType = String(options?.roomType || "").trim();
+  const requestedVariantLabel = String(options?.variantLabel || "").trim();
+  const previewPricing = resolveVariantPricing({
+    roomPrices: pgDoc?.roomPrices,
+    roomType: requestedRoomType || pgDoc?.occupancy || "Single",
+    variantLabel: requestedVariantLabel,
+    fallbackRent: Number(pgDoc?.price || 0),
+    fallbackDeposit: Number(pgDoc?.securityDeposit || 0)
+  });
+  const inventory = resolveInventory(pgDoc);
+
+  const ownerName = String(owner?.fullName || "Owner");
+  const tenantName = "Prospective Tenant";
+  const propertyName = String(pgDoc?.pgName || "PG Property");
+  const checkInDate = "To be decided";
+  const checkOutDate = "As per booking";
+  const city = String(pgDoc?.city || "").trim() || "Not specified";
+  const area = String(pgDoc?.area || "").trim() || "Not specified";
+  const address = String(pgDoc?.address || pgDoc?.location || "").trim() || "Not specified";
+  const facilities = normalizeListValues(pgDoc?.facilities, pgDoc?.amenities);
+  const rules = [
+    formatRuleStatus("Smoking", Boolean(pgDoc?.rules?.smoking)),
+    formatRuleStatus("Alcohol", Boolean(pgDoc?.rules?.alcohol)),
+    formatRuleStatus("Visitors", Boolean(pgDoc?.rules?.visitors)),
+    formatRuleStatus("Pets", Boolean(pgDoc?.rules?.pets))
+  ];
+  const curfew = String(pgDoc?.rules?.curfew || "").trim();
+  if (curfew) rules.push(`Gate Closing Time: ${curfew}`);
+
+  const roomTypeLabel = String(previewPricing.variantLabel || requestedRoomType || pgDoc?.occupancy || "Not specified");
+  const acTypeLabel = String(previewPricing.acType || "Not specified");
+  const rentAmount = Number(previewPricing.rentAmount || pgDoc?.price || 0);
+  const securityDeposit = Number(previewPricing.securityDeposit || pgDoc?.securityDeposit || 0);
+
+  const safePgToken = String(pgDoc?._id || pgId).replace(/[^a-zA-Z0-9_-]/g, "");
+
+  return {
+    pgId: pgDoc._id,
+    safePgToken,
+    agreementData: {
+      bookingCode: `PREVIEW-${safePgToken}`,
+      ownerName,
+      tenantName,
+      propertyName,
+      city,
+      area,
+      address,
+      variantLabel: roomTypeLabel,
+      checkInDate,
+      checkOutDate,
+      roomTypeLabel,
+      acTypeLabel,
+      rentAmount,
+      securityDeposit,
+      facilityCount: facilities.length,
+      facilities,
+      rules,
+      inventoryRows: [
+        { item: "Fans", quantity: Number(inventory.fanCount ?? 0) || 0 },
+        { item: "Lights", quantity: Number(inventory.lightCount ?? 0) || 0 },
+        { item: "Beds", quantity: Number(inventory.bedCount ?? 0) || 0 },
+        { item: "Mattresses", quantity: Number(inventory.mattressCount ?? 0) || 0 },
+        { item: "Cupboards", quantity: Number(inventory.cupboardCount ?? 0) || 0 }
+      ],
+      fixedClauses: (Array.isArray(agreementSettings?.fixedClauses) ? agreementSettings.fixedClauses : [])
+        .map((clause) => String(clause || "").trim())
+        .filter(Boolean),
+      jurisdiction: String(agreementSettings?.jurisdiction || "").trim(),
+      platformDisclaimer: String(agreementSettings?.platformDisclaimer || "").trim(),
+      esignConsentText:
+        String(agreementSettings?.esignConsentText || "").trim() || "Preview copy for booking terms."
+    }
+  };
 };
 
 const generateAgreementPdf = async (bookingId) => {
@@ -437,87 +525,16 @@ const generateAgreementPdf = async (bookingId) => {
 };
 
 const generateAgreementPreviewPdfByPgId = async (pgId, options = {}) => {
-  const pgDoc = await Pg.findById(pgId).lean();
-  if (!pgDoc) {
-    throw new Error("PG not found for agreement preview");
-  }
-
-  const owner = pgDoc?.ownerId ? await User.findById(pgDoc.ownerId).select("fullName").lean() : null;
-  const agreementSettings = await getAgreementSettingsFromAdminConfig();
-
-  const requestedRoomType = String(options?.roomType || "").trim();
-  const requestedVariantLabel = String(options?.variantLabel || "").trim();
-  const previewPricing = resolveVariantPricing({
-    roomPrices: pgDoc?.roomPrices,
-    roomType: requestedRoomType || pgDoc?.occupancy || "Single",
-    variantLabel: requestedVariantLabel,
-    fallbackRent: Number(pgDoc?.price || 0),
-    fallbackDeposit: Number(pgDoc?.securityDeposit || 0)
-  });
-  const inventory = resolveInventory(pgDoc);
-
-  const ownerName = String(owner?.fullName || "Owner");
-  const tenantName = "Prospective Tenant";
-  const propertyName = String(pgDoc?.pgName || "PG Property");
-  const checkInDate = "To be decided";
-  const checkOutDate = "As per booking";
-  const city = String(pgDoc?.city || "").trim() || "Not specified";
-  const area = String(pgDoc?.area || "").trim() || "Not specified";
-  const address = String(pgDoc?.address || pgDoc?.location || "").trim() || "Not specified";
-  const facilities = normalizeListValues(pgDoc?.facilities, pgDoc?.amenities);
-  const rules = [
-    formatRuleStatus("Smoking", Boolean(pgDoc?.rules?.smoking)),
-    formatRuleStatus("Alcohol", Boolean(pgDoc?.rules?.alcohol)),
-    formatRuleStatus("Visitors", Boolean(pgDoc?.rules?.visitors)),
-    formatRuleStatus("Pets", Boolean(pgDoc?.rules?.pets))
-  ];
-  const curfew = String(pgDoc?.rules?.curfew || "").trim();
-  if (curfew) rules.push(`Gate Closing Time: ${curfew}`);
-
-  const roomTypeLabel = String(previewPricing.variantLabel || requestedRoomType || pgDoc?.occupancy || "Not specified");
-  const acTypeLabel = String(previewPricing.acType || "Not specified");
-  const rentAmount = Number(previewPricing.rentAmount || pgDoc?.price || 0);
-  const securityDeposit = Number(previewPricing.securityDeposit || pgDoc?.securityDeposit || 0);
-
-  const safePgToken = String(pgDoc?._id || pgId).replace(/[^a-zA-Z0-9_-]/g, "");
+  const built = await buildAgreementPreviewDataByPgId(pgId, options);
+  const safePgToken = built.safePgToken;
+  const roomTypeLabel = String(options?.variantLabel || options?.roomType || "").trim() || "preview";
   const fileName = `agreement-preview-${safePgToken}-${Date.now()}.pdf`;
   const absolutePath = path.join(__dirname, "..", "uploads", "agreements", fileName);
   const publicUrl = `/uploads/agreements/${fileName}`;
 
   await writePdf({
     outputPath: absolutePath,
-    agreementData: {
-      bookingCode: `PREVIEW-${safePgToken}`,
-      ownerName,
-      tenantName,
-      propertyName,
-      city,
-      area,
-      address,
-      variantLabel: roomTypeLabel,
-      checkInDate,
-      checkOutDate,
-      roomTypeLabel,
-      acTypeLabel,
-      rentAmount,
-      securityDeposit,
-      facilityCount: facilities.length,
-      facilities,
-      rules,
-      inventoryRows: [
-        { item: "Fans", quantity: Number(inventory.fanCount ?? 0) || 0 },
-        { item: "Lights", quantity: Number(inventory.lightCount ?? 0) || 0 },
-        { item: "Beds", quantity: Number(inventory.bedCount ?? 0) || 0 },
-        { item: "Mattresses", quantity: Number(inventory.mattressCount ?? 0) || 0 },
-        { item: "Cupboards", quantity: Number(inventory.cupboardCount ?? 0) || 0 }
-      ],
-      fixedClauses: (Array.isArray(agreementSettings?.fixedClauses) ? agreementSettings.fixedClauses : [])
-        .map((clause) => String(clause || "").trim())
-        .filter(Boolean),
-      jurisdiction: String(agreementSettings?.jurisdiction || "").trim(),
-      platformDisclaimer: String(agreementSettings?.platformDisclaimer || "").trim(),
-      esignConsentText: String(agreementSettings?.esignConsentText || "").trim() || "Preview copy for booking terms."
-    }
+    agreementData: built.agreementData
   });
 
   return {
@@ -529,5 +546,7 @@ const generateAgreementPreviewPdfByPgId = async (pgId, options = {}) => {
 
 module.exports = {
   generateAgreementPdf,
-  generateAgreementPreviewPdfByPgId
+  generateAgreementPreviewPdfByPgId,
+  buildAgreementPreviewDataByPgId,
+  writePdfToStream
 };

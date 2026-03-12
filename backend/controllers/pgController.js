@@ -1,7 +1,7 @@
 const PG = require('../models/pgModel');
 const Booking = require('../models/bookingModel');
 const Tenant = require('../models/tenantModel');
-const { generateAgreementPreviewPdfByPgId } = require('../utils/agreementPdf');
+const { buildAgreementPreviewDataByPgId, writePdfToStream } = require('../utils/agreementPdf');
 
 const CITY_ALIASES = {
   ahmedabad: ["ahmedabad", "ahemdabad", "amdavad"],
@@ -461,11 +461,19 @@ exports.getPgAgreementPreview = async (req, res) => {
   try {
     const roomType = String(req.query?.roomType || "").trim();
     const variantLabel = String(req.query?.variantLabel || "").trim();
-    const result = await generateAgreementPreviewPdfByPgId(req.params.id, {
+
+    const built = await buildAgreementPreviewDataByPgId(req.params.id, {
       roomType,
       variantLabel
     });
-    return res.redirect(result.agreementPdfUrl);
+
+    const fileToken = String(built.safePgToken || req.params.id).replace(/[^a-zA-Z0-9_-]/g, "");
+    const fileName = `agreement-preview-${fileToken}.pdf`;
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `inline; filename=\"${fileName}\"`);
+
+    await writePdfToStream({ stream: res, agreementData: built.agreementData });
+    return;
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
   }
