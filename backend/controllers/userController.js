@@ -1880,14 +1880,47 @@ const moveIn = async (req, res) => {
 
     // Ensure the tenant record exists for the owner's Tenant Management list.
     // This makes the move-in request visible even if tenant creation during payment didn't happen.
-    try {
-      const pgDoc = booking.pgId
-        ? await PG.findById(booking.pgId).select("_id pgName ownerId")
-        : await PG.findOne({ pgName: booking.pgName }).select("_id pgName ownerId");
+    const tenantSync = {
+      attempted: true,
+      created: false,
+      updated: false,
+      skipped: false,
+      reason: "",
+      tenantId: null,
+      resolvedOwnerId: booking?.ownerId ? String(booking.ownerId) : null,
+      resolvedPgId: booking?.pgId ? String(booking.pgId) : null
+    };
 
-      const resolvedOwnerId = pgDoc?.ownerId || booking.ownerId || null;
-      const resolvedPgId = pgDoc?._id || booking.pgId || null;
-      if (resolvedOwnerId && resolvedPgId) {
+    try {
+      // Booking is the authoritative source for ownership.
+      const resolvedOwnerId = booking?.ownerId || null;
+
+      // Prefer booking.pgId; if missing (legacy bookings), resolve PG by ownerId + pgName.
+      let pgDoc = null;
+      if (booking?.pgId) {
+        pgDoc = await PG.findById(booking.pgId).select("_id pgName ownerId");
+      }
+      if (!pgDoc && resolvedOwnerId && booking?.pgName) {
+        pgDoc = await PG.findOne({ ownerId: resolvedOwnerId, pgName: booking.pgName }).select("_id pgName ownerId");
+      }
+      if (!pgDoc && booking?.pgName) {
+        // Last-resort fallback (pgName may not be unique across owners)
+        pgDoc = await PG.findOne({ pgName: booking.pgName }).select("_id pgName ownerId");
+      }
+
+      const resolvedPgId = booking?.pgId || pgDoc?._id || null;
+      const resolvedPgName = pgDoc?.pgName || booking?.pgName || "";
+
+      tenantSync.resolvedOwnerId = resolvedOwnerId ? String(resolvedOwnerId) : null;
+      tenantSync.resolvedPgId = resolvedPgId ? String(resolvedPgId) : null;
+
+      if (!resolvedOwnerId) {
+        tenantSync.skipped = true;
+        tenantSync.reason = "Missing booking.ownerId";
+      } else if (!resolvedPgId) {
+        tenantSync.skipped = true;
+        tenantSync.reason = "Missing booking.pgId and unable to resolve PG";
+      } else {
         const emailNorm = String(booking.tenantEmail || req.user?.email || "").trim().toLowerCase();
         const tenantName = String(booking.tenantName || req.user?.fullName || "Tenant").trim() || "Tenant";
         const todayStr = new Date().toISOString().split("T")[0];
@@ -1895,47 +1928,64 @@ const moveIn = async (req, res) => {
 
         const userDoc = await User.findById(userId).select("phone email");
         const resolvedPhone = String(userDoc?.phone || "").trim() || "Not provided";
-        const securityDeposit = Number(booking.securityDeposit || 0) || 0;
+        const securityDepositAmount = Number(booking.securityDeposit || 0) || 0;
 
         const emailRegex = emailNorm
           ? new RegExp(`^${emailNorm.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\$&")}$`, "i")
           : null;
 
+        // IMPORTANT: avoid global email matches across owners.
+        const tenantFindOr = [
+          emailRegex ? { email: emailRegex } : null,
+          tenantName ? { name: new RegExp(`^${tenantName.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\$&")}$`, "i") } : null
+        ].filter(Boolean);
+
+        const tenantScope = {
+          ownerId: resolvedOwnerId,
+          $or: [
+            { pgId: resolvedPgId },
+            ...(resolvedPgName ? [{ pgName: resolvedPgName }] : [])
+          ]
+        };
+
         let tenantRecord = null;
-        if (emailRegex) {
-          tenantRecord = await Tenant.findOne({ email: emailRegex }).sort({ createdAt: -1 });
-        }
-        if (!tenantRecord) {
+        if (tenantFindOr.length > 0) {
           tenantRecord = await Tenant.findOne({
-            ownerId: resolvedOwnerId,
-            pgId: resolvedPgId,
-            name: tenantName
+            ...tenantScope,
+            $and: [{ $or: tenantFindOr }]
           }).sort({ createdAt: -1 });
         }
 
+        if (!tenantRecord && emailRegex) {
+          tenantRecord = await Tenant.findOne({ ownerId: resolvedOwnerId, email: emailRegex })
+            .sort({ createdAt: -1 });
+        }
+
         if (!tenantRecord) {
-          await Tenant.create({
+          const created = await Tenant.create({
             ownerId: resolvedOwnerId,
             name: tenantName,
             phone: resolvedPhone,
             email: emailNorm || "no-email@easy-pg.local",
             pgId: resolvedPgId,
-            pgName: pgDoc?.pgName || booking.pgName || "",
+            pgName: resolvedPgName,
             room: booking.roomType || "N/A",
             joiningDate,
             status: "Pending Arrival",
-            securityDeposit
+            securityDeposit: securityDepositAmount
           });
+          tenantSync.created = true;
+          tenantSync.tenantId = created?._id ? String(created._id) : null;
         } else {
           tenantRecord.ownerId = resolvedOwnerId;
           tenantRecord.pgId = resolvedPgId;
-          tenantRecord.pgName = pgDoc?.pgName || booking.pgName || tenantRecord.pgName;
+          tenantRecord.pgName = resolvedPgName || tenantRecord.pgName;
           tenantRecord.room = booking.roomType || tenantRecord.room;
           tenantRecord.joiningDate = tenantRecord.joiningDate || joiningDate;
           if (String(tenantRecord.status || "").toLowerCase() !== "inactive") {
             tenantRecord.status = "Pending Arrival";
           }
-          tenantRecord.securityDeposit = Number(tenantRecord.securityDeposit || securityDeposit);
+          tenantRecord.securityDeposit = Number(tenantRecord.securityDeposit || securityDepositAmount);
           if (emailNorm && (!tenantRecord.email || tenantRecord.email === "no-email@easy-pg.local")) {
             tenantRecord.email = emailNorm;
           }
@@ -1943,13 +1993,22 @@ const moveIn = async (req, res) => {
             tenantRecord.phone = resolvedPhone;
           }
           await tenantRecord.save();
+          tenantSync.updated = true;
+          tenantSync.tenantId = tenantRecord?._id ? String(tenantRecord._id) : null;
         }
       }
     } catch (syncErr) {
+      tenantSync.skipped = true;
+      tenantSync.reason = `Tenant sync failed: ${syncErr?.message || syncErr}`;
       console.warn("moveIn tenant sync warning:", syncErr?.message || syncErr);
     }
 
-    return res.status(200).json({ success: true, message: 'Move-in requested', status: 'Pending' });
+    return res.status(200).json({
+      success: true,
+      message: 'Move-in requested',
+      status: 'Pending',
+      tenantSync
+    });
   } catch (error) {
     console.error('moveIn error:', error);
     return res.status(500).json({ success: false, message: 'Failed to request move-in' });
