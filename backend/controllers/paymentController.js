@@ -492,8 +492,45 @@ const verifyPayment = async (req, res) => {
       const normalizedPgId = targetBooking?.pgId || pgId || null;
       const pgDoc = normalizedPgId ? await Pg.findById(normalizedPgId).select("_id pgName ownerId price securityDeposit roomPrices agreementTemplate") : null;
 
-      const paymentMonth = month || new Date().toLocaleString("en-US", { month: "short", year: "numeric" });
       const normalizedPgName = pgDoc?.pgName || targetBooking?.pgName || null;
+
+      let paymentMonth = month || new Date().toLocaleString("en-US", { month: "short", year: "numeric" });
+      const normalizedPaymentType = String(type || "").toUpperCase();
+      // If client didn't send a billing month for MONTHLY_RENT, infer it from the relevant pending cycle.
+      // This prevents all payments being recorded under the current month and fixes history collapsing.
+      if (!month && normalizedPaymentType === "MONTHLY_RENT") {
+        try {
+          const pendingQuery = {
+            status: { $in: ["Pending", "Overdue"] },
+            $or: [
+              { tenant: req.user.id },
+              { tenantName: tenantName }
+            ]
+          };
+          const pgMatchers = [
+            normalizedPgId ? { pg: normalizedPgId } : null,
+            normalizedPgName ? { pgName: normalizedPgName } : null
+          ].filter(Boolean);
+          if (pgMatchers.length > 0) {
+            pendingQuery.$and = [{ $or: pgMatchers }];
+          }
+          const pendingPaymentsRaw = await PendingPayment.find(pendingQuery)
+            .sort({ dueDate: 1 })
+            .select("month dueDate");
+          const pendingPayment = pickRelevantPendingPayment(pendingPaymentsRaw);
+          if (pendingPayment) {
+            const due = pendingPayment.dueDate ? new Date(pendingPayment.dueDate) : null;
+            paymentMonth =
+              pendingPayment.month ||
+              (due && !Number.isNaN(due.getTime())
+                ? due.toLocaleString("en-US", { month: "short", year: "numeric" })
+                : paymentMonth);
+          }
+        } catch (inferErr) {
+          // Non-critical: keep default paymentMonth
+        }
+      }
+
 
       // Idempotency guard: transactionId is unique, so retries / refreshes should not create duplicates.
       const existingByTransaction = await Payment.findOne({ transactionId: razorpay_payment_id })
@@ -698,7 +735,6 @@ const verifyPayment = async (req, res) => {
         }
       }
 
-      const normalizedPaymentType = String(type || "").toUpperCase();
       if (normalizedPaymentType === "MONTHLY_RENT") {
         // Mark pending due as paid for this tenant/PG/month.
         const pgMatcher = [
@@ -890,23 +926,12 @@ const getUserPaymentStats = async (req, res) => {
       .sort({ paymentDate: -1 })
       .select("month paymentDate amountPaid paymentStatus _id pgId pgName tenantName");
 
-    // Keep latest successful payment per month (prevents stale/duplicate legacy entries in history)
-    const latestByMonth = new Map();
-    historyRaw.forEach((p) => {
-      const monthKey =
-        p.month || new Date(p.paymentDate).toLocaleString("en-US", { month: "short", year: "numeric" });
-      if (!latestByMonth.has(monthKey)) {
-        latestByMonth.set(monthKey, p);
-      }
-    });
-    const filteredHistoryRaw = Array.from(latestByMonth.values()).sort(
-      (a, b) => new Date(b.paymentDate) - new Date(a.paymentDate)
-    );
-
-    const totalPaid = filteredHistoryRaw.reduce((sum, p) => sum + (Number(p.amountPaid) || 0), 0);
-    let history = filteredHistoryRaw.map((p) => ({
+    const totalPaid = historyRaw.reduce((sum, p) => sum + (Number(p.amountPaid) || 0), 0);
+    let history = historyRaw.map((p) => ({
       id: p._id,
-      month: p.month,
+      month:
+        p.month ||
+        new Date(p.paymentDate).toLocaleString("en-US", { month: "short", year: "numeric" }),
       date: new Date(p.paymentDate).toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" }),
       amount: Number(p.amountPaid) || 0,
       status: "Paid",
