@@ -143,6 +143,13 @@ const Payments = () => {
     return 'MOVE_IN_PAYMENT';
   })();
 
+  const isMoveInRentDueOnly =
+    stayStatus !== 'Active' &&
+    Number(paymentData.nextPayment?.rentDue || 0) > 0 &&
+    Number(paymentData.nextPayment?.securityDepositDue || 0) <= 0;
+
+  const payNowLabel = isMoveInRentDueOnly ? 'PAY RENT & MOVE-IN' : 'PAY NOW';
+
   let showPayNow = false;
   let showExtendStay = false;
 
@@ -322,7 +329,7 @@ const Payments = () => {
                   style={{ backgroundColor: colors.primary }}
                   onSuccess={() => { fetchPaymentDetails(); fetchAgreementStatus(); }}
                 >
-                  {isProcessing ? "PROCESSING..." : "PAY NOW"}
+                  {isProcessing ? "PROCESSING..." : payNowLabel}
                 </PayNowButton>
               )}
 
@@ -368,7 +375,7 @@ const Payments = () => {
                   style={{ backgroundColor: colors.primary }}
                   onSuccess={() => { fetchPaymentDetails(); fetchAgreementStatus(); }}
                 >
-                  {stayStatus === 'Pending' ? "AWAITING CONFIRMATION" : "PAY & MOVE-IN"}
+                  {stayStatus === 'Pending' ? "AWAITING CONFIRMATION" : (isMoveInRentDueOnly ? "PAY RENT & MOVE-IN" : "PAY & MOVE-IN")}
                 </PayNowButton>
               )}
             </div>
