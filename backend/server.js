@@ -38,10 +38,44 @@ app.use(cors({
 })); 
 app.use(express.json()); // Essential for processing Login/Signup data
 
-// DB CONNECTION
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log("Connected to MongoDB Atlas"))
-  .catch(err => console.error("Database connection error:", err));
+// DB CONNECTION (Vercel/serverless-safe)
+// - Vercel does not ship your local .env file; values must be set in Vercel Environment Variables.
+// - Support both MONGO_URI (legacy) and MONGO_URL (used elsewhere in repo).
+const MONGO_URI = process.env.MONGO_URI || process.env.MONGO_URL;
+
+let __mongoCache = global.__easyPgMongoCache;
+if (!__mongoCache) {
+  __mongoCache = { conn: null, promise: null };
+  global.__easyPgMongoCache = __mongoCache;
+}
+
+const connectMongo = async () => {
+  if (__mongoCache.conn) return __mongoCache.conn;
+  if (!__mongoCache.promise) {
+    if (!MONGO_URI) {
+      throw new Error("Missing MongoDB connection string. Set MONGO_URI (or MONGO_URL) in Vercel env vars.");
+    }
+    __mongoCache.promise = mongoose
+      .connect(MONGO_URI)
+      .then((m) => m.connection);
+  }
+  __mongoCache.conn = await __mongoCache.promise;
+  return __mongoCache.conn;
+};
+
+// Ensure DB is connected before handling requests.
+app.use(async (req, res, next) => {
+  try {
+    await connectMongo();
+    next();
+  } catch (err) {
+    console.error("Database connection error:", err);
+    return res.status(503).json({
+      success: false,
+      message: "Database connection is not configured. Please contact admin."
+    });
+  }
+});
 
   // --- CRITICAL: REGISTER MODELS BEFORE ROUTES ---
 require('./models/pgModel');   // <--- ADD THIS [cite: 2026-01-01]
