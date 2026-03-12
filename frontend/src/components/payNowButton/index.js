@@ -5,6 +5,7 @@ import { API_BASE } from "../../config/apiBaseUrl";
 
 const PayNowButton = ({ amount, pgId, bookingId, intentType, description, children, className, disabled, onSuccess }) => {
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isPaid, setIsPaid] = useState(false);
   const colors = { primary: '#D97706' };
 
   const ensureRequiredDocumentsForRent = async (token) => {
@@ -108,7 +109,15 @@ const PayNowButton = ({ amount, pgId, bookingId, intentType, description, childr
             }
 
             if (verifyRes.ok && result?.success) {
-              Swal.fire({ title: 'Payment Successful!', text: 'Payment has been recorded.', icon: 'success', confirmButtonColor: colors.primary });
+              setIsPaid(true);
+              const serverMessage = result?.message ? String(result.message) : 'Payment has been recorded.';
+              const alreadyProcessed = serverMessage.toLowerCase().includes('already processed');
+              Swal.fire({
+                title: alreadyProcessed ? 'Payment Already Processed' : 'Payment Successful!',
+                text: serverMessage,
+                icon: 'success',
+                confirmButtonColor: colors.primary
+              });
               if (typeof onSuccess === 'function') onSuccess(result);
             } else {
               const serverMessage = result?.message ? String(result.message) : '';
@@ -138,8 +147,8 @@ const PayNowButton = ({ amount, pgId, bookingId, intentType, description, childr
   };
 
   return (
-    <CButton onClick={handleClick} disabled={disabled || isProcessing} className={className}>
-      {isProcessing ? 'PROCESSING...' : (children || 'PAY NOW')}
+    <CButton onClick={handleClick} disabled={Boolean(disabled || isProcessing || isPaid)} className={className}>
+      {isPaid ? 'Paid' : (isProcessing ? 'PROCESSING...' : (children || 'PAY NOW'))}
     </CButton>
   );
 };

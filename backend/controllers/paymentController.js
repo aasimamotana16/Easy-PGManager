@@ -17,6 +17,15 @@ const {
   computeCommissionBreakdown
 } = require("../utils/paymentPolicyUtils");
 
+const escapeRegex = (value = "") => String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const isMongoDuplicateKeyError = (err) => {
+  if (!err) return false;
+  if (err.code === 11000) return true;
+  if (err.name === "MongoServerError" && err.code === 11000) return true;
+  return false;
+};
+
 const pickFirstValid = (...values) => {
   for (const raw of values) {
     const value = String(raw ?? "").trim();
@@ -144,38 +153,70 @@ const ensureBookingCompletionRecords = async ({ booking, tenantUser, pgDoc, tena
   };
   await booking.save();
 
-  let tenantRecord = await Tenant.findOne({
-    ownerId: pgDoc.ownerId,
-    $and: [
-      {
-        $or: [
-          { email: tenantEmail || "__no_email__" },
-          { name: tenantName }
-        ]
-      },
-      {
-        $or: [{ pgId: pgDoc._id }, { pgName: pgDoc.pgName }]
-      }
-    ]
-  }).sort({ createdAt: -1 });
+  const normalizedTenantEmail = String(tenantEmail || "").trim().toLowerCase();
+
+  // IMPORTANT: email has a unique index in MongoDB.
+  // Always de-duplicate by email FIRST so payment verification is idempotent.
+  let tenantRecord = null;
+  if (normalizedTenantEmail) {
+    tenantRecord = await Tenant.findOne({ email: normalizedTenantEmail }).sort({ createdAt: -1 });
+
+    // Backward-compat: older records may have mixed-case emails.
+    if (!tenantRecord) {
+      tenantRecord = await Tenant.findOne({
+        email: new RegExp(`^${escapeRegex(normalizedTenantEmail)}$`, "i")
+      }).sort({ createdAt: -1 });
+    }
+  }
+
+  if (!tenantRecord) {
+    tenantRecord = await Tenant.findOne({
+      ownerId: pgDoc.ownerId,
+      $and: [
+        {
+          $or: [
+            { email: normalizedTenantEmail || "__no_email__" },
+            { name: tenantName }
+          ]
+        },
+        {
+          $or: [{ pgId: pgDoc._id }, { pgName: pgDoc.pgName }]
+        }
+      ]
+    }).sort({ createdAt: -1 });
+  }
 
   if (!tenantRecord) {
     const resolvedPhone = normalizeTenantPhone(tenantUser?.phone);
-    tenantRecord = await Tenant.create({
-      ownerId: pgDoc.ownerId,
-      name: tenantName,
-      phone: resolvedPhone || "Not provided",
-      email: tenantEmail || "no-email@easy-pg.local",
-      pgId: pgDoc._id,
-      pgName: pgDoc.pgName || "",
-      room: booking.roomType || "N/A",
-      joiningDate: checkInDate,
-      status: "Pending Arrival",
-      securityDeposit
-    });
+    try {
+      tenantRecord = await Tenant.create({
+        ownerId: pgDoc.ownerId,
+        name: tenantName,
+        phone: resolvedPhone || "Not provided",
+        email: normalizedTenantEmail || "no-email@easy-pg.local",
+        pgId: pgDoc._id,
+        pgName: pgDoc.pgName || "",
+        room: booking.roomType || "N/A",
+        joiningDate: checkInDate,
+        status: "Pending Arrival",
+        securityDeposit
+      });
+    } catch (err) {
+      // If a concurrent verification attempt created the tenant first, fetch & reuse it.
+      if (isMongoDuplicateKeyError(err) && normalizedTenantEmail) {
+        tenantRecord = await Tenant.findOne({ email: normalizedTenantEmail }).sort({ createdAt: -1 });
+        if (!tenantRecord) {
+          tenantRecord = await Tenant.findOne({
+            email: new RegExp(`^${escapeRegex(normalizedTenantEmail)}$`, "i")
+          }).sort({ createdAt: -1 });
+        }
+      }
+      if (!tenantRecord) throw err;
+    }
   } else {
     tenantRecord.pgId = pgDoc._id;
     tenantRecord.pgName = pgDoc.pgName || tenantRecord.pgName;
+    tenantRecord.ownerId = pgDoc.ownerId;
     tenantRecord.room = booking.roomType || tenantRecord.room;
     tenantRecord.joiningDate = tenantRecord.joiningDate || checkInDate;
     if (String(tenantRecord.status || "").toLowerCase() !== "inactive") {
@@ -186,8 +227,8 @@ const ensureBookingCompletionRecords = async ({ booking, tenantUser, pgDoc, tena
     if (resolvedPhone && (!tenantRecord.phone || tenantRecord.phone === "0000000000" || tenantRecord.phone === "Not provided")) {
       tenantRecord.phone = resolvedPhone;
     }
-    if (tenantEmail && (!tenantRecord.email || tenantRecord.email === "no-email@easy-pg.local")) {
-      tenantRecord.email = tenantEmail;
+    if (normalizedTenantEmail && (!tenantRecord.email || tenantRecord.email === "no-email@easy-pg.local")) {
+      tenantRecord.email = normalizedTenantEmail;
     }
     await tenantRecord.save();
   }
@@ -454,6 +495,52 @@ const verifyPayment = async (req, res) => {
       const paymentMonth = month || new Date().toLocaleString("en-US", { month: "short", year: "numeric" });
       const normalizedPgName = pgDoc?.pgName || targetBooking?.pgName || null;
 
+      // Idempotency guard: transactionId is unique, so retries / refreshes should not create duplicates.
+      const existingByTransaction = await Payment.findOne({ transactionId: razorpay_payment_id })
+        .sort({ paymentDate: -1 })
+        .populate("pgId", "pgName");
+      if (existingByTransaction) {
+        // Best-effort: ensure booking/tenant records exist (safe + de-duplicated).
+        if (targetBooking) {
+          const paymentType = String(type || "").toUpperCase();
+          const countsAsMoveInPayment =
+            !paymentType ||
+            paymentType === "MOVE_IN_PAYMENT" ||
+            paymentType === "RENT_AND_DEPOSIT" ||
+            paymentType === "RENT_ONLY";
+
+          if (countsAsMoveInPayment && !targetBooking.isPaid) {
+            targetBooking.isPaid = true;
+            targetBooking.paymentStatus = "Paid";
+            await targetBooking.save();
+          }
+
+          try {
+            await ensureBookingCompletionRecords({
+              booking: targetBooking,
+              tenantUser,
+              pgDoc:
+                pgDoc ||
+                (await Pg.findById(targetBooking.pgId).select(
+                  "_id pgName ownerId price securityDeposit roomPrices agreementTemplate"
+                )),
+              tenantName: targetBooking.tenantName || tenantName,
+              tenantEmail: targetBooking.tenantEmail || tenantEmail,
+              rentAmount: Number(targetBooking.rentAmount || targetBooking.bookingAmount || pgDoc?.price || 0)
+            });
+          } catch (syncErr) {
+            // Do not fail idempotent response due to non-critical completion sync.
+            console.warn("Payment already processed; completion sync warning:", syncErr.message || syncErr);
+          }
+        }
+
+        return res.status(200).json({
+          success: true,
+          message: "Payment already processed",
+          data: existingByTransaction
+        });
+      }
+
       // Prevent accidental duplicate monthly payment entries for the same tenant + PG + amount.
       const duplicatePaymentQuery = {
         paymentStatus: { $in: ["Success", "Paid", "PAID"] },
@@ -492,24 +579,41 @@ const verifyPayment = async (req, res) => {
         amount: Number(amountPaid || 0),
         commissionPercent: DEFAULT_PLATFORM_COMMISSION_PERCENT
       });
-      const newPayment = await Payment.create({
-        user: req.user.id,
-        ownerId: pgDoc?.ownerId || targetBooking?.ownerId || null,
-        bookingRef: targetBooking?._id || null,
-        bookingCode: targetBooking?.bookingId || null,
-        pgId: normalizedPgId, 
-        pgName: normalizedPgName,
-        tenantName,
-        amountPaid: commissionBreakdown.grossAmount,
-        grossAmount: commissionBreakdown.grossAmount,
-        commissionRatePercent: commissionBreakdown.commissionRatePercent,
-        platformCommissionAmount: commissionBreakdown.platformCommissionAmount,
-        ownerPayoutAmount: commissionBreakdown.ownerPayoutAmount,
-        month: paymentMonth,
-        transactionId: razorpay_payment_id,
-        paymentStatus: "Success",
-        paymentDate: new Date()
-      });
+      let newPayment = null;
+      try {
+        newPayment = await Payment.create({
+          user: req.user.id,
+          ownerId: pgDoc?.ownerId || targetBooking?.ownerId || null,
+          bookingRef: targetBooking?._id || null,
+          bookingCode: targetBooking?.bookingId || null,
+          pgId: normalizedPgId,
+          pgName: normalizedPgName,
+          tenantName,
+          amountPaid: commissionBreakdown.grossAmount,
+          grossAmount: commissionBreakdown.grossAmount,
+          commissionRatePercent: commissionBreakdown.commissionRatePercent,
+          platformCommissionAmount: commissionBreakdown.platformCommissionAmount,
+          ownerPayoutAmount: commissionBreakdown.ownerPayoutAmount,
+          month: paymentMonth,
+          transactionId: razorpay_payment_id,
+          paymentStatus: "Success",
+          paymentDate: new Date()
+        });
+      } catch (err) {
+        if (isMongoDuplicateKeyError(err)) {
+          const existing = await Payment.findOne({ transactionId: razorpay_payment_id })
+            .sort({ paymentDate: -1 })
+            .populate("pgId", "pgName");
+          if (existing) {
+            return res.status(200).json({
+              success: true,
+              message: "Payment already processed",
+              data: existing
+            });
+          }
+        }
+        throw err;
+      }
 
       if (targetBooking) {
         targetBooking.ownerApproved = Boolean(targetBooking.ownerApproved || String(targetBooking.status || "") === "Confirmed");
@@ -705,7 +809,13 @@ const verifyPayment = async (req, res) => {
       });
     }
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    if (isMongoDuplicateKeyError(error)) {
+      return res.status(409).json({
+        success: false,
+        message: "Duplicate record detected. Please refresh and try again."
+      });
+    }
+    res.status(500).json({ success: false, message: "Payment verification failed. Please try again." });
   }
 };
 
