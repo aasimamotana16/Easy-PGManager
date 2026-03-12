@@ -323,6 +323,107 @@ const writePdf = async ({ outputPath, agreementData }) => {
   await writePdfToStream({ stream, agreementData });
 };
 
+const buildAgreementDataForBookingId = async (bookingId) => {
+  const booking = await Booking.findById(bookingId);
+  if (!booking) {
+    throw new Error("Booking not found");
+  }
+
+  const pgDoc = booking.pgId
+    ? await Pg.findById(booking.pgId)
+    : await Pg.findOne({ pgName: booking.pgName });
+
+  if (!pgDoc) {
+    throw new Error("PG not found for booking");
+  }
+
+  const [owner, tenantUser, agreementSettings] = await Promise.all([
+    booking.ownerId ? User.findById(booking.ownerId).select("fullName").lean() : null,
+    booking.tenantUserId ? User.findById(booking.tenantUserId).select("fullName").lean() : null,
+    getAgreementSettingsFromAdminConfig()
+  ]);
+
+  let rentAmount = Number(booking.rentAmount || booking.bookingAmount || 0);
+  let securityDeposit = Number(booking.securityDeposit || 0);
+  let variantLabel = String(booking.variantLabel || "").trim();
+
+  if (!rentAmount || !securityDeposit || !variantLabel) {
+    const variantPricing = resolveVariantPricing({
+      roomPrices: pgDoc?.roomPrices,
+      roomType: booking.roomType || "",
+      variantLabel: booking.variantLabel || "",
+      fallbackRent: Number(pgDoc?.price || 0),
+      fallbackDeposit: Number(pgDoc?.securityDeposit || 0)
+    });
+
+    if (!rentAmount) rentAmount = Number(variantPricing.rentAmount || 0);
+    if (!securityDeposit) securityDeposit = Number(variantPricing.securityDeposit || 0);
+    if (!variantLabel) variantLabel = String(variantPricing.variantLabel || booking.roomType || "Standard");
+  }
+
+  const inventory = resolveInventory(pgDoc);
+  const fixedClauses = Array.isArray(agreementSettings?.fixedClauses) ? agreementSettings.fixedClauses : [];
+  const jurisdiction = String(agreementSettings?.jurisdiction || "").trim();
+  const platformDisclaimer = String(agreementSettings?.platformDisclaimer || "").trim();
+  const esignConsentText = String(agreementSettings?.esignConsentText || "").trim();
+
+  const tenantName = String(booking.tenantName || tenantUser?.fullName || "Tenant");
+  const ownerName = String(owner?.fullName || "Owner");
+  const propertyName = String(pgDoc?.pgName || booking.pgName || "PG Property");
+  const checkInDate = String(booking.checkInDate || "");
+  const checkOutDate = String(booking.checkOutDate || "Long Term");
+  const city = String(pgDoc?.city || "").trim() || "Not specified";
+  const area = String(pgDoc?.area || "").trim() || "Not specified";
+  const address = String(pgDoc?.address || pgDoc?.location || "").trim() || "Not specified";
+  const facilities = normalizeListValues(pgDoc?.facilities, pgDoc?.amenities);
+  const rules = [
+    formatRuleStatus("Smoking", Boolean(pgDoc?.rules?.smoking)),
+    formatRuleStatus("Alcohol", Boolean(pgDoc?.rules?.alcohol)),
+    formatRuleStatus("Visitors", Boolean(pgDoc?.rules?.visitors)),
+    formatRuleStatus("Pets", Boolean(pgDoc?.rules?.pets))
+  ];
+  const curfew = String(pgDoc?.rules?.curfew || "").trim();
+  if (curfew) {
+    rules.push(`Gate Closing Time: ${curfew}`);
+  }
+  const roomTypeLabel = String(booking.roomType || booking.variantLabel || pgDoc?.occupancy || "Not specified");
+  const acTypeLabel = String(booking.acType || booking.acPreference || "Not specified");
+
+  return {
+    booking,
+    agreementData: {
+      bookingCode: String(booking.bookingId || booking._id),
+      ownerName,
+      tenantName,
+      propertyName,
+      city,
+      area,
+      address,
+      variantLabel,
+      checkInDate,
+      checkOutDate,
+      roomTypeLabel,
+      acTypeLabel,
+      rentAmount,
+      securityDeposit,
+      facilityCount: facilities.length,
+      facilities,
+      rules,
+      inventoryRows: [
+        { item: "Fans", quantity: Number(inventory.fanCount ?? 0) || 0 },
+        { item: "Lights", quantity: Number(inventory.lightCount ?? 0) || 0 },
+        { item: "Beds", quantity: Number(inventory.bedCount ?? 0) || 0 },
+        { item: "Mattresses", quantity: Number(inventory.mattressCount ?? 0) || 0 },
+        { item: "Cupboards", quantity: Number(inventory.cupboardCount ?? 0) || 0 }
+      ],
+      fixedClauses: fixedClauses.map((clause) => String(clause || "").trim()).filter(Boolean),
+      jurisdiction,
+      platformDisclaimer,
+      esignConsentText: esignConsentText || "By proceeding, both parties consent to digital agreement execution."
+    }
+  };
+};
+
 const buildAgreementPreviewDataByPgId = async (pgId, options = {}) => {
   const pgDoc = await Pg.findById(pgId).lean();
   if (!pgDoc) {
@@ -548,5 +649,6 @@ module.exports = {
   generateAgreementPdf,
   generateAgreementPreviewPdfByPgId,
   buildAgreementPreviewDataByPgId,
-  writePdfToStream
+  writePdfToStream,
+  buildAgreementDataForBookingId
 };

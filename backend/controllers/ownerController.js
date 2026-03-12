@@ -17,7 +17,7 @@ const ExtensionRequest = require('../models/extensionRequestModel');
 const DamageReport = require('../models/damageReportModel');
 const FineTransaction = require('../models/fineTransactionModel');
 const { mergeRoomPriceVariants, resolveVariantPricing } = require('../utils/pricingUtils');
-const { generateAgreementPdf } = require('../utils/agreementPdf');
+const { writePdfToStream, buildAgreementDataForBookingId } = require('../utils/agreementPdf');
 const { calculateLateFine, validateMoveIn } = require('../utils/leaseUtils');
 const {
   DEFAULT_PLATFORM_COMMISSION_PERCENT,
@@ -1564,13 +1564,12 @@ const getMyTenants = async (req, res) => {
       $or: [
         { status: "Confirmed" },
         { ownerApproved: true },
-        { ownerApprovalStatus: "approved" }
+        { ownerApprovalStatus: { $regex: /^approved$/i } }
       ]
     };
 
-    // Only include tenants that came from real tenant-side bookings.
+    // Use bookings to enrich tenant rows (paid status, room type, user linkage).
     const bookingBackedTenants = await Booking.find({
-      bookingSource: "tenant_request",
       $and: [
         approvedBookingClause,
         {
@@ -1665,20 +1664,8 @@ const getMyTenants = async (req, res) => {
       .populate('pgId', 'pgName location city occupancy roomType')
       .sort({ createdAt: -1 });
 
-    const filteredTenants = tenants.filter((t) => {
-      const pgObj = t.pgId && typeof t.pgId === "object" ? t.pgId : null;
-      const tenantName = normalizeValue(t.name);
-      const tenantEmail = normalizeValue(t.email);
-      const pgIdKey = String(pgObj?._id || t.pgId || "");
-      const pgNameKey = normalizeValue(pgObj?.pgName || t.pgName);
-
-      return (
-        (pgIdKey && tenantName && allowedKeysByPgId.has(`${pgIdKey}|name|${tenantName}`)) ||
-        (pgIdKey && tenantEmail && allowedKeysByPgId.has(`${pgIdKey}|email|${tenantEmail}`)) ||
-        (pgNameKey && tenantName && allowedKeysByPgName.has(`${pgNameKey}|name|${tenantName}`)) ||
-        (pgNameKey && tenantEmail && allowedKeysByPgName.has(`${pgNameKey}|email|${tenantEmail}`))
-      );
-    });
+    // Always show all tenants for this owner (newest first).
+    const filteredTenants = tenants;
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -2659,29 +2646,17 @@ const updateBookingStatus = async (req, res) => {
       if (updatedBooking.status === 'Confirmed') {
         try {
           const confirmedData = await ensureBookingConfirmationData({ booking: updatedBooking, ownerId });
-          let agreementPdfResult = null;
-          try {
-            agreementPdfResult = await generateAgreementPdf(updatedBooking._id);
-          } catch (pdfErr) {
-            console.warn("Agreement PDF generation warning:", pdfErr.message || pdfErr);
-          }
           linkedData = {
             tenantId: confirmedData?.tenantUser?._id || null,
             agreementId: confirmedData?.agreement?.agreementId || null,
             rentAmount: Number(confirmedData?.rentAmount || updatedBooking.rentAmount || updatedBooking.bookingAmount || 0),
             securityDeposit: Number(confirmedData?.agreement?.securityDeposit || updatedBooking.securityDeposit || 0),
-            agreementPdfUrl: agreementPdfResult?.agreementPdfUrl || updatedBooking.agreementPdfUrl || "",
+            agreementPdfUrl: updatedBooking.agreementPdfUrl || "",
             awaitsPayment: !Boolean(updatedBooking.isPaid)
           };
         } catch (linkErr) {
           console.warn("Booking confirmation sync warning:", linkErr.message || linkErr);
           let agreementPdfUrl = updatedBooking.agreementPdfUrl || "";
-          try {
-            const pdfResult = await generateAgreementPdf(updatedBooking._id);
-            agreementPdfUrl = pdfResult?.agreementPdfUrl || agreementPdfUrl;
-          } catch (pdfErr) {
-            console.warn("Agreement PDF generation warning:", pdfErr.message || pdfErr);
-          }
           linkedData = {
             tenantId: null,
             agreementId: null,
@@ -2736,12 +2711,15 @@ const generateBookingAgreementPdf = async (req, res) => {
       return res.status(403).json({ success: false, message: "You don't have permission for this booking" });
     }
 
-    const result = await generateAgreementPdf(booking._id);
-    return res.status(200).json({
-      success: true,
-      message: "Agreement PDF generated successfully",
-      data: result
-    });
+    const built = await buildAgreementDataForBookingId(booking._id);
+    const safeCode = String(built?.agreementData?.bookingCode || booking.bookingId || booking._id).replace(/[^a-zA-Z0-9_-]/g, "");
+
+    res.status(200);
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `inline; filename="agreement-${safeCode}.pdf"`);
+
+    await writePdfToStream({ stream: res, agreementData: built.agreementData });
+    return;
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
   }

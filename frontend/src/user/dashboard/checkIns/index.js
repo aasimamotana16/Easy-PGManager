@@ -549,7 +549,7 @@ const CheckIns = () => {
                 <div className="flex flex-col sm:flex-row gap-3 w-full">
                   <CButton
                     onClick={handleRequestMoveIn}
-                    disabled={disableAllActions || !hasActiveBooking || hasRequestedMoveIn}
+                    disabled={disableAllActions || !hasActiveBooking}
                     className={`w-full flex-1 py-4 lg:py-4 text-lg shadow-md ${(disableAllActions || !hasActiveBooking) ? "bg-gray-400 hover:bg-gray-400 border-gray-400 cursor-not-allowed" : ""}`}
                   >
                     Request Move-In

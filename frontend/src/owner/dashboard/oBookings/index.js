@@ -229,22 +229,23 @@ const BookingManagement = () => {
         didOpen: () => Swal.showLoading()
       });
 
-      // Generates (or refreshes) the PDF and returns the current URL.
+      Swal.close();
+
       const res = await axios.post(
         `${API_BASE}/owner/booking/${bookingId}/generate-agreement-pdf`,
         {},
-        { headers: { Authorization: `Bearer ${token}` } }
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/pdf"
+          },
+          responseType: "blob"
+        }
       );
 
-      const agreementPdfUrl = res.data?.data?.agreementPdfUrl || booking?.agreementPdfUrl;
-      if (!agreementPdfUrl) {
-        throw new Error("Agreement URL not available");
-      }
-
-      const normalizedPath = String(agreementPdfUrl).replace(/^\/+/, "");
-      const finalUrl = `${apiBaseUrl}/${normalizedPath}`;
-      Swal.close();
-      window.open(finalUrl, "_blank", "noopener,noreferrer");
+      const blob = new Blob([res.data], { type: "application/pdf" });
+      const url = window.URL.createObjectURL(blob);
+      window.open(url, "_blank", "noopener,noreferrer");
     } catch (error) {
       Swal.fire({
         title: "Failed",
@@ -402,11 +403,11 @@ const BookingManagement = () => {
                       <button
                         onClick={() => openAgreementPdf(b)}
                         className={`px-3 py-2 text-[10px] font-bold uppercase rounded-md border border-[#E5E0D9] transition-all ${
-                          b.agreementPdfUrl
+                          b.status === "Confirmed"
                             ? "text-[#4B4B4B] hover:text-[#D97706] hover:bg-[#FEF3C7]"
                             : "text-[#4B4B4B] opacity-50"
                         }`}
-                        title={b.agreementPdfUrl ? "View Agreement" : "Available after confirmation"}
+                        title={b.status === "Confirmed" ? "View Agreement" : "Available after confirmation"}
                       >
                         View Agreement
                       </button>

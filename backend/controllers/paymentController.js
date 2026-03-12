@@ -728,11 +728,6 @@ const verifyPayment = async (req, res) => {
           rentAmount: Number(targetBooking.rentAmount || targetBooking.bookingAmount || pgDoc?.price || 0)
         });
 
-        try {
-          await generateAgreementPdf(targetBooking._id);
-        } catch (pdfErr) {
-          console.warn("Agreement PDF generation warning after payment:", pdfErr.message || pdfErr);
-        }
       }
 
       if (normalizedPaymentType === "MONTHLY_RENT") {
