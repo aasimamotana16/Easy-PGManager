@@ -48,9 +48,9 @@ const CheckIns = () => {
   const isCancelPending = cancelRequested && (cancelStatus === "pending" || !cancelStatus);
   const isBookingCancelled = String(currentBooking?.bookingState || currentBooking?.status || "").trim().toLowerCase() === "cancelled";
 
-  // Allow move-out request once any payment is recorded (or move-in dues are fully paid).
-  // Backend will still validate tenant record + requested date.
-  const canRequestMoveOut = hasPaidFirstRent || Boolean(lastPaymentDate);
+  // Allow move-out request only after move-in is confirmed/approved.
+  // This matches the product rule: move-out only from an active/approved stay.
+  const canRequestMoveOut = hasPaidFirstRent && hasApprovedMoveIn;
   const disableMoveInPay = hasPaidFirstRent || !Number.isFinite(Number(rentAmount)) || Number(rentAmount) <= 0;
   const disableAllActions = moveOutCompleted;
 
@@ -373,7 +373,7 @@ const CheckIns = () => {
     if (!canRequestMoveOut) {
       Swal.fire({
         title: "Move-Out Not Allowed",
-        text: "You can request move-out only after a payment is recorded for your stay.",
+        text: "You can request move-out only after your move-in is confirmed by the owner.",
         icon: "warning",
         confirmButtonColor: "#D97706"
       });
