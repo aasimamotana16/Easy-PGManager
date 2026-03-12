@@ -1582,7 +1582,7 @@ const getMyTenants = async (req, res) => {
       ]
     })
       .sort({ createdAt: -1 })
-      .select("tenantName tenantEmail tenantUserId pgId pgName roomType variantLabel isPaid createdAt");
+      .select("tenantName tenantEmail tenantUserId pgId pgName roomType variantLabel isPaid initialRentPaid securityDepositPaid securityDeposit checkInDate createdAt");
 
     const normalizeValue = (value) => String(value || "").trim().toLowerCase();
     const allowedKeysByPgId = new Set();
@@ -1660,9 +1660,86 @@ const getMyTenants = async (req, res) => {
       if (nameKey && !tenantUserByName.has(nameKey)) tenantUserByName.set(nameKey, u);
     });
 
-    const tenants = await Tenant.find({ ownerId })
+    let tenants = await Tenant.find({ ownerId })
       .populate('pgId', 'pgName location city occupancy roomType')
       .sort({ createdAt: -1 });
+
+    // Backfill missing tenant records from owner-approved bookings.
+    // This prevents move-in requests from being invisible due to tenant sync gaps.
+    const existingKeys = new Set();
+    const toKey = (pgKey, kind, value) => (pgKey && value ? `${pgKey}|${kind}|${normalizeValue(value)}` : "");
+
+    tenants.forEach((t) => {
+      const pgIdKey = t.pgId ? String(t.pgId?._id || t.pgId) : "";
+      const pgNameKey = normalizeValue(t.pgId?.pgName || t.pgName);
+      const nameKey = normalizeValue(t.name);
+      const emailKey = normalizeValue(t.email);
+      if (pgIdKey && nameKey) existingKeys.add(`${pgIdKey}|name|${nameKey}`);
+      if (pgIdKey && emailKey) existingKeys.add(`${pgIdKey}|email|${emailKey}`);
+      if (pgNameKey && nameKey) existingKeys.add(`${pgNameKey}|name|${nameKey}`);
+      if (pgNameKey && emailKey) existingKeys.add(`${pgNameKey}|email|${emailKey}`);
+    });
+
+    const pgIdByName = new Map();
+    ownerPgs.forEach((pg) => {
+      const key = normalizeValue(pg.pgName);
+      if (key && !pgIdByName.has(key)) pgIdByName.set(key, pg._id);
+    });
+
+    for (const b of bookingBackedTenants) {
+      const bPgId = b.pgId ? String(b.pgId) : "";
+      const bPgName = normalizeValue(b.pgName);
+      const bName = normalizeValue(b.tenantName);
+      const bEmail = normalizeValue(b.tenantEmail);
+
+      const exists =
+        (bPgId && bEmail && existingKeys.has(`${bPgId}|email|${bEmail}`)) ||
+        (bPgId && bName && existingKeys.has(`${bPgId}|name|${bName}`)) ||
+        (bPgName && bEmail && existingKeys.has(`${bPgName}|email|${bEmail}`)) ||
+        (bPgName && bName && existingKeys.has(`${bPgName}|name|${bName}`));
+
+      if (exists) continue;
+
+      const resolvedPgId = b.pgId || (bPgName ? pgIdByName.get(bPgName) : null);
+      if (!resolvedPgId) continue;
+
+      const tenantName = String(b.tenantName || "Tenant").trim() || "Tenant";
+      const tenantEmail = String(b.tenantEmail || "").trim().toLowerCase();
+
+      const matchedTenantUser =
+        (b.tenantUserId ? tenantUserById.get(String(b.tenantUserId)) : null) ||
+        (bEmail ? tenantUserByEmail.get(bEmail) : null) ||
+        (bName ? tenantUserByName.get(bName) : null) ||
+        null;
+      const resolvedPhone = normalizeTenantPhone(matchedTenantUser?.phone) || "Not provided";
+
+      const joiningDate = String(b.checkInDate || new Date().toISOString().split('T')[0]);
+      const shouldMarkPendingArrival = Boolean(b.isPaid || b.initialRentPaid || b.securityDepositPaid);
+
+      try {
+        const created = await Tenant.create({
+          ownerId,
+          name: tenantName,
+          phone: resolvedPhone,
+          email: tenantEmail || "no-email@easy-pg.local",
+          pgId: resolvedPgId,
+          pgName: String(b.pgName || ""),
+          room: String(b.roomType || b.variantLabel || "N/A"),
+          joiningDate,
+          status: shouldMarkPendingArrival ? "Pending Arrival" : "Active",
+          securityDeposit: Number(b.securityDeposit || 0) || 0
+        });
+
+        tenants.unshift(created);
+
+        if (bPgId && bEmail) existingKeys.add(`${bPgId}|email|${bEmail}`);
+        if (bPgId && bName) existingKeys.add(`${bPgId}|name|${bName}`);
+        if (bPgName && bEmail) existingKeys.add(`${bPgName}|email|${bEmail}`);
+        if (bPgName && bName) existingKeys.add(`${bPgName}|name|${bName}`);
+      } catch (_) {
+        // ignore backfill errors (duplicates/race)
+      }
+    }
 
     // Always show all tenants for this owner (newest first).
     const filteredTenants = tenants;
