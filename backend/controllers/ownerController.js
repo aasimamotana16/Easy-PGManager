@@ -1560,14 +1560,26 @@ const getMyTenants = async (req, res) => {
     const pgIds = ownerPgs.map((pg) => pg._id);
     const pgNames = ownerPgs.map((pg) => pg.pgName).filter(Boolean);
 
+    const approvedBookingClause = {
+      $or: [
+        { status: "Confirmed" },
+        { ownerApproved: true },
+        { ownerApprovalStatus: "approved" }
+      ]
+    };
+
     // Only include tenants that came from real tenant-side bookings.
     const bookingBackedTenants = await Booking.find({
-      status: "Confirmed",
       bookingSource: "tenant_request",
-      $or: [
-        { ownerId },
-        { pgId: { $in: pgIds } },
-        { pgName: { $in: pgNames } }
+      $and: [
+        approvedBookingClause,
+        {
+          $or: [
+            { ownerId },
+            { pgId: { $in: pgIds } },
+            { pgName: { $in: pgNames } }
+          ]
+        }
       ]
     })
       .sort({ createdAt: -1 })
@@ -1700,14 +1712,12 @@ const getMyTenants = async (req, res) => {
       ].filter(Boolean);
       if (!hasPaidRent) {
         const paidBookingQuery = {
-          status: "Confirmed",
           bookingSource: "tenant_request",
-          isPaid: true
+          isPaid: true,
+          $and: [approvedBookingClause]
         };
-        const andClauses = [];
-        if (pgMatchers.length > 0) andClauses.push({ $or: pgMatchers });
-        if (tenantMatchers.length > 0) andClauses.push({ $or: tenantMatchers });
-        if (andClauses.length > 0) paidBookingQuery.$and = andClauses;
+        if (pgMatchers.length > 0) paidBookingQuery.$and.push({ $or: pgMatchers });
+        if (tenantMatchers.length > 0) paidBookingQuery.$and.push({ $or: tenantMatchers });
 
         const paidBooking = await Booking.findOne(paidBookingQuery)
           .sort({ createdAt: -1 })
