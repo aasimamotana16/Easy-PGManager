@@ -50,7 +50,7 @@ const CheckIns = () => {
 
   // Allow move-out request only after move-in is confirmed/approved.
   // This matches the product rule: move-out only from an active/approved stay.
-  const canRequestMoveOut = hasPaidFirstRent && hasApprovedMoveIn;
+  const canRequestMoveOut = hasApprovedMoveIn;
   const disableMoveInPay = hasPaidFirstRent || !Number.isFinite(Number(rentAmount)) || Number(rentAmount) <= 0;
   const disableAllActions = moveOutCompleted;
 
@@ -596,6 +596,13 @@ const CheckIns = () => {
 
               {systemState === "ACTIVE_STAY" && (
                 <div className="flex flex-col sm:flex-row gap-3 w-full">
+                  <CButton
+                    onClick={() => {}}
+                    disabled={true}
+                    className="w-full flex-1 py-4 lg:py-4 text-lg shadow-md bg-gray-400 hover:bg-gray-400 border-gray-400 cursor-not-allowed"
+                  >
+                    Request Move-In
+                  </CButton>
                   <CButton
                     onClick={handleMoveOut}
                     disabled={disableAllActions || !hasActiveBooking || !canRequestMoveOut}
