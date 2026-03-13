@@ -384,7 +384,44 @@ const getUserDashboard = async (req, res) => {
       0,
       Number(pricing?.securityDeposit ?? booking?.securityDeposit ?? linkedPg?.securityDeposit ?? 0)
     );
-    const securityDepositPaid = Boolean(booking?.securityDepositPaid) || securityDepositAmount <= 0;
+    let securityDepositPaid = Boolean(booking?.securityDepositPaid) || securityDepositAmount <= 0;
+    if (booking && !securityDepositPaid && securityDepositAmount > 0) {
+      try {
+        const payments = await Payment.find({
+          user: req.user.id,
+          paymentStatus: { $in: ["Success", "Paid", "PAID"] },
+          $or: [
+            booking?._id ? { bookingRef: booking._id } : null,
+            booking?.bookingId ? { bookingCode: booking.bookingId } : null,
+            booking?.pgId ? { pgId: booking.pgId } : null,
+            booking?.pgName ? { pgName: booking.pgName } : null
+          ].filter(Boolean)
+        })
+          .sort({ paymentDate: 1 })
+          .select("amountPaid");
+
+        const amounts = payments.map((p) => Number(p.amountPaid) || 0).filter((n) => Number.isFinite(n) && n > 0);
+        const deposit = Number(securityDepositAmount || 0);
+        const rent = Number(monthlyRent || 0);
+        const full = rent + deposit;
+
+        const tol = 1;
+        const depTol = Math.max(1, Math.round(deposit * 0.02));
+        const rentTol = rent > 0 ? Math.max(1, Math.round(rent * 0.02)) : 1;
+
+        if (full > 0 && amounts.some((a) => a >= full - tol)) {
+          securityDepositPaid = true;
+        } else if (rent > 0 && Math.abs(deposit - rent) > Math.max(depTol, rentTol)) {
+          if (amounts.some((a) => Math.abs(a - deposit) <= depTol)) {
+            securityDepositPaid = true;
+          } else if (deposit < rent && amounts.some((a) => a >= deposit - depTol && a < rent - rentTol)) {
+            securityDepositPaid = true;
+          }
+        }
+      } catch (inferErr) {
+        // Non-critical: keep DB flag based result
+      }
+    }
     const moveInDuesPaid = initialRentPaid && securityDepositPaid;
 
     let bookingStatus = "Inactive";

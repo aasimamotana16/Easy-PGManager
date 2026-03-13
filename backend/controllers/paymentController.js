@@ -689,11 +689,42 @@ const verifyPayment = async (req, res) => {
         }
         const paidSoFarRaw = await Payment.find(paidSoFarQuery).select("amountPaid");
         const runningTotal = paidSoFarRaw.reduce((sum, p) => sum + (Number(p.amountPaid) || 0), 0);
-        // Reuse the computed paymentType above for move-in breakdown.
         const paidAmount = Number(amountPaid || 0);
-        const isDepositOnly = paymentType === "DEPOSIT_ONLY";
-        const isRentOnly = paymentType === "RENT_ONLY" || paymentType === "MONTHLY_RENT";
-        const isCombined = paymentType === "MOVE_IN_PAYMENT" || paymentType === "RENT_AND_DEPOSIT";
+
+        // Some clients send MOVE_IN_PAYMENT even when the user pays deposit-only.
+        // Infer the intent from the paid amount so we can correctly mark booking flags.
+        const effectivePaymentType = (() => {
+          const raw = String(paymentType || "").toUpperCase();
+          if (raw !== "MOVE_IN_PAYMENT") return raw;
+
+          const rent = Number(monthlyRent || 0);
+          const deposit = Number(requiredDeposit || 0);
+          const full = rent + deposit;
+          const amt = Number(paidAmount || 0);
+          const tol = 1; // INR rounding guard
+
+          if (full > 0 && amt >= full - tol) return "RENT_AND_DEPOSIT";
+
+          const rentTol = rent > 0 ? Math.max(1, Math.round(rent * 0.05)) : 1;
+          const depTol = deposit > 0 ? Math.max(1, Math.round(deposit * 0.05)) : 1;
+          const nearRent = rent > 0 && Math.abs(amt - rent) <= rentTol;
+          const nearDeposit = deposit > 0 && Math.abs(amt - deposit) <= depTol;
+
+          if (nearDeposit && !nearRent) return "DEPOSIT_ONLY";
+          if (nearRent && !nearDeposit) return "RENT_ONLY";
+
+          // If deposit is smaller than rent, a smaller move-in payment is most likely deposit-only.
+          if (deposit > 0 && rent > 0 && deposit < rent && amt >= deposit - depTol && amt < rent - rentTol) {
+            return "DEPOSIT_ONLY";
+          }
+
+          // Fall back to legacy handling (running totals) if still ambiguous.
+          return raw;
+        })();
+
+        const isDepositOnly = effectivePaymentType === "DEPOSIT_ONLY";
+        const isRentOnly = effectivePaymentType === "RENT_ONLY" || effectivePaymentType === "MONTHLY_RENT";
+        const isCombined = effectivePaymentType === "RENT_AND_DEPOSIT";
 
         if (isDepositOnly) {
           targetBooking.securityDepositPaid =
@@ -1012,10 +1043,62 @@ const getUserPaymentStats = async (req, res) => {
     let nextPayment = null;
     let lateFine = 0;
     const bookingSecurityDeposit = Math.max(0, Number(currentSecurityDeposit || booking?.securityDeposit || 0));
+
+    const inferDepositPaidFromPayments = async ({ targetBooking, rentAmount, depositAmount, pgId, pgName }) => {
+      const deposit = Math.max(0, Number(depositAmount || 0));
+      if (deposit <= 0) return true;
+
+      const rent = Math.max(0, Number(rentAmount || 0));
+      const full = rent + deposit;
+
+      const matchOr = [
+        targetBooking?._id ? { bookingRef: targetBooking._id } : null,
+        targetBooking?.bookingId ? { bookingCode: targetBooking.bookingId } : null,
+        pgId ? { pgId } : null,
+        pgName ? { pgName } : null
+      ].filter(Boolean);
+      if (matchOr.length === 0) return false;
+
+      const payments = await Payment.find({
+        user: req.user.id,
+        paymentStatus: { $in: ["Success", "Paid", "PAID"] },
+        $or: matchOr
+      })
+        .sort({ paymentDate: 1 })
+        .select("amountPaid");
+
+      const amounts = payments.map((p) => Number(p.amountPaid) || 0).filter((n) => Number.isFinite(n) && n > 0);
+      if (amounts.length === 0) return false;
+
+      const tol = 1;
+      if (full > 0 && amounts.some((a) => a >= full - tol)) return true;
+
+      // Conservative deposit-only inference: only treat a payment as deposit if it is clearly distinct from rent.
+      const depTol = Math.max(1, Math.round(deposit * 0.02));
+      const rentTol = rent > 0 ? Math.max(1, Math.round(rent * 0.02)) : 1;
+
+      if (rent > 0 && Math.abs(deposit - rent) > Math.max(depTol, rentTol)) {
+        if (amounts.some((a) => Math.abs(a - deposit) <= depTol)) return true;
+        if (deposit < rent && amounts.some((a) => a >= deposit - depTol && a < rent - rentTol)) return true;
+      }
+
+      return false;
+    };
+
+    const inferredDepositPaid = booking
+      ? await inferDepositPaidFromPayments({
+          targetBooking: booking,
+          rentAmount: Number(currentRentDue || booking?.rentAmount || booking?.bookingAmount || 0),
+          depositAmount: bookingSecurityDeposit,
+          pgId: bookingPgId,
+          pgName: bookingPgName
+        })
+      : false;
+
+    const effectiveSecurityDepositPaid = Boolean(booking?.securityDepositPaid) || inferredDepositPaid;
+
     const securityDepositDue =
-      booking && !Boolean(booking.securityDepositPaid) && bookingSecurityDeposit > 0
-        ? bookingSecurityDeposit
-        : 0;
+      booking && !effectiveSecurityDepositPaid && bookingSecurityDeposit > 0 ? bookingSecurityDeposit : 0;
 
     const inferPaymentOptionForBooking = async (targetBooking) => {
       const explicit = String(targetBooking?.paymentOption || "").trim().toLowerCase();
