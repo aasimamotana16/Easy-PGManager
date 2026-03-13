@@ -84,6 +84,13 @@ const protect = async (req, res, next) => {
       return res.status(401).json({ message: "User not found" });
     }
 
+    // Prevent caching of authenticated responses (avoids 304/stale lists on Vercel/CDNs).
+    // Applies to both browser cache and intermediary caches.
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, private, max-age=0");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+    res.setHeader("Surrogate-Control", "no-store");
+
     return next();
   } catch (error) {
     console.error("Auth Error:", error.message);
