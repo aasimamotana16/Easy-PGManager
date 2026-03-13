@@ -1961,6 +1961,29 @@ const moveIn = async (req, res) => {
             .sort({ createdAt: -1 });
         }
 
+        // If the matched tenant record represents a completed/old stay, create a new record
+        // so the new move-in request shows up as a fresh row for the owner.
+        if (tenantRecord) {
+          const statusLower = String(tenantRecord.status || "").trim().toLowerCase();
+          const hasMoveOutCompleted = Boolean(tenantRecord.moveOutCompletedAt);
+          const isInactive = statusLower === "inactive" || hasMoveOutCompleted;
+
+          if (isInactive) {
+            const moveOutDoneAt = tenantRecord.moveOutCompletedAt ? new Date(tenantRecord.moveOutCompletedAt) : null;
+            const bookingCreatedAt = booking?.createdAt ? new Date(booking.createdAt) : null;
+            const shouldStartNewStay =
+              !moveOutDoneAt ||
+              !bookingCreatedAt ||
+              Number.isNaN(moveOutDoneAt.getTime()) ||
+              Number.isNaN(bookingCreatedAt.getTime()) ||
+              bookingCreatedAt >= moveOutDoneAt;
+
+            if (shouldStartNewStay) {
+              tenantRecord = null;
+            }
+          }
+        }
+
         if (!tenantRecord) {
           const created = await Tenant.create({
             ownerId: resolvedOwnerId,
